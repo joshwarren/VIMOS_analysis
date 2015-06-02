@@ -9,44 +9,60 @@
 
 pro find_SN, galaxy, signal, noise
 	
+;+
 ;	galaxy = 'ngc3557'
-	OB = '1'
+;	signal = MAKE_ARRAY(40*40)
+;	noise = MAKE_ARRAY(40*40)
+;-
 
-
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + Galaxy + $
+	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
+		galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
 
+	;galaxy_data = MRDFITS(dataCubeDirectory[0], 1, header, /SILENT)
+	galaxy_noise = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
 	FITS_READ, dataCubeDirectory[0], galaxy_data, header
 ;print, size(galaxy_data)
 
 ;plot, galaxy_data(10,10,*)
 
 
-
-	spaxel_spectrum = MAKE_ARRAY(2800)
-for i=0, 39 do begin
-for j=0, 39 do begin
-;print, 'i = ' + string(i) + '  j = ' + string(j)
-;print, median(galaxy_data(i,j,*))
-
-for k = 0, 2799 do begin
-	spaxel_spectrum(k) = galaxy_data(i,j,k)
-endfor
-	boxplot = CREATEBOXPLOTDATA(spaxel_spectrum)
-
-	signal(i*40+j) = MEDIAN(spaxel_spectrum)
-;; Estimate the noise to be half of the difference between the upper
-;; and lower quartiles. Spectrum is relatively flat so may be fair. 
-	noise(i*40+j) = (boxplot(3)-boxplot(1))/2
-
+;; collapsing the spectrum for each spaxel.
+for i = 0, 39 do begin
+for j = 0, 39 do begin
+	signal[i*40 + j] = MEAN(galaxy_data[i, j, *])
+	noise[i*40 + j] = MEAN(galaxy_noise[i, j, *])
 endfor
 endfor
 
+
+
+
+
+
+;+
+;	spaxel_spectrum = MAKE_ARRAY(2800)
+;for i=0, 39 do begin
+;for j=0, 39 do begin
+;;print, 'i = ' + string(i) + '  j = ' + string(j)
+;;print, median(galaxy_data(i,j,*))
+;
+;for k = 0, 2799 do begin
+;	spaxel_spectrum(k) = galaxy_data(i,j,k)
+;endfor
+;	boxplot = CREATEBOXPLOTDATA(spaxel_spectrum)
+;
+;	signal(i*40+j) = MEDIAN(spaxel_spectrum)
+;;; Estimate the noise to be half of the difference between the upper
+;;; and lower quartiles. Spectrum is relatively flat so may be fair. 
+;	noise(i*40+j) = (boxplot(3)-boxplot(1))/2
+;
+;endfor
+;endfor
+;-
 
 return
 end
-
-
 
 
 
@@ -58,17 +74,9 @@ end
 ;; sigma, and 40-50 for h3 and h4. 
 
 
-pro binning_spaxels;, galaxy
-;
-; Usage example for the procedure VORONOI_2D_BINNING.
-; Type the name VORONOI_2D_BINNING_EXAMPLE at the IDL
-; prompt to run this example.
-;
-; Here columns 1-4 of the text file contain respectively the x, y
-; coordinates of each SAURON lens and the corresponding Signal and
-; Noise. 
-;
-	galaxy = 'ngc3557'
+pro binning_spaxels, galaxy
+
+;	galaxy = 'ngc3557'
 
 
 	signal = MAKE_ARRAY(40*40)
@@ -78,7 +86,7 @@ pro binning_spaxels;, galaxy
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
 
 ;rdfloat, data_file, x, y, signal, noise, SKIPLINE=3, NUMLINE=3107, /DOUBLE
-	targetSN = 10.0
+	targetSN = 20.0
 
 ; Load a colortable and open a graphic window
 ;
@@ -112,9 +120,10 @@ voronoi_2d_binning, x, y, signal, noise, targetSN, $
 ;
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy
 astrolib
-forprint, x, y, binNum, TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
-'/voronoi_2d_binning_output.txt', $
-    COMMENT='          X"              Y"           BIN_NUM'
+forprint, x, y, binNum, xNode, yNode, $
+	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
+	'/voronoi_2d_binning_output.txt', $
+	COMMENT='          X"              Y"           BIN_NUM           XNODE           YNODE'
 
 END
 ;----------------------------------------------------------------------------

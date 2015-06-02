@@ -27,32 +27,48 @@ pro plot_results
 		'/results/gal_Chi.dat'
 
 ;; Read tessellation file
-	RDFLOAT, tessellation_File, x, y, bin_num, SKIPLINE = 1, $
-		/SILENT 
+	RDFLOAT, tessellation_File, x, y, bin_num, xBin, yBin, $
+		SKIPLINE = 1, /SILENT 
 	n_spaxels = (MAX(x) + 1) * (MAX(y) + 1)
 	order = sort(bin_num)
 
 ;; Read results files - each entry in array corresponds to a bin (not
 ;; a spaxel)
 	RDFLOAT, output_v, v_binned, /SILENT
+;+
+;;; 2D array to hold the results in spaxel form.
+;	v_map = MAKE_ARRAY(MAX(x) + 1, MAX(y) + 1)
+;
+;i = 0
+;;; defines the working bin
+;;for bin = 0, MAX(bin_num) -1 do begin
+;for bin = 0, MAX(bin_num) do begin
+;;; loops over all spaxels within that bin
+;while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
+;	
+;	v_map[x[order[i]], y[order[i]]] = v_binned[bin]
+;;; moves onto the next spaxel
+;i = i + 1
+;endwhile
+;endfor
+;
+;CONTOUR, v_map, /FILL
+;-
 
-;; 2D array to hold the results in spaxel form.
-	v_map = MAKE_ARRAY(MAX(x) + 1, MAX(y) + 1)
-
-i = 0
-;; defines the working bin
-;for bin = 0, MAX(bin_num) -1 do begin
-for bin = 0, MAX(bin_num) do begin
-;; loops over all spaxels within that bin
-while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
-	
-	v_map[x[order[i]], y[order[i]]] = v_binned[bin]
-;; moves onto the next spaxel
-i = i + 1
-endwhile
+	order = sort(bin_num)
+	vel = MAKE_ARRAY(n_elements(v_binned))
+for i = 0, max(order) do begin
+	vel(i) = v_binned(order(i))
 endfor
 
-CONTOUR, v_map, /FILL
+
+
+
+sauron_colormap
+
+plot_velfield, xBin, yBin, vel
+
+
 
 return
 end
