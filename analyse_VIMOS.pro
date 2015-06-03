@@ -218,13 +218,13 @@ endfor
 
 i=0
 for bin = 0, n_bins-1 do begin
-;for bin = 0, 5 do begin
-
+;for bin = 0, 0 do begin
 ;; Need to create a new spectrum for a new bin.
-bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]))
+bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
+
 
 while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
-
+print, i
 for k = 0 , n_elements(galaxy_data[x[order[i]], y[order[i]],*]) - 1 $
 	do begin 
 ;; add spectrums together with the bin
@@ -302,7 +302,7 @@ print, bin
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics, GOODPIXELS=goodPixels, $
 		MOMENTS = moments, DEGREE = 2, VSYST = dv, $
-		WEIGHTS = weights, /QUIET
+		WEIGHTS = weights, /PLOT;, /QUIET
 ;;		ERROR = error
 
 
@@ -580,7 +580,8 @@ goodPixels = ppxf_determine_goodpixels(logLam_spectrum,$
 	PPXF, templates, spectrum_log, noise, velscale, start, $
 		spaxel_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, MOMENTS = moments, $
-		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /QUIET
+		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /PLOT, $
+		/QUIET
 ;;		ERROR = error
 
 
@@ -605,9 +606,9 @@ endfor
 
 
 
-plot, spectrum_log
-oplot, bestfit, COLOR = 100160
-oplot, residuals, COLOR = 5090
+;plot, spectrum_log
+;oplot, bestfit, COLOR = 100160
+;oplot, residuals, COLOR = 5090
 
 
 print, 'v = ', spaxel_dynamics[0]

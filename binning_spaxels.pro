@@ -74,14 +74,15 @@ end
 ;; sigma, and 40-50 for h3 and h4. 
 
 
-pro binning_spaxels, galaxy
+pro binning_spaxels;, galaxy
 
-;	galaxy = 'ngc3557'
+	galaxy = 'ngc3557'
 
 
 	signal = MAKE_ARRAY(40*40)
 	noise = MAKE_ARRAY(40*40)
 	find_SN, galaxy, signal, noise
+	n_spaxels = n_elements(signal)
 
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
 
@@ -100,8 +101,8 @@ window, xsize=r[0]*0.4, ysize=r[1]*0.8
 ;
 
 ;; Asigning x and y
-	x = MAKE_ARRAY(40*40)
-	y = MAKE_ARRAY(40*40)
+	x = MAKE_ARRAY(n_spaxels)
+	y = MAKE_ARRAY(n_spaxels)
 for i = 0, 39 do begin
 for j = 0 , 39 do begin
 x(i*40+j) = i
@@ -113,6 +114,21 @@ voronoi_2d_binning, x, y, signal, noise, targetSN, $
     binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale, /PLOT, /QUIET
 
 
+	order = sort(binNum)
+	xBin = MAKE_ARRAY(n_elements(x))
+	yBin = MAKE_ARRAY(n_elements(y))
+;; spaxel number
+i = 0
+for bin = 0, MAX(binNum) do begin
+while(i LT n_spaxels && bin EQ binNum[order[i]]) do begin
+	xBin[order[i]] = xNode[bin]
+	yBin[order[i]] = yNode[bin]
+;; move onto next spaxel
+i = i + 1
+endwhile
+endfor	
+
+
 ; Save to a text file the initial coordinates of each pixel together
 ; with the corresponding bin number computed by this procedure.
 ; binNum uniquely specifies the bins and for this reason it is the only
@@ -120,10 +136,10 @@ voronoi_2d_binning, x, y, signal, noise, targetSN, $
 ;
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy
 astrolib
-forprint, x, y, binNum, xNode, yNode, $
+forprint, x, y, binNum, xBin, yBin, $
 	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt', $
-	COMMENT='          X"              Y"           BIN_NUM           XNODE           YNODE'
+	COMMENT='          X"              Y"           BIN_NUM           XBIN           YBIN'
 
 END
 ;----------------------------------------------------------------------------
