@@ -56,9 +56,10 @@ pro plot_results
 ;-
 
 	order = sort(bin_num)
-	vel = MAKE_ARRAY(n_elements(v_binned))
+	vel = MAKE_ARRAY(n_elements(xBin))
+;print, max(order)
 for i = 0, max(order) do begin
-	vel(i) = v_binned(order(i))
+	vel(i) = v_binned(bin_num(order(i)))
 endfor
 
 
