@@ -87,7 +87,7 @@ pro binning_spaxels;, galaxy
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
 
 ;rdfloat, data_file, x, y, signal, noise, SKIPLINE=3, NUMLINE=3107, /DOUBLE
-	targetSN = 20.0
+	targetSN = 40.0
 
 ; Load a colortable and open a graphic window
 ;
