@@ -327,7 +327,7 @@ print, bin
 ;	PRINTF, 5, bin_dynamics[4]
 ;	PRINTF, 6, bin_dynamics[5]
 ;	PRINTF, 7, bin_dynamics[6]
-;	PRINTF, 8, bin_dynamics[7]
+	PRINTF, 8, bin_dynamics[7]
 
 
 
