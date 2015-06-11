@@ -216,25 +216,42 @@ endfor
 
 ;; ----------========== Spatially Binning =============---------
 
-i=0
-for bin = 0, n_bins-1 do begin
-;for bin = 0, 0 do begin
-;; Need to create a new spectrum for a new bin.
-bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
+;+
+;i=0
+;for bin = 0, n_bins-1 do begin
+;;for bin = 0, 0 do begin
+;;; Need to create a new spectrum for a new bin.
+;bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
+;
+;
+;while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
+;print, i
+;for k = 0 , n_elements(galaxy_data[x[order[i]], y[order[i]],*]) - 1 $
+;	do begin 
+;;; add spectrums together with the bin
+;	bin_lin[k] = bin_lin[k] + $
+;		galaxy_data[x[order[i]], y[order[i]],k] 
+;endfor
+;
+;i = i + 1
+;endwhile
+;;; bin_lin now contains linearly binned spectrum of the spatial bin. 
+;-
 
-
-while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
-print, i
-for k = 0 , n_elements(galaxy_data[x[order[i]], y[order[i]],*]) - 1 $
-	do begin 
-;; add spectrums together with the bin
-	bin_lin[k] = bin_lin[k] + $
-		galaxy_data[x[order[i]], y[order[i]],k] 
+;; endfor is near the end - after ppxf has been run on this bin.
+for bin=0, n_bins-1 do begin
+	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
+        bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
+		VALUE = 0d) 
+; ******is this zero or unity weighted? *************************
+for i = 0, n_spaxels_in_bin-1 do begin
+	x_i = x[spaxels_in_bin[i]]
+	y_i = y[spaxels_in_bin[i]]
+for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
+	bin_lin[k] = bin_lin[k] + galaxy_data[x_i, y_i, k]
 endfor
-
-i = i + 1
-endwhile
-;; bin_lin now contains linearly binned spectrum of the spatial bin. 
+endfor
+;; bin_lin now contains linearly binned spectrum of the spatial bin.
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
