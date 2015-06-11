@@ -336,15 +336,15 @@ print, bin
 ;	VSYST=vsyst, WEIGHTS=weights
 
 
-
+print, size(bin_dynamics)
 
 	PRINTF, 2, bin_dynamics[0]
 	PRINTF, 3, bin_dynamics[1]
-;	PRINTF, 4, bin_dynamics[3]
-;	PRINTF, 5, bin_dynamics[4]
-;	PRINTF, 6, bin_dynamics[5]
-;	PRINTF, 7, bin_dynamics[6]
-	PRINTF, 8, bin_dynamics[7]
+;	PRINTF, 4, bin_dynamics[2]
+;	PRINTF, 5, bin_dynamics[3]
+;	PRINTF, 6, bin_dynamics[4]
+;	PRINTF, 7, bin_dynamics[5]
+	PRINTF, 8, bin_dynamics[6]
 
 
 
