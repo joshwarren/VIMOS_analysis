@@ -10,7 +10,7 @@ pro fit_bin
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	fit_bin_num = 25
+	fit_bin_num = 180
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -123,6 +123,10 @@ endfor
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data, header
 
+;+
+;; normalise the entire cube
+;	galaxy_data = galaxy_data/MEDIAN(galaxy_data)
+;-
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
 
@@ -169,6 +173,8 @@ endfor
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
 
+;; normalise the bin to the medium value
+	bin_log = bin_log/MEDIAN(bin_log)
 
 
 ;; ----------========= Assigning noise variable =============---------

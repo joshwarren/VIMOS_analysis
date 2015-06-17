@@ -34,7 +34,7 @@ pro plot_results
 
 ;; Read results files - each entry in array corresponds to a bin (not
 ;; a spaxel)
-	RDFLOAT, output_v, v_binned, /SILENT
+	RDFLOAT, output_Chi, v_binned, /SILENT
 ;+
 ;;; 2D array to hold the results in spaxel form.
 ;	v_map = MAKE_ARRAY(MAX(x) + 1, MAX(y) + 1)
@@ -68,8 +68,6 @@ endfor
 sauron_colormap
 
 plot_velfield, xBin, yBin, vel
-
-
 
 return
 end

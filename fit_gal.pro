@@ -165,7 +165,8 @@ endfor
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
 
-
+;; normalise the spectrum
+	spectrum_log = spectrum_log/MEDIAN(spectrum_log)
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the

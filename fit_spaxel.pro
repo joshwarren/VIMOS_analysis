@@ -11,7 +11,7 @@ pro fit_spaxel
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	spaxel = [9, 32]
+	spaxel = [20, 24]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -29,7 +29,7 @@ pro fit_spaxel
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 
-
+lower_cut = 450 ; in pixel units
 
 
 ;; ----------===============================================---------
@@ -45,7 +45,7 @@ pro fit_spaxel
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
-;v1 is wavelength, v2 is spectrum
+;v1 is wavelength, v2 is spectrum/flux
 	READCOL, templateFiles[0], v1,v2, FORMAT = 'D,D', /SILENT
 
 ; Using same keywords as fits headers
@@ -82,19 +82,23 @@ for i = 0, nfiles - 1 do begin
 	READCOL, templateFiles[templatesToUse[i]-1], v1,v2, $
 		FORMAT = 'D,D', /SILENT
 
-
 ;	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
+
+
+for k=0, lower_cut do begin
+v2[k] = 0
+endfor
+
 
 ;; Rebinning templates logarthmically
 	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
-	log_rebin, lamRange_template, v2, log_temp_template, $
-		velscale=velscale
+	log_rebin, lamRange_template, v2, log_temp_template;, $
+;		velscale=velscale
 
 ;; Normalizing templates
 	templates[*,i] = log_temp_template/median(log_temp_template)
 endfor
 ;-
-
 
 
 
@@ -132,12 +136,17 @@ endfor
 	spectrum_lin = gauss_smooth(spectrum_lin, sigma)
 
 
+for k=0, lower_cut do begin
+spectrum_lin[k] = 0
+endfor
+
 
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, spectrum_lin, spectrum_log, $
 		logLam_spectrum, velscale=velscale
 
-
+;; normalise the spectrum
+	spectrum_log = spectrum_log/MEDIAN(spectrum_log)
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
@@ -187,7 +196,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_spectrum,$
 
 
         
-
+print, velscale
 
 	start = [vel, sig] ; starting guess
 
