@@ -11,7 +11,7 @@ pro fit_spaxel
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	spaxel = [20, 24]
+	spaxel = [19, 20]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -26,10 +26,13 @@ pro fit_spaxel
  ;       FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
 	moments = 4 ; number of comonants to calc with ppxf (see 
                     ; keyword moments in ppxf.pro for more details)
+	degree = 4 ; order of addative Legendre polynomial used to 
+		   ; correct the template continuum shape during the fit  
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 
-lower_cut = 450 ; in pixel units
+lower_cut = 445 	; in pixel units
+upper_cut = 0	 	; in pixel units
 
 
 ;; ----------===============================================---------
@@ -88,7 +91,9 @@ for i = 0, nfiles - 1 do begin
 for k=0, lower_cut do begin
 v2[k] = 0
 endfor
-
+;for k=upper_cut, n_elements(v2)-1 do begin
+;v2[k] = 0
+;endfor
 
 ;; Rebinning templates logarthmically
 	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
@@ -100,7 +105,7 @@ endfor
 endfor
 ;-
 
-
+print, size(templates)
 
 
 ;; ----------========= Reading the spectrum  =============---------
@@ -139,7 +144,12 @@ endfor
 for k=0, lower_cut do begin
 spectrum_lin[k] = 0
 endfor
-
+if (upper_cut NE 0) then begin
+print, 'check'
+for k=upper_cut, n_elements(spectrum_lin)-1 do begin
+spectrum_lin[k] = 0
+endfor
+endif
 
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, spectrum_lin, spectrum_log, $
@@ -196,7 +206,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_spectrum,$
 
 
         
-print, velscale
+
 
 	start = [vel, sig] ; starting guess
 
@@ -204,7 +214,7 @@ print, 'spaxel: [', spaxel[0], ',', spaxel[1], ']'
 	PPXF, templates, spectrum_log, noise, velscale, start, $
 		spaxel_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, MOMENTS = moments, $
-		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /PLOT
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT
 ;;		ERROR = error
 
 
