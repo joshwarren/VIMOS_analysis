@@ -49,12 +49,18 @@ endfor
 spectrum_lin[3,*] = spectrum_lin[3,*]/MEDIAN(spectrum_lin[3,*])
 
 
+;; ----------=========== Setting the x axis  ==============---------
+x = MAKE_ARRAY(n_elements(spectrum_lin[0,*]))
+for i = 0, n_elements(x)-1 do begin
+x[i] =  sxpar(header,'CRVAL3') + sxpar(header,'CD3_3')*i
+endfor
 
 
-plot, spectrum_lin[0,*]
-oplot, spectrum_lin[1,*], color = 500
-oplot, spectrum_lin[2,*], color = 1000000
-oplot, spectrum_lin[3,*], color = 60000000
+
+plot, x, spectrum_lin[0,*]
+oplot, x, spectrum_lin[1,*], color = 500
+oplot, x, spectrum_lin[2,*], color = 1000000
+oplot, x, spectrum_lin[3,*], color = 60000000
 
 
 return
