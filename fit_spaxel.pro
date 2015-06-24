@@ -11,7 +11,7 @@ pro fit_spaxel
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	spaxel = [20, 20]
+	spaxel = [19, 19]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -26,13 +26,15 @@ pro fit_spaxel
  ;       FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
 	moments = 4 ; number of comonants to calc with ppxf (see 
                     ; keyword moments in ppxf.pro for more details)
-	degree = 0 ; order of addative Legendre polynomial used to 
+	degree = 4 ; order of addative Legendre polynomial used to 
 		   ; correct the template continuum shape during the fit  
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 
-lower_cut = 4050 	; in wavelength units
-upper_cut = 5500 	; in wavelength units
+;lower_cut = 3800 	; in wavelength units
+;upper_cut = 5300 	; in wavelength units
+
+
 
 
 ;; ----------===============================================---------
@@ -101,6 +103,10 @@ endfor
 
 
 
+;; For rebinning logarthmically
+;	lamRange = sxpar(header,'CRVAL3') + $
+;                  [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
+
 
 ;; ----------========= Reading the spectrum  =============---------
 
@@ -112,20 +118,58 @@ endfor
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data, header
 
-	spectrum_lin = MAKE_ARRAY(n_elements(galaxy_data[spaxel[0], $
-		spaxel[1], *]))
+
+;; --------======== Finding limits of the spectrum ========--------
+	lower_limit=MIN(WHERE(galaxy_data[spaxel[0], spaxel[1], *]/MEDIAN(galaxy_data[spaxel[0], spaxel[1], *]) GT 0.1), $
+		MAX=upper_limit)
+	lower_cut = lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')+5
+	upper_cut = upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')-5
+;print, lower_limit
+;print, upper_limit	
+
+
+
+;; ----------============ Check cut values  ==============---------
+lamRange = MAKE_ARRAY(2)
+if keyword_set(lower_cut) && (lower_cut GT sxpar(header,'CRVAL3')) $
+	then begin
+	lamRange[0] = lower_cut
+	start_pixel = (lower_cut - sxpar(header,'CRVAL3')) / $
+		sxpar(header,'CD3_3')
+endif else begin
+	lamRange[0] =  sxpar(header,'CRVAL3')
+	start_pixel = 0
+endelse
+if keyword_set(upper_cut) && (upper_cut LT (sxpar(header,'CRVAL3') + $
+	sxpar(header,'CD3_3') * (sxpar(header,'NAXIS3')-1))) then begin
+	lamRange[1] = upper_cut
+endif else begin
+	lamRange[1] = sxpar(header,'CRVAL3') + $
+		sxpar(header,'CD3_3') * (sxpar(header,'NAXIS3')-1)
+endelse
+
+
+
+
+	spectrum_lin = MAKE_ARRAY((lamRange[1]-lamRange[0])/$
+		sxpar(header,'CD3_3'))
 for i = 0, n_elements(spectrum_lin)-1 do begin
-	spectrum_lin[i] = galaxy_data[spaxel[0], spaxel[1], i]
+	spectrum_lin[i] = galaxy_data[spaxel[0], spaxel[1], start_pixel+i]
+;print, spectrum_lin[i]
 endfor
 
+
+
+
+;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
 ;; using the gauss_smooth command
 	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
 	sigma = FWHM_dif/2.355/sxpar(header,'CD3_3') ; Sigma difference 
 						     ; in pixels
 ;; For rebinning logarthmically
-	lamRange = sxpar(header,'CRVAL3') + $
-                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
+;	lamRange = sxpar(header,'CRVAL3') + $
+;                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
 ;        lamRange = lamRange/(1+z) ; Compute approximate restframe
         			    ; wavelength range
 
@@ -139,6 +183,7 @@ endfor
 
 ;; normalise the spectrum
 	spectrum_log = spectrum_log/MEDIAN(spectrum_log)
+
 
 
 
@@ -192,33 +237,6 @@ goodPixels = ppxf_determine_goodpixels(logLam_spectrum,$
 
 
 	lambda =EXP(logLam_spectrum)
-
-;; Applying the cuts
-res = (lamrange[1]-lamrange[0])/n_elements(spectrum_log)
-if keyword_set(lower_cut) then begin
-if (lower_cut GT CRVAL1 + CDELT1*(NAXIS1-1d)) then begin
-	lower_cut = CRVAL1 + CDELT1*(NAXIS1-1d)
-endif
-;; applying the lower cut to the templates
-for i=0, (lower_cut-CRVAL1)/CDELT1 do begin
-	templates[i,*]=0
-endfor
-;; applying the lower cut to the spectrum
-for i=0, (lower_cut-lamrange[0])/res do begin
-spectrum_log[i]=0
-endfor
-endif
-
-if keyword_set(upper_cut) then begin
-;; applying the upper cut to the templates
-for i=(upper_cut-CRVAL1)/CDELT1, NAXIS1-1 do begin
-	templates[i,*]=0
-endfor
-;; applying the upper cut to the spectrum
-for i=(upper_cut-lamrange[0])/res,n_elements(spectrum_log)-1 do begin
-spectrum_log[i]=0
-endfor
-endif
 
 
 	start = [vel, sig] ; starting guess
