@@ -4,6 +4,8 @@
 ;; warrenj 20150602 Routine to plot the best fit against the spectrum
 ;; and show the residuals, for spaxels 20,20 (zero weighted).
 ;; warrenj 20150604 Altered to fit for any given spaxel.
+;; warrenj 20150624 The routine now automatically cuts the spectrum to
+;; size such that ppxf does not try to fit non-real data.
 
 pro fit_spaxel
 
@@ -11,7 +13,7 @@ pro fit_spaxel
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	spaxel = [19, 19]
+	spaxel = [18, 21]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -30,10 +32,6 @@ pro fit_spaxel
 		   ; correct the template continuum shape during the fit  
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
-
-;lower_cut = 3800 	; in wavelength units
-;upper_cut = 5300 	; in wavelength units
-
 
 
 
@@ -120,42 +118,27 @@ endfor
 
 
 ;; --------======== Finding limits of the spectrum ========--------
-	lower_limit=MIN(WHERE(galaxy_data[spaxel[0], spaxel[1], *]/MEDIAN(galaxy_data[spaxel[0], spaxel[1], *]) GT 0.1), $
+;; limits are the cuts in pixel units, while lamRange is the cuts in
+;; wavelength unis.
+	lower_limit=MIN(WHERE(galaxy_data[spaxel[0], spaxel[1], *]/ $
+		MEDIAN(galaxy_data[spaxel[0], spaxel[1], *]) GT 0.1), $
 		MAX=upper_limit)
-	lower_cut = lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')+5
-	upper_cut = upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')-5
-;print, lower_limit
-;print, upper_limit	
+
+	lower_limit = lower_limit + 5
+	upper_limit = upper_limit - 5
+
+	lamRange = MAKE_ARRAY(2)
+	lamRange[0] = lower_limit*sxpar(header,'CD3_3') + $
+		sxpar(header,'CRVAL3')
+	lamRange[1] = upper_limit*sxpar(header,'CD3_3') + $
+		sxpar(header,'CRVAL3')
 
 
 
-;; ----------============ Check cut values  ==============---------
-lamRange = MAKE_ARRAY(2)
-if keyword_set(lower_cut) && (lower_cut GT sxpar(header,'CRVAL3')) $
-	then begin
-	lamRange[0] = lower_cut
-	start_pixel = (lower_cut - sxpar(header,'CRVAL3')) / $
-		sxpar(header,'CD3_3')
-endif else begin
-	lamRange[0] =  sxpar(header,'CRVAL3')
-	start_pixel = 0
-endelse
-if keyword_set(upper_cut) && (upper_cut LT (sxpar(header,'CRVAL3') + $
-	sxpar(header,'CD3_3') * (sxpar(header,'NAXIS3')-1))) then begin
-	lamRange[1] = upper_cut
-endif else begin
-	lamRange[1] = sxpar(header,'CRVAL3') + $
-		sxpar(header,'CD3_3') * (sxpar(header,'NAXIS3')-1)
-endelse
-
-
-
-
-	spectrum_lin = MAKE_ARRAY((lamRange[1]-lamRange[0])/$
-		sxpar(header,'CD3_3'))
+;; ----------========= Writing the spectrum  =============---------
+	spectrum_lin = MAKE_ARRAY(upper_limit-lower_limit)
 for i = 0, n_elements(spectrum_lin)-1 do begin
-	spectrum_lin[i] = galaxy_data[spaxel[0], spaxel[1], start_pixel+i]
-;print, spectrum_lin[i]
+	spectrum_lin[i] = galaxy_data[spaxel[0], spaxel[1], lower_limit+i]
 endfor
 
 
@@ -211,6 +194,24 @@ endfor
 		;galaxy*0+1 ; Same weight for all pixels
 
 
+;; Attempt at a more sophisticated approach to handling errors/noise 
+;+
+;	galaxy_noise = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
+;	noise_lin = MAKE_ARRAY(upper_limit-lower_limit)
+;for i = 0, n_elements(noise_lin)-1 do begin
+;	noise_lin[i] = galaxy_noise[spaxel[0], spaxel[1], lower_limit+i]*$
+;		galaxy_noise[spaxel[0], spaxel[1], lower_limit+i]
+;endfor
+;
+;;; smooth spectrum to fit with templates resolution
+; 	noise_lin = gauss_smooth(spectrum_lin, sigma)
+;
+;;; rebin spectrum logarthmically
+;	log_rebin, lamrange, noise_lin, noise
+;
+;;; normalise the spectrum
+;	noise = (SQRT(noise))/MEDIAN(spectrum_log)
+;-
 
 
 ; The galaxy and the template spectra do not have the same starting
@@ -247,27 +248,6 @@ print, 'spaxel: [', spaxel[0], ',', spaxel[1], ']'
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT
 ;;		ERROR = error
-
-lambda = exp(logLam_spectrum)
-
-;; showing cuts in wavelength units
-if keyword_set(lambda) then begin
-if keyword_set(lower_cut) then begin
-vline, lower_cut, COLOR=4000
-print,'check'
-endif
-if keyword_set(upper_cut) then begin
-vline, upper_cut, COLOR=4000
-endif
-endif else begin
-;; showing cuts in pixel units
-if keyword_set(lower_cut) then begin
-vline, (lower_cut-lamrange[0])/res, COLOR=4000
-endif
-if keyword_set(upper_cut) then begin
-vline, (upper_cut-lamrange[0])/res, COLOR=4000
-endif
-endelse
 
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*(1 + dynamics[0]/c)- 1

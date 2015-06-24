@@ -166,7 +166,7 @@ endfor
 		velscale=velscale
 
 ;; normalise the spectrum
-	spectrum_log = spectrum_log/MEDIAN(spectrum_log)
+	bin_log = bin_log/MEDIAN(bin_log)
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the

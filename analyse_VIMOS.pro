@@ -20,8 +20,10 @@ pro run_analysis;, galaxy
                            ; /sci/facilities/paranal/instruments
                            ; /vimos/inst/ifu.html)
         FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
-	moments = 4 ; number of comonants to calc with ppxf (see 
+	moments = 4 ; number of componants to calc with ppxf (see 
                     ; keyword moments in ppxf.pro for more details)
+	degree = 4 ; order of addative Legendre polynomial used to 
+		   ; correct the template continuum shape during the fit 
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 	output_v = '/Data/vimosindi/analysis/' + galaxy + $
@@ -200,58 +202,56 @@ endfor
 		n_elements(galaxy_data[0,*,0])
 
 
+
+;; ----------========== Spatially Binning =============---------
+;; endfor is near the end - after ppxf has been run on this bin.
+for bin=0, n_bins-1 do begin
+	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
+        bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
+		VALUE = 0d) 
+
+
+for i = 0, n_spaxels_in_bin-1 do begin
+	x_i = x[spaxels_in_bin[i]]
+	y_i = y[spaxels_in_bin[i]]
+for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
+	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
+endfor
+endfor
+;; bin_lin now contains linearly binned spectrum of the spatial bin.
+
+
+
+;; --------======== Finding limits of the spectrum ========--------
+;; limits are the cuts in pixel units, while lamRange is the cuts in
+;; wavelength unis.
+	lower_limit=MIN(WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.1), MAX=upper_limit)
+
+	lower_limit = lower_limit + 5
+	upper_limit = upper_limit - 5
+
+;lower_limit=0
+;upper_limit=sxpar(header,'NAXIS3')-1
+
+	lamRange = MAKE_ARRAY(2)
+	lamRange[0] = lower_limit*sxpar(header,'CD3_3') + $
+		sxpar(header,'CRVAL3')
+	lamRange[1] = upper_limit*sxpar(header,'CD3_3') + $
+		sxpar(header,'CRVAL3')
+
+
+;; ----------========= Writing the spectrum  =============---------
+	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
+for i = 0, n_elements(bin_lin)-1 do begin
+	bin_lin[i] = bin_lin_temp[lower_limit+i]
+endfor
+
+;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
 ;; using the gauss_smooth command
 	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
 	sigma = FWHM_dif/2.355/sxpar(header,'CD3_3') ; Sigma difference 
 						     ; in pixels
-
-;; For rebinning logarthmically
-	lamRange = sxpar(header,'CRVAL3') + $
-                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
-        lamRange = lamRange/(1+z) ; Compute approximate restframe
-        			    ; wavelength range
-
-
-
-;; ----------========== Spatially Binning =============---------
-
-;+
-;i=0
-;for bin = 0, n_bins-1 do begin
-;;for bin = 0, 0 do begin
-;;; Need to create a new spectrum for a new bin.
-;bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
-;
-;
-;while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
-;print, i
-;for k = 0 , n_elements(galaxy_data[x[order[i]], y[order[i]],*]) - 1 $
-;	do begin 
-;;; add spectrums together with the bin
-;	bin_lin[k] = bin_lin[k] + $
-;		galaxy_data[x[order[i]], y[order[i]],k] 
-;endfor
-;
-;i = i + 1
-;endwhile
-;;; bin_lin now contains linearly binned spectrum of the spatial bin. 
-;-
-
-;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
-	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
-        bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
-		VALUE = 0d) 
-; ******is this zero or unity weighted? *************************
-for i = 0, n_spaxels_in_bin-1 do begin
-	x_i = x[spaxels_in_bin[i]]
-	y_i = y[spaxels_in_bin[i]]
-for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
-	bin_lin[k] = bin_lin[k] + galaxy_data[x_i, y_i, k]
-endfor
-endfor
-;; bin_lin now contains linearly binned spectrum of the spatial bin.
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
@@ -263,7 +263,7 @@ endfor
 		velscale=velscale
 
 ;; normalise the spectrum
-	spectrum_log = spectrum_log/MEDIAN(spectrum_log)
+	bin_log = bin_log/MEDIAN(bin_log)
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
@@ -312,16 +312,16 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 
 
         
-
+	lambda = EXP(logLam_bin)
 
 	start = [vel, sig] ; starting guess
 
 print, bin
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics, GOODPIXELS=goodPixels, $
-		MOMENTS = moments, DEGREE = 2, VSYST = dv, $
-		WEIGHTS = weights, /PLOT;, /QUIET
-;;		ERROR = error
+		bin_dynamics, BESTFIT = bestfit, $
+		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
+;;		/QUIET, ERROR = error
 
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
@@ -336,8 +336,6 @@ print, bin
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
-
-print, size(bin_dynamics)
 
 	PRINTF, 2, bin_dynamics[0]
 	PRINTF, 3, bin_dynamics[1]
