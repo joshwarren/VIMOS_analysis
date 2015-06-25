@@ -35,38 +35,44 @@ pro plot_results
 ;; Read results files - each entry in array corresponds to a bin (not
 ;; a spaxel)
 	RDFLOAT, output_v, v_binned, /SILENT
-;+
-;;; 2D array to hold the results in spaxel form.
-;	v_map = MAKE_ARRAY(MAX(x) + 1, MAX(y) + 1)
-;
-;i = 0
-;;; defines the working bin
-;;for bin = 0, MAX(bin_num) -1 do begin
-;for bin = 0, MAX(bin_num) do begin
-;;; loops over all spaxels within that bin
-;while (i LT n_spaxels && bin EQ bin_num[order[i]]) do begin
-;	
-;	v_map[x[order[i]], y[order[i]]] = v_binned[bin]
-;;; moves onto the next spaxel
-;i = i + 1
-;endwhile
-;endfor
-;
-;CONTOUR, v_map, /FILL
-;-
-
-	order = sort(bin_num)
-	vel = MAKE_ARRAY(n_elements(xBin))
-;print, max(order)
-for i = 0, max(order) do begin
-	vel(i) = v_binned(bin_num(order(i)))
-endfor
 
 
 
-sauron_colormap
+;v_binned = v_binned - MEDIAN(v_binned)
 
-plot_velfield, xBin, yBin, vel
+
+
+b = UNIQ(bin_num, SORT(bin_num))
+
+xNode = xBin[b]
+yNode = yBin[b]
+
+;sauron_colormap
+
+plot_velfield, xNode, yNode, v_binned
+
+
+
+
+
+;;example use of contour
+; Create a simple dataset:
+;data = RANDOMU(seed, 9, 9)
+
+; Plot the unsmoothed data:
+;unsmooth = CONTOUR(data, TITLE='Unsmoothed', $
+;   LAYOUT=[2,1,1], RGB_TABLE=13, /FILL, N_LEVELS=10)
+; Draw the outline of the 10 levels
+;outline1 = CONTOUR(data, N_LEVELS=10, /OVERPLOT)
+ 
+; Plot the smoothed data:
+;smooth = CONTOUR(MIN_CURVE_SURF(data), TITLE='Smoothed', $
+;   /CURRENT, LAYOUT=[2,1,2], RGB_TABLE=13, $
+;   /FILL, N_LEVELS=10)
+; Draw the outline of the 10 levels
+;outline2 = CONTOUR(MIN_CURVE_SURF(data), $
+;   N_LEVELS=10, /OVERPLOT)
+
 
 return
 end

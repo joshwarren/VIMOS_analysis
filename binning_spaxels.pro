@@ -74,7 +74,7 @@ end
 ;; sigma, and 40-50 for h3 and h4. 
 
 
-pro binning_spaxels;, galaxy
+pro binning_spaxels;,xNode,yNode;, galaxy
 
 	galaxy = 'ngc3557'
 
@@ -112,6 +112,9 @@ endfor
 
 voronoi_2d_binning, x, y, signal, noise, targetSN, $
     binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale, /PLOT, /QUIET
+
+print, xNode
+
 
 
 	order = sort(binNum)
