@@ -69,27 +69,7 @@ for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
 	bin_flux[i] = bin_flux[i] + galaxy_data[x_i, y_i, k]
 endfor
 endfor
-<<<<<<< HEAD
-;; bin_lin now contains linearly binned spectrum of the spatial bin. 
-
-
-
-
-;; ----------========= Writing the spectrum  =============---------
-	bin_flux = MAKE_ARRAY()
-for i = 0, n_elements(bin_flux)-1 do begin
-   bin_flux[i] =1
-
-endfor
-
-
-
-
-
-
-=======
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
->>>>>>> fb1f8c5a49479b7a322091ee65e9304b083752b5
 
 
 
@@ -103,6 +83,8 @@ endfor
 
 ;v_binned = v_binned - MEDIAN(v_binned)
 
+
+
 b = UNIQ(bin_num, SORT(bin_num))
 
 xNode = xBin[b]
@@ -115,42 +97,30 @@ yNode = yBin[b]
 
 ;sauron_colormap
 
-<<<<<<< HEAD
-;n_levels = n_elements(v_binned)-1
-;colors = MAKE_ARRAY(n_levels)
-;for i=0, n_levels-1 do colors(i)=10000*i
-=======
 plot_velfield, xNode, yNode, v_binned, FLUX = bin_flux
->>>>>>> fb1f8c5a49479b7a322091ee65e9304b083752b5
-
-;loadct, 8
-;tvscl, DIST(300)
-plot_velfield, xNode, yNode, v_binned;, NCOLORS = n_levels;, C_COLORS =colors 
 
 
 
 
 
+;;example use of contour
+; Create a simple dataset:
+;data = RANDOMU(seed, 9, 9)
 
-;  data = cgDemoData(2)
-;    x = cgScaleVector(Findgen(41), 0, 100)
-;    y = cgScaleVector(Findgen(41), 0, 50)
-;
-;print,size(data)
-;print,size(x)
-;print,size(y)
-;
-;   levels = 12
-;    cgLoadCT, 33, NColors=12, Bottom=3
-;
-    ; Draw the first plot. Let IDL select contour intervals by
-    ; using the NLEVELS keyword.
-;    Window, 0, Title='IDL Selected Contour Intervals', XSize=300, YSize=400
-;    SetDecomposedState, 0, CurrentState=state
-;    Contour, v_binned, xNode, yNode, /Fill, C_Colors=Indgen(levels)+3, Background=cgColor('white'), $
-;       NLevels=levels, Position=[0.1, 0.1, 0.9, 0.80], Color=cgColor('black')
-;    Contour, v_binned, xNode, yNode, /Overplot, NLevels=levels, /Follow, Color=cgColor('black')
-;    SetDecomposedState, state
+; Plot the unsmoothed data:
+;unsmooth = CONTOUR(data, TITLE='Unsmoothed', $
+;   LAYOUT=[2,1,1], RGB_TABLE=13, /FILL, N_LEVELS=10)
+; Draw the outline of the 10 levels
+;outline1 = CONTOUR(data, N_LEVELS=10, /OVERPLOT)
+ 
+; Plot the smoothed data:
+;smooth = CONTOUR(MIN_CURVE_SURF(data), TITLE='Smoothed', $
+;   /CURRENT, LAYOUT=[2,1,2], RGB_TABLE=13, $
+;   /FILL, N_LEVELS=10)
+; Draw the outline of the 10 levels
+;outline2 = CONTOUR(MIN_CURVE_SURF(data), $
+;   N_LEVELS=10, /OVERPLOT)
+
 
 return
 end
