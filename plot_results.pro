@@ -3,6 +3,7 @@
 ;; ==================================================================
 ;; warrenj 20150330 Process to read the cube format and print it in
 ;; table form into a text file.
+;; testing a change at NAM2015
 
 pro plot_results
  	galaxy = 'ngc3557'
