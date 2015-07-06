@@ -37,6 +37,70 @@ pro plot_results
 	RDFLOAT, output_v, v_binned, /SILENT
 
 
+;; ------------========== Total flux per bin ===========----------
+;; ----------========= Reading the spectrum  =============---------
+
+;; FILE_SEARCH returns an array even in cases where it only returns
+;; one result. This is NOT equivalent to a scalar. 
+	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
+		Galaxy + $
+		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+
+	FITS_READ, dataCubeDirectory[0], galaxy_data, header
+
+;+
+;; normalise the entire cube
+;	galaxy_data = galaxy_data/MEDIAN(galaxy_data)
+;-
+	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
+		n_elements(galaxy_data[0,*,0])
+
+
+;; ----------========== Spatially Binning =============---------
+
+
+; spaxels in the given bin
+spaxels_in_bin = WHERE(bin_num EQ fit_bin_num, n_spaxels)
+print, spaxels_in_bin
+print, size(spaxels_in_bin)
+
+;; Need to create a new spectrum for a new bin.
+bin_flux = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
+
+for i = 0, n_spaxels-1 do begin
+	x_i = x[spaxels_in_bin[i]]
+	y_i = y[spaxels_in_bin[i]]
+for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin 
+	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
+endfor
+endfor
+;; bin_lin now contains linearly binned spectrum of the spatial bin. 
+
+
+
+
+;; ----------========= Writing the spectrum  =============---------
+	bin_flux = MAKE_ARRAY()
+for i = 0, n_elements(bin_flux)-1 do begin
+   bin_flux[i] =
+
+endfor
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
 ;v_binned = v_binned - MEDIAN(v_binned)
 
@@ -46,6 +110,11 @@ b = UNIQ(bin_num, SORT(bin_num))
 
 xNode = xBin[b]
 yNode = yBin[b]
+
+
+
+
+
 
 ;sauron_colormap
 
