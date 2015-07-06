@@ -82,7 +82,7 @@ endfor
 ;; ----------========= Writing the spectrum  =============---------
 	bin_flux = MAKE_ARRAY()
 for i = 0, n_elements(bin_flux)-1 do begin
-   bin_flux[i] =
+   bin_flux[i] =1
 
 endfor
 
