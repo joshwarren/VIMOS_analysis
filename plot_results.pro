@@ -29,7 +29,8 @@ pro plot_results
 ;; Read tessellation file
 	RDFLOAT, tessellation_File, x, y, bin_num, xBin, yBin, $
 		SKIPLINE = 1, /SILENT 
-	n_spaxels = (MAX(x) + 1) * (MAX(y) + 1)
+        n_spaxels = (MAX(x) + 1) * (MAX(y) + 1)
+        number_of_bins = MAX(bin_num)
 	order = sort(bin_num)
 
 ;; Read results files - each entry in array corresponds to a bin (not
@@ -48,32 +49,26 @@ pro plot_results
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data, header
 
-;+
-;; normalise the entire cube
-;	galaxy_data = galaxy_data/MEDIAN(galaxy_data)
-;-
-	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
-		n_elements(galaxy_data[0,*,0])
+;	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
+;		n_elements(galaxy_data[0,*,0])
+
 
 
 ;; ----------========== Spatially Binning =============---------
+;; endfor is near the end - after ppxf has been run on this bin.
+for bin=0, n_bins-1 do begin
+	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
+        bin_flux = MAKE_ARRAY(number_of_bins, VALUE = 0d) 
 
 
-; spaxels in the given bin
-spaxels_in_bin = WHERE(bin_num EQ fit_bin_num, n_spaxels)
-print, spaxels_in_bin
-print, size(spaxels_in_bin)
-
-;; Need to create a new spectrum for a new bin.
-bin_flux = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
-
-for i = 0, n_spaxels-1 do begin
+for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
-for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin 
-	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
+for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
+	bin_flux[i] = bin_flux[i] + galaxy_data[x_i, y_i, k]
 endfor
 endfor
+<<<<<<< HEAD
 ;; bin_lin now contains linearly binned spectrum of the spatial bin. 
 
 
@@ -91,6 +86,9 @@ endfor
 
 
 
+=======
+;; bin_lin now contains linearly binned spectrum of the spatial bin.
+>>>>>>> fb1f8c5a49479b7a322091ee65e9304b083752b5
 
 
 
@@ -116,9 +114,13 @@ yNode = yBin[b]
 
 ;sauron_colormap
 
+<<<<<<< HEAD
 ;n_levels = n_elements(v_binned)-1
 ;colors = MAKE_ARRAY(n_levels)
 ;for i=0, n_levels-1 do colors(i)=10000*i
+=======
+plot_velfield, xNode, yNode, v_binned, FLUX = bin_flux
+>>>>>>> fb1f8c5a49479b7a322091ee65e9304b083752b5
 
 ;loadct, 8
 ;tvscl, DIST(300)
