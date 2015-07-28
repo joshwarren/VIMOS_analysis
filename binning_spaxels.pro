@@ -4,7 +4,8 @@
 ;; warrenj 20150515 process to create a txt file for the routine
 ;; binning_spaxels to then rebin to create a desired S/N ratio by
 ;; binning some spaxels together. 
-
+;; warrenj 20150728 Added ability to discard a number of row/col from
+;; each side of the image.
 
 
 pro find_SN, galaxy, signal, noise
@@ -15,23 +16,44 @@ pro find_SN, galaxy, signal, noise
 ;	noise = MAKE_ARRAY(40*40)
 ;-
 
+	discard = 2
+
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
 
 	;galaxy_data = MRDFITS(dataCubeDirectory[0], 1, header, /SILENT)
-	galaxy_noise = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
-	FITS_READ, dataCubeDirectory[0], galaxy_data, header
+	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
+	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 ;print, size(galaxy_data)
 
 ;plot, galaxy_data(10,10,*)
 
+	s = size(galaxy_data_temp)
+	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+	galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+
+	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
+		[discard:s[2]-discard-1],*]
+	galaxy_noise = galaxy_noise_temp[[discard:s[1]-discard-1], $
+		[discard:s[2]-discard-1],*]
+
+
+	s = size(galaxy_data)
+
+
+
+	signal = MAKE_ARRAY(s[1],s[2])
+	noise = MAKE_ARRAY(s[1],s[2])
+
+
+
 
 ;; collapsing the spectrum for each spaxel.
-for i = 0, 39 do begin
-for j = 0, 39 do begin
-	signal[i*40 + j] = MEAN(galaxy_data[i, j, *])
-	noise[i*40 + j] = MEAN(galaxy_noise[i, j, *])
+for i = 0, s[1]-1 do begin
+for j = 0, s[2]-1 do begin
+	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *])
+	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *])
 endfor
 endfor
 
@@ -72,22 +94,23 @@ end
 ;; warrenj 20150515 Process to rebin spaxels together in order to
 ;; create a minimum S/N ratio. targetSN is approx 10-15 for just v and
 ;; sigma, and 40-50 for h3 and h4. 
-
+ 
 
 pro binning_spaxels;,xNode,yNode;, galaxy
 
 	galaxy = 'ngc3557'
+	discard = 2
 
 
-	signal = MAKE_ARRAY(40*40)
-	noise = MAKE_ARRAY(40*40)
+	signal = MAKE_ARRAY(40-2*discard)
+	noise = MAKE_ARRAY(40-2*discard)
 	find_SN, galaxy, signal, noise
 	n_spaxels = n_elements(signal)
 
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
 
 ;rdfloat, data_file, x, y, signal, noise, SKIPLINE=3, NUMLINE=3107, /DOUBLE
-	targetSN = 15.0
+	targetSN = 30.0
 
 ; Load a colortable and open a graphic window
 ;
@@ -98,15 +121,23 @@ window, xsize=r[0]*0.4, ysize=r[1]*0.8
 ; Perform the actual computation. The vectors
 ; (binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale)
 ; are all generated in *output*
-;
+
+
+
+
+
+
+	s = size(signal)
+
+
 
 ;; Asigning x and y
 	x = MAKE_ARRAY(n_spaxels)
 	y = MAKE_ARRAY(n_spaxels)
-for i = 0, 39 do begin
-for j = 0 , 39 do begin
-x(i*40+j) = i
-y(i*40+j) = j
+for i = 0, s[1]-1 do begin
+for j = 0, s[2]-1 do begin
+x(i*s[1]+j) = i
+y(i*s[2]+j) = j
 endfor
 endfor
 

@@ -13,7 +13,8 @@ pro fit_spaxel
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
-	spaxel = [18, 21]
+	discard = 2
+	spaxel = [19, 21]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -44,7 +45,7 @@ pro fit_spaxel
 ;+
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '/Data/ppxf/MILES_library/'
+	templatesDirectory = '/Data/idl_libraries/ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -114,14 +115,18 @@ endfor
 		Galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
 
-	FITS_READ, dataCubeDirectory[0], galaxy_data, header
+	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
+	s = size(galaxy_data_temp)
+	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
+		[discard:s[2]-discard-1],*]
 
 
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
 	lower_limit=MIN(WHERE(galaxy_data[spaxel[0], spaxel[1], *]/ $
-		MEDIAN(galaxy_data[spaxel[0], spaxel[1], *]) GT 0.1), $
+		MEDIAN(galaxy_data[spaxel[0], spaxel[1], *]) GT 0.2), $
 		MAX=upper_limit)
 
 	lower_limit = lower_limit + 5
