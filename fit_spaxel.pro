@@ -121,7 +121,6 @@ endfor
 	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
 
-
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.

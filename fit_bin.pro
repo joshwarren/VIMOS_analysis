@@ -11,7 +11,7 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 31
+	fit_bin_num = 30
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -161,14 +161,31 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-	lower_limit=MIN(WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.2), MAX=upper_limit)
+ignore = FIX((5574 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*6 
+print, ignore
+g = WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.7)
 
+for i=0, n_elements(g)-2 do print, g[i], g[i]*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3'),g[i]-g[i+1]
+
+
+h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
+	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 0.7), MAX=upper_limit)
+;	lower_limit=MIN(WHERE([bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]/MEDIAN(bin_lin_temp) GT 0.7), MAX=upper_limit)
+
+
+if (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
 	lower_limit = lower_limit + 5
 	upper_limit = upper_limit - 5
 
-print, lower_limit*CDELT1 + CRVAL1
-print, upper_limit*CDELT1 + CRVAL1
 
+
+
+;lower_limit = (4000-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;upper_limit = (5300-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;lower_limit = 0 
+;upper_limit = n_elements(galaxy_data[0,0,*])-1
+print, lower_limit, lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+print, upper_limit, upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
 
 ;lower_limit=0
 ;upper_limit=sxpar(header,'NAXIS3')-1
@@ -180,11 +197,16 @@ print, upper_limit*CDELT1 + CRVAL1
 		sxpar(header,'CRVAL3')
 
 
+
 ;; ----------========= Writing the spectrum  =============---------
 	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
 for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
 endfor
+
+;for i=0, n_elements(bin_lin)-1 do begin
+;	print, i, i*CDELT1 + CRVAL1, bin_lin[i]/MEDIAN(bin_lin)
+;endfor
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
@@ -285,7 +307,5 @@ print, 'y = ', y[spaxels_in_bin]
 
 return
 end
-
-
 
 
