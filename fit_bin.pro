@@ -11,10 +11,10 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 30
+	fit_bin_num = 2
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
+	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
 	sig = 270.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
 ;	spaxel = [20,20] ; spaxel to read off
@@ -161,40 +161,77 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-ignore = FIX((5574 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*6 
-print, ignore
-g = WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.7)
+ignore = FIX((5581 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 
-for i=0, n_elements(g)-2 do print, g[i], g[i]*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3'),g[i]-g[i+1]
+ignore2 =FIX((5199 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 
 
-h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
-	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 0.7), MAX=upper_limit)
-;	lower_limit=MIN(WHERE([bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]/MEDIAN(bin_lin_temp) GT 0.7), MAX=upper_limit)
+;;;;;;;*************************;;;;;;;;;;;
+;g = WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.6)
+;for i=0, n_elements(g)-2 do print, g[i], g[i]*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3'),g[i]-g[i+1]
+
+;; h is the spectrum with the peak enclosed by 'ignore' and ignore2
+;; removed. 
+	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
+
+;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 1.2), MAX=upper_limit)
+
+	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
+
+;plot, h[100:200]/MEDIAN(h)
+
+;; --------======= Finding limits of the spectrum 2 =======--------
+;; a is an array containing the difference between the ith element and
+;; the (i+1)th element of h
+a = MAKE_ARRAY(n_elements(h)-2)
+half = s[3]/2
+for i=0, n_elements(h)-3 do begin
+	a[i]=h[i]/MEDIAN(h)-h[i+2]/MEDIAN(h)
+	if (FINITE(a[i]) NE 1) THEN a[i]=0
+endfor
+print, "here", WHERE(ABS(a) GT 0.3)
+;oplot, a[100:200]+1, color = 10000
+
+;	lower_limit = MIN(WHERE(ABS(a) GT 0.3), MAX=upper_limit)
+	lower_limit = MAX(WHERE(ABS(a[0:half]) GT 0.3))
+	upper_limit = MIN(WHERE(ABS(a[half :*]) GT 0.3)+half)
 
 
-if (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
+
+
+IF (upper_limit GT ignore2[0]) then upper_limit += (ignore2[1]-ignore2[0])
+IF (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
 	lower_limit = lower_limit + 5
 	upper_limit = upper_limit - 5
 
+IF (lower_limit LT 0) THEN lower_limit = 0
+IF (upper_limit GT half*2-1) OR (upper_limit LT 0) THEN upper_limit=half*2-1
 
+	
 
-
-;lower_limit = (4000-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;lower_limit = (4100-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;upper_limit = (5300-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
-print, lower_limit, lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
-print, upper_limit, upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+print, "lower limit:", lower_limit, $
+	lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+print, "upper limit:", upper_limit, $
+	upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
 
-;lower_limit=0
-;upper_limit=sxpar(header,'NAXIS3')-1
 
 	lamRange = MAKE_ARRAY(2)
 	lamRange[0] = lower_limit*sxpar(header,'CD3_3') + $
 		sxpar(header,'CRVAL3')
 	lamRange[1] = upper_limit*sxpar(header,'CD3_3') + $
 		sxpar(header,'CRVAL3')
+
+;print, bin_lin_temp[upper_limit-20:upper_limit+20]/MEDIAN(bin_lin_temp)
+
+
+
+
+
+
 
 
 
@@ -204,9 +241,6 @@ for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
 endfor
 
-;for i=0, n_elements(bin_lin)-1 do begin
-;	print, i, i*CDELT1 + CRVAL1, bin_lin[i]/MEDIAN(bin_lin)
-;endfor
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations

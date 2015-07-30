@@ -235,13 +235,55 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-	lower_limit=MIN(WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.5), MAX=upper_limit)
+	ignore = FIX((5581 - $
+		sxpar(header,'CRVAL3'))/ $
+		sxpar(header,'CD3_3')) + [-1,+1]*12  
 
+	ignore2 =FIX((5199 - $
+		sxpar(header,'CRVAL3'))/ $
+		sxpar(header,'CD3_3')) + [-1,+1]*12
+;; h is the spectrum with the peak enclosed by 'ignore' removed.
+	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
+
+;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 0.55), MAX=upper_limit)
+	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
+
+;; --------======= Finding limits of the spectrum 2 =======--------
+	a = MAKE_ARRAY(n_elements(h)-2)
+	
+for i=0, n_elements(h)-3 do begin
+	a[i]=h[i]/MEDIAN(h)-h[i+2]/MEDIAN(h)
+	if (FINITE(a[i]) NE 1) THEN a[i]=0
+endfor
+
+	
+;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
+	lower_limit = MAX(WHERE(ABS(a[0:s[3]/2]) GT 0.3))
+	upper_limit = MIN(WHERE(ABS(a[s[3]/2:*]) GT 0.3)+(s[3]/2))
+
+
+
+IF (upper_limit GT ignore2[0]) THEN upper_limit += $
+	(ignore2[1]-ignore2[0]) 
+IF (upper_limit GT ignore[0]) THEN upper_limit += $
+	(ignore[1]-ignore[0])	
 	lower_limit = lower_limit + 5
 	upper_limit = upper_limit - 5
 
-;lower_limit=0
-;upper_limit=sxpar(header,'NAXIS3')-1
+
+IF (lower_limit LT 0) THEN lower_limit = 0
+IF (upper_limit GT s[3]-1) OR (upper_limit LT 0) THEN upper_limit=s[3]-1
+
+
+
+
+;lower_limit = 0 
+;upper_limit = n_elements(galaxy_data[0,0,*])-1
+print, "lower limit:", lower_limit, $
+	lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+print, "upper limit:", upper_limit, $
+	upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+
 
 	lamRange = MAKE_ARRAY(2)
 	lamRange[0] = lower_limit*sxpar(header,'CD3_3') + $
@@ -326,13 +368,13 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 
 	start = [vel, sig] ; starting guess
 
-print, bin
+print, "bin:", bin, "/", FIX(n_bins)
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
 ;;		/QUIET, ERROR = error
-
+print, ""
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
 ;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1

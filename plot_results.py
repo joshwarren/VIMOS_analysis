@@ -123,6 +123,12 @@ for bin in range(number_of_bins):
 flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 
 
+# ------------============ Setting v range =============----------
+vmax = max(v_binned)
+vmin = min(v_binned)
+v_sorted = sorted(v_binned)
+vmin = v_sorted[2]
+vmax = v_sorted[-3]
 
 
 
@@ -131,8 +137,10 @@ flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 plt.clf()
 plt.title('Velocity')
 #plot_velfield(xNode, yNode, v_binned, nodots=True, flux=flux)
-plot_velfield(xBar, yBar, v_binned, nodots=False, flux=flux_bar_binned)
-#plot_velfield(x, y, v, nodots=False, flux=flux_unbinned)
+#plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
+#    nodots=False, flux=flux_bar_binned)
+plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
+    nodots=False, flux=flux_unbinned)
 plt.show()
 
 
