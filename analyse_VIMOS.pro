@@ -249,17 +249,17 @@ endfor
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
 ;; --------======= Finding limits of the spectrum 2 =======--------
-	a = MAKE_ARRAY(n_elements(h)-2)
+	a = MAKE_ARRAY(n_elements(h)-4)
 	
-for i=0, n_elements(h)-3 do begin
-	a[i]=h[i]/MEDIAN(h)-h[i+2]/MEDIAN(h)
+for i=0, n_elements(h)-5 do begin
+	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
 	if (FINITE(a[i]) NE 1) THEN a[i]=0
 endfor
 
 	
 ;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
-	lower_limit = MAX(WHERE(ABS(a[0:s[3]/2]) GT 0.3))
-	upper_limit = MIN(WHERE(ABS(a[s[3]/2:*]) GT 0.3)+(s[3]/2))
+	lower_limit = MAX(WHERE(ABS(a[0:s[3]/2]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[s[3]/2:*]) GT 0.2))+(s[3]/2)
 
 
 
@@ -267,12 +267,16 @@ IF (upper_limit GT ignore2[0]) THEN upper_limit += $
 	(ignore2[1]-ignore2[0]) 
 IF (upper_limit GT ignore[0]) THEN upper_limit += $
 	(ignore[1]-ignore[0])	
-	lower_limit = lower_limit + 5
-	upper_limit = upper_limit - 5
 
+IF (upper_limit GT ignore2[0]) then upper_limit += (ignore2[1]-ignore2[0])
+IF (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
 
-IF (lower_limit LT 0) THEN lower_limit = 0
-IF (upper_limit GT s[3]-1) OR (upper_limit LT 0) THEN upper_limit=s[3]-1
+IF (lower_limit LT 0) THEN BEGIN
+	lower_limit = MIN(WHERE(a[0:s[3]/2] NE 0)) + 5
+	IF (lower_limit LT 0) THEN lower_limit = 0 
+ENDIF ELSE lower_limit += 5
+IF (upper_limit GT s[3]-1) OR (upper_limit LT s[3]/2) THEN upper_limit=s[3]-6 $
+	ELSE upper_limit += - 5
 
 
 
@@ -368,7 +372,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 
 	start = [vel, sig] ; starting guess
 
-print, "bin:", bin, "/", FIX(n_bins)
+print, "bin:", bin, "/", FIX(n_bins-1)
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $

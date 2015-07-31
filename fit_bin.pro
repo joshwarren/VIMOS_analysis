@@ -178,39 +178,50 @@ ignore2 =FIX((5199 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
-;plot, h[100:200]/MEDIAN(h)
+
 
 ;; --------======= Finding limits of the spectrum 2 =======--------
 ;; a is an array containing the difference between the ith element and
 ;; the (i+1)th element of h
-a = MAKE_ARRAY(n_elements(h)-2)
+a = MAKE_ARRAY(n_elements(h)-4)
 half = s[3]/2
-for i=0, n_elements(h)-3 do begin
-	a[i]=h[i]/MEDIAN(h)-h[i+2]/MEDIAN(h)
+;plot, h[0:half]/MEDIAN(h)
+for i=0, n_elements(h)-5 do begin
+	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
 	if (FINITE(a[i]) NE 1) THEN a[i]=0
 endfor
-print, "here", WHERE(ABS(a) GT 0.3)
-;oplot, a[100:200]+1, color = 10000
+;print, "here", WHERE(ABS(a) GT 0.2)
+;oplot, ABS(a[0:half])+0.5, color = 10000
 
 ;	lower_limit = MIN(WHERE(ABS(a) GT 0.3), MAX=upper_limit)
-	lower_limit = MAX(WHERE(ABS(a[0:half]) GT 0.3))
-	upper_limit = MIN(WHERE(ABS(a[half :*]) GT 0.3)+half)
+	lower_limit = MAX(WHERE(ABS(a[0:half]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[half :*]) GT 0.2))+half
 
+;print, MAX(ABS(a[0:half]))
+;print, ABS(a[0:half])
 
-
+;print, "a", lower_limit, upper_limit
 
 IF (upper_limit GT ignore2[0]) then upper_limit += (ignore2[1]-ignore2[0])
+;print, "b", lower_limit, upper_limit
 IF (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
-	lower_limit = lower_limit + 5
-	upper_limit = upper_limit - 5
 
-IF (lower_limit LT 0) THEN lower_limit = 0
-IF (upper_limit GT half*2-1) OR (upper_limit LT 0) THEN upper_limit=half*2-1
+;print, "c", lower_limit, upper_limit
 
+IF (lower_limit LT 0) THEN BEGIN
+	lower_limit = MIN(WHERE(a[0:half] NE 0)) + 5
+	IF (lower_limit LT 0) THEN lower_limit = 0 
+ENDIF ELSE lower_limit += 5
+;print, "d", lower_limit, upper_limit
+IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
+	ELSE upper_limit += - 5
+;print, "e", lower_limit, upper_limit
 	
 
-;lower_limit = (4100-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-;upper_limit = (5300-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;upper_limit +=200
+
+;lower_limit = FIX(4100-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;upper_limit = FIX(5300-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
 print, "lower limit:", lower_limit, $
