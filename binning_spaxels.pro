@@ -18,6 +18,12 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 		galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
 
+;;Bins just one quadrant - must have used rss2cube_quadrant.pro script
+;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
+;		galaxy + $
+;		'-3/Q2/calibrated/cube/*_fluxcal_cube.fits')
+
+
 	;galaxy_data = MRDFITS(dataCubeDirectory[0], 1, header, /SILENT)
 	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header

@@ -3,13 +3,14 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
-pro run_analysis;, galaxy
+pro run_analysis;, galaxy, discard, limits
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
+;	range = [4000,4500]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -62,7 +63,6 @@ pro run_analysis;, galaxy
 	OPENW, 6, output_h5
 	OPENW, 7, output_h6
 	OPENW, 8, output_Chi
-
 
 
 
@@ -196,14 +196,39 @@ endfor
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		Galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+        
+;; For analysis of just one quadrant - mst have used rss2cube_quadrant
+;;                                     and have binned the quadrant.
+;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
+;		galaxy + $
+;		'-3/Q2/calibrated/cube/*_fluxcal_cube.fits')
+
+
+
+
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
-
-
+	
+	CRVAL_spec = sxpar(header,'CRVAL3')
+	CDELT_spec = sxpar(header,'CD3_3')
 	s = size(galaxy_data_temp)
+
+IF keyword_set(range) THEN BEGIN
+	CRVAL_spec = range[0]
+	s[3] = (range[1]-range[0])/CDELT_spec +1 
+print, "The RANGE parameter has been set"
+ENDIF ELSE range=[0,n_elements(galaxy_data_temp[0,0,*])-1]
+
+
+
+
+print, [(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec,(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec+s[3]-1]
+
+
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
-	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
-		[discard:s[2]-discard-1],*]
+	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
+		discard:s[2]-discard-1, $
+		(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec:(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec+s[3]-1]
 
 
 
@@ -214,6 +239,7 @@ endfor
 
 
 ;; ----------========== Spatially Binning =============---------
+	bin_dynamics = MAKE_ARRAY(7, n_bins)
 ;; endfor is near the end - after ppxf has been run on this bin.
 for bin=0, n_bins-1 do begin
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
@@ -224,7 +250,7 @@ for bin=0, n_bins-1 do begin
 for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
-for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin
+for k = 0, s[3]-1 do begin
 	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
 endfor
 endfor
@@ -235,13 +261,15 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-	ignore = FIX((5581 - $
-		sxpar(header,'CRVAL3'))/ $
-		sxpar(header,'CD3_3')) + [-1,+1]*12  
+	gap=12
+IF (5581 GT range[1]) OR (5581 LT range[0]) THEN ignore=[0,0] ELSE Begin
+	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
+ENDELSE
 
-	ignore2 =FIX((5199 - $
-		sxpar(header,'CRVAL3'))/ $
-		sxpar(header,'CD3_3')) + [-1,+1]*12
+IF (5199 GT range[1]) OR (5199 LT range[0]) THEN ignore2=[0,0] ELSE BEGIN
+	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
+ENDELSE
+
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
 
@@ -255,7 +283,6 @@ for i=0, n_elements(h)-5 do begin
 	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
 	if (FINITE(a[i]) NE 1) THEN a[i]=0
 endfor
-
 	
 ;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
 	lower_limit = MAX(WHERE(ABS(a[0:s[3]/2]) GT 0.2))
@@ -263,13 +290,9 @@ endfor
 
 
 
-IF (upper_limit GT ignore2[0]) THEN upper_limit += $
-	(ignore2[1]-ignore2[0]) 
-IF (upper_limit GT ignore[0]) THEN upper_limit += $
-	(ignore[1]-ignore[0])	
 
-IF (upper_limit GT ignore2[0]) then upper_limit += (ignore2[1]-ignore2[0])
-IF (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
+IF (upper_limit GT ignore2[0]) then upper_limit += gap
+IF (upper_limit GT ignore[0]) then upper_limit += gap
 
 IF (lower_limit LT 0) THEN BEGIN
 	lower_limit = MIN(WHERE(a[0:s[3]/2] NE 0)) + 5
@@ -283,17 +306,13 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT s[3]/2) THEN upper_limit=s[3]-6 $
 
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
-print, "lower limit:", lower_limit, $
-	lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
-print, "upper limit:", upper_limit, $
-	upper_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
+print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
+print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
 
 
 	lamRange = MAKE_ARRAY(2)
-	lamRange[0] = lower_limit*sxpar(header,'CD3_3') + $
-		sxpar(header,'CRVAL3')
-	lamRange[1] = upper_limit*sxpar(header,'CD3_3') + $
-		sxpar(header,'CRVAL3')
+	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
+	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
 
 
 ;; ----------========= Writing the spectrum  =============---------
@@ -374,7 +393,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 
 print, "bin:", bin, "/", FIX(n_bins-1)
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics, BESTFIT = bestfit, $
+		bin_dynamics_temp, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
 ;;		/QUIET, ERROR = error
@@ -392,14 +411,13 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
-
-	PRINTF, 2, bin_dynamics[0]
-	PRINTF, 3, bin_dynamics[1]
-;	PRINTF, 4, bin_dynamics[2]
-;	PRINTF, 5, bin_dynamics[3]
-;	PRINTF, 6, bin_dynamics[4]
-;	PRINTF, 7, bin_dynamics[5]
-	PRINTF, 8, bin_dynamics[6]
+ bin_dynamics[0,bin]=bin_dynamics_temp[0]
+ bin_dynamics[1,bin]=bin_dynamics_temp[1]
+ bin_dynamics[2,bin]=bin_dynamics_temp[2]
+ bin_dynamics[3,bin]=bin_dynamics_temp[3]
+ bin_dynamics[4,bin]=bin_dynamics_temp[4]
+ bin_dynamics[5,bin]=bin_dynamics_temp[5]
+ bin_dynamics[6,bin]=bin_dynamics_temp[6]
 
 
 
@@ -419,6 +437,15 @@ print, ""
 endfor 
 
 
+for bin=0, n_bins-1 do begin
+	PRINTF, 2, bin_dynamics[0,bin]
+	PRINTF, 3, bin_dynamics[1,bin]
+	PRINTF, 4, bin_dynamics[2,bin]
+	PRINTF, 5, bin_dynamics[3,bin]
+;	PRINTF, 6, bin_dynamics[4,bin]
+;	PRINTF, 7, bin_dynamics[5,bin]
+	PRINTF, 8, bin_dynamics[6,bin]
+endfor
 
 CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
 

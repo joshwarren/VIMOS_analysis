@@ -54,6 +54,10 @@ v_binned = np.loadtxt(output_sigma)
 dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
     "*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits" % (galaxy)) 
 
+## Directory for plotting single quadrant
+#dataCubeDirectory = glob.glob("/Data/vimosindi/%s-3/Q2/calibrated/cube/" \
+#    "*_fluxcal_cube.fits" % (galaxy)) 
+
 galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
 s = galaxy_data.shape
@@ -129,8 +133,8 @@ vmax = max(v_binned)
 vmin = min(v_binned)
 v_sorted = sorted(np.unique(v_binned))
 #v_sorted = sorted(v_binned)
-vmin = v_sorted[2]
-vmax = v_sorted[-3]
+vmin = v_sorted[1]
+vmax = v_sorted[-2]
 
 
 
@@ -139,10 +143,10 @@ vmax = v_sorted[-3]
 plt.clf()
 plt.title('Velocity')
 #plot_velfield(xNode, yNode, v_binned, nodots=True, flux=flux)
-#plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
-#    nodots=False, colorbar=True, flux=flux_bar_binned)
-plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
-    nodots=False, flux=flux_unbinned)
+plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
+    nodots=False, colorbar=True, flux=flux_bar_binned)
+#plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
+#    nodots=False, flux=flux_unbinned)
 plt.show()
 
 

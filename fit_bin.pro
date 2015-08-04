@@ -11,7 +11,7 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 2
+	fit_bin_num = 33
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s

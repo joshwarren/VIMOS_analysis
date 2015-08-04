@@ -11,6 +11,8 @@ pro fit_gal
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	c = 299792.458d
+	lower_limit = 4000
+	upper_limit = 5350
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
 	sig = 270.0d ; Initial estimate of the galaxy dispersion in km/s 
@@ -39,7 +41,7 @@ pro fit_gal
 ;+
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '/Data/ppxf/MILES_library/'
+	templatesDirectory = '/Data/idl_libraries/ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -133,11 +135,12 @@ endfor
 						     ; in pixels
 
 ;; For rebinning logarthmically
-	lamRange = sxpar(header,'CRVAL3') + $
-                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
+;	lamRange = sxpar(header,'CRVAL3') + $
+;                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
+	lamRange = [lower_limit, upper_limit]
 ;        lamRange = lamRange/(1+z) ; Compute approximate restframe
-        			    ; wavelength range
-
+       			    ; wavelength range
+	pixRange = FIX((lamRange-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3'))
 
         
 ;; ----------======== Integrating over whole galaxy =========--------- 
@@ -145,12 +148,11 @@ endfor
 
 
 ;; Need to create a new spectrum for a new bin.
-bin_lin = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
-
+	bin_lin = MAKE_ARRAY(pixRange[1]-pixRange[0])
 for i = 0, 39 do begin
 for j = 0, 39 do begin
-for k = 0, n_elements(galaxy_data[i,j,*])-1 do begin 
-	bin_lin[k] = bin_lin[k] + galaxy_data[i, j, k]
+for k = pixRange[0], pixRange[1]-1 do begin
+	bin_lin[k-pixRange[0]] += galaxy_data[i,j,k]
 endfor
 endfor
 endfor
@@ -167,6 +169,9 @@ endfor
 
 ;; normalise the spectrum
 	bin_log = bin_log/MEDIAN(bin_log)
+;for k = 0, n_elements(bin_log)-1 do begin
+;if bin_log[k] NE 0 THEN bin_Log[k] += -1
+;endfor  
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
@@ -210,21 +215,23 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,$
 	lamRange_template,vel) 
-
+print, loglam_bin
 
 
 
 
         
-
-
+	lambda = EXP(logLam_bin)
+;for i=0, n_elements(lambda)-1 do begin
+;print, lambda[i], bin_log[i]
+;endfor
 	start = [vel, sig] ; starting guess
 
 print, 'Fit for the whole galaxy'
 
 	PPXF, templates, bin_log, noise, velscale, start, $
 		spaxel_dynamics, BESTFIT = bestfit, $
-		GOODPIXELS=goodPixels, MOMENTS = moments, $
+		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /PLOT
 ;;		ERROR = error
 
