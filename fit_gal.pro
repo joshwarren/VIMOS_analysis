@@ -141,7 +141,6 @@ endfor
 ;        lamRange = lamRange/(1+z) ; Compute approximate restframe
        			    ; wavelength range
 	pixRange = FIX((lamRange-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3'))
-
         
 ;; ----------======== Integrating over whole galaxy =========--------- 
 
@@ -215,13 +214,12 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,$
 	lamRange_template,vel) 
-print, loglam_bin
 
-
-
-
-        
 	lambda = EXP(logLam_bin)
+;for i = 0, n_elements(goodPixels)-1 do begin
+;print, goodPixels[i], lambda[goodPixels[i]]
+;endfor
+
 ;for i=0, n_elements(lambda)-1 do begin
 ;print, lambda[i], bin_log[i]
 ;endfor
@@ -229,7 +227,7 @@ print, loglam_bin
 
 print, 'Fit for the whole galaxy'
 
-	PPXF, templates, bin_log, noise, velscale, start, $
+	PPXF2, templates, bin_log, noise, velscale, start, $
 		spaxel_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /PLOT
