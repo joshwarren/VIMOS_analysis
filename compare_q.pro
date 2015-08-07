@@ -57,10 +57,10 @@ endfor
 
 
 
-plot, x, spectrum_lin[0,*]
-oplot, x, spectrum_lin[1,*], color = 500
-oplot, x, spectrum_lin[2,*], color = 1000000
-oplot, x, spectrum_lin[3,*], color = 60000000
+plot, x, spectrum_lin[0,*]			; white
+oplot, x, spectrum_lin[1,*], color = 500	; red
+oplot, x, spectrum_lin[2,*], color = 100000 	; gold
+oplot, x, spectrum_lin[3,*], color = 60000000	; cyan
 
 
 return

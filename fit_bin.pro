@@ -11,7 +11,7 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 33
+	fit_bin_num = 50
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -166,36 +166,34 @@ ignore = FIX((5581 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 ignore2 =FIX((5199 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 
 
-;;;;;;;*************************;;;;;;;;;;;
-;g = WHERE(bin_lin_temp/MEDIAN(bin_lin_temp) GT 0.6)
-;for i=0, n_elements(g)-2 do print, g[i], g[i]*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3'),g[i]-g[i+1]
-
 ;; h is the spectrum with the peak enclosed by 'ignore' and ignore2
 ;; removed. 
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
 
 ;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 1.2), MAX=upper_limit)
-
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
 
 
 ;; --------======= Finding limits of the spectrum 2 =======--------
 ;; a is an array containing the difference between the ith element and
-;; the (i+1)th element of h
-a = MAKE_ARRAY(n_elements(h)-4)
+;; the (i+#)th element of h
+;a = MAKE_ARRAY(n_elements(h)-4)
 half = s[3]/2
 ;plot, h[0:half]/MEDIAN(h)
-for i=0, n_elements(h)-5 do begin
-	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
-	if (FINITE(a[i]) NE 1) THEN a[i]=0
-endfor
+a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
+a[WHERE(~FINITE(a))] = 0
+;for i=0, n_elements(h)-5 do begin
+;	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
+;	if (FINITE(a[i]) NE 1) THEN a[i]=0
+;endfor
+
 ;print, "here", WHERE(ABS(a) GT 0.2)
 ;oplot, ABS(a[0:half])+0.5, color = 10000
 
 ;	lower_limit = MIN(WHERE(ABS(a) GT 0.3), MAX=upper_limit)
-	lower_limit = MAX(WHERE(ABS(a[0:half]) GT 0.2))
-	upper_limit = MIN(WHERE(ABS(a[half :*]) GT 0.2))+half
+	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
 
 ;print, MAX(ABS(a[0:half]))
 ;print, ABS(a[0:half])
@@ -220,8 +218,8 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 
 ;upper_limit +=200
 
-;lower_limit = FIX(4100-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-;upper_limit = FIX(5300-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;lower_limit = FIX(4600-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;upper_limit = FIX(4700-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
 print, "lower limit:", lower_limit, $

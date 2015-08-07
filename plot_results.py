@@ -15,7 +15,10 @@ import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
 galaxy = "ngc3557"
-discard = 2
+discard = 2 # rows of pixels to discard- must have been the same 
+            #    for all routines 
+vLimit = 2 # limit the velocity plotted: this is the number of 
+           #     unique velocity values that will be ignored  
 
 tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output.txt"
@@ -133,8 +136,8 @@ vmax = max(v_binned)
 vmin = min(v_binned)
 v_sorted = sorted(np.unique(v_binned))
 #v_sorted = sorted(v_binned)
-vmin = v_sorted[1]
-vmax = v_sorted[-2]
+vmin = v_sorted[vLimit]
+vmax = v_sorted[-vLimit-1]
 
 
 

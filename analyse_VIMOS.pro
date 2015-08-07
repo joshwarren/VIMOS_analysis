@@ -10,7 +10,6 @@ pro run_analysis;, galaxy, discard, limits
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-;	range = [4000,4500]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -205,88 +204,64 @@ endfor
 
 
 
-
-
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
-	
+
+;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
 	CDELT_spec = sxpar(header,'CD3_3')
 	s = size(galaxy_data_temp)
 
-IF keyword_set(range) THEN BEGIN
-	CRVAL_spec = range[0]
-	s[3] = (range[1]-range[0])/CDELT_spec +1 
-print, "The RANGE parameter has been set"
-ENDIF ELSE range=[0,n_elements(galaxy_data_temp[0,0,*])-1]
-
-
-
-
-print, [(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec,(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec+s[3]-1]
-
-
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
-		discard:s[2]-discard-1, $
-		(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec:(CRVAL_spec-sxpar(header,'CRVAL3'))*CDELT_spec+s[3]-1]
-
-
-
+		discard:s[2]-discard-1,*]
+;; array to hold results
+	bin_dynamics = MAKE_ARRAY(7, n_bins)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
 
-
-
 ;; ----------========== Spatially Binning =============---------
-	bin_dynamics = MAKE_ARRAY(7, n_bins)
+
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
+for bin=49, n_bins-1 do begin
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
+
+
+;; Creates a new spectrum for a new bin.
         bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
 		VALUE = 0d) 
-
 
 for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
 for k = 0, s[3]-1 do begin
-	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
+	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
 endfor
 endfor
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
-
 
 
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
 	gap=12
-IF (5581 GT range[1]) OR (5581 LT range[0]) THEN ignore=[0,0] ELSE Begin
 	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
-ENDELSE
-
-IF (5199 GT range[1]) OR (5199 LT range[0]) THEN ignore2=[0,0] ELSE BEGIN
 	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
-ENDELSE
+
 
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
 
-;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 0.55), MAX=upper_limit)
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
-;; --------======= Finding limits of the spectrum 2 =======--------
-	a = MAKE_ARRAY(n_elements(h)-4)
-	
-for i=0, n_elements(h)-5 do begin
-	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
-	if (FINITE(a[i]) NE 1) THEN a[i]=0
-endfor
+
+	half = s[3]/2
+	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
+	a[WHERE(~FINITE(a))] = 0
 	
 ;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
-	lower_limit = MAX(WHERE(ABS(a[0:s[3]/2]) GT 0.2))
-	upper_limit = MIN(WHERE(ABS(a[s[3]/2:*]) GT 0.2))+(s[3]/2)
+	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
 
 
 
@@ -295,10 +270,10 @@ IF (upper_limit GT ignore2[0]) then upper_limit += gap
 IF (upper_limit GT ignore[0]) then upper_limit += gap
 
 IF (lower_limit LT 0) THEN BEGIN
-	lower_limit = MIN(WHERE(a[0:s[3]/2] NE 0)) + 5
+	lower_limit = MIN(WHERE(a[0:half] NE 0)) + 5
 	IF (lower_limit LT 0) THEN lower_limit = 0 
 ENDIF ELSE lower_limit += 5
-IF (upper_limit GT s[3]-1) OR (upper_limit LT s[3]/2) THEN upper_limit=s[3]-6 $
+IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
 
 
