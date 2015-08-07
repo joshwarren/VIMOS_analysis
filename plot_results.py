@@ -47,6 +47,7 @@ order = bin_num.argsort()
 #v_binned = np.loadtxt(output_v)
 v_binned = np.loadtxt(output_sigma)
 
+#v_binned += -np.median(v_binned)
 
 
 # ------------========== Total flux per bin ===========----------
@@ -138,7 +139,6 @@ v_sorted = sorted(np.unique(v_binned))
 #v_sorted = sorted(v_binned)
 vmin = v_sorted[vLimit]
 vmax = v_sorted[-vLimit-1]
-
 
 
 # ------------============= Plot velfield ==============----------

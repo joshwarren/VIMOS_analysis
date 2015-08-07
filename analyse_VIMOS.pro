@@ -12,8 +12,8 @@ pro run_analysis;, galaxy, discard, limits
 	discard = 2
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
-	sig = 270.0d ; Initial estimate of the galaxy dispersion in km/s 
+	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
+	sig = 300.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
@@ -53,15 +53,7 @@ pro run_analysis;, galaxy, discard, limits
 ;; ----------===============================================---------
 ;; ----------=============== Run analysis  =================---------
 ;; ----------===============================================---------
-	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
-	OPENW, 1, output_temp_weighting
-	OPENW, 2, output_v
-	OPENW, 3, output_sigma
-	OPENW, 4, output_h3
-	OPENW, 5, output_h4
-	OPENW, 6, output_h5
-	OPENW, 7, output_h6
-	OPENW, 8, output_Chi
+
 
 
 
@@ -223,7 +215,7 @@ endfor
 ;; ----------========== Spatially Binning =============---------
 
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=49, n_bins-1 do begin
+for bin=0, n_bins-1 do begin
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
 
@@ -367,6 +359,9 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 	start = [vel, sig] ; starting guess
 
 print, "bin:", bin, "/", FIX(n_bins-1)
+print, "spaxels:"
+print, 'x = ', x[spaxels_in_bin]
+print, 'y = ', y[spaxels_in_bin]
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
@@ -411,7 +406,16 @@ print, ""
 
 endfor 
 
-
+;; Open and print to files
+	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
+	OPENW, 1, output_temp_weighting
+	OPENW, 2, output_v
+	OPENW, 3, output_sigma
+	OPENW, 4, output_h3
+	OPENW, 5, output_h4
+	OPENW, 6, output_h5
+	OPENW, 7, output_h6
+	OPENW, 8, output_Chi
 for bin=0, n_bins-1 do begin
 	PRINTF, 2, bin_dynamics[0,bin]
 	PRINTF, 3, bin_dynamics[1,bin]

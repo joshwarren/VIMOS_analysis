@@ -11,11 +11,12 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 50
+	fit_bin_num = 89
+	range = [4000,4500]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
-	sig = 270.0d ; Initial estimate of the galaxy dispersion in km/s 
+	sig = 300.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
 ;	spaxel = [20,20] ; spaxel to read off
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
@@ -126,6 +127,8 @@ endfor
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 	s = size(galaxy_data_temp)
+	CRVAL_spec = sxpar(header,'CRVAL3')
+	CDELT_spec = sxpar(header,'CD3_3')
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
@@ -151,8 +154,8 @@ bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), VALUE = 0d)
 for i = 0, n_spaxels-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
-for k = 0, n_elements(galaxy_data[x_i,y_i,*])-1 do begin 
-	bin_lin_temp[k] = bin_lin_temp[k] + galaxy_data[x_i, y_i, k]
+for k = 0, s[3]-1 do begin 
+	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
 endfor
 endfor
 ;; bin_lin now contains linearly binned spectrum of the spatial bin. 
@@ -161,15 +164,14 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-ignore = FIX((5581 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
-
-ignore2 =FIX((5199 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
+	gap = 12
+	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap
+	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap
 
 
 ;; h is the spectrum with the peak enclosed by 'ignore' and ignore2
 ;; removed. 
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
-
 ;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 1.2), MAX=upper_limit)
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
@@ -179,10 +181,10 @@ ignore2 =FIX((5199 - sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')) + [-1,+1]*12
 ;; a is an array containing the difference between the ith element and
 ;; the (i+#)th element of h
 ;a = MAKE_ARRAY(n_elements(h)-4)
-half = s[3]/2
+	half = s[3]/2
 ;plot, h[0:half]/MEDIAN(h)
-a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
-a[WHERE(~FINITE(a))] = 0
+	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
+	a[WHERE(~FINITE(a))] = 0
 ;for i=0, n_elements(h)-5 do begin
 ;	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
 ;	if (FINITE(a[i]) NE 1) THEN a[i]=0
@@ -200,9 +202,9 @@ a[WHERE(~FINITE(a))] = 0
 
 ;print, "a", lower_limit, upper_limit
 
-IF (upper_limit GT ignore2[0]) then upper_limit += (ignore2[1]-ignore2[0])
+	IF (upper_limit GT ignore2[0]) then upper_limit += gap
 ;print, "b", lower_limit, upper_limit
-IF (upper_limit GT ignore[0]) then upper_limit += (ignore[1]-ignore[0])
+	IF (upper_limit GT ignore[0]) then upper_limit += gap
 
 ;print, "c", lower_limit, upper_limit
 
@@ -218,8 +220,8 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 
 ;upper_limit +=200
 
-;lower_limit = FIX(4600-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-;upper_limit = FIX(4700-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+lower_limit = FIX(3900-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+upper_limit = FIX(5500-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
 print, "lower limit:", lower_limit, $
@@ -249,6 +251,8 @@ print, "upper limit:", upper_limit, $
 for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
 endfor
+;for i=0,n_elements(bin_lin)-1 do $
+;print, i, i*sxpar(header,'CD3_3')+lamRange[0], bin_lin[i]/MEDIAN(bin_lin)
 
 
 ;; ----------======== Calibrating the spectrum  ===========---------
@@ -268,7 +272,7 @@ endfor
 
 ;; normalise the bin to the medium value
 	bin_log = bin_log/MEDIAN(bin_log)
-
+;for i=0,n_elements(bin_log)-1 do print, i, exp(logLam_bin[i]), bin_log[i]
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
