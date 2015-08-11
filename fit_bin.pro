@@ -11,13 +11,12 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 60;89
-	range = [4500,5300]
+	fit_bin_num = 177
+	range = [4000,4500]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-;	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
-vel =0
-	sig = 100.0d ; Initial estimate of the galaxy dispersion in km/s 
+	vel = 114.0d ; Initial estimate of the galaxy velocity in km/s
+	sig = 269.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
@@ -360,8 +359,6 @@ print, 'y = ', y[spaxels_in_bin]
 ;	/OVERSAMPLE, /PLOT, POLYWEIGHTS=polyWeights, /QUIET, $
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
-
-
 
 return
 end

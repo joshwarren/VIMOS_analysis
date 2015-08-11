@@ -10,7 +10,7 @@ pro run_analysis;, galaxy, discard, limits
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	range = [4000,5300]
+	range = [4000,4500]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 ;	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
@@ -272,7 +272,6 @@ IF (lower_limit LT 0) THEN BEGIN
 ENDIF ELSE lower_limit += 5
 IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
-
 
 ;; --------=========== Using range variable ===========--------
 IF keyword_set(range) THEN BEGIN

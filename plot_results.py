@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt # used for plotting
 plot ="sigma"
 #plot ="h3"
 #plot="h4"
-
+wav_range="4000-4500/" #must have / at end
+#wav_range=""
 
 galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
@@ -30,16 +31,22 @@ tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output.txt"
 tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output2.txt"
-output_v = "/Data/vimosindi/analysis/%s/results/gal_vel.dat" % (galaxy)
+output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_vel.dat" % (wav_range)
 output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
-"results/template_weighting.dat" 
+"results/%stemplate_weighting.dat" % (wav_range)
 output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"gal_sigma.dat"
-output_h3 = "/Data/vimosindi/analysis/%s/results/gal_h3.dat" % (galaxy)
-output_h4 = "/Data/vimosindi/analysis/%s/results/gal_h4.dat" % (galaxy)
-output_h5 = "/Data/vimosindi/analysis/%s/results/gal_h5.dat" % (galaxy)
-output_h6 = "/Data/vimosindi/analysis/%s/results/gal_h6.dat" % (galaxy)
-output_Chi = "/Data/vimosindi/analysis/%s/results/gal_Chi.dat" % (galaxy)
+"%sgal_sigma.dat" % (wav_range)
+output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_h3.dat" % (wav_range)
+output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_h4.dat" % (wav_range)
+output_h5 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_h5.dat" % (wav_range)
+output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_h6.dat" % (wav_range)
+output_Chi = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_Chi.dat" % (wav_range)
 
 # Read tessellation file
 x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
