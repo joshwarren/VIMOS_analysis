@@ -11,20 +11,20 @@ pro fit_bin
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 89
-	range = [4000,4500]
+	fit_bin_num = 60;89
+	range = [4500,5300]
 	c = 299792.458d
-;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
-	sig = 300.0d ; Initial estimate of the galaxy dispersion in km/s 
+  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+;	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
+vel =0
+	sig = 100.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
-;	spaxel = [20,20] ; spaxel to read off
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org
                            ; /sci/facilities/paranal/instruments
                            ; /vimos/inst/ifu.html)
- ;       FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
+        FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
 	moments = 4 ; number of componants to calc with ppxf (see 
                     ; keyword moments in ppxf.pro for more details)
 	degree = 4 ; order of addative Legendre polynomial used to 
@@ -220,10 +220,23 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 
 ;upper_limit +=200
 
-lower_limit = FIX(3900-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-upper_limit = FIX(5500-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;lower_limit = FIX(3900-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
+;upper_limit = FIX(5500-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
+
+
+;; --------=========== Using range variable ===========--------
+IF keyword_set(range) THEN BEGIN
+;; Change to pixel units
+	range = FIX((range - CRVAL_spec)/CDELT_spec)
+IF range[0] GT lower_limit THEN lower_limit = range[0]
+IF range[1] LT upper_limit THEN upper_limit = range[1]
+ENDIF
+
+
+
+
 print, "lower limit:", lower_limit, $
 	lower_limit*sxpar(header,'CD3_3') + sxpar(header,'CRVAL3')
 print, "upper limit:", upper_limit, $
@@ -265,7 +278,7 @@ endfor
 	bin_lin = gauss_smooth(bin_lin, sigma)
 
 
-
+lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamRange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
@@ -315,9 +328,7 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,$
-	lamRange_template,vel) 
-
-
+	lamRange_template,vel, z) 
 
 
 

@@ -14,6 +14,12 @@ import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
+#plot = "v"
+plot ="sigma"
+#plot ="h3"
+#plot="h4"
+
+
 galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
@@ -44,8 +50,18 @@ order = bin_num.argsort()
 
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
-#v_binned = np.loadtxt(output_v)
-v_binned = np.loadtxt(output_sigma)
+if plot=="v":
+    v_binned = np.loadtxt(output_v)
+    print "Velcity"
+if plot=="sigma":
+    v_binned = np.loadtxt(output_sigma)
+    print "Velcity dispersion"
+if plot=="h3":
+    v_binned = np.loadtxt(output_h3)
+    print "h3"
+if plot=="h4":
+    v_binned = np.loadtxt(output_h4)
+    print "h4"
 
 #v_binned += -np.median(v_binned)
 
@@ -144,7 +160,12 @@ vmax = v_sorted[-vLimit-1]
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
 plt.clf()
-plt.title('Velocity')
+if plot=="v":
+    plt.title('Velocity')
+if plot=="sigma":
+    plt.title('Velocity Dispersion')
+else:
+    plt.title(plot)
 #plot_velfield(xNode, yNode, v_binned, nodots=True, flux=flux)
 plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
     nodots=False, colorbar=True, flux=flux_bar_binned)

@@ -10,10 +10,12 @@ pro run_analysis;, galaxy, discard, limits
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
+	range = [4000,5300]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
-	sig = 300.0d ; Initial estimate of the galaxy dispersion in km/s 
+;	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
+	vel = 0.0
+	sig = 240.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
@@ -117,15 +119,15 @@ pro run_analysis;, galaxy, discard, limits
 	READCOL, templateFiles[0], v1,v2, FORMAT = 'D,D', /SILENT
 
 ; Using same keywords as fits headers
-	CRVAL1 = v1[0]		; starting wavelength
-	NAXIS1 = size(v2, /N_ELEMENTS) ; Number of entries
+	CRVAL_temp = v1[0]		; starting wavelength
+	NAXIS_temp = size(v2, /N_ELEMENTS) ; Number of entries
 	; wavelength increments (resolution?)
-	CDELT1 = (v1[NAXIS1-1]-v1[0])/(NAXIS1-1)
+	CDELT_temp = (v1[NAXIS_temp-1]-v1[0])/(NAXIS_temp-1)
 
 ; Creating the templates array with correct dimension
 ;	temp_template = MAKE_ARRAY(NAXIS1, nfiles)
 
-	lamRange_template = CRVAL1 + [0d, CDELT1 * (NAXIS1 - 1d)]
+	lamRange_template = CRVAL_temp + [0d, CDELT_temp*(NAXIS_temp-1d)]
         log_rebin, lamRange_template, v1, log_temp_template, $
 		logLam_template, velscale=velscale
 
@@ -154,7 +156,7 @@ for i = 0, nfiles - 1 do begin
 ;	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
 
 ;; Rebinning templates logarthmically
-	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
+;	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
 	log_rebin, lamRange_template, v2, log_temp_template, $
 		velscale=velscale
 
@@ -202,6 +204,9 @@ endfor
 	CRVAL_spec = sxpar(header,'CRVAL3')
 	CDELT_spec = sxpar(header,'CD3_3')
 	s = size(galaxy_data_temp)
+
+;; Change to pixel units
+IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
@@ -269,14 +274,14 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
 
 
-
+;; --------=========== Using range variable ===========--------
+IF keyword_set(range) THEN BEGIN
+IF range[0] GT lower_limit THEN lower_limit = range[0]
+IF range[1] LT upper_limit THEN upper_limit = range[1]
+ENDIF
 
 ;lower_limit = 0 
 ;upper_limit = n_elements(galaxy_data[0,0,*])-1
-print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
-print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
-
-
 	lamRange = MAKE_ARRAY(2)
 	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
 	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
@@ -292,14 +297,14 @@ endfor
 ;; For calibrating the resolutions between templates and observations
 ;; using the gauss_smooth command
 	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
-	sigma = FWHM_dif/2.355/sxpar(header,'CD3_3') ; Sigma difference 
+	sigma = FWHM_dif/2.355/CDELT_temp ; Sigma difference 
 						     ; in pixels
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
 
 
-
+	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
@@ -347,8 +352,7 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
-goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel) 
-
+goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
 
 
@@ -359,6 +363,8 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel)
 	start = [vel, sig] ; starting guess
 
 print, "bin:", bin, "/", FIX(n_bins-1)
+print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
+print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
 print, "spaxels:"
 print, 'x = ', x[spaxels_in_bin]
 print, 'y = ', y[spaxels_in_bin]
@@ -367,6 +373,7 @@ print, 'y = ', y[spaxels_in_bin]
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
 ;;		/QUIET, ERROR = error
+print, ""
 print, ""
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
