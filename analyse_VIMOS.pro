@@ -10,13 +10,11 @@ pro run_analysis;, galaxy, discard, limits
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	discard = 2
-	range = [4000,4500]
+	range = [4200,10000]
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-;	vel = 3000.0d ; Initial estimate of the galaxy velocity in km/s
-	vel = 0.0
-	sig = 240.0d ; Initial estimate of the galaxy dispersion in km/s 
-		     ; within its rest frame
+	vel = 114.0d ; Initial estimate of the galaxy velocity and
+	sig = 269.0d ;velocity dispersion in km/s in the rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org

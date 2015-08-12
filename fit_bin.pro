@@ -12,7 +12,7 @@ pro fit_bin
   	galaxy = 'ngc3557'
 	discard = 2
 	fit_bin_num = 177
-	range = [4000,4500]
+	range = [4200,5300] ; Required rest frame wavelength range 
 	c = 299792.458d
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 114.0d ; Initial estimate of the galaxy velocity in km/s
@@ -228,7 +228,7 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 ;; --------=========== Using range variable ===========--------
 IF keyword_set(range) THEN BEGIN
 ;; Change to pixel units
-	range = FIX((range - CRVAL_spec)/CDELT_spec)
+	range = FIX((range*(1+z) - CRVAL_spec)/CDELT_spec)
 IF range[0] GT lower_limit THEN lower_limit = range[0]
 IF range[1] LT upper_limit THEN upper_limit = range[1]
 ENDIF

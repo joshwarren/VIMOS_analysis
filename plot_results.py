@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt # used for plotting
 plot ="sigma"
 #plot ="h3"
 #plot="h4"
-wav_range="4000-4500/" #must have / at end
+wav_range="4200-/" #must have / at end
 #wav_range=""
 
 galaxy = "ngc3557"
