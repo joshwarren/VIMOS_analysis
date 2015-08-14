@@ -43,7 +43,9 @@ pro run_analysis;, galaxy, discard, limits
 		'/results/gal_h6.dat'
 	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_Chi.dat'
-	
+	CLOSE, 1
+	OPENW, 1, output_temp_weighting
+
 ;; Tessellation input
 ;	binning_spaxels, galaxy
 	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
@@ -159,6 +161,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 		discard:s[2]-discard-1,*]
 ;; array to hold results
 	bin_dynamics = MAKE_ARRAY(7, n_bins)
+	temp_weights = MAKE_ARRAY(nfiles, n_bins)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
@@ -333,54 +336,27 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
- 	bin_dynamics[0,bin]=bin_dynamics_temp[0]
- 	bin_dynamics[1,bin]=bin_dynamics_temp[1]
- 	bin_dynamics[2,bin]=bin_dynamics_temp[2]
- 	bin_dynamics[3,bin]=bin_dynamics_temp[3]
- 	bin_dynamics[4,bin]=bin_dynamics_temp[4]
- 	bin_dynamics[5,bin]=bin_dynamics_temp[5]
-	bin_dynamics[6,bin]=bin_dynamics_temp[6]
+ 
  
 
 
-
 ;+
-;;; Write weightings for each template used to file 1.
-;for k = 0, nfiles-1 do begin
-;if weights[k] ne 0 then begin
-;;; Use (uncomment) this line if using limited template files.
+;; Write weightings for each template used to file 1.
+for k = 0, nfiles-1 do begin
+if weights[k] ne 0 then begin
+;; Use (uncomment) this line if using limited template files.
 ;	PRINTF, 1, string(templatesToUse[k]) + ' ' + string(weights[k])
-;;; Use (uncomment) this line if using full library.
-;;	PRINTF, 1, string(k+1) + ' ' + string(weights[k])
-;endif
-;endfor
+;; Use (uncomment) this line if using full library.
+	PRINTF, 1, string(k+1) + ' ' + string(weights[k])
+endif
+endfor
 ;-
 
 
 endfor 
 
-;; Open and print to files
-	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
-	OPENW, 1, output_temp_weighting
-	OPENW, 2, output_v
-	OPENW, 3, output_sigma
-	OPENW, 4, output_h3
-	OPENW, 5, output_h4
-	OPENW, 6, output_h5
-	OPENW, 7, output_h6
-	OPENW, 8, output_Chi
-for bin=0, n_bins-1 do begin
-	PRINTF, 2, bin_dynamics[0,bin]
-	PRINTF, 3, bin_dynamics[1,bin]
-	PRINTF, 4, bin_dynamics[2,bin]
-	PRINTF, 5, bin_dynamics[3,bin]
-;	PRINTF, 6, bin_dynamics[4,bin]
-;	PRINTF, 7, bin_dynamics[5,bin]
-	PRINTF, 8, bin_dynamics[6,bin]
-endfor
 
-
-CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
+CLOSE, 1
 
 
 
@@ -398,72 +374,6 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; ==================================================================
-;; 		Print the data cube to a table format
-;; ==================================================================
-;; warrenj 20150330 Process to read the cube format and print it in
-;; table form into a text file.
-
-pro print_to_file
-
-
-	galaxy = 'ngc3557'
-	OB = '1'
-
-
-	galaxyDirectoryArray = FILE_SEARCH('/Data/vimosindi/' + Galaxy + $
-		'-' + OB + $
-;'/combined/combined_exposures/*.fits')
-		'/Final/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
-	dataCube = galaxyDirectoryArray[0]
-	FITS_READ, dataCube, galaxy_data, header
-
-	OPENW, 1, '~/VIMOS_project/analysis/testIO.dat'
-;	print, size(galaxy_data)
-	printf, 1, 'x       y       lambda       flux'
-
-for i = 0, 39 do begin
-for j = 0, 39 do begin
-for k = 0, 2799 do begin
-	PRINTF, 1, STRING(i) + STRING(j) + STRING(k) + $
-		STRING(galaxy_data[i,j,k])
-endfor
-endfor
-endfor
-	CLOSE, 1
-
-
-return
-end
 
 
 

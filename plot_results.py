@@ -14,8 +14,8 @@ import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
-#plot = "v"
-plot ="sigma"
+plot = "vel"
+#plot ="sigma"
 #plot ="h3"
 #plot="h4"
 wav_range="4200-/" #must have / at end
@@ -57,9 +57,9 @@ order = bin_num.argsort()
 
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
-if plot=="v":
+if plot=="vel":
     v_binned = np.loadtxt(output_v)
-    print "Velcity"
+    print "Velocity"
 if plot=="sigma":
     v_binned = np.loadtxt(output_sigma)
     print "Velcity dispersion"
@@ -167,9 +167,9 @@ vmax = v_sorted[-vLimit-1]
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
 plt.clf()
-if plot=="v":
+if plot=="vel":
     plt.title('Velocity')
-if plot=="sigma":
+elif plot=="sigma":
     plt.title('Velocity Dispersion')
 else:
     plt.title(plot)
