@@ -14,9 +14,9 @@ import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
-plot = "vel"
-#plot ="sigma"
-#plot ="h3"
+#plot = "vel"
+plot ="sigma"
+plot ="h3"
 #plot="h4"
 wav_range="4200-/" #must have / at end
 #wav_range=""
@@ -168,14 +168,17 @@ vmax = v_sorted[-vLimit-1]
 # automatically uses sauron colormap
 plt.clf()
 if plot=="vel":
-    plt.title('Velocity')
+    plt.title('Velocity Map')
+    CBLabel = "LOSV (km/s)"
 elif plot=="sigma":
-    plt.title('Velocity Dispersion')
+    plt.title('Velocity Dispersion Map')
+    CBLabel = "LOSVD (km/s)"
 else:
-    plt.title(plot)
+    plt.title(plot + ' Map')
+    CBLabel = ""
 #plot_velfield(xNode, yNode, v_binned, nodots=True, flux=flux)
 plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
-    nodots=False, colorbar=True, flux=flux_bar_binned)
+    nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
 #plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
 #    nodots=False, flux=flux_unbinned)
 plt.show()
