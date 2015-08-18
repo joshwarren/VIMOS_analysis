@@ -14,9 +14,9 @@ import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
-#plot = "vel"
-plot ="sigma"
-plot ="h3"
+plot = "vel"
+#plot ="sigma"
+#plot ="h3"
 #plot="h4"
 wav_range="4200-/" #must have / at end
 #wav_range=""
@@ -169,10 +169,10 @@ vmax = v_sorted[-vLimit-1]
 plt.clf()
 if plot=="vel":
     plt.title('Velocity Map')
-    CBLabel = "LOSV (km/s)"
+    CBLabel = "LOSV (km s$^{-1}$)"
 elif plot=="sigma":
     plt.title('Velocity Dispersion Map')
-    CBLabel = "LOSVD (km/s)"
+    CBLabel = "LOSVD (km s$^{-1}$)"
 else:
     plt.title(plot + ' Map')
     CBLabel = ""
