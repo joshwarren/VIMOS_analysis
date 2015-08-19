@@ -14,12 +14,14 @@ import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
-plot = "vel"
+wav_range=None
+
+plot = "v"
 #plot ="sigma"
 #plot ="h3"
 #plot="h4"
-wav_range="4200-/" #must have / at end
-#wav_range=""
+wav_range="4200-"
+
 
 galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
@@ -27,26 +29,31 @@ discard = 2 # rows of pixels to discard- must have been the same
 vLimit = 2 # limit the velocity plotted: this is the number of 
            #     unique velocity values that will be ignored  
 
+if wav_range:
+    wav_range_dir = wav_range + "/"
+else:
+    wav_range_dir = ""
+
 tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output.txt"
 tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output2.txt"
 output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_vel.dat" % (wav_range)
+"%sgal_vel.dat" % (wav_range_dir)
 output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
-"results/%stemplate_weighting.dat" % (wav_range)
+"results/%stemplate_weighting.dat" % (wav_range_dir)
 output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_sigma.dat" % (wav_range)
+"%sgal_sigma.dat" % (wav_range_dir)
 output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_h3.dat" % (wav_range)
+"%sgal_h3.dat" % (wav_range_dir)
 output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_h4.dat" % (wav_range)
+"%sgal_h4.dat" % (wav_range_dir)
 output_h5 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_h5.dat" % (wav_range)
+"%sgal_h5.dat" % (wav_range_dir)
 output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_h6.dat" % (wav_range)
+"%sgal_h6.dat" % (wav_range_dir)
 output_Chi = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-"%sgal_Chi.dat" % (wav_range)
+"%sgal_Chi.dat" % (wav_range_dir)
 
 # Read tessellation file
 x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -57,7 +64,7 @@ order = bin_num.argsort()
 
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
-if plot=="vel":
+if plot=="v":
     v_binned = np.loadtxt(output_v)
     print "Velocity"
 if plot=="sigma":
@@ -167,7 +174,7 @@ vmax = v_sorted[-vLimit-1]
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
 plt.clf()
-if plot=="vel":
+if plot=="v":
     plt.title('Velocity Map')
     CBLabel = "LOSV (km s$^{-1}$)"
 elif plot=="sigma":
@@ -181,6 +188,9 @@ plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax,
     nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
 #plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
 #    nodots=False, flux=flux_unbinned)
+
+
+plt.savefig("/home/warrenj/Desktop/" + plot + "_field_" + wav_range + ".png", bbox_inches="tight")
 plt.show()
 
 
