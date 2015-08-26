@@ -10,6 +10,7 @@ import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 from find_galaxy import find_galaxy # part of mge package, fits photometry
 from fit_kinematic_pa import fit_kinematic_pa #fit kinemetry
+import math
 #---------------------------------------------------------------------------
 wav_range=None
 
@@ -18,6 +19,7 @@ galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
 wav_range="4200-"
+plots=False
 
 
 
@@ -59,9 +61,9 @@ galaxy_data /= np.median(galaxy_data)
 
 
 # ------------============= Fit photometry ===============----------
-f = find_galaxy(galaxy_data, quiet=True)
-print f.eps
-print f.theta
+f = find_galaxy(galaxy_data, quiet=True, plot=plots)
+print "ellip:" + str(f.eps)
+print "PA_photo:" + str(f.theta)
 
 
 
@@ -78,14 +80,35 @@ xBar, yBar = np.loadtxt(tessellation_File2, unpack=True,
     skiprows = 1) 
 
 
-v_field = np.loadtxt(output_v)
+#xBar += -np.median(xBar)
+#yBar += -np.median(yBar)
+xBar += -36/2
+yBar += -36/2
+
+
+
+v_field = np.loadtxt(output_v, unpack=True)
 v_field -= np.median(v_field)
 
 
-# ------------============== Fit kinemetry ===============----------
-k = fit_kinematic_pa(xBar, yBar, v_field)#, quiet=True, plot=True)
-print k[0]
 
+
+
+# ------------============== Fit kinemetry ===============----------
+k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots) 
+print "PA_kin:" + str(k[0]) + "+/-" + str(k[1]/3)
+
+
+
+
+# ------------============== Misalignment ================----------
+phot = math.radians(90-f.theta)
+kine = math.radians(k[0])
+
+
+mis = math.asin(abs(math.sin(phot-kine)))
+mis = math.degrees(mis)
+print "Psi:" + str(mis)
 
 
 
