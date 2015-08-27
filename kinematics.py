@@ -9,8 +9,8 @@ import numpy as np # for reading files
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 from find_galaxy import find_galaxy # part of mge package, fits photometry
-from fit_kinematic_pa import fit_kinematic_pa #fit kinemetry
-import math
+from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
+import math # for sine functions
 #---------------------------------------------------------------------------
 wav_range=None
 
@@ -19,7 +19,7 @@ galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
 wav_range="4200-"
-plots=False
+plots=True
 
 
 
@@ -45,7 +45,6 @@ output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 
 galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
-
 s = galaxy_data.shape
 rows_to_remove = range(discard)
 rows_to_remove.extend([s[1]-1-i for i in range(discard)])
@@ -57,13 +56,34 @@ galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 
 
 galaxy_data = np.sum(galaxy_data, axis=0)
+
+
+#galaxy_data_error = pyfits.getdata(dataCubeDirectory[0], 1)
+#galaxy_data_error = np.delete(galaxy_data_error, rows_to_remove, axis=1)
+#galaxy_data_error = np.delete(galaxy_data_error, cols_to_remove, axis=2)
+#
+#galaxy_data_error = np.sum(galaxy_data_error, axis=0)
+##galaxy_data_error += galaxy_data
+#
 galaxy_data /= np.median(galaxy_data)
+#galaxy_data_error /= np.median(galaxy_data_error)
+
+print galaxy_data[12:15,8:11]
+print galaxy_data[34:,0:3]
+galaxy_data[13,9]=1
+galaxy_data[35,1]=1
+print np.min(galaxy_data)
+print np.max(galaxy_data)
 
 
 # ------------============= Fit photometry ===============----------
 f = find_galaxy(galaxy_data, quiet=True, plot=plots)
-print "ellip:" + str(f.eps)
-print "PA_photo:" + str(f.theta)
+
+#f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
+
+print "ellip:" + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
+print "PA_photo:" + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
+
 
 
 

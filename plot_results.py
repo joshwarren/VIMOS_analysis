@@ -8,7 +8,6 @@
 
 from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for reading files
-#import numpy
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
@@ -67,6 +66,7 @@ order = bin_num.argsort()
 if plot=="v":
     v_binned = np.loadtxt(output_v)
     print "Velocity"
+    v_binned += -1.1*np.mean(v_binned)
 if plot=="sigma":
     v_binned = np.loadtxt(output_sigma)
     print "Velcity dispersion"
@@ -105,31 +105,6 @@ galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 
 
 
-## +
-#flux = np.zeros((number_of_bins))
-## ----------========== Spatially Binning =============---------
-#for spaxel in range(n_spaxels):
-#    flux[bin_num[spaxel]] += np.sum(galaxy_data[:,y[spaxel],x[spaxel]])
-#
-#flux = flux/np.median(flux)
-#
-#
-#
-#b = []
-## b contains the indices of bin_num which correspond the first time that a bin number occurs. 
-#[b.append(i) for i in range(len(bin_num)) if bin_num[i] not in bin_num[b]]
-#
-#xNode = []
-#yNode = []
-#
-#for i in b:
-#    xNode.append(xBin[i])
-#    yNode.append(yBin[i])
-## -
-
-
-#v_binned = v_binned - np.median(v_binned)
-
 
 
 
@@ -145,7 +120,7 @@ flux_unbinned = flux_unbinned/np.median(flux_unbinned)
 
 
 
-# ------------========== Different binning ===========----------
+# ------------========== Spatially binning ===========----------
 xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
     skiprows = 1) 
 flux_bar_binned = np.zeros((number_of_bins))
@@ -183,7 +158,6 @@ elif plot=="sigma":
 else:
     plt.title(plot + ' Map')
     CBLabel = ""
-#plot_velfield(xNode, yNode, v_binned, nodots=True, flux=flux)
 plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
     nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
 #plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
