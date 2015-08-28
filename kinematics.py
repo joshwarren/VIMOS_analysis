@@ -11,6 +11,8 @@ import pyfits # reads fits files (is from astropy)
 from find_galaxy import find_galaxy # part of mge package, fits photometry
 from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
 import math # for sine functions
+import matplotlib.pyplot as plt # used for plotting
+from scipy.optimize import curve_fit # for fitting a gaussian
 #---------------------------------------------------------------------------
 wav_range=None
 
@@ -19,7 +21,7 @@ galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
 wav_range="4200-"
-plots=True
+plots=False
 
 
 
@@ -39,6 +41,8 @@ tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 
 output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_vel.dat" % (wav_range_dir)
+output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_sigma.dat" % (wav_range_dir)
 
 # ------------=============== Photometry =================----------
 # ------------========== Reading the data cube ===========----------
@@ -58,23 +62,22 @@ galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 galaxy_data = np.sum(galaxy_data, axis=0)
 
 
-#galaxy_data_error = pyfits.getdata(dataCubeDirectory[0], 1)
-#galaxy_data_error = np.delete(galaxy_data_error, rows_to_remove, axis=1)
-#galaxy_data_error = np.delete(galaxy_data_error, cols_to_remove, axis=2)
-#
-#galaxy_data_error = np.sum(galaxy_data_error, axis=0)
-##galaxy_data_error += galaxy_data
-#
-galaxy_data /= np.median(galaxy_data)
-#galaxy_data_error /= np.median(galaxy_data_error)
+galaxy_data_error = pyfits.getdata(dataCubeDirectory[0], 1)
+galaxy_data_error = np.delete(galaxy_data_error, rows_to_remove, axis=1)
+galaxy_data_error = np.delete(galaxy_data_error, cols_to_remove, axis=2)
 
-print galaxy_data[12:15,8:11]
-print galaxy_data[34:,0:3]
+galaxy_data_error = np.sum(galaxy_data_error, axis=0)
+##galaxy_data_error += galaxy_data
+
+galaxy_data /= np.median(galaxy_data)
+galaxy_data_error /= np.median(galaxy_data)
+
+#print galaxy_data[12:15,8:11]
+#print galaxy_data[34:,0:3]
 galaxy_data[13,9]=1
 galaxy_data[35,1]=1
-print np.min(galaxy_data)
-print np.max(galaxy_data)
-
+#print np.min(galaxy_data)
+#print np.max(galaxy_data)
 
 # ------------============= Fit photometry ===============----------
 f = find_galaxy(galaxy_data, quiet=True, plot=plots)
@@ -129,6 +132,87 @@ kine = math.radians(k[0])
 mis = math.asin(abs(math.sin(phot-kine)))
 mis = math.degrees(mis)
 print "Psi:" + str(mis)
+
+
+
+
+
+# ------------================= Lambda_R ================----------
+r = np.sqrt(np.square(xBar-f.xmed)+np.square(yBar-f.ymed))
+sigma = np.loadtxt(output_sigma, unpack=True)
+
+# Reload v_field and undo changes above
+xBar += 36/2
+yBar += 36/2
+v_field = np.loadtxt(output_v, unpack=True)
+
+order = np.argsort(r)
+
+x=np.int_(x)
+y=np.int_(y)
+
+flux_b = np.zeros(len(v_field))
+for i in range(len(v_field)):
+    spaxels_in_bin = (bin_num == i).nonzero()
+    flux_b[i] = np.sum(galaxy_data[x[spaxels_in_bin],y[spaxels_in_bin]])
+
+
+# NB: lam is ordered in terms of increasing R.
+lam_num = flux_b[order]*r[order]*abs(v_field[order])
+lam_dom = flux_b[order]*r[order]*np.sqrt(np.square(v_field[order]) + np.square(sigma[order]))
+
+# cumulative summation
+lam_num = np.cumsum(lam_num)
+lam_dom = np.cumsum(lam_dom)
+
+
+lam = lam_num/lam_dom
+plt.title(r"Radial $\lambda_R$ profile")
+plt.xlabel("Radius")
+plt.ylabel(r"$\lambda_R$")
+plt.plot(r[order], lam)
+plt.show()
+
+
+
+
+
+
+# ------------============= Effective Radius =============----------
+## Fit galaxy radial flux profile with Gaussian and find half-light. 
+## How close does this correspond to half of flux in field of view?
+
+r = np.sqrt(np.square(x-f.xmed)+np.square(y-f.ymed))
+order = np.argsort(r)
+
+
+
+xaxis = np.concatenate((-r[order[::-1]], r[order]))
+yaxis = np.concatenate((galaxy_data[x[order[::-1]],y[order[::-1]]], galaxy_data[x[order],y[order]]))
+error = np.concatenate((galaxy_data_error[x[order[::-1]],y[order[::-1]]], galaxy_data_error[x[order],y[order]]))
+
+
+def gaussian(xaxis, a, b, c):
+    val = a * np.exp(-(xaxis - b)**2 / c**2)
+    return val
+
+
+popt,pcov = curve_fit(gaussian, xaxis, yaxis, sigma = error)
+
+#print("Scale =  %.3f +/- %.3f" % (popt[0], np.sqrt(pcov[0, 0])))
+#print("Offset = %.3f +/- %.3f" % (popt[1], np.sqrt(pcov[1, 1])))
+#print("Sigma =  %.3f +/- %.3f" % (popt[2], np.sqrt(pcov[2, 2])))
+
+
+
+
+
+plt.plot(xaxis, yaxis)
+xm = np.linspace(-10., 10., 100)  # 100 evenly spaced points
+plt.plot(xm, gaussian(xm, popt[0], popt[1], popt[2]))
+#plt.plot(r[order],galaxy_data[x[order],y[order]])
+#plt.plot(galaxy_data[16,:])
+plt.show()
 
 
 
