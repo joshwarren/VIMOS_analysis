@@ -69,13 +69,15 @@ galaxy_data_error = np.delete(galaxy_data_error, cols_to_remove, axis=2)
 galaxy_data_error = np.sum(galaxy_data_error, axis=0)
 ##galaxy_data_error += galaxy_data
 
-galaxy_data /= np.median(galaxy_data)
 galaxy_data_error /= np.median(galaxy_data)
+galaxy_data /= np.median(galaxy_data)
 
 #print galaxy_data[12:15,8:11]
 #print galaxy_data[34:,0:3]
 galaxy_data[13,9]=1
 galaxy_data[35,1]=1
+galaxy_data_error[13,9]=1
+galaxy_data_error[35,1]=1
 #print np.min(galaxy_data)
 #print np.max(galaxy_data)
 
@@ -167,13 +169,12 @@ lam_dom = np.cumsum(lam_dom)
 
 
 lam = lam_num/lam_dom
-plt.title(r"Radial $\lambda_R$ profile")
-plt.xlabel("Radius")
-plt.ylabel(r"$\lambda_R$")
-plt.plot(r[order], lam)
-plt.show()
-
-
+if plots: 
+    plt.title(r"Radial $\lambda_R$ profile")
+    plt.xlabel("Radius")
+    plt.ylabel(r"$\lambda_R$")
+    plt.plot(r[order], lam)
+    plt.show()
 
 
 
@@ -192,24 +193,25 @@ yaxis = np.concatenate((galaxy_data[x[order[::-1]],y[order[::-1]]], galaxy_data[
 error = np.concatenate((galaxy_data_error[x[order[::-1]],y[order[::-1]]], galaxy_data_error[x[order],y[order]]))
 
 
-def gaussian(xaxis, a, b, c):
-    val = a * np.exp(-(xaxis - b)**2 / c**2)
+def gaussian(x, a, b, c):
+    val = a * np.exp(-(x - b)**2 / c**2)
     return val
 
-
-popt,pcov = curve_fit(gaussian, xaxis, yaxis, sigma = error)
+popt,pcov = curve_fit(gaussian, xaxis, yaxis)#, sigma = np.sqrt(error))
 
 #print("Scale =  %.3f +/- %.3f" % (popt[0], np.sqrt(pcov[0, 0])))
 #print("Offset = %.3f +/- %.3f" % (popt[1], np.sqrt(pcov[1, 1])))
 #print("Sigma =  %.3f +/- %.3f" % (popt[2], np.sqrt(pcov[2, 2])))
 
+Re = popt[2] * math.sqrt(math.pi)/4 + popt[1]
 
 
 
-
-plt.plot(xaxis, yaxis)
+#plt.plot(xaxis, yaxis)
 xm = np.linspace(-10., 10., 100)  # 100 evenly spaced points
 plt.plot(xm, gaussian(xm, popt[0], popt[1], popt[2]))
+plt.axvline(Re)
+plt.axvline(-Re)
 #plt.plot(r[order],galaxy_data[x[order],y[order]])
 #plt.plot(galaxy_data[16,:])
 plt.show()
