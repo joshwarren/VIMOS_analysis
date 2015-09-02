@@ -183,13 +183,20 @@ if plots:
 ## Fit galaxy radial flux profile with Gaussian and find half-light. 
 ## How close does this correspond to half of flux in field of view?
 
-r = np.sqrt(np.square(x-f.xmed)+np.square(y-f.ymed))
+
+
+
+
+
+r = ((x-f.xmed)/abs(x-f.xmed))*np.sqrt(np.square(x-f.xmed)+np.square(y-f.ymed))
 order = np.argsort(r)
 
 
 
-xaxis = np.concatenate((-r[order[::-1]], r[order]))
-yaxis = np.concatenate((galaxy_data[x[order[::-1]],y[order[::-1]]], galaxy_data[x[order],y[order]]))
+#xaxis = np.concatenate((-r[order[::-1]], r[order]))
+#yaxis = np.concatenate((galaxy_data[x[order[::-1]],y[order[::-1]]], galaxy_data[x[order],y[order]]))
+xaxis = r[order]
+yaxis = galaxy_data[x[order],y[order]]
 error = np.concatenate((galaxy_data_error[x[order[::-1]],y[order[::-1]]], galaxy_data_error[x[order],y[order]]))
 
 
@@ -197,27 +204,24 @@ def gaussian(x, a, c):
     val = a * np.exp(-(x)**2 / c**2)
     return val
 
-print min(yaxis)
 yaxis += -min(yaxis)
+
+#yaxis[612] = 15
 popt,pcov = curve_fit(gaussian, xaxis, yaxis)#, sigma = np.sqrt(error))
 
-#print("Scale =  %.3f +/- %.3f" % (popt[0], np.sqrt(pcov[0, 0])))
-#print("Offset = %.3f +/- %.3f" % (popt[1], np.sqrt(pcov[1, 1])))
-#print("Sigma =  %.3f +/- %.3f" % (popt[2], np.sqrt(pcov[2, 2])))
-
 Re = popt[1] * math.sqrt(math.pi)/4
+Re_error = np.sqrt(pcov[1, 1]) * math.sqrt(math.pi)/4
 
-print Re
-print popt
+print("Scale =  %.3f +/- %.3f" % (popt[0], np.sqrt(pcov[0, 0])))
+print("Sigma =  %.3f +/- %.3f" % (popt[1], np.sqrt(pcov[1, 1])))
+print "Re = %.3df +/- %.3f" % (Re, Re_error)
 
-#plt.plot(xaxis, yaxis)
+
 plt.plot(xaxis,yaxis, 'y')
 xm = np.linspace(-30., 30., 100)  # 100 evenly spaced points
 plt.plot(xm, gaussian(xm, popt[0], popt[1]), 'r')
 plt.axvline(Re)
 plt.axvline(-Re)
-#plt.plot(r[order],galaxy_data[x[order],y[order]])
-#plt.plot(galaxy_data[16,:])
 plt.show()
 
 
