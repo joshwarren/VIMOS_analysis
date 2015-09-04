@@ -24,7 +24,7 @@ discard = 2 # rows of pixels to discard- must have been the same
 wav_range = "4200-"
 corrections = [[13,9],[35,1]]
 
-plots = False
+plots = True
 find_Re = False # fits radial profile with a gaussian
 
 

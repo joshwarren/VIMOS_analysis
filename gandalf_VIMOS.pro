@@ -3,7 +3,7 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
-pro run_analysis;, galaxy, discard, limits
+pro gandalf_VIMOS;, galaxy, discard, limits
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
@@ -313,11 +313,21 @@ print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
 print, "spaxels:"
 print, 'x = ', x[spaxels_in_bin]
 print, 'y = ', y[spaxels_in_bin]
+
+
+
+
+
+
+
+;; ----------========= Stellar spectrum fitting ===========--------- 
+
+
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
-;;		/QUIET, ERROR = error
+;;;		/QUIET, ERROR = error
 print, ""
 print, ""
 
@@ -333,7 +343,59 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
- 	bin_dynamics[0,bin]=bin_dynamics_temp[0]
+ 
+
+
+
+;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+endfor 
+
+
+;; Error check - making sure all spaxels have been read into some
+;; bin. 
+if (i EQ n_spaxels-1) THEN BEGIN
+	print, 'ERROR: not all spaxels have been read'
+endif 
+
+
+
+return
+end
+
+
+pro stuffToSaveForLater
+
+	bin_dynamics[0,bin]=bin_dynamics_temp[0]
  	bin_dynamics[1,bin]=bin_dynamics_temp[1]
  	bin_dynamics[2,bin]=bin_dynamics_temp[2]
  	bin_dynamics[3,bin]=bin_dynamics_temp[3]
@@ -343,21 +405,6 @@ print, ""
  
 
 
-
-;+
-;;; Write weightings for each template used to file 1.
-;for k = 0, nfiles-1 do begin
-;if weights[k] ne 0 then begin
-;;; Use (uncomment) this line if using limited template files.
-;	PRINTF, 1, string(templatesToUse[k]) + ' ' + string(weights[k])
-;;; Use (uncomment) this line if using full library.
-;;	PRINTF, 1, string(k+1) + ' ' + string(weights[k])
-;endif
-;endfor
-;-
-
-
-endfor 
 
 ;; Open and print to files
 	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
@@ -384,88 +431,7 @@ CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
 
 
 
-;; Error check - making sure all spaxels have been read into some
-;; bin. 
-if (i EQ n_spaxels-1) THEN BEGIN
-	print, 'ERROR: not all spaxels have been read'
-endif 
-
-
 
 return
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; ==================================================================
-;; 		Print the data cube to a table format
-;; ==================================================================
-;; warrenj 20150330 Process to read the cube format and print it in
-;; table form into a text file.
-
-pro print_to_file
-
-
-	galaxy = 'ngc3557'
-	OB = '1'
-
-
-	galaxyDirectoryArray = FILE_SEARCH('/Data/vimosindi/' + Galaxy + $
-		'-' + OB + $
-;'/combined/combined_exposures/*.fits')
-		'/Final/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
-	dataCube = galaxyDirectoryArray[0]
-	FITS_READ, dataCube, galaxy_data, header
-
-	OPENW, 1, '~/VIMOS_project/analysis/testIO.dat'
-;	print, size(galaxy_data)
-	printf, 1, 'x       y       lambda       flux'
-
-for i = 0, 39 do begin
-for j = 0, 39 do begin
-for k = 0, 2799 do begin
-	PRINTF, 1, STRING(i) + STRING(j) + STRING(k) + $
-		STRING(galaxy_data[i,j,k])
-endfor
-endfor
-endfor
-	CLOSE, 1
-
-
-return
-end
-
-
-
-
 
