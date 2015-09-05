@@ -3,6 +3,82 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
+
+
+;-----------------------------------------------------------------------------
+function determine_goodPixels, emission, logLam, lamRangeTemp, vel, z
+; warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
+;
+; PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of
+;	goodPixels to be used as input keyword for the routine
+;	PPXF. This is useful to mask gas emission lines or atmospheric
+;	absorptions. It can be trivially adapted to mask different
+;	lines. 
+; 
+; INPUT PARAMETERS:
+; - LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom 
+;     of each pixel of the log rebinned *galaxy* spectrum.
+; - LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the
+;     minimum and maximum wavelength in Angstrom in the stellar
+;     *template* used in PPXF. 
+; - VEL: Estimate of the galaxy velocity in km/s.
+; 
+; V1.0: Michele Cappellari, Leiden, 9 September 2005
+; V1.01: Made a separate routine and included additional common
+;   emission lines. MC, Oxford 12 January 2012
+; V1.02: Included more lines. MC, Oxford, 7 Januray 2014
+
+c = 299792.458d ; speed of light in km/s
+
+;; 20150617 warrenj Added Telluric lines (tell) at 5199 (is a blended sky
+;; line)
+
+ 
+;dv = lines*0+800d ; width/2 of masked gas emission region in km/s
+dv = 800d ; width/2 of masked gas emission region in km/s
+
+flag = bytarr(n_elements(logLam))
+
+; Marks telluric line
+tell = 5199
+flag or= logLam gt alog(tell) - z - dv/c $
+     and logLam lt alog(tell) - z + dv/c 
+
+; Mask emission lines passed to routine
+FOR i=0, n_elements(emission.i)-1 DO BEGIN
+    IF (emission.action[i] EQ 'm') THEN BEGIN
+        flag or= logLam gt alog(emission.lambda[i]) + (vel - dv)/c $
+             and logLam lt alog(emission.lambda[i]) + (vel + dv)/c
+    ENDIF
+ENDFOR
+
+flag or= logLam lt alog(lamRangeTemp[0]) + (vel + 900d)/c ; Mask edges of
+flag or= logLam gt alog(lamRangeTemp[1]) + (vel - 900d)/c ; stellar library
+
+
+flag[0:3] = 1 ; Mask edge of data
+flag[-4:*]= 1 ; to remove edge effects
+return, where(flag eq 0)
+end
+;-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pro gandalf_VIMOS;, galaxy, discard, limits
 
 ;; ----------===============================================---------
@@ -48,6 +124,8 @@ pro gandalf_VIMOS;, galaxy, discard, limits
 ;	binning_spaxels, galaxy
 	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
 		'/voronoi_2d_binning_output.txt'
+;; Emission line file
+	emission_File = "/Data/vimosindi/analysis/emission_line.dat"
 
 
 ;; ----------===============================================---------
@@ -253,6 +331,9 @@ endfor
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
+	lambda = EXP(logLam_bin)
+	log_gal_start = logLam_bin[0]
+	log_gal_step = logLam_bin[1]-logLam_bin[0]
 
 ;; normalise the spectrum
 	bin_log = bin_log/MEDIAN(bin_log)
@@ -288,24 +369,43 @@ endfor
 ; applied to the template to fit the galaxy spectrum. We remove this
 ; artificial shift by using the keyword VSYST in the call to PPXF
 ; below, so that all velocities are measured with respect to DV. This
-; assume the redshift is negligible. In the case of a high-redshift
-; galaxy one should de-redshift its wavelength to the rest frame
-; before using the line below (see above). 
+; assume the redshift is negligible. 
 
-dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
+	dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
-
-; Find the pixels to ignore to avoid being distracted by gas emission
-; lines or atmospheric absorbsion line.  
-goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+;; ----------============ Finding good Pixels  =============---------
+;; Find the pixels to ignore to avoid being distracted by gas emission
+;; lines or atmospheric absorbsion line.  
+;goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
 
+; Read in emission-line setup file and fill in emission-line structure
+	readcol, emission_File, eml_i, eml_name, eml_lambda, $
+                eml_action, eml_kind, eml_a, eml_v, eml_s, eml_fit, $
+		f='(i,a,f,a,a,f,f,f,a)',skipline=2,comment='#',/silent  
+; creating emission setup structure, to be used for masking the
+; emission-line contaminated regions and fitting the emission lines in
+; ppxf_gas
+	emission = create_struct('i',eml_i,'name',eml_name,$
+		'lambda', eml_lambda, 'action', eml_action, $
+		'kind', eml_kind, 'a', eml_a, 'v', eml_v, 's', eml_s, $
+		'fit', eml_fit)  
+; setting the galaxy systemic velocity and 50km/s as initial guesses
+; for the gas velocities and velocity dispersions, over-writing the
+; emission-line setup values
+	emission.v = vel & emission.s = 50.0d
+
+	goodPixels = determine_goodPixels(emission, logLam_bin, $
+		lamRange_template, vel, z)
 
 
         
-	lambda = EXP(logLam_bin)
 
 	start = [vel, sig] ; starting guess
+
+
+
+;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
 
 print, "bin:", bin, "/", FIX(n_bins-1)
 print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
@@ -314,17 +414,8 @@ print, "spaxels:"
 print, 'x = ', x[spaxels_in_bin]
 print, 'y = ', y[spaxels_in_bin]
 
-
-
-
-
-
-
-;; ----------========= Stellar spectrum fitting ===========--------- 
-
-
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics_temp, BESTFIT = bestfit, $
+		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
 ;;;		/QUIET, ERROR = error
@@ -343,19 +434,28 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
- 
-
-
 
 ;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
+i_HbO3 = where(emission.name eq 'Hb' or emission.name eq '[OIII]')
+emission.action[i_HbO3] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z) 
 
 
+;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
+GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
+    emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
+    DEGREE = degree,  BESTFIT = Gbestfit, /PLOT 
 
-
-
-
-
-
+; CALLING SEQUENCE:
+; PRO GANDALF, templates, galaxy, noise, velScale, sol, $
+; 	emission_setup, l0_gal, lstep_gal, GOODPIXELS=goodPixels, $
+;	DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp, $
+;	BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, $
+;	WEIGHTS=weights, ERROR=esol, PLOT=plot, QUIET=quiet, $
+;	LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,$
+;	FOR_ERRORS=for_errors 
+;
 
 
 
