@@ -69,6 +69,12 @@ end
 
 
 
+pro pause
+in=' '
+READ,"Press enter",in
+end
+
+
 
 
 
@@ -241,10 +247,34 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
 
+;; ----------===== Masking structure for emission lines =====---------
+;; Find the pixels to ignore to avoid being distracted by gas emission
+;; lines or atmospheric absorbsion line.  
+;goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+
+
+; Read in emission-line setup file and fill in emission-line structure
+	readcol, emission_File, eml_i, eml_name, eml_lambda, $
+                eml_action, eml_kind, eml_a, eml_v, eml_s, eml_fit, $
+		f='(i,a,f,a,a,f,f,f,a)',skipline=2,comment='#',/silent  
+; creating emission setup structure, to be used for masking the
+; emission-line contaminated regions and fitting the emission lines in
+; ppxf_gas
+	emission = create_struct('i',eml_i,'name',eml_name,$
+		'lambda', eml_lambda, 'action', eml_action, $
+		'kind', eml_kind, 'a', eml_a, 'v', eml_v, 's', eml_s, $
+		'fit', eml_fit)  
+; setting the galaxy systemic velocity and 50km/s as initial guesses
+; for the gas velocities and velocity dispersions, over-writing the
+; emission-line setup values
+	emission.v = vel & emission.s = 50.0d
+
+
 ;; ----------========== Spatially Binning =============---------
 
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
+;for bin=0, n_bins-1 do begin
+bin = 1 ;;;;;************************************************
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
 
@@ -373,37 +403,11 @@ endfor
 
 	dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
-;; ----------============ Finding good Pixels  =============---------
-;; Find the pixels to ignore to avoid being distracted by gas emission
-;; lines or atmospheric absorbsion line.  
-;goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
-
-
-; Read in emission-line setup file and fill in emission-line structure
-	readcol, emission_File, eml_i, eml_name, eml_lambda, $
-                eml_action, eml_kind, eml_a, eml_v, eml_s, eml_fit, $
-		f='(i,a,f,a,a,f,f,f,a)',skipline=2,comment='#',/silent  
-; creating emission setup structure, to be used for masking the
-; emission-line contaminated regions and fitting the emission lines in
-; ppxf_gas
-	emission = create_struct('i',eml_i,'name',eml_name,$
-		'lambda', eml_lambda, 'action', eml_action, $
-		'kind', eml_kind, 'a', eml_a, 'v', eml_v, 's', eml_s, $
-		'fit', eml_fit)  
-; setting the galaxy systemic velocity and 50km/s as initial guesses
-; for the gas velocities and velocity dispersions, over-writing the
-; emission-line setup values
-	emission.v = vel & emission.s = 50.0d
-
+; Initial mask for pPXF with all emission lines masked.
 	goodPixels = determine_goodPixels(emission, logLam_bin, $
-		lamRange_template, vel, z)
-
-
-        
+		lamRange_template, vel, z)    
 
 	start = [vel, sig] ; starting guess
-
-
 
 ;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
 
@@ -441,11 +445,12 @@ emission.action[i_HbO3] = 'f'
 goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
     vel, z) 
 
+PAUSE
 
 ;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
 GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, /PLOT 
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT 
 
 ; CALLING SEQUENCE:
 ; PRO GANDALF, templates, galaxy, noise, velScale, sol, $
@@ -474,11 +479,12 @@ GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
 
 
 
-
-
-
-
-endfor 
+;; ----------======= Reset emission line structure =====--------- 
+    emission.action = 'm'
+    emission.v      = vel 
+    emission.s      = 50.0d
+    emission.fit[i_Hbo3] = 'f'
+;endfor ;;;;;************************************************
 
 
 ;; Error check - making sure all spaxels have been read into some
