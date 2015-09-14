@@ -90,6 +90,7 @@ pro gandalf_VIMOS;, galaxy, discard, limits
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
+	quiet = boolean(1) ; 1 = yes = true
   	galaxy = 'ngc3557'
 	discard = 2
 	range = [4200,10000]
@@ -125,6 +126,14 @@ pro gandalf_VIMOS;, galaxy, discard, limits
 		'/results/gal_h6.dat'
 	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_Chi.dat'
+output_OIII = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
+    'gal_OIII.dat'
+output_NI = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
+    'gal_NI.dat'
+output_Hb = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
+    'gal_Hb.dat'
+output_Hd = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
+    'gal_Hd.dat'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
@@ -190,11 +199,10 @@ for i = 0, nfiles - 1 do begin
 	log_rebin, lamRange_template, v2, log_temp_template, $
 		velscale=velscale
 
-;; Normalizing templates
-	templates[*,i] = log_temp_template/median(log_temp_template)
+	templates[*,i] = log_temp_template
 endfor
-
-
+;; Normalizing templates
+templates /= median(templates)
 
 
 
@@ -241,11 +249,17 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
-;; array to hold results
-	bin_dynamics = MAKE_ARRAY(7, n_bins)
+
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
+
+;; ----------========= Arrays to hold results =============---------
+stellar_bin_dynamics = MAKE_ARRAY(7, n_bins)
+OIII_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
+NI_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
+Hb_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
+Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 
 ;; ----------===== Masking structure for emission lines =====---------
 ;; Find the pixels to ignore to avoid being distracted by gas emission
@@ -273,8 +287,8 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 ;; ----------========== Spatially Binning =============---------
 
 ;; endfor is near the end - after ppxf has been run on this bin.
-;for bin=0, n_bins-1 do begin
-bin = 1 ;;;;;************************************************
+for bin=0, n_bins-1 do begin
+;bin = 1 ;;;;;************************************************
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
 
@@ -421,11 +435,13 @@ print, 'y = ', y[spaxels_in_bin]
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
-;;;		/QUIET, ERROR = error
-print, ""
-print, ""
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT, $
+		QUIET = quiet;, ERROR = error
 
+;; Add systematic velocity to the dynamics array.
+bin_dynamics_temp[0] += dv
+print, ""
+print, ""
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
 ;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1
 
@@ -445,12 +461,14 @@ emission.action[i_HbO3] = 'f'
 goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
     vel, z) 
 
-PAUSE
+if not quiet then PAUSE
 
 ;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
-GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
+sol = bin_dynamics_temp
+GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT 
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    QUIET = quiet 
 
 ; CALLING SEQUENCE:
 ; PRO GANDALF, templates, galaxy, noise, velScale, sol, $
@@ -462,18 +480,53 @@ GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
 ;	FOR_ERRORS=for_errors 
 ;
 
+if not quiet then PAUSE
+
+;; ----------============ Lift remaining masks ============--------- 
+i_mlines = where(emission.action eq 'm')
+emission.action[i_mlines] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z) 
+; fix Hb and [OIII] kinematics
+Hb = where(emission.name eq 'Hb')
+O3 = where(emission.name eq '[OIII]')
+emission.v[Hb] = sol[2]
+emission.s[Hb] = sol[3]
+emission.v[O3] = sol[6]
+emission.s[O3] = sol[7]
+emission.fit[i_Hbo3]  = 'h'
+; fix the [NI] and Hg kinematics to that of Hb
+i_n1Hg = where(emission.name eq '[NI]' and emission.name eq 'Hg')
+emission.v[i_n1Hg]       = sol[2]
+emission.s[i_n1Hg]       = sol[3]
+;emission.action[i_n1Hg] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z)
+
+emission.fit[i_n1Hg] = 'f'
+
+;; ----------======= Gas spectrum fitting 2 (Gandalf) ======--------- 
+sol = bin_dynamics_temp
+GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
+    emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    QUIET = quiet 
 
 
 
-
-
-
-
-
-
-
-
-
+;; ----------================ Saving results ===============--------- 
+stellar_bin_dynamics[0,bin]=bin_dynamics_temp[0]
+stellar_bin_dynamics[1,bin]=bin_dynamics_temp[1]
+stellar_bin_dynamics[2,bin]=bin_dynamics_temp[2]
+stellar_bin_dynamics[3,bin]=bin_dynamics_temp[3]
+stellar_bin_dynamics[4,bin]=bin_dynamics_temp[4]
+stellar_bin_dynamics[5,bin]=bin_dynamics_temp[5]
+stellar_bin_dynamics[6,bin]=bin_dynamics_temp[6]
+ 
+if sol[20] ne 0 then OIII_dynamics[bin] = sol[22]
+if sol[16] ne 0 then Hb_dynamics[bin] = sol[18]
+if sol[24] ne 0 then NI_dynamics[bin] = sol[26]
+if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
 
 
 
@@ -484,7 +537,8 @@ GANDALF, templates, bin_log, noise, velscale, bin_dynamics_temp, $
     emission.v      = vel 
     emission.s      = 50.0d
     emission.fit[i_Hbo3] = 'f'
-;endfor ;;;;;************************************************
+    emission.fit[i_n1Hg] = 'h'
+endfor ;;;;;************************************************
 
 
 ;; Error check - making sure all spaxels have been read into some
@@ -493,27 +547,9 @@ if (i EQ n_spaxels-1) THEN BEGIN
 	print, 'ERROR: not all spaxels have been read'
 endif 
 
-
-
-return
-end
-
-
-pro stuffToSaveForLater
-
-	bin_dynamics[0,bin]=bin_dynamics_temp[0]
- 	bin_dynamics[1,bin]=bin_dynamics_temp[1]
- 	bin_dynamics[2,bin]=bin_dynamics_temp[2]
- 	bin_dynamics[3,bin]=bin_dynamics_temp[3]
- 	bin_dynamics[4,bin]=bin_dynamics_temp[4]
- 	bin_dynamics[5,bin]=bin_dynamics_temp[5]
-	bin_dynamics[6,bin]=bin_dynamics_temp[6]
- 
-
-
-
+;; ----------========== Write results to file ==========--------- 
 ;; Open and print to files
-	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
+	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 	OPENW, 1, output_temp_weighting
 	OPENW, 2, output_v
 	OPENW, 3, output_sigma
@@ -522,22 +558,38 @@ pro stuffToSaveForLater
 	OPENW, 6, output_h5
 	OPENW, 7, output_h6
 	OPENW, 8, output_Chi
+	OPENW, 9, output_OIII
+	OPENW, 10, output_Hb
+	OPENW, 11, output_NI
+	OPENW, 12, output_Hd
 for bin=0, n_bins-1 do begin
-	PRINTF, 2, bin_dynamics[0,bin]
-	PRINTF, 3, bin_dynamics[1,bin]
-	PRINTF, 4, bin_dynamics[2,bin]
-	PRINTF, 5, bin_dynamics[3,bin]
-;	PRINTF, 6, bin_dynamics[4,bin]
-;	PRINTF, 7, bin_dynamics[5,bin]
-	PRINTF, 8, bin_dynamics[6,bin]
+	PRINTF, 2, stellar_bin_dynamics[0,bin]
+	PRINTF, 3, stellar_bin_dynamics[1,bin]
+	PRINTF, 4, stellar_bin_dynamics[2,bin]
+	PRINTF, 5, stellar_bin_dynamics[3,bin]
+;	PRINTF, 6, stellar_bin_dynamics[4,bin]
+;	PRINTF, 7, stellar_bin_dynamics[5,bin]
+	PRINTF, 8, stellar_bin_dynamics[6,bin]
+	PRINTF, 9, OIII_dynamics[bin]
+	PRINTF, 10, Hb_dynamics[bin]
+	PRINTF, 11, NI_dynamics[bin]
+	PRINTF, 12, Hd_dynamics[bin]
 endfor
 
 
-CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
+CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+
+
+
+
+
+
+
+
+
 
 
 
 
 return
 end
-
