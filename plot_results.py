@@ -91,15 +91,19 @@ if plot=="h4":
 if plot=="OIII":
     v_binned = np.loadtxt(output_OIII)
     print "OIII"
+    v_binned += -np.median(v_binned)
 if plot=="NI":
     v_binned = np.loadtxt(output_NI)
     print "NI"
+    v_binned += -np.median(v_binned)
 if plot=="Hb":
     v_binned = np.loadtxt(output_Hb)
     print "Hb"
+    v_binned += -np.median(v_binned)
 if plot=="Hd":
     v_binned = np.loadtxt(output_Hd)
     print "Hd"
+    v_binned += -np.median(v_binned)
 
 #v_binned += -np.median(v_binned)
 
@@ -166,8 +170,8 @@ vmax = max(v_binned)
 vmin = min(v_binned)
 v_sorted = sorted(np.unique(v_binned))
 #v_sorted = sorted(v_binned)
-#vmin = v_sorted[vLimit]
-#vmax = v_sorted[-vLimit-1]
+vmin = v_sorted[vLimit]
+vmax = v_sorted[-vLimit-1]
 
 
 # ------------============= Plot velfield ==============----------
