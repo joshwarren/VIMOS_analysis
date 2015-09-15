@@ -15,10 +15,14 @@ import matplotlib.pyplot as plt # used for plotting
 
 wav_range=None
 
-plot = "v"
+#plot = "v"
 #plot ="sigma"
 #plot ="h3"
 #plot="h4"
+plot="OIII"
+#plot="NI"
+#plot="Hb"
+#plot="Hd"
 wav_range="4200-"
 
 
@@ -53,6 +57,14 @@ output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_h6.dat" % (wav_range_dir)
 output_Chi = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_Chi.dat" % (wav_range_dir)
+output_OIII = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_OIII.dat" % (wav_range_dir)
+output_NI = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_NI.dat" % (wav_range_dir)
+output_Hb = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_Hb.dat" % (wav_range_dir)
+output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_Hd.dat" % (wav_range_dir)
 
 # Read tessellation file
 x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -76,6 +88,18 @@ if plot=="h3":
 if plot=="h4":
     v_binned = np.loadtxt(output_h4)
     print "h4"
+if plot=="OIII":
+    v_binned = np.loadtxt(output_OIII)
+    print "OIII"
+if plot=="NI":
+    v_binned = np.loadtxt(output_NI)
+    print "NI"
+if plot=="Hb":
+    v_binned = np.loadtxt(output_Hb)
+    print "Hb"
+if plot=="Hd":
+    v_binned = np.loadtxt(output_Hd)
+    print "Hd"
 
 #v_binned += -np.median(v_binned)
 
@@ -142,14 +166,14 @@ vmax = max(v_binned)
 vmin = min(v_binned)
 v_sorted = sorted(np.unique(v_binned))
 #v_sorted = sorted(v_binned)
-vmin = v_sorted[vLimit]
-vmax = v_sorted[-vLimit-1]
+#vmin = v_sorted[vLimit]
+#vmax = v_sorted[-vLimit-1]
 
 
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
 plt.clf()
-if plot=="v":
+if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
     plt.title('Velocity Map')
     CBLabel = "LOSV (km s$^{-1}$)"
 elif plot=="sigma":

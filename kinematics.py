@@ -24,7 +24,7 @@ discard = 2 # rows of pixels to discard- must have been the same
 wav_range = "4200-"
 corrections = [[13,9],[35,1]]
 
-plots = True
+plots = False
 find_Re = False # fits radial profile with a gaussian
 
 
@@ -52,6 +52,8 @@ output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_vel.dat" % (wav_range_dir)
 output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_sigma.dat" % (wav_range_dir)
+output_OIII = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+"%sgal_OIII.dat" % (wav_range_dir)
 
 # ------------=============== Photometry =================----------
 # ------------========== Reading the data cube ===========----------
@@ -99,8 +101,8 @@ f = find_galaxy(galaxy_data, quiet=True, plot=plots)
 
 #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
 
-print "ellip:" + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
-print "PA_photo:" + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
+print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
+print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 
 
 
@@ -126,7 +128,7 @@ v_field -= np.median(v_field)
 
 # ------------============== Fit kinemetry ===============----------
 k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots) 
-print "PA_kin:" + str(k[0]) + "+/-" + str(k[1]/3)
+print "PA_kin: " + str(k[0]) + "+/-" + str(k[1]/3)
 
 
 # ------------============== Misalignment ================----------
@@ -136,7 +138,23 @@ kine = math.radians(k[0])
 
 mis = math.asin(abs(math.sin(phot-kine)))
 mis = math.degrees(mis)
-print "Psi:" + str(mis)
+print "Psi: " + str(mis)
+
+
+# ------------================= Hot gas ================----------
+OIII_vel = np.loadtxt(output_OIII, unpack=True)
+OIII_vel -= np.median(OIII_vel)
+plots = True
+gas_k = fit_kinematic_pa(xBar, yBar, OIII_vel, quiet=True, plot=plots) 
+print "Gas_PA_kin: " + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
+
+# ------------============== Misalignment ================----------
+gas_kine = math.radians(gas_k[0])
+
+gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
+gas_mis = math.degrees(gas_mis)
+print "Psi: " + str(gas_mis)
+
 
 
 # ------------================= Lambda_R ================----------
