@@ -39,6 +39,7 @@ if wav_range:
     wav_range_dir = wav_range + "/"
 else:
     wav_range_dir = ""
+    wav_range = ""
 
 dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
     "*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits" % (galaxy)) 
@@ -97,7 +98,11 @@ for i in range(len(corrections)):
         np.median(galaxy_data_error)
 
 # ------------============= Fit photometry ===============----------
-f = find_galaxy(galaxy_data, quiet=True, plot=plots)
+plots=True
+save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+    "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
+f = find_galaxy(galaxy_data, quiet=True, plot=plots, sav_fig=save_to)
+plots=False
 
 #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
 
@@ -127,7 +132,16 @@ v_field -= np.median(v_field)
 
 
 # ------------============== Fit kinemetry ===============----------
-k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots) 
+save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+    "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, wav_range)
+k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots, \
+    sav_fig=save_to)
+
+#if plots:
+#    plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+#        "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, wav_range), \
+#        bbox_inches="tight")
+
 print "PA_kin: " + str(k[0]) + "+/-" + str(k[1]/3)
 
 
@@ -144,8 +158,17 @@ print "Psi: " + str(mis)
 # ------------================= Hot gas ================----------
 OIII_vel = np.loadtxt(output_OIII, unpack=True)
 OIII_vel -= np.median(OIII_vel)
-plots = True
-gas_k = fit_kinematic_pa(xBar, yBar, OIII_vel, quiet=True, plot=plots) 
+
+save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+    "%s/plots/OIII_kinematics_%s.png" % (wav_range_dir, wav_range)
+gas_k = fit_kinematic_pa(xBar, yBar, OIII_vel, quiet=True, plot=plots, \
+    sav_fig=save_to)
+
+#if plots:
+#    plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+#        "%s/plots/OIII_kinematics_%s.png" % (wav_range_dir, wav_range), \
+#        bbox_inches="tight") 
+
 print "Gas_PA_kin: " + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
 
 # ------------============== Misalignment ================----------
@@ -189,11 +212,15 @@ lam_den = np.cumsum(lam_den)
 
 lam = lam_num/lam_den
 
+plt.figure()
+plt.title(r"Radial $\lambda_R$ profile")
+plt.xlabel("Radius (kpc)")
+plt.ylabel(r"$\lambda_R$")
+plt.plot(spxToKpc(r[order],z), lam)
+plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+    "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
+    bbox_inches="tight")
 if plots: 
-    plt.title(r"Radial $\lambda_R$ profile")
-    plt.xlabel("Radius (kpc)")
-    plt.ylabel(r"$\lambda_R$")
-    plt.plot(spxToKpc(r[order],z), lam)
     plt.show()
 
 
@@ -237,14 +264,19 @@ if find_Re:
     print "Re = (%.3f +/- %.3f)kpc" % (Re_kpc, Re_error_kpc)
     
     #plots = True
+    
+    plt.figure()
+    plt.title("Radial flux profile")
+    plt.xlabel("Radius (kpc)")
+    plt.ylabel('Flux (normalised)')
+    plt.plot(spxToKpc(xaxis,z),yaxis, 'y')
+    xm = np.linspace(-30., 30., 100)  # 100 evenly spaced points
+    plt.plot(spxToKpc(xm,z), gaussian(xm, popt[0], popt[1]), 'r')
+    plt.axvline(Re_kpc)
+    plt.axvline(-Re_kpc)
+    plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        "%s/plots/radial_light_profile_%s" % (wav_range_dir, wav_range) + \
+        ".png", bbox_inches="tight")
     if plots:
-        plt.title("Radial flux profile")
-        plt.xlabel("Radius (kpc)")
-        plt.ylabel('Flux (normalised)')
-        plt.plot(spxToKpc(xaxis,z),yaxis, 'y')
-        xm = np.linspace(-30., 30., 100)  # 100 evenly spaced points
-        plt.plot(spxToKpc(xm,z), gaussian(xm, popt[0], popt[1]), 'r')
-        plt.axvline(Re_kpc)
-        plt.axvline(-Re_kpc)
         plt.show()
 

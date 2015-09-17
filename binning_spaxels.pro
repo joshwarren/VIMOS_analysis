@@ -8,7 +8,8 @@
 
 pro binning_spaxels;,xNode,yNode;, galaxy
 
-	galaxy = 'ngc3557'
+;	galaxy = 'ngc3557'
+	galaxy = 'ic1459'
 	discard = 2
 	targetSN = 30.0
 
@@ -31,6 +32,8 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 
 ;plot, galaxy_data(10,10,*)
 
+
+
 	s = size(galaxy_data_temp)
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
@@ -39,15 +42,13 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 		[discard:s[2]-discard-1],*]
 	galaxy_noise = galaxy_noise_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
+;	galaxy_noise[where(galaxy_noise<0)]=0
+print, n_elements(where(galaxy_noise<0))/1600
 
-
+	
 	s = size(galaxy_data)
 	n_spaxels = s[1]*s[2]
 
-
-
-;	signal = MAKE_ARRAY(s[1],s[2])
-;	noise = MAKE_ARRAY(s[1],s[2])
 
 	signal = MAKE_ARRAY(n_spaxels)
 	noise = MAKE_ARRAY(n_spaxels)
@@ -59,8 +60,6 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 ;; collapsing the spectrum for each spaxel.
 for i = 0, s[1]-1 do begin
 for j = 0, s[2]-1 do begin
-;	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *])
-;	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *])
 
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *])
 	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *])

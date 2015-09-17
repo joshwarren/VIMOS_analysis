@@ -91,7 +91,8 @@ pro gandalf_VIMOS;, galaxy, discard, limits
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
 	quiet = boolean(1) ; 1 = yes = true
-  	galaxy = 'ngc3557'
+;  	galaxy = 'ngc3557'
+	galaxy = 'ic1459'
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d

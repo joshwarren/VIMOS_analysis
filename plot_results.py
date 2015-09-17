@@ -1,10 +1,10 @@
 ## ==================================================================
 ## 		Plot the outputted dynamics maps
 ## ==================================================================
-## warrenj 20150330 Process to read the cube format and print it in
-## table form into a text file.
-## testing a change at NAM2015
+## warrenj 20150330 Process to plot the results of pPXF and GANDALF 
+## routines.
 ## warrenj 20150727 Changing to a python script
+## warrenj 20150917 Altered to plot and save all 8 plots.
 
 from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for reading files
@@ -14,17 +14,8 @@ import matplotlib.pyplot as plt # used for plotting
 #-----------------------------------------------------------------------------
 
 wav_range=None
-
-#plot = "v"
-#plot ="sigma"
-#plot ="h3"
-#plot="h4"
-plot="OIII"
-#plot="NI"
-#plot="Hb"
-#plot="Hd"
 wav_range="4200-"
-
+show_plot = True
 
 galaxy = "ngc3557"
 discard = 2 # rows of pixels to discard- must have been the same 
@@ -66,6 +57,9 @@ output_Hb = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_Hd.dat" % (wav_range_dir)
 
+plots = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, "Hb" : output_Hb, "Hd" : output_Hd}
+
+
 # Read tessellation file
 x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
     skiprows = 1) 
@@ -73,39 +67,7 @@ n_spaxels = len(bin_num)
 number_of_bins = int(max(bin_num)+1)
 order = bin_num.argsort()
 
-# Read results files - each entry in array corresponds to a bin (not
-# a spaxel)
-if plot=="v":
-    v_binned = np.loadtxt(output_v)
-    print "Velocity"
-    v_binned += -1.1*np.mean(v_binned)
-if plot=="sigma":
-    v_binned = np.loadtxt(output_sigma)
-    print "Velcity dispersion"
-if plot=="h3":
-    v_binned = np.loadtxt(output_h3)
-    print "h3"
-if plot=="h4":
-    v_binned = np.loadtxt(output_h4)
-    print "h4"
-if plot=="OIII":
-    v_binned = np.loadtxt(output_OIII)
-    print "OIII"
-    v_binned += -np.median(v_binned)
-if plot=="NI":
-    v_binned = np.loadtxt(output_NI)
-    print "NI"
-    v_binned += -np.median(v_binned)
-if plot=="Hb":
-    v_binned = np.loadtxt(output_Hb)
-    print "Hb"
-    v_binned += -np.median(v_binned)
-if plot=="Hd":
-    v_binned = np.loadtxt(output_Hd)
-    print "Hd"
-    v_binned += -np.median(v_binned)
 
-#v_binned += -np.median(v_binned)
 
 
 # ------------========== Total flux per bin ===========----------
@@ -136,17 +98,6 @@ galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 
 
 
-# ------------=========== unbinned version ============----------
-v = []
-flux_unbinned = []
-for spaxel in range(n_spaxels):
-     v.append(v_binned[bin_num[spaxel]])
-     flux_unbinned.append(np.sum(galaxy_data[:,y[spaxel],x[spaxel]]))
-
-flux_unbinned = flux_unbinned/np.median(flux_unbinned)
-
-
-
 
 # ------------========== Spatially binning ===========----------
 xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
@@ -165,34 +116,48 @@ for bin in range(number_of_bins):
 flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 
 
+# ------------============= Read fields =============----------
+# Read results files - each entry in array corresponds to a bin (not
+# a spaxel)
+for plot in plots:
+    print plot
+    v_binned = np.loadtxt(plots[plot])
+
+    if plot=="v":
+        v_binned += -1.1*np.median(v_binned)
+    if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        v_binned += -np.median(v_binned)
+
 # ------------============ Setting v range =============----------
-vmax = max(v_binned)
-vmin = min(v_binned)
-v_sorted = sorted(np.unique(v_binned))
-#v_sorted = sorted(v_binned)
-vmin = v_sorted[vLimit]
-vmax = v_sorted[-vLimit-1]
+    vmax = max(v_binned)
+    vmin = min(v_binned)
+    v_sorted = sorted(np.unique(v_binned))
+    if len(v_sorted) < 2*vLimit:
+        v_sorted = sorted(v_binned)
+    vmin = v_sorted[vLimit]
+    vmax = v_sorted[-vLimit-1]
 
 
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
-plt.clf()
-if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-    plt.title('Velocity Map')
-    CBLabel = "LOSV (km s$^{-1}$)"
-elif plot=="sigma":
-    plt.title('Velocity Dispersion Map')
-    CBLabel = "LOSVD (km s$^{-1}$)"
-else:
-    plt.title(plot + ' Map')
-    CBLabel = ""
-plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
-    nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
-#plot_velfield(x, y, v, vmin=vmin, vmax=vmax, 
-#    nodots=False, flux=flux_unbinned)
+    plt.clf()
+    if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        plt.title('Velocity Map')
+        CBLabel = "LOSV (km s$^{-1}$)"
+    elif plot=="sigma":
+        plt.title('Velocity Dispersion Map')
+        CBLabel = "LOSVD (km s$^{-1}$)"
+    else:
+        plt.title(plot + ' Map')
+        CBLabel = ""
 
+    plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
+        nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
 
-plt.savefig("/home/warrenj/Desktop/" + plot + "_field_" + wav_range + ".png", bbox_inches="tight")
-plt.show()
+    plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        "%s/plots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \
+        bbox_inches="tight")
+    if show_plot:
+        plt.show()
 
 
