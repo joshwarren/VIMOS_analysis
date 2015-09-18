@@ -1,7 +1,8 @@
 ;; ==================================================================
-;; Analyse reduced VIMOS data using pPFX
+;; Analyse reduced VIMOS data using pPFX and Gandalf
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
+;; warrenj 20150915 Gandalf code added to analyse hot gas componant.
 
 
 
@@ -225,9 +226,11 @@ templates /= median(templates)
 
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
+; Final wildcard reflects the fact that depending on reduction method
+; quadrants may or may not have beenflux calibrated.
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		Galaxy + $
-		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
 ;;                                     and have binned the quadrant.

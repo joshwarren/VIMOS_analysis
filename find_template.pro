@@ -3,12 +3,13 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
-pro run_analysis;, galaxy, discard, limits
+pro find_template;, galaxy, discard, limits
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
-  	galaxy = 'ngc3557'
+;  	galaxy = 'ngc3557'
+	galaxy = 'ic1459'
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d
@@ -84,11 +85,6 @@ pro run_analysis;, galaxy, discard, limits
         FWHM_tem = 2.5     ; Miles spectra have a resolution
                            ; FWHM of 2.5A.
 
-
-;; Which templates to use are given in use_templates.pro. This is
-;; transfered to the array templatesToUse.
-	use_templates, templatesToUse
-	nfiles = N_ELEMENTS(templatesToUse)
 	templates = MAKE_ARRAY(n_elements(log_temp_template), nfiles)
 
          
@@ -96,12 +92,7 @@ pro run_analysis;, galaxy, discard, limits
 ;; Including rebinning them.
 for i = 0, nfiles - 1 do begin
 
-
-	READCOL, templateFiles[templatesToUse[i]-1], v1,v2, $
-		FORMAT = 'D,D', /SILENT
-
-
-;	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
+	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
 
 ;; Rebinning templates logarthmically
 ;	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
@@ -114,29 +105,15 @@ endfor
 
 
 
-
-
-;; ----------========= Reading Tessellation  =============---------
-
-;; Reads the txt file containing the output of the binning_spaxels
-;; routine. 
-	RDFLOAT, tessellation_File, x, y, bin_num, COLUMNS = [1,2,3], $
-		SKIPLINE = 1, /SILENT 
-	
-	n_bins = max(bin_num) + 1
-;; Contains the order of the bin numbers in terms of index number.
-	order = sort(bin_num)
-
-
-
-
 ;; ----------========= Reading the spectrum  =============---------
 
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
+; Final wildcard reflects the fact that depending on reduction method
+; quadrants may or may not have beenflux calibrated.
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		Galaxy + $
-		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
 ;;                                     and have binned the quadrant.
@@ -165,26 +142,6 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
-
-;; ----------========== Spatially Binning =============---------
-
-;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
-	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
-
-
-;; Creates a new spectrum for a new bin.
-        bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
-		VALUE = 0d) 
-
-for i = 0, n_spaxels_in_bin-1 do begin
-	x_i = x[spaxels_in_bin[i]]
-	y_i = y[spaxels_in_bin[i]]
-for k = 0, s[3]-1 do begin
-	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
-endfor
-endfor
-;; bin_lin now contains linearly binned spectrum of the spatial bin.
 
 
 ;; --------======== Finding limits of the spectrum ========--------

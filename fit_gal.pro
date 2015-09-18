@@ -11,11 +11,10 @@ pro fit_gal
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
 	c = 299792.458d
-	lower_limit = 4000
-	upper_limit = 5350
-;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 2000.0d ; Initial estimate of the galaxy velocity in km/s
-	sig = 270.0d ; Initial estimate of the galaxy dispersion in km/s 
+	range = [0,10000]
+  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+	vel = 114.0d ; Initial estimate of the galaxy velocity in km/s
+	sig = 269.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame
 ;	spaxel = [20,20] ; spaxel to read off
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
@@ -69,8 +68,8 @@ pro fit_gal
 
 ;; Which templates to use are given in use_templates.pro. This is
 ;; transfered to the array templatesToUse.
-	use_templates, templatesToUse
-	nfiles = N_ELEMENTS(templatesToUse)
+;	use_templates, templatesToUse
+;	nfiles = N_ELEMENTS(templatesToUse)
 	templates = MAKE_ARRAY(n_elements(log_temp_template), nfiles)
 
          
@@ -79,10 +78,10 @@ pro fit_gal
 for i = 0, nfiles - 1 do begin
 
 
-	READCOL, templateFiles[templatesToUse[i]-1], v1,v2, $
-		FORMAT = 'D,D', /SILENT
+;	READCOL, templateFiles[templatesToUse[i]-1], v1,v2, $
+;		FORMAT = 'D,D', /SILENT
 
-;	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
+	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
 
 
 ;; Rebinning templates logarthmically
@@ -94,21 +93,6 @@ for i = 0, nfiles - 1 do begin
 	templates[*,i] = log_temp_template/median(log_temp_template)
 endfor
 ;-
-
-
-;; ----------========= Reading Tessellation  =============---------
-
-;; Reads the txt file containing the output of the binning_spaxels
-;; routine. 
-	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
-		'/voronoi_2d_binning_output.txt'
-	RDFLOAT, tessellation_File, x, y, bin_num, COLUMNS = [1,2,3], $
-		SKIPLINE = 1, /SILENT 
-	
-	n_bins = max(bin_num) + 1
-;; Contains the order of the bin numbers in terms of index number.
-	order = sort(bin_num)
-
 
 
 
@@ -124,44 +108,103 @@ endfor
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data, header
 
+;; write key parameters from header - can then be altered in future	
+	CRVAL_spec = sxpar(header,'CRVAL3')
+	CDELT_spec = sxpar(header,'CD3_3')
+	s = size(galaxy_data)
+
+;; Change to pixel units
+IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
+
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
-
-
-;; For calibrating the resolutions between templates and observations
-;; using the gauss_smooth command
-	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
-	sigma = FWHM_dif/2.355/sxpar(header,'CD3_3') ; Sigma difference 
-						     ; in pixels
 
 ;; For rebinning logarthmically
 ;	lamRange = sxpar(header,'CRVAL3') + $
 ;                   [0,sxpar(header,'CD3_3')*(sxpar(header,'NAXIS3')-1)]
-	lamRange = [lower_limit, upper_limit]
-;        lamRange = lamRange/(1+z) ; Compute approximate restframe
-       			    ; wavelength range
-	pixRange = FIX((lamRange-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3'))
-        
+         
 ;; ----------======== Integrating over whole galaxy =========--------- 
 
 
 
 ;; Need to create a new spectrum for a new bin.
-	bin_lin = MAKE_ARRAY(pixRange[1]-pixRange[0])
+	bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
+		VALUE = 0d) 
 for i = 0, 39 do begin
 for j = 0, 39 do begin
-for k = pixRange[0], pixRange[1]-1 do begin
-	bin_lin[k-pixRange[0]] += galaxy_data[i,j,k]
+for k = 0, s[3]-1 do begin
+	bin_lin_temp[k] += galaxy_data[i,j,k]
 endfor
 endfor
 endfor
 ;; bin_lin now contains linearly binned spectrum of the spatial bin. 
+;; --------======== Finding limits of the spectrum ========--------
+;; limits are the cuts in pixel units, while lamRange is the cuts in
+;; wavelength unis.
+	gap=12
+	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
+	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
+
+
+;; h is the spectrum with the peak enclosed by 'ignore' removed.
+	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
+
+	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
+
+
+	half = s[3]/2
+	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
+	a[WHERE(~FINITE(a))] = 0
+	
+;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
+	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
+
+
+
+
+IF (upper_limit GT ignore2[0]) then upper_limit += gap
+IF (upper_limit GT ignore[0]) then upper_limit += gap
+
+IF (lower_limit LT 0) THEN BEGIN
+	lower_limit = MIN(WHERE(a[0:half] NE 0)) + 5
+	IF (lower_limit LT 0) THEN lower_limit = 0 
+ENDIF ELSE lower_limit += 5
+IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
+	ELSE upper_limit += - 5
+
+;; --------=========== Using range variable ===========--------
+IF keyword_set(range) THEN BEGIN
+IF range[0] GT lower_limit THEN lower_limit = range[0]
+IF range[1] LT upper_limit THEN upper_limit = range[1]
+ENDIF
+
+;lower_limit = 0 
+;upper_limit = n_elements(galaxy_data[0,0,*])-1
+	lamRange = MAKE_ARRAY(2)
+	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
+	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
+
+
+;; ----------========= Writing the spectrum  =============---------
+	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
+for i = 0, n_elements(bin_lin)-1 do begin
+	bin_lin[i] = bin_lin_temp[lower_limit+i]
+endfor
+
+;; ----------======== Calibrating the spectrum  ===========---------
+;; For calibrating the resolutions between templates and observations
+;; using the gauss_smooth command
+	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
+	sigma = FWHM_dif/2.355/CDELT_temp ; Sigma difference 
+						     ; in pixels
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
 
 
-
+       lamRange = lamRange/(1+z) ; Compute approximate restframe
+       			    ; wavelength range
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
@@ -213,7 +256,7 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,$
-	lamRange_template,vel) 
+	lamRange_template,vel,z) 
 
 	lambda = EXP(logLam_bin)
 ;for i = 0, n_elements(goodPixels)-1 do begin
@@ -227,7 +270,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,$
 
 print, 'Fit for the whole galaxy'
 
-	PPXF2, templates, bin_log, noise, velscale, start, $
+	PPXF, templates, bin_log, noise, velscale, start, $
 		spaxel_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = 2, VSYST = dv, WEIGHTS = weights, /PLOT

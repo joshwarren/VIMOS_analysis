@@ -17,7 +17,8 @@ wav_range=None
 wav_range="4200-"
 show_plot = True
 
-galaxy = "ngc3557"
+#galaxy = "ngc3557"
+galaxy="ic1459"
 discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
 vLimit = 2 # limit the velocity plotted: this is the number of 
@@ -76,7 +77,7 @@ order = bin_num.argsort()
 # FILE_SEARCH returns an array even in cases where it only returns
 # one result. This is NOT equivalent to a scalar. 
 dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-    "*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits" % (galaxy)) 
+    "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
 
 ## Directory for plotting single quadrant
 #dataCubeDirectory = glob.glob("/Data/vimosindi/%s-3/Q2/calibrated/cube/" \
@@ -155,7 +156,7 @@ for plot in plots:
         nodots=False, colorbar=True, label=CBLabel, flux=flux_bar_binned)
 
     plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%s/plots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \
+        "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \
         bbox_inches="tight")
     if show_plot:
         plt.show()

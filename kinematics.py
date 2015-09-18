@@ -42,7 +42,7 @@ else:
     wav_range = ""
 
 dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-    "*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits" % (galaxy)) 
+    "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
 
 tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
 "voronoi_2d_binning_output.txt"

@@ -15,9 +15,11 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 
 
 ;; ----------================ Find S/N ================------------
+; Final wildcard notes that depending on the method used the quadrants
+; may or may not have been flux calibrated. 
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		galaxy + $
-		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits')
+		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits')
 
 ;;Bins just one quadrant - must have used rss2cube_quadrant.pro script
 ;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
@@ -43,7 +45,7 @@ pro binning_spaxels;,xNode,yNode;, galaxy
 	galaxy_noise = galaxy_noise_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
 ;	galaxy_noise[where(galaxy_noise<0)]=0
-print, n_elements(where(galaxy_noise<0))/1600
+;print, n_elements(where(galaxy_noise<0))/1600
 
 	
 	s = size(galaxy_data)
