@@ -6,7 +6,7 @@
 ;; sigma, and 40-50 for h3 and h4. 
  
 
-pro binning_spaxels;,xNode,yNode;, galaxy
+pro binning_spaxels;, galaxy = "ngc3557", dicard = 2, targetSN = 30.0
 
 ;	galaxy = 'ngc3557'
 	galaxy = 'ic1459'

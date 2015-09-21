@@ -4,12 +4,12 @@
 ;; warrenj 20150604 Routine to plot the best fit against the spectrum
 ;; for a given bin.
 
-pro mcmc_fit_bin, vel, sig, chi
+pro mcmc_fit_bin, galaxy, vel, sig, chi
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
-  	galaxy = 'ngc3557'
+;  	galaxy = 'ngc3557'
 	discard = 2
 	fit_bin_num = 177
 	range = [4000,4500]
@@ -71,7 +71,7 @@ pro mcmc_fit_bin, vel, sig, chi
 
 ;; Which templates to use are given in use_templates.pro. This is
 ;; transfered to the array templatesToUse.
-	use_templates, templatesToUse
+	use_templates, galaxy, templatesToUse
 	nfiles = N_ELEMENTS(templatesToUse)
 	templates = MAKE_ARRAY(n_elements(log_temp_template), nfiles)
 
@@ -79,7 +79,6 @@ pro mcmc_fit_bin, vel, sig, chi
 ;; Reading the contents of the files into the array templates. 
 ;; Including rebinning them.
 for i = 0, nfiles - 1 do begin
-
 
 	READCOL, templateFiles[templatesToUse[i]-1], v1,v2, $
 		FORMAT = 'D,D', /SILENT
@@ -122,7 +121,7 @@ endfor
 ;; one result. This is NOT equivalent to a scalar. 
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
 		Galaxy + $
-		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 	s = size(galaxy_data_temp)

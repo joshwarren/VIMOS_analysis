@@ -86,12 +86,13 @@ end
 
 
 
-pro gandalf_VIMOS;, galaxy, discard, limits
+pro gandalf_VIMOS;, galaxy='ngc3557', z=0.01, discard=2, $
+;	range=[4200,10000], vel=114.0d, sig=269.0d
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
-	quiet = boolean(1) ; 1 = yes = true
+	quiet = boolean(0) ; 1 = yes = true
 ;  	galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	discard = 2
@@ -100,6 +101,8 @@ pro gandalf_VIMOS;, galaxy, discard, limits
   	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 	vel = 114.0d ; Initial estimate of the galaxy velocity and
 	sig = 269.0d ;velocity dispersion in km/s in the rest frame
+vel = -1275.16d ; IC1459 
+sigma = 285.395 ; IC1459
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org
@@ -114,8 +117,6 @@ pro gandalf_VIMOS;, galaxy, discard, limits
 ;; galaxy. 
 	output_v = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_vel.dat'
-	output_temp_weighting = '/Data/vimosindi/analysis/' + $
-		galaxy + '/results/template_weighting.dat'
 	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_sigma.dat'
 	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
@@ -180,7 +181,7 @@ output_Hd = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
 
 ;; Which templates to use are given in use_templates.pro. This is
 ;; transfered to the array templatesToUse.
-	use_templates, templatesToUse
+	use_templates, galaxy, templatesToUse
 	nfiles = N_ELEMENTS(templatesToUse)
 	templates = MAKE_ARRAY(n_elements(log_temp_template), nfiles)
 
@@ -517,6 +518,7 @@ GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     QUIET = quiet 
 
 
+if not quiet then PAUSE
 
 ;; ----------================ Saving results ===============--------- 
 stellar_bin_dynamics[0,bin]=bin_dynamics_temp[0]
@@ -554,7 +556,6 @@ endif
 ;; ----------========== Write results to file ==========--------- 
 ;; Open and print to files
 	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-	OPENW, 1, output_temp_weighting
 	OPENW, 2, output_v
 	OPENW, 3, output_sigma
 	OPENW, 4, output_h3
@@ -581,7 +582,7 @@ for bin=0, n_bins-1 do begin
 endfor
 
 
-CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 
 
 

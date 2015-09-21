@@ -4,7 +4,9 @@
 ;; warrenj 20150811 Rountine to run an MCMC code on the vel and sigma
 ;; inital guesses for the ppxf wrapper scripts. 
 
-pro mcmc
+pro mcmc;, galaxy='ngc3557', z=0.01, discard=2, range=[4200,10000], $
+;	v=0.0, sigma=200
+	galaxy='ic1459'
 	v=0
 	sigma=200
 	chi=1
@@ -17,7 +19,7 @@ print, i
 	sigma_sav = sigma
 	chi_sav = chi
 
-	mcmc_fit_bin, v, sigma, chi
+	mcmc_fit_bin, galaxy, v, sigma, chi
 	results[*,i]=[v,sigma]
 
 IF (chi GT chi_sav) AND (i LT 499) THEN BEGIN
@@ -30,6 +32,9 @@ endfor
 print, MEAN(results[0,*]), MEAN(results[1,*])
 show_rst = SCATTERPLOT(results[0,*],results[1,*], XTITLE="velocity", YTITLE="velocity dispersion")
 
+
+v = MEAN(results[0,*])
+sigma = MEAN(results[1,*])
 
 return
 end

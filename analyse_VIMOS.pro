@@ -29,8 +29,6 @@ pro run_analysis;, galaxy, discard, limits
 ;; galaxy. 
 	output_v = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_vel.dat'
-	output_temp_weighting = '/Data/vimosindi/analysis/' + $
-		galaxy + '/results/template_weighting.dat'
 	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
 		'/results/gal_sigma.dat'
 	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
@@ -360,8 +358,7 @@ print, ""
 endfor 
 
 ;; Open and print to files
-	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
-	OPENW, 1, output_temp_weighting
+	CLOSE, 2, 3, 4, 5, 6, 7, 8
 	OPENW, 2, output_v
 	OPENW, 3, output_sigma
 	OPENW, 4, output_h3
@@ -380,7 +377,7 @@ for bin=0, n_bins-1 do begin
 endfor
 
 
-CLOSE, 1, 2, 3, 4, 5, 6, 7, 8
+CLOSE, 2, 3, 4, 5, 6, 7, 8
 
 
 

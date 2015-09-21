@@ -3,7 +3,8 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
-pro find_template;, galaxy, discard, limits
+pro find_template;, galaxy='ngc3557', z=0.01, discard=2, $
+;	range=[4200,10000] 
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
@@ -28,22 +29,9 @@ pro find_template;, galaxy, discard, limits
 		   ; correct the template continuum shape during the fit 
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
-	output_v = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_vel.dat'
 	output_temp_weighting = '/Data/vimosindi/analysis/' + $
-		galaxy + '/results/template_weighting.dat'
-	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_sigma.dat'
-	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h3.dat'
-	output_h4 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h4.dat'
-	output_h5 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h5.dat'
-	output_h6 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h6.dat'
-	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_Chi.dat'
+		galaxy + '/templates.txt'
+
 	CLOSE, 1
 	OPENW, 1, output_temp_weighting
 
@@ -133,15 +121,8 @@ endfor
 ;; Change to pixel units
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
-	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
-	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
-		discard:s[2]-discard-1,*]
-;; array to hold results
-	bin_dynamics = MAKE_ARRAY(7, n_bins)
-	temp_weights = MAKE_ARRAY(nfiles, n_bins)
 
-	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
-		n_elements(galaxy_data[0,*,0])
+	gal_temp = total(total(galaxy_data_temp[discard:s[1]-discard-1, discard:s[2]-discard-1,*], 1), 1)
 
 
 ;; --------======== Finding limits of the spectrum ========--------
@@ -153,7 +134,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
-	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
+	h =[gal_temp[0:ignore[0]],gal_temp[ignore[1]:*]]
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
@@ -193,10 +174,8 @@ ENDIF
 
 
 ;; ----------========= Writing the spectrum  =============---------
-	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
-for i = 0, n_elements(bin_lin)-1 do begin
-	bin_lin[i] = bin_lin_temp[lower_limit+i]
-endfor
+
+	gal = gal_temp[lower_limit:upper_limit-1]
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
@@ -206,12 +185,12 @@ endfor
 						     ; in pixels
 
 ;; smooth spectrum to fit with templates resolution
-	bin_lin = gauss_smooth(bin_lin, sigma)
+	gal = gauss_smooth(gal, sigma)
 
 
 	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
-	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
+	log_rebin, lamrange, gal, bin_log, logLam_bin, $
 		velscale=velscale
 
 ;; normalise the spectrum
@@ -267,12 +246,9 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 
 	start = [vel, sig] ; starting guess
 
-print, "bin:", bin, "/", FIX(n_bins-1)
 print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
 print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
-print, "spaxels:"
-print, 'x = ', x[spaxels_in_bin]
-print, 'y = ', y[spaxels_in_bin]
+
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
@@ -310,18 +286,10 @@ endfor
 ;-
 
 
-endfor 
 
 
 CLOSE, 1
 
-
-
-;; Error check - making sure all spaxels have been read into some
-;; bin. 
-if (i EQ n_spaxels-1) THEN BEGIN
-	print, 'ERROR: not all spaxels have been read'
-endif 
 
 
 

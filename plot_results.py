@@ -142,8 +142,11 @@ for plot in plots:
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
     plt.clf()
-    if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-        plt.title('Velocity Map')
+    if plot=="v":
+        plt.title('Stellar Velocity Map')
+        CBLabel = "LOSV (km s$^{-1}$)"
+    elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        plt.title(plot + ' Velocity Map')
         CBLabel = "LOSV (km s$^{-1}$)"
     elif plot=="sigma":
         plt.title('Velocity Dispersion Map')
