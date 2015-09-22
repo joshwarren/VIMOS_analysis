@@ -86,23 +86,43 @@ end
 
 
 
-pro gandalf_VIMOS;, galaxy='ngc3557', z=0.01, discard=2, $
-;	range=[4200,10000], vel=114.0d, sig=269.0d
+pro gandalf_VIMOS, galaxy, discard=discard, range=range
 
 ;; ----------===============================================---------
-;; ----------============= Input parameters  ===============---------
+;; ----------============ Default parameters ===============---------
 ;; ----------===============================================---------
-	quiet = boolean(0) ; 1 = yes = true
+
+;if not keyword_set(z) then z=0.01
+if not keyword_set(discard) then discard=2
+if not keyword_set(range) then range=[4200,10000]
+;if not keyword_set(vel) then vel=114.0d
+;if not keyword_set(sigma) then sigma=269.0d
+
+data_file = "/Data/vimosindi/analysis/galaxies.txt"
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, $
+    skipline=1, format='A,D,D,D', /SILENT
+
+i_gal = where(galaxy_gals eq galaxy)
+index=i_gal[0]
+vel = vel_gals[index]
+sig = sig_gals[index]
+z = z_gals[index]
+
+
+;; ----------===============================================---------
+;; ----------============= Input parameters ================---------
+;; ----------===============================================---------
+	quiet = boolean(1) ; 1 = yes = true
 ;  	galaxy = 'ngc3557'
-	galaxy = 'ic1459'
-	discard = 2
-	range = [4200,10000]
+;	galaxy = 'ic1459'
+;	discard = 2
+;	range = [4200,10000]
 	c = 299792.458d
-  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 114.0d ; Initial estimate of the galaxy velocity and
-	sig = 269.0d ;velocity dispersion in km/s in the rest frame
-vel = -1275.16d ; IC1459 
-sigma = 285.395 ; IC1459
+;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+;	vel = 114.0d ; Initial estimate of the galaxy velocity and
+;	sig = 269.0d ;velocity dispersion in km/s in the rest frame
+;vel = -1275.16d ; IC1459 
+;sig = 285.395 ; IC1459
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org
@@ -290,7 +310,8 @@ Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 
 
 ;; ----------========== Spatially Binning =============---------
-
+;; To count the number of spaxels
+count = 0
 ;; endfor is near the end - after ppxf has been run on this bin.
 for bin=0, n_bins-1 do begin
 ;bin = 1 ;;;;;************************************************
@@ -304,6 +325,7 @@ for bin=0, n_bins-1 do begin
 for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
+	count++
 for k = 0, s[3]-1 do begin
 	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
 endfor
@@ -431,17 +453,20 @@ endfor
 ;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
 
 print, "bin:", bin, "/", FIX(n_bins-1)
-print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
-print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
-print, "spaxels:"
-print, 'x = ', x[spaxels_in_bin]
-print, 'y = ', y[spaxels_in_bin]
+if not quiet then begin
+    print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
+    print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
+    print, "spaxels:"
+    print, 'x = ', x[spaxels_in_bin]
+    print, 'y = ', y[spaxels_in_bin]
+endif
 
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT, $
 		QUIET = quiet;, ERROR = error
+bin_dynamics_temp_sav = bin_dynamics_temp
 
 ;; Add systematic velocity to the dynamics array.
 bin_dynamics_temp[0] += dv
@@ -521,13 +546,13 @@ GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
 if not quiet then PAUSE
 
 ;; ----------================ Saving results ===============--------- 
-stellar_bin_dynamics[0,bin]=bin_dynamics_temp[0]
-stellar_bin_dynamics[1,bin]=bin_dynamics_temp[1]
-stellar_bin_dynamics[2,bin]=bin_dynamics_temp[2]
-stellar_bin_dynamics[3,bin]=bin_dynamics_temp[3]
-stellar_bin_dynamics[4,bin]=bin_dynamics_temp[4]
-stellar_bin_dynamics[5,bin]=bin_dynamics_temp[5]
-stellar_bin_dynamics[6,bin]=bin_dynamics_temp[6]
+stellar_bin_dynamics[0,bin]=bin_dynamics_temp_sav[0]
+stellar_bin_dynamics[1,bin]=bin_dynamics_temp_sav[1]
+stellar_bin_dynamics[2,bin]=bin_dynamics_temp_sav[2]
+stellar_bin_dynamics[3,bin]=bin_dynamics_temp_sav[3]
+stellar_bin_dynamics[4,bin]=bin_dynamics_temp_sav[4]
+stellar_bin_dynamics[5,bin]=bin_dynamics_temp_sav[5]
+stellar_bin_dynamics[6,bin]=bin_dynamics_temp_sav[6]
  
 if sol[20] ne 0 then OIII_dynamics[bin] = sol[22]
 if sol[16] ne 0 then Hb_dynamics[bin] = sol[18]
@@ -549,41 +574,53 @@ endfor ;;;;;************************************************
 
 ;; Error check - making sure all spaxels have been read into some
 ;; bin. 
-if (i EQ n_spaxels-1) THEN BEGIN
+if (count LT n_spaxels) THEN BEGIN
 	print, 'ERROR: not all spaxels have been read'
 endif 
 
 ;; ----------========== Write results to file ==========--------- 
 ;; Open and print to files
-	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-	OPENW, 2, output_v
-	OPENW, 3, output_sigma
-	OPENW, 4, output_h3
-	OPENW, 5, output_h4
-	OPENW, 6, output_h5
-	OPENW, 7, output_h6
-	OPENW, 8, output_Chi
-	OPENW, 9, output_OIII
-	OPENW, 10, output_Hb
-	OPENW, 11, output_NI
-	OPENW, 12, output_Hd
-for bin=0, n_bins-1 do begin
-	PRINTF, 2, stellar_bin_dynamics[0,bin]
-	PRINTF, 3, stellar_bin_dynamics[1,bin]
-	PRINTF, 4, stellar_bin_dynamics[2,bin]
-	PRINTF, 5, stellar_bin_dynamics[3,bin]
-;	PRINTF, 6, stellar_bin_dynamics[4,bin]
-;	PRINTF, 7, stellar_bin_dynamics[5,bin]
-	PRINTF, 8, stellar_bin_dynamics[6,bin]
-	PRINTF, 9, OIII_dynamics[bin]
-	PRINTF, 10, Hb_dynamics[bin]
-	PRINTF, 11, NI_dynamics[bin]
-	PRINTF, 12, Hd_dynamics[bin]
-endfor
+;	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+;	OPENW, 2, output_v
+;	OPENW, 3, output_sigma
+;	OPENW, 4, output_h3
+;	OPENW, 5, output_h4
+;	OPENW, 6, output_h5
+;	OPENW, 7, output_h6
+;	OPENW, 8, output_Chi
+;	OPENW, 9, output_OIII
+;	OPENW, 10, output_Hb
+;	OPENW, 11, output_NI
+;	OPENW, 12, output_Hd
+;for bin=0, n_bins-1 do begin
+;	PRINTF, 2, stellar_bin_dynamics[0,bin]
+;	PRINTF, 3, stellar_bin_dynamics[1,bin]
+;	PRINTF, 4, stellar_bin_dynamics[2,bin]
+;	PRINTF, 5, stellar_bin_dynamics[3,bin]
+;;	PRINTF, 6, stellar_bin_dynamics[4,bin]
+;;	PRINTF, 7, stellar_bin_dynamics[5,bin]
+;	PRINTF, 8, stellar_bin_dynamics[6,bin]
+;	PRINTF, 9, OIII_dynamics[bin]
+;	PRINTF, 10, Hb_dynamics[bin]
+;	PRINTF, 11, NI_dynamics[bin]
+;	PRINTF, 12, Hd_dynamics[bin]
+;endfor
 
 
-CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+;CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 
+
+forprint, stellar_bin_dynamics[0,*], textout=output_v, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[2,*], textout=output_h3, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[3,*], textout=output_h4, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[4,*], textout=output_h5, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[5,*], textout=output_h6, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
+forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
+forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
+forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
+forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
 
 
 

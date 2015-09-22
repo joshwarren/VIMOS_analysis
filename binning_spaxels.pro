@@ -6,12 +6,19 @@
 ;; sigma, and 40-50 for h3 and h4. 
  
 
-pro binning_spaxels;, galaxy = "ngc3557", dicard = 2, targetSN = 30.0
+pro binning_spaxels, galaxy, discard=discard, targetSN=targetSN
+
+;; ----------===============================================---------
+;; ----------============ Default parameters ===============---------
+;; ----------===============================================---------
+
+if not keyword_set(targetSN) then targetSN=30.0
+if not keyword_set(discard) then discard=2
 
 ;	galaxy = 'ngc3557'
-	galaxy = 'ic1459'
-	discard = 2
-	targetSN = 30.0
+;	galaxy = 'ic1459'
+;	discard = 2
+;	targetSN = 30.0
 
 
 ;; ----------================ Find S/N ================------------

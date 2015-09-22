@@ -3,20 +3,28 @@
 ;; ==================================================================
 ;; warrenj 20150216 Process to analyse the reduced VIMOS data.
 
-pro find_template;, galaxy='ngc3557', z=0.01, discard=2, $
-;	range=[4200,10000] 
+pro find_template, galaxy, z=z, discard=discard, range=range 
+
+;; ----------===============================================---------
+;; ----------============ Default parameters ===============---------
+;; ----------===============================================---------
+
+if not keyword_set(z) then z=0.01
+if not keyword_set(discard) then discard=2
+if not keyword_set(range) then range=[4200,10000]
+
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
 ;  	galaxy = 'ngc3557'
-	galaxy = 'ic1459'
-	discard = 2
-	range = [4200,10000]
+;	galaxy = 'ic1459'
+;	discard = 2
+;	range = [4200,10000]
 	c = 299792.458d
-  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 114.0d ; Initial estimate of the galaxy velocity and
-	sig = 269.0d ;velocity dispersion in km/s in the rest frame
+; 	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+	vel = 0.0d ; Initial estimate of the galaxy velocity and
+	sig = 200.0d ;velocity dispersion in km/s in the rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org

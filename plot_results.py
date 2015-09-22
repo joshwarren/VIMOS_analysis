@@ -59,7 +59,7 @@ output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
 "%sgal_Hd.dat" % (wav_range_dir)
 
 plots = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, "Hb" : output_Hb, "Hd" : output_Hd}
-
+#plots = {"v":output_v}
 
 # Read tessellation file
 x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -122,7 +122,7 @@ flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 # a spaxel)
 for plot in plots:
     print plot
-    v_binned = np.loadtxt(plots[plot])
+    v_binned = np.loadtxt(plots[plot])#, skiprows=1)
 
     if plot=="v":
         v_binned += -1.1*np.median(v_binned)

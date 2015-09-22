@@ -4,7 +4,7 @@
 ;; warrenj 20150604 Routine to plot the best fit against the spectrum
 ;; for a given bin.
 
-pro mcmc_fit_bin, galaxy, vel, sig, chi
+pro mcmc_fit_bin, galaxy, z, vel, sig, chi
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
@@ -14,7 +14,7 @@ pro mcmc_fit_bin, galaxy, vel, sig, chi
 	fit_bin_num = 177
 	range = [4000,4500]
 	c = 299792.458d
-  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
 ;	vel = 100.0d ; Initial estimate of the galaxy velocity in km/s
 ;	sig = 200.0d ; Initial estimate of the galaxy dispersion in km/s 
 		     ; within its rest frame

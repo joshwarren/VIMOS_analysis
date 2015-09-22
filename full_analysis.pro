@@ -9,21 +9,19 @@
 pro full_analysis
 
 galaxy = 'ic1459'
-z = 0.01
+z = 0.005
 discard = 2
 SN = 30.0
 range = [4200, 10000]
-vel = 0.0d
-sig = 200.0d
 
 
-binning_spaxels, galaxy, discard, SN
+;binning_spaxels, galaxy, discard, SN
 
-find_template, galaxy, z, discard, range
+;find_template, galaxy, z, discard, range
 
-mcmc, galaxy, z, discard, range, vel, sig
+;mcmc, galaxy, z=z, discard=discard, range=range
 
-gandalf_VIMOS, galaxy, z, discard, range, vel, sig
+gandalf_VIMOS, galaxy, discard=discard, range=range
 
 
 
