@@ -51,10 +51,10 @@ def GH_plots(galaxy, wav_range="", plots=False):
     vel += -np.mean(vel)
     x = vel/sigma
 
-
+    plot = "h3"
 
     for i in [0,1]:
-        plot = "h3"
+ 
     
         if plot == "h3":
             y = h3
