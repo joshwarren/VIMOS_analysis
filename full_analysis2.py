@@ -11,6 +11,7 @@ from GH_plots import GH_plots
 
 
 galaxy = 'ic1459'
+galaxy = 'ic1531'
 discard = 2
 wav_range = '4200-'
 vLimit = 2

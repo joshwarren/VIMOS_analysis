@@ -609,6 +609,7 @@ endif
 
 ;CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results'
 
 forprint, stellar_bin_dynamics[0,*], textout=output_v, /SILENT, /NOCOMMENT
 forprint, stellar_bin_dynamics[1,*], textout=output_sigma, /SILENT, /NOCOMMENT

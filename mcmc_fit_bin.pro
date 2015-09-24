@@ -11,7 +11,6 @@ pro mcmc_fit_bin, galaxy, z, vel, sig, chi
 ;; ----------===============================================---------
 ;  	galaxy = 'ngc3557'
 	discard = 2
-	fit_bin_num = 177
 	range = [4000,4500]
 	c = 299792.458d
 ;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
@@ -112,7 +111,7 @@ endfor
 
 
 
-
+	fit_bin_num = FIX(n_bins/2)
 
 
 ;; ----------========= Reading the spectrum  =============---------
