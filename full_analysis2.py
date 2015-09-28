@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296']
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612']
 
 galaxy = galaxies[-1]
 discard = 2
