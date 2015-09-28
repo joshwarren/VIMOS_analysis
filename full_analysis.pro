@@ -8,9 +8,9 @@
 
 pro full_analysis
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531']
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296']
 ; an inital guess from quick internet search of redshift.
-z_gals = [0.01, 0.005, 0.025] 
+z_gals = [0.01, 0.005, 0.025, 0.01] 
 gal = -1
 galaxy = galaxies[gal]
 z = z_gals[gal]

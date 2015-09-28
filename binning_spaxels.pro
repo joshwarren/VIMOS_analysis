@@ -20,7 +20,6 @@ if not keyword_set(discard) then discard=2
 ;	discard = 2
 ;	targetSN = 30.0
 
-
 ;; ----------================ Find S/N ================------------
 ; Final wildcard notes that depending on the method used the quadrants
 ; may or may not have been flux calibrated. 
@@ -140,6 +139,9 @@ endfor
 ; number required for any subsequent calculation on the bins.
 ;
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy
+OPENW, 1, '/Data/vimosindi/analysis/' + galaxy + $
+	'/voronoi_2d_binning_output.txt'
+CLOSE,1
 astrolib
 forprint, x, y, binNum, xBin, yBin, $
 	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
