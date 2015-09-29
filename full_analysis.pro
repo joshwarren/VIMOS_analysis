@@ -8,9 +8,10 @@
 
 pro full_analysis
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612']
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', $
+    'ngc1399', 'ngc3100']
 ; an inital guess from quick internet search of redshift.
-z_gals = [0.01, 0.005, 0.025, 0.01, 0.03] 
+z_gals = [0.01, 0.005, 0.025, 0.01, 0.03, 0.005, 0.01] 
 gal = -1
 galaxy = galaxies[gal]
 z = z_gals[gal]
@@ -19,15 +20,13 @@ targetSN = 30.0
 range = [4200, 10000]
 
 
-;binning_spaxels, galaxy, discard=discard, targetSN=targetSN
+binning_spaxels, galaxy, discard=discard, targetSN=targetSN
 
-;find_template, galaxy, z=z, discard=discard, range=range
+find_template, galaxy, z=z, discard=discard, range=range
 
-;mcmc, galaxy, z=z, discard=discard, range=range
+mcmc, galaxy, z=z, discard=discard, range=range
 
 gandalf_VIMOS, galaxy, discard=discard, range=range
-
-
 
 return
 end
