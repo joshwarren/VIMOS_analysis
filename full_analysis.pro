@@ -12,8 +12,10 @@ galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', $
     'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 ; an inital guess from quick internet search of redshift.
 z_gals = [0.01, 0.005, 0.025, 0.01, 0.03, 0.005, 0.01, 0.02, 0.03, 0.015] 
+galaxies = galaxies[[2,5,9]]
 gal = -1
 galaxy = galaxies[gal]
+print, galaxy
 z = z_gals[gal]
 discard = 2
 targetSN = 30.0
