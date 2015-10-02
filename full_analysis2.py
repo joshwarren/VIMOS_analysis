@@ -14,7 +14,7 @@ import os # for creating directory
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 
-galaxy = galaxies[-1]
+galaxy = galaxies[5]
 discard = 2
 wav_range = '4200-'
 vLimit = 2
@@ -23,6 +23,7 @@ path = "/Data/vimosindi/analysis/%s/results/%s/plots" % (galaxy, wav_range)
 if not os.path.exists(path):
     os.makedirs(path)
 
+print galaxy
 plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit)
 plt.close("all")
 kinematics(galaxy, discard=discard, wav_range=wav_range)

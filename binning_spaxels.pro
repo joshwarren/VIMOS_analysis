@@ -146,14 +146,14 @@ astrolib
 forprint, x, y, binNum, xBin, yBin, $
 	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt', $
-	COMMENT='          X"              Y"           BIN_NUM           XBIN           YBIN'
+	COMMENT='          X"              Y"           BIN_NUM           XBIN           YBIN', /SILENT
 
 
 
 forprint, xBar, yBar, $
 	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output2.txt', $
-	COMMENT='XBAR           YBAR'
+	COMMENT='XBAR           YBAR', /SILENT
 
 END
 ;----------------------------------------------------------------------------
