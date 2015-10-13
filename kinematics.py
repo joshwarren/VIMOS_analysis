@@ -12,6 +12,7 @@ from find_galaxy import find_galaxy # part of mge package, fits photometry
 from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
 import math # for sine functions
 import matplotlib.pyplot as plt # used for plotting
+import matplotlib.axes as ax # for adding text onto images
 from scipy.optimize import curve_fit # for fitting a gaussian
 #---------------------------------------------------------------------------
 def spxToKpc(x, z):
@@ -25,15 +26,11 @@ def kinematics(galaxy, discard=0, wav_range="",
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     # different data types need to be read separetly
-    z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, 
-        skiprows=1, usecols=(1,2,3))
+    z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, 
+        unpack=True, skiprows=1, usecols=(1,2,3,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
-
-
-
-
 
 
     #discard = 2 # rows of pixels to discard- must have been the same 
@@ -41,7 +38,6 @@ def kinematics(galaxy, discard=0, wav_range="",
     #wav_range = "4200-"
     #corrections = [[13,9],[35,1]]
     find_Re = False # fits radial profile with a gaussian
-
 
 
 
@@ -114,11 +110,11 @@ def kinematics(galaxy, discard=0, wav_range="",
 # ------------============= Fit photometry ===============----------
     save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
         "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
-    f = find_galaxy(galaxy_data, quiet=True, plot=plots, sav_fig=save_to)
-    plots=False
-
+    f = find_galaxy(galaxy_data, quiet=True, plot=plots, 
+        galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
     #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
-
+    x_gals[i_gal] = f.xpeak
+    y_gals[i_gal] = f.ypeak
     print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
     print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 
@@ -214,12 +210,14 @@ def kinematics(galaxy, discard=0, wav_range="",
     lam_den = np.cumsum(lam_den)
 
     lam = lam_num/lam_den
-
     plt.figure()
     plt.title(r"Radial $\lambda_R$ profile")
     plt.xlabel("Radius (kpc)")
     plt.ylabel(r"$\lambda_R$")
     plt.plot(spxToKpc(r[order],z), lam)
+    ax =plt.gca()
+    plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
+        transform=ax.transAxes)
     plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
         "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
         bbox_inches="tight")
@@ -281,6 +279,15 @@ def kinematics(galaxy, discard=0, wav_range="",
             ".png", bbox_inches="tight")
         if plots:
             plt.show()
+
+# ------------============= Save outputs =============----------
+    f = open(data_file, 'w')
+    f.write('Galaxy      z     velocity     velocity dispersion      x    y \n')
+    
+    for i in range(len(galaxy_gals)):
+        f.write(galaxy_gals[i] + '    ' + str(z_gals[i]) + '    ' + \
+            str(vel_gals[i]) + '    ' + str(sig_gals[i]) + '    ' + \
+            str(x_gals[i]) + '    ' + str(y_gals[i]) +'\n')
 
 
 

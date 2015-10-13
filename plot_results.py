@@ -15,6 +15,13 @@ import matplotlib.pyplot as plt # used for plotting
 
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 
+    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+    # different data types need to be read separetly
+    z_gals = np.loadtxt(data_file, skiprows=1, usecols=(1,))
+    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+    i_gal = np.where(galaxy_gals==galaxy)[0][0]
+    z = z_gals[i_gal]
+
 
     if wav_range:
         wav_range_dir = wav_range + "/"
@@ -61,9 +68,16 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
     n_spaxels = len(bin_num)
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
+    plots =False
 
-
-
+# Read galaxies.txt file
+    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+    # different data types need to be read separetly
+    x_gals, y_gals = np.loadtxt(data_file, 
+        unpack=True, skiprows=1, usecols=(4,5))
+    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+    i_gal = np.where(galaxy_gals==galaxy)[0][0]
+    center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 
 # ------------========== Total flux per bin ===========----------
 # ----------========= Reading the spectrum  =============---------
@@ -115,15 +129,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
     for plot in outputs:
-        print plot
+#        print plot
         v_binned = np.loadtxt(outputs[plot])#, skiprows=1)
 
-        if plot=="v":
-            v_binned += -1.1*np.median(v_binned)
-        if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            v_binned += -np.median(v_binned)
+#        if plot=="v":
+#            v_binned += -1.1*np.median(v_binned)
+#        if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+#            v_binned += -np.median(v_binned)
 
 # ------------============ Setting v range =============----------
+        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+            v_binned -= v_binned[center_bin]
         vmax = max(v_binned)
         vmin = min(v_binned)
         v_sorted = sorted(np.unique(v_binned))
@@ -131,7 +147,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
             v_sorted = sorted(v_binned)
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]
-
+        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+            if abs(vmin)<vmax:
+                vmin=-vmax
+            else:
+                vmax=-vmin
 
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
@@ -151,7 +171,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 
         plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
             nodots=False, colorbar=True, label=CBLabel, 
-            flux=flux_bar_binned)
+            flux=flux_bar_binned, galaxy = galaxy.upper(), redshift = z)
 
         plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \

@@ -81,6 +81,10 @@ def GH_plots(galaxy, wav_range="", plots=False):
         plt.xlabel(r"$v/\sigma$")
         plt.ylabel(ytitle)
         plt.scatter(x, y, c=z, s=50, edgecolor='')
+        ax=plt.gca()
+        plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), 
+            verticalalignment='top',
+            transform=ax.transAxes)
     #plt.savefig("/home/warrenj/Desktop/" + plot + "-(v-sigma)_" + wav_range + \
     #".png", bbox_inches="tight")
         plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
