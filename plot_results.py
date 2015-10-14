@@ -104,9 +104,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 
 
 
-
-
-
+    galaxy_data_unbinned = np.sum(galaxy_data, axis=0)
+    galaxy_data_unbinned = galaxy_data_unbinned.flatten()
 
 # ------------========== Spatially binning ===========----------
     xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
@@ -171,7 +170,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 
         plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
             nodots=False, colorbar=True, label=CBLabel, 
-            flux=flux_bar_binned, galaxy = galaxy.upper(), redshift = z)
+            flux=flux_bar_binned, galaxy = galaxy.upper(), 
+            redshift = z)
 
         plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \

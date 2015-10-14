@@ -165,7 +165,7 @@ output_Hd = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
 ;; Emission line file
 	emission_File = "/Data/vimosindi/analysis/emission_line.dat"
 
-
+;OIII = 0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ----------===============================================---------
 ;; ----------=============== Run analysis  =================---------
 ;; ----------===============================================---------
@@ -274,7 +274,6 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
-
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
@@ -407,6 +406,7 @@ endfor
 	log_gal_step = logLam_bin[1]-logLam_bin[0]
 
 ;; normalise the spectrum
+;        norm_factor = MEDIAN(bin_log);;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	bin_log = bin_log/MEDIAN(bin_log)
 
 ;; ----------========= Assigning noise variable =============---------
@@ -509,7 +509,9 @@ GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
 ;	LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,$
 ;	FOR_ERRORS=for_errors 
 ;
-
+;i_O3 = where(emission.name eq '[OIII]');;;;;;;;;;;;;;;;;;;;;;;;;;
+;OIII +=emission.a[i_O3]*norm_factor;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;print, OIII
 if not quiet then PAUSE
 
 ;; ----------============ Lift remaining masks ============--------- 
@@ -625,8 +627,7 @@ forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
 
 
 
-
-
+;print, OIII;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 

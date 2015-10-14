@@ -71,8 +71,6 @@ for j = 0, s[2]-1 do begin
 
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *])
 	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *])
-	
-
 
 ;; Assign x and y
 	x(i*s[1]+j) = i
