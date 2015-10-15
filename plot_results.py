@@ -65,7 +65,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
         "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"v":output_v}
+    outputs = {"v":output_v}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -158,40 +158,44 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
-        plt.clf()
         if plot=="v":
-            plt.title('Stellar Velocity Map')
+            title = 'Stellar Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
         elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            plt.title(plot + ' Velocity Map')
+            title = plot + ' Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
         elif plot=="sigma":
-            plt.title('Velocity Dispersion Map')
+            title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
         else:
-            plt.title(plot + ' Map')
+            title = plot + ' Map'
             CBLabel = ""
   
 
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
+            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
+                plot, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, vmin=vmin, 
                 vmax=vmax, nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(), 
-                redshift = z)
-            plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot, wav_range), bbox_inches="tight")
+                redshift = z, title=title, save=saveTo)
+#            plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+#                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
+#                plot, wav_range), bbox_inches="tight")
 
 # ------------===== Plot velfield - with interperlation ====----------
         else:
+           saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range)
            plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
                 nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
-                redshift = z)
-           plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), 
-                bbox_inches="tight")
+                redshift = z, title=title, save=saveTo)
+#           plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+#                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), 
+#                bbox_inches="tight")
 
 
 # ------------=========== Save and display plot =============----------
@@ -225,7 +229,7 @@ if __name__ == '__main__':
     vLimit = 2 #
 
     plot_results(galaxy, discard=discard, vLimit=vLimit, 
-        wav_range=wav_range, plots=True, nointerp = True)
+        wav_range=wav_range, plots=True, nointerp = False)
 
 
 
