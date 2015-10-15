@@ -21,7 +21,7 @@ galaxies = ['ngc3557', $
 ; an inital guess from quick internet search of redshift.
 z_gals = [0.01, 0.005, 0.02, 0.01, 0.03, 0.005, 0.01, 0.02, 0.03, 0.015] 
 ;for gal=0, n_elements(z_gals)-1 do begin
-gal=1
+gal=0
 galaxy = galaxies[gal]
 print, galaxy
 z = z_gals[gal]

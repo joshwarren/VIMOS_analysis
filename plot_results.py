@@ -11,9 +11,14 @@ import numpy as np # for reading files
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
+from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
+
+
+
 #-----------------------------------------------------------------------------
 
-def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
+def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False, 
+    nointerp=False, **kwargs):
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     # different data types need to be read separetly
@@ -60,7 +65,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
     outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
         "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
-    #outputs = {"v":output_v}
+#    outputs = {"v":output_v}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -68,7 +73,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
     n_spaxels = len(bin_num)
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
-    plots =False
 
 # Read galaxies.txt file
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
@@ -105,7 +109,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
 
 
     galaxy_data_unbinned = np.sum(galaxy_data, axis=0)
-    galaxy_data_unbinned = galaxy_data_unbinned.flatten()
+#    galaxy_data_unbinned = galaxy_data_unbinned.flatten()
 
 # ------------========== Spatially binning ===========----------
     xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
@@ -167,17 +171,45 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False):
         else:
             plt.title(plot + ' Map')
             CBLabel = ""
+  
 
-        plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
-            nodots=False, colorbar=True, label=CBLabel, 
-            flux=flux_bar_binned, galaxy = galaxy.upper(), 
-            redshift = z)
+# ------------===== Plot velfield - no interperlation ======----------
+        if nointerp:
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, vmin=vmin, 
+                vmax=vmax, nodots=False, colorbar=True, label=CBLabel, 
+                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(), 
+                redshift = z)
+            plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
+                plot, wav_range), bbox_inches="tight")
 
-        plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-            "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), \
-            bbox_inches="tight")
+# ------------===== Plot velfield - with interperlation ====----------
+        else:
+           plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
+                nodots=False, colorbar=True, label=CBLabel, 
+                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
+                redshift = z)
+           plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), 
+                bbox_inches="tight")
+
+
+# ------------=========== Save and display plot =============----------
+       
         if plots:
             plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -193,4 +225,8 @@ if __name__ == '__main__':
     vLimit = 2 #
 
     plot_results(galaxy, discard=discard, vLimit=vLimit, 
-        wav_range=wav_range, plots=True)
+        wav_range=wav_range, plots=True, nointerp = True)
+
+
+
+
