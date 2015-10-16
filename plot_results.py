@@ -65,7 +65,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
         "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
-    outputs = {"v":output_v}
+#    outputs = {"v":output_v}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -81,6 +81,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         unpack=True, skiprows=1, usecols=(4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
+
     center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 
 # ------------========== Total flux per bin ===========----------
@@ -177,10 +178,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot, wav_range)
-            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, vmin=vmin, 
-                vmax=vmax, nodots=False, colorbar=True, label=CBLabel, 
-                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(), 
-                redshift = z, title=title, save=saveTo)
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
+                vmin=vmin, vmax=vmax, nodots=False, colorbar=True, 
+                label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+                galaxy = galaxy.upper(), redshift = z, title=title, 
+                save=saveTo)
 #            plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
 #                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
 #                plot, wav_range), bbox_inches="tight")
@@ -229,7 +231,7 @@ if __name__ == '__main__':
     vLimit = 2 #
 
     plot_results(galaxy, discard=discard, vLimit=vLimit, 
-        wav_range=wav_range, plots=True, nointerp = False)
+        wav_range=wav_range, plots=True, nointerp = True)
 
 
 
