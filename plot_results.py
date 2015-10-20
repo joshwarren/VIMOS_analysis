@@ -27,6 +27,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
 
+# Normalisation methods:
+#  lum: velocity of brightest pixel is set to 0km/s
+#  lwv: luminosity weighted velocity mean is zero.
+    norm = "lwv" 
+#    norm = "lum"
+
+
 
     if wav_range:
         wav_range_dir = wav_range + "/"
@@ -65,7 +72,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
         "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"v":output_v}
+    outputs = {"v":output_v}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -118,10 +125,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     flux_bar_binned = np.zeros((number_of_bins))
     n_spaxels_in_bin = np.zeros((number_of_bins))
 
+
     for spaxel in range(n_spaxels):
         flux_bar_binned[int(bin_num[spaxel])] += np.sum(
             galaxy_data[:,y[spaxel],x[spaxel]])
         n_spaxels_in_bin[int(bin_num[spaxel])] += 1
+
+
 
     for bin in range(number_of_bins):
         flux_bar_binned[bin] = flux_bar_binned[bin]/n_spaxels_in_bin[bin]
@@ -141,9 +151,23 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 #        if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
 #            v_binned += -np.median(v_binned)
 
+# Asign v to every spaxel in bin.
+        v_unbinned = np.zeros(galaxy_data_unbinned.shape)
+        for spaxel in range(n_spaxels):
+            v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
         if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            v_binned -= v_binned[center_bin]
+            if norm == "lum":
+                v_binned -= v_binned[center_bin]
+            if norm == "lwv":
+#                galaxy_data_unbinned1=galaxy_data_unbinned/np.median(
+#                    galaxy_data_unbinned)
+                lwv = v_unbinned*galaxy_data_unbinned
+
+                v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
+#                v_binned -= np.mean(v_binned)
+
+
         vmax = max(v_binned)
         vmin = min(v_binned)
         v_sorted = sorted(np.unique(v_binned))
@@ -226,6 +250,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 if __name__ == '__main__':
     wav_range="4200-"
     galaxy = "ngc3557"
+#    galaxy = "ngc7075"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #

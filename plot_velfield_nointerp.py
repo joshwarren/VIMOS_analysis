@@ -150,9 +150,9 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
 #        cax = divider.append_axes("right", size="5%", pad=0.7)
         fig.subplots_adjust(right=0.68, top=0.84)
         cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
-        ticks = MaxNLocator(nbins = nticks)#.tick_values(vmin, vmax)
-#        ticks = MaxNLocator.tick_values(vmin, vmax)
+        ticks = MaxNLocator(nbins = nticks, symmetric=True)
         cbar = fig.colorbar(cs, cax=cax, ticks=ticks)
+#        plt.clim(vmin,vmax)  # make color axis symmetrical
         if label:
             cbar.set_label(label, rotation=270)
 
