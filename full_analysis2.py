@@ -1,5 +1,5 @@
 ## ==================================================================
-## Run full IDL analysis
+## Run full python analysis
 ## ==================================================================
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
