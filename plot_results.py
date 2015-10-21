@@ -7,7 +7,7 @@
 ## warrenj 20150917 Altered to plot and save all 8 plots.
 
 from cap_plot_velfield import plot_velfield #as plot_velfield
-import numpy as np # for reading files
+import numpy as np # for array handling
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
