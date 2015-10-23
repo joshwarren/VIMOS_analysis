@@ -10,6 +10,7 @@ pro errors
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
   	galaxy = 'ngc3557'
+	reps = 5000 ;; number of monte carlo reps per bin.
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d
@@ -29,19 +30,19 @@ pro errors
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 	output_v = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_vel.dat'
+		'/results/gal_vel_mc.dat'
 	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_sigma.dat'
+		'/results/gal_sigma_mc.dat'
 	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h3.dat'
+		'/results/gal_h3_mc.dat'
 	output_h4 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h4.dat'
+		'/results/gal_h4_mc.dat'
 	output_h5 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h5.dat'
+		'/results/gal_h5_mc.dat'
 	output_h6 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h6.dat'
+		'/results/gal_h6_mc.dat'
 	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_Chi.dat'
+		'/results/gal_Chi_mc.dat'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
@@ -162,7 +163,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 	galaxy_noise = galaxy_noise_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
 ;; array to hold results
-	bin_dynamics = MAKE_ARRAY(7, n_bins)
+	bin_dynamics = MAKE_ARRAY(7, n_bins, reps)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
@@ -257,14 +258,15 @@ endfor
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
-        bin_lin_noise = gauss_smooth(bin_lin, sigma)
+        bin_lin_noise = gauss_smooth(bin_lin_noise, sigma)
 ;;;;;**************should there be any scaling here???*********;;;;;;;;;;;;;;;
 
 	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
-	log_rebin, lamrange, bin_lin_noise^2, bin_log_noise
+	log_rebin, lamrange, bin_lin_noise^2, bin_log_noise, $
+		velscale=velscale
 	bin_log_noise = sqrt(bin_log_noise) ;; from log_rebin.pro notes
 
 ;; normalise the spectrum
@@ -291,11 +293,10 @@ endfor
 ;;     details).
 ;;     If no reliable noise is available this keyword can just be set
 ;;     to:
-	noise = MAKE_ARRAY(n_elements(bin_log), $
-		VALUE = 1d)
+;	noise = MAKE_ARRAY(n_elements(bin_log), $
+;		VALUE = 1d)
 		;galaxy*0+1 ; Same weight for all pixels
-
-
+noise = bin_log_noise+0.0000000000001
 
 
 ; The galaxy and the template spectra do not have the same starting
@@ -310,31 +311,37 @@ endfor
 dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
 
+
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
-
-
-
-        
 	lambda = EXP(logLam_bin)
 
 	start = [vel, sig] ; starting guess
 
-print, "bin:", bin, "/", FIX(n_bins-1)
-print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
-print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
-print, "spaxels:"
-print, 'x = ', x[spaxels_in_bin]
-print, 'y = ', y[spaxels_in_bin]
+;; Run once to get bestfit. Add noise to bestfit so that noise
+;; is not 'added twice'.
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics_temp, BESTFIT = bestfit, $
+		bin_dynamics_temp, BESTFIT = bestfit_sav, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT;, $
-;;		/QUIET, ERROR = error
-print, ""
-print, ""
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET
+
+
+for rep=0,reps-1 do begin
+print, bin, rep
+seed = !NULL
+random = randomu(seed, n_elements(noise), /NORMAL)
+gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
+add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
+bin_log = bestfit_sav + add_noise
+
+
+
+	PPXF, templates, bin_log, noise, velscale, start, $
+		bin_dynamics_temp, BESTFIT = bestfit_sav, $
+		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
 ;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1
@@ -348,15 +355,13 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
- 	bin_dynamics[0,bin]=bin_dynamics_temp[0]
- 	bin_dynamics[1,bin]=bin_dynamics_temp[1]
- 	bin_dynamics[2,bin]=bin_dynamics_temp[2]
- 	bin_dynamics[3,bin]=bin_dynamics_temp[3]
- 	bin_dynamics[4,bin]=bin_dynamics_temp[4]
- 	bin_dynamics[5,bin]=bin_dynamics_temp[5]
-	bin_dynamics[6,bin]=bin_dynamics_temp[6]
- 
-
+ 	bin_dynamics[0,bin,rep]=bin_dynamics_temp[0]
+ 	bin_dynamics[1,bin,rep]=bin_dynamics_temp[1]
+ 	bin_dynamics[2,bin,rep]=bin_dynamics_temp[2]
+ 	bin_dynamics[3,bin,rep]=bin_dynamics_temp[3]
+ 	bin_dynamics[4,bin,rep]=bin_dynamics_temp[4]
+ 	bin_dynamics[5,bin,rep]=bin_dynamics_temp[5]
+	bin_dynamics[6,bin,rep]=bin_dynamics_temp[6]
 
 
 ;+
@@ -371,26 +376,26 @@ print, ""
 ;endfor
 ;-
 
-
+endfor
 endfor 
 
 ;; Open and print to files
 	CLOSE, 2, 3, 4, 5, 6, 7, 8
-	OPENW, 2, output_v
-	OPENW, 3, output_sigma
-	OPENW, 4, output_h3
-	OPENW, 5, output_h4
-	OPENW, 6, output_h5
-	OPENW, 7, output_h6
-	OPENW, 8, output_Chi
-for bin=0, n_bins-1 do begin
-	PRINTF, 2, bin_dynamics[0,bin]
-	PRINTF, 3, bin_dynamics[1,bin]
-	PRINTF, 4, bin_dynamics[2,bin]
-	PRINTF, 5, bin_dynamics[3,bin]
-;	PRINTF, 6, bin_dynamics[4,bin]
-;	PRINTF, 7, bin_dynamics[5,bin]
-	PRINTF, 8, bin_dynamics[6,bin]
+	OPENW, 2, output_v, WIDTH = n_spaxels*10
+	OPENW, 3, output_sigma, WIDTH = n_spaxels*10
+	OPENW, 4, output_h3, WIDTH = n_spaxels*10
+	OPENW, 5, output_h4, WIDTH = n_spaxels*10
+;	OPENW, 6, output_h5, WIDTH = n_spaxels*10
+;	OPENW, 7, output_h6, WIDTH = n_spaxels*10
+	OPENW, 8, output_Chi, WIDTH = n_spaxels*10
+for rep=0, n_reps-1 do begin
+	PRINTF, 2, bin_dynamics[0,*,rep]
+	PRINTF, 3, bin_dynamics[1,*,rep]
+	PRINTF, 4, bin_dynamics[2,*,rep]
+	PRINTF, 5, bin_dynamics[3,*,rep]
+;	PRINTF, 6, bin_dynamics[4,*,rep]
+;	PRINTF, 7, bin_dynamics[5,*,rep]
+	PRINTF, 8, bin_dynamics[6,*,rep]
 endfor
 
 
