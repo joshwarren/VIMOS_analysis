@@ -339,9 +339,9 @@ bin_log = bestfit_sav + add_noise
 
 
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics_temp, BESTFIT = bestfit_sav, $
+		bin_dynamics_temp, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET
+		DEGREE = degree, VSYST = dv, /QUIET
 
 ;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
 ;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1
