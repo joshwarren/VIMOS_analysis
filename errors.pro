@@ -4,8 +4,8 @@
 ;; warrenj 20150216 Process to progerate the uncertainty using Monty
 ;; Carlo methods to get uncertainty in velocity space.
 
-pro errors
-
+pro errors, bin
+resolve_routine, ['log_rebin', 'ppxf', 'ppxf_determine_goodpixels']
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
@@ -29,24 +29,11 @@ pro errors
 		   ; correct the template continuum shape during the fit 
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
-	output_v = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_vel_mc.dat'
-	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_sigma_mc.dat'
-	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h3_mc.dat'
-	output_h4 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h4_mc.dat'
-	output_h5 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h5_mc.dat'
-	output_h6 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h6_mc.dat'
-	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_Chi_mc.dat'
+
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
-	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
+	tessellation_File = '~/analysis/' + galaxy + $
 		'/voronoi_2d_binning_output.txt'
 
 
@@ -54,10 +41,9 @@ pro errors
 ;; ----------=============== Run analysis  =================---------
 ;; ----------===============================================---------
 
-
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '/Data/idl_libraries/ppxf/MILES_library/'
+	templatesDirectory = '~/ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -81,7 +67,7 @@ pro errors
 ;; NB: shouldn't this be 0.9A as this is resolution?
         FWHM_tem = 2.5     ; Miles spectra have a resolution
                            ; FWHM of 2.5A.
-
+emacs
 
 ;; Which templates to use are given in use_templates.pro. This is
 ;; transfered to the array templatesToUse.
@@ -132,8 +118,7 @@ endfor
 
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		Galaxy + $
+	dataCubeDirectory = FILE_SEARCH('~/reduced/' + Galaxy + $
 		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
@@ -163,7 +148,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 	galaxy_noise = galaxy_noise_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
 ;; array to hold results
-	bin_dynamics = MAKE_ARRAY(7, n_bins, reps)
+;	bin_dynamics = MAKE_ARRAY(7, n_bins);, reps)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
@@ -171,7 +156,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 ;; ----------========== Spatially Binning =============---------
 
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
+;for bin=0, n_bins-1 do begin
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
 
@@ -343,73 +328,10 @@ bin_log = bestfit_sav + add_noise
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, /QUIET
 
-;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
-;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1
 
-; CALLING SEQUENCE:
-;  PPXF, templates, galaxy, noise, velScale, start, sol, BESTFIT=bestFit, $
-;	BIAS=bias, CHI2DOF=chi2dof, /CLEAN, COMPONENT=component, $
-;	DEGREE=degree, ERROR=error, GOODPIXELS=goodPixels, LAMBDA=lambda, $
-;	MDEGREE=mdegree, MOMENTS=moments, MPOLYWEIGHTS=mpolyweights, $
-;	/OVERSAMPLE, /PLOT, POLYWEIGHTS=polyWeights, /QUIET, $
-;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
-;	VSYST=vsyst, WEIGHTS=weights
-
- 	bin_dynamics[0,bin,rep]=bin_dynamics_temp[0]
- 	bin_dynamics[1,bin,rep]=bin_dynamics_temp[1]
- 	bin_dynamics[2,bin,rep]=bin_dynamics_temp[2]
- 	bin_dynamics[3,bin,rep]=bin_dynamics_temp[3]
- 	bin_dynamics[4,bin,rep]=bin_dynamics_temp[4]
- 	bin_dynamics[5,bin,rep]=bin_dynamics_temp[5]
-	bin_dynamics[6,bin,rep]=bin_dynamics_temp[6]
-
-
-;+
-;;; Write weightings for each template used to file 1.
-;for k = 0, nfiles-1 do begin
-;if weights[k] ne 0 then begin
-;;; Use (uncomment) this line if using limited template files.
-;	PRINTF, 1, string(templatesToUse[k]) + ' ' + string(weights[k])
-;;; Use (uncomment) this line if using full library.
-;;	PRINTF, 1, string(k+1) + ' ' + string(weights[k])
-;endif
-;endfor
-;-
-
+print, bin, bin_dynamics_temp 
 endfor
-endfor 
-
-;; Open and print to files
-	CLOSE, 2, 3, 4, 5, 6, 7, 8
-	OPENW, 2, output_v, WIDTH = n_spaxels*10
-	OPENW, 3, output_sigma, WIDTH = n_spaxels*10
-	OPENW, 4, output_h3, WIDTH = n_spaxels*10
-	OPENW, 5, output_h4, WIDTH = n_spaxels*10
-;	OPENW, 6, output_h5, WIDTH = n_spaxels*10
-;	OPENW, 7, output_h6, WIDTH = n_spaxels*10
-	OPENW, 8, output_Chi, WIDTH = n_spaxels*10
-for rep=0, n_reps-1 do begin
-	PRINTF, 2, bin_dynamics[0,*,rep]
-	PRINTF, 3, bin_dynamics[1,*,rep]
-	PRINTF, 4, bin_dynamics[2,*,rep]
-	PRINTF, 5, bin_dynamics[3,*,rep]
-;	PRINTF, 6, bin_dynamics[4,*,rep]
-;	PRINTF, 7, bin_dynamics[5,*,rep]
-	PRINTF, 8, bin_dynamics[6,*,rep]
-endfor
-
-
-CLOSE, 2, 3, 4, 5, 6, 7, 8
-
-
-
-;; Error check - making sure all spaxels have been read into some
-;; bin. 
-if (i EQ n_spaxels-1) THEN BEGIN
-	print, 'ERROR: not all spaxels have been read'
-endif 
-
-
+;endfor 
 
 return
 end
