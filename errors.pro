@@ -71,13 +71,13 @@ end
 
 
 
-pro errors, bin
+pro errors, galaxy, bin
 resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-  	galaxy = galaxies[1]
+;galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+; 	galaxy = galaxies[1]
 	reps = 5000 ;; number of monte carlo reps per bin.
 	discard = 2
 	range = [4200,10000]
@@ -398,7 +398,7 @@ goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 
 
 for rep=0,reps-1 do begin
-print, bin, rep
+;print, galaxy, bin, rep
 seed = !NULL
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
@@ -413,7 +413,7 @@ bin_log = bestfit_sav + add_noise
 		DEGREE = degree, VSYST = dv, /QUIET
 
 
-print, bin, bin_dynamics_temp 
+print, galaxy, bin, rep, bin_dynamics_temp 
 endfor
 ;endfor 
 

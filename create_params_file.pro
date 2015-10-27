@@ -17,9 +17,9 @@ CLOSE, 1
 OPENW, 1, output_file
 PRINTF, 1, "idl -e '.compile errors'"
 for i = 0, n_bins-1 do begin
-PRINTF, 1, "idl -e 'errors, " + strtrim(string(i),2) + "'"
+PRINTF, 1, "idl -e 'errors, " + galaxy + ", " + strtrim(string(i),2) + "'"
 endfor
 CLOSE,1
-print, "done"
+print, "Done"
 return
 end
