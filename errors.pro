@@ -5,72 +5,6 @@
 ;; Carlo methods to get uncertainty in velocity space.
 
 
-;-----------------------------------------------------------------------------
-function determine_goodPixels, emission, logLam, lamRangeTemp, vel, z
-; warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
-;
-; PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of
-;	goodPixels to be used as input keyword for the routine
-;	PPXF. This is useful to mask gas emission lines or atmospheric
-;	absorptions. It can be trivially adapted to mask different
-;	lines. 
-; 
-; INPUT PARAMETERS:
-; - LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom 
-;     of each pixel of the log rebinned *galaxy* spectrum.
-; - LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the
-;     minimum and maximum wavelength in Angstrom in the stellar
-;     *template* used in PPXF. 
-; - VEL: Estimate of the galaxy velocity in km/s.
-; 
-; V1.0: Michele Cappellari, Leiden, 9 September 2005
-; V1.01: Made a separate routine and included additional common
-;   emission lines. MC, Oxford 12 January 2012
-; V1.02: Included more lines. MC, Oxford, 7 Januray 2014
-
-c = 299792.458d ; speed of light in km/s
-
-;; 20150617 warrenj Added Telluric lines (tell) at 5199 (is a blended sky
-;; line)
-
- 
-;dv = lines*0+800d ; width/2 of masked gas emission region in km/s
-dv = 800d ; width/2 of masked gas emission region in km/s
-
-flag = bytarr(n_elements(logLam))
-
-; Marks telluric line
-tell = 5199
-flag or= logLam gt alog(tell) - z - dv/c $
-     and logLam lt alog(tell) - z + dv/c 
-
-; Mask emission lines passed to routine
-FOR i=0, n_elements(emission.i)-1 DO BEGIN
-    IF (emission.action[i] EQ 'm') THEN BEGIN
-        flag or= logLam gt alog(emission.lambda[i]) + (vel - dv)/c $
-             and logLam lt alog(emission.lambda[i]) + (vel + dv)/c
-    ENDIF
-ENDFOR
-
-flag or= logLam lt alog(lamRangeTemp[0]) + (vel + 900d)/c ; Mask edges of
-flag or= logLam gt alog(lamRangeTemp[1]) + (vel - 900d)/c ; stellar library
-
-
-flag[0:3] = 1 ; Mask edge of data
-flag[-4:*]= 1 ; to remove edge effects
-return, where(flag eq 0)
-end
-;-----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
 pro errors, galaxy, bin
 resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
 ;; ----------===============================================---------
@@ -90,7 +24,7 @@ resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
                            ; 0.571A/px. (From: http://www.eso.org
                            ; /sci/facilities/paranal/instruments
                            ; /vimos/inst/ifu.html)
-        FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
+
 	moments = 4 ; number of componants to calc with ppxf (see 
                     ; keyword moments in ppxf.pro for more details)
 	degree = 4 ; order of addative Legendre polynomial used to 
@@ -119,7 +53,7 @@ sig = sig_gals[index]
 z = z_gals[index]
 
 
-
+        FWHM_gal = FWHM_gal/(1+z) ; Adjust resolution in Angstrom
 
 ;; ----------===============================================---------
 ;; ----------=============== Run analysis  =================---------
@@ -383,7 +317,7 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
-goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
 	lambda = EXP(logLam_bin)
 
