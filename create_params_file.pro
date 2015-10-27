@@ -1,6 +1,8 @@
 pro create_params_file
 
-galaxy = 'ngc3557'
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+
+galaxy = galaxies[1]
 
 tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
@@ -18,5 +20,6 @@ for i = 0, n_bins-1 do begin
 PRINTF, 1, "idl -e 'errors, " + strtrim(string(i),2) + "'"
 endfor
 CLOSE,1
+print, "done"
 return
 end

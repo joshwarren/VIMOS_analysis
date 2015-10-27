@@ -4,19 +4,87 @@
 ;; warrenj 20150216 Process to progerate the uncertainty using Monty
 ;; Carlo methods to get uncertainty in velocity space.
 
+
+;-----------------------------------------------------------------------------
+function determine_goodPixels, emission, logLam, lamRangeTemp, vel, z
+; warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
+;
+; PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of
+;	goodPixels to be used as input keyword for the routine
+;	PPXF. This is useful to mask gas emission lines or atmospheric
+;	absorptions. It can be trivially adapted to mask different
+;	lines. 
+; 
+; INPUT PARAMETERS:
+; - LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom 
+;     of each pixel of the log rebinned *galaxy* spectrum.
+; - LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the
+;     minimum and maximum wavelength in Angstrom in the stellar
+;     *template* used in PPXF. 
+; - VEL: Estimate of the galaxy velocity in km/s.
+; 
+; V1.0: Michele Cappellari, Leiden, 9 September 2005
+; V1.01: Made a separate routine and included additional common
+;   emission lines. MC, Oxford 12 January 2012
+; V1.02: Included more lines. MC, Oxford, 7 Januray 2014
+
+c = 299792.458d ; speed of light in km/s
+
+;; 20150617 warrenj Added Telluric lines (tell) at 5199 (is a blended sky
+;; line)
+
+ 
+;dv = lines*0+800d ; width/2 of masked gas emission region in km/s
+dv = 800d ; width/2 of masked gas emission region in km/s
+
+flag = bytarr(n_elements(logLam))
+
+; Marks telluric line
+tell = 5199
+flag or= logLam gt alog(tell) - z - dv/c $
+     and logLam lt alog(tell) - z + dv/c 
+
+; Mask emission lines passed to routine
+FOR i=0, n_elements(emission.i)-1 DO BEGIN
+    IF (emission.action[i] EQ 'm') THEN BEGIN
+        flag or= logLam gt alog(emission.lambda[i]) + (vel - dv)/c $
+             and logLam lt alog(emission.lambda[i]) + (vel + dv)/c
+    ENDIF
+ENDFOR
+
+flag or= logLam lt alog(lamRangeTemp[0]) + (vel + 900d)/c ; Mask edges of
+flag or= logLam gt alog(lamRangeTemp[1]) + (vel - 900d)/c ; stellar library
+
+
+flag[0:3] = 1 ; Mask edge of data
+flag[-4:*]= 1 ; to remove edge effects
+return, where(flag eq 0)
+end
+;-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 pro errors, bin
-resolve_routine, ['log_rebin', 'ppxf', 'ppxf_determine_goodpixels']
+resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
-  	galaxy = 'ngc3557'
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+  	galaxy = galaxies[1]
 	reps = 5000 ;; number of monte carlo reps per bin.
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d
-  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-	vel = 114.0d ; Initial estimate of the galaxy velocity and
-	sig = 269.0d ;velocity dispersion in km/s in the rest frame
+;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
+;	vel = 114.0d ; Initial estimate of the galaxy velocity and
+;	sig = 269.0d ;velocity dispersion in km/s in the rest frame
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org
@@ -37,9 +105,26 @@ resolve_routine, ['log_rebin', 'ppxf', 'ppxf_determine_goodpixels']
 		'/voronoi_2d_binning_output.txt'
 
 
+
+
+
+data_file = "/Data/vimosindi/analysis/galaxies.txt"
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, $
+    skipline=1, format='A,D,D,D', /SILENT
+
+i_gal = where(galaxy_gals eq galaxy)
+index=i_gal[0]
+vel = vel_gals[index]
+sig = sig_gals[index]
+z = z_gals[index]
+
+
+
+
 ;; ----------===============================================---------
 ;; ----------=============== Run analysis  =================---------
 ;; ----------===============================================---------
+
 
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
@@ -67,7 +152,7 @@ resolve_routine, ['log_rebin', 'ppxf', 'ppxf_determine_goodpixels']
 ;; NB: shouldn't this be 0.9A as this is resolution?
         FWHM_tem = 2.5     ; Miles spectra have a resolution
                            ; FWHM of 2.5A.
-emacs
+
 
 ;; Which templates to use are given in use_templates.pro. This is
 ;; transfered to the array templatesToUse.
@@ -93,10 +178,9 @@ for i = 0, nfiles - 1 do begin
 		velscale=velscale
 
 ;; Normalizing templates
-	templates[*,i] = log_temp_template/median(log_temp_template)
+	templates[*,i] = log_temp_template
 endfor
-
-
+TEMPLATES /= median(log_temp_template)
 
 
 
@@ -119,7 +203,7 @@ endfor
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
 	dataCubeDirectory = FILE_SEARCH('~/reduced/' + Galaxy + $
-		'/cube/*crcl_oextr1_fluxcal_vmcmb_darc_cexp_cube.fits') 
+		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
 ;;                                     and have binned the quadrant.
@@ -299,7 +383,7 @@ dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
 
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
-goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
 	lambda = EXP(logLam_bin)
 
