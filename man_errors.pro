@@ -13,18 +13,30 @@ glamdring_file = "/Data/vimosindi/analysis/" + galaxy + $
 glamdring_file2 = "/Data/vimosindi/analysis/" + galaxy + $
     "/glamdring_result2.txt"
 
-RDFLOAT, glamdring_file, bins, rep, vel, sig, COLUMNS=[1,2,3,4]
-RDFLOAT, glamdring_file2, bins2, rep2, h3s, h4s, COLUMNS=[1,2,3,4]
+RDFLOAT, glamdring_file, bins, rep, vel, sig, COLUMNS=[2,3,4,5]
+RDFLOAT, glamdring_file2, bins2, rep2, h3s, h4s, COLUMNS=[2,3,4,5]
 
-v = make_array(max(bins))
-v_s = make_array(max(bins))
-s = make_array(max(bins))
-s_s = make_array(max(bins))
-h3 = make_array(max(bins2))
-h3_s = make_array(max(bins2))
-h4 = make_array(max(bins2))
-h4_s = make_array(max(bins2))
+;v = make_array(max(bins))
+;v_s = make_array(max(bins))
+;s = make_array(max(bins))
+;s_s = make_array(max(bins))
+;h3 = make_array(max(bins2))
+;h3_s = make_array(max(bins2))
+;h4 = make_array(max(bins2))
+;h4_s = make_array(max(bins2))
 
+
+
+
+
+
+
+
+return
+end
+
+
+pro save
 ;repeat over all bins:
 for bin=0, max(bins)-1 do begin
 i_bin = where(bins eq bin)

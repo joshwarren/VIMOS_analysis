@@ -1,7 +1,7 @@
 ;; ==================================================================
 ;; Propergate uncertainty
 ;; ==================================================================
-;; warrenj 20150216 Process to progerate the uncertainty using Monty
+;; warrenj 20151016 Process to progerate the uncertainty using Monty
 ;; Carlo methods to get uncertainty in velocity space.
 
 
