@@ -46,14 +46,22 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         "voronoi_2d_binning_output2.txt"
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_vel.dat" % (wav_range_dir)
+    output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_vel_uncert.dat" % (wav_range_dir)
     output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
         "results/%stemplate_weighting.dat" % (wav_range_dir)
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_sigma.dat" % (wav_range_dir)
+    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_sigma_uncert.dat" % (wav_range_dir)
     output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3.dat" % (wav_range_dir)
+    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_h3_uncert.dat" % (wav_range_dir)
     output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h4.dat" % (wav_range_dir)
+        "%sgal_h3.dat" % (wav_range_dir)
+    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_h4_uncert.dat" % (wav_range_dir)
     output_h5 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h5.dat" % (wav_range_dir)
     output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
@@ -68,11 +76,16 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         "%sgal_Hb.dat" % (wav_range_dir)
     output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_Hd.dat" % (wav_range_dir)
+    
 
-    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
-        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
+    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
+        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
+        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
+        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
+        "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
-    outputs = {"v":output_v}
+#    outputs = {"v":output_v}
+    outputs = {"h3_uncert":output_h3_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -143,20 +156,25 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
     for plot in outputs:
-#        print plot
-        v_binned = np.loadtxt(outputs[plot])#, skiprows=1)
+        print plot
+        if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
+            plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+            v_binned = np.loadtxt(outputs[plot])#, skiprows=1)
+        else:
+            v_binned = np.loadtxt(outputs[plot], usecols=(1,), unpack=True)#, skiprows=1)
 
 #        if plot=="v":
 #            v_binned += -1.1*np.median(v_binned)
 #        if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
 #            v_binned += -np.median(v_binned)
-
-# Asign v to every spaxel in bin.
+# Asign v to every spaxel in bin
         v_unbinned = np.zeros(galaxy_data_unbinned.shape)
         for spaxel in range(n_spaxels):
+            print bin_num[spaxel], max(bin_num), v_binned[bin_num[spaxel]]
             v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
-        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        if plot=="v" or plot=="v_uncert" or plot=="OIII" or plot=="NI" \
+            or plot=="Hb" or plot=="Hd":
             if norm == "lum":
                 v_binned -= v_binned[center_bin]
             if norm == "lwv":
@@ -175,7 +193,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
             v_sorted = sorted(v_binned)
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]
-        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        if plot=="v" or plot=="v_uncert" or plot=="OIII" or plot=="NI" \
+            or plot=="Hb" or plot=="Hd":
             if abs(vmin)<vmax:
                 vmin=-vmax
             else:
@@ -186,12 +205,22 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         if plot=="v":
             title = 'Stellar Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
+        elif plot=="v_uncert":
+            title = "Stellar Velocity Uncertainty Map"
+            CBLabel = "LOSV (km s$^{-1}$)"
         elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             title = plot + ' Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
         elif plot=="sigma":
             title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
+        elif plot=="v_uncert":
+            title = "Stellar Velocity Dispersion Uncertainty Map"
+            CBLabel = "LOSV (km s$^{-1}$)"
+        elif plot=="h3_uncert":
+            title = "h3 Uncertainty Map"
+        elif plot=="h4_uncert":
+            title = "h4 Uncertainty Map"
         else:
             title = plot + ' Map'
             CBLabel = ""
@@ -251,6 +280,7 @@ if __name__ == '__main__':
     wav_range="4200-"
     galaxy = "ngc3557"
 #    galaxy = "ngc7075"
+#    galaxy = "ic1459"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #

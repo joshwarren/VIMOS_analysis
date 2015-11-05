@@ -11,7 +11,7 @@ tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
 RDFLOAT, tessellation_File, bin_num, COLUMNS = [3], $
 	SKIPLINE = 1, /SILENT 
 	
-n_bins = max(bin_num)
+n_bins = max(bin_num)+1
 
 output_file = "~/VIMOS_project/analysis/params.txt"
 CLOSE, 1
