@@ -170,7 +170,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 # Asign v to every spaxel in bin
         v_unbinned = np.zeros(galaxy_data_unbinned.shape)
         for spaxel in range(n_spaxels):
-            print bin_num[spaxel], max(bin_num), v_binned[bin_num[spaxel]]
             v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
         if plot=="v" or plot=="v_uncert" or plot=="OIII" or plot=="NI" \
