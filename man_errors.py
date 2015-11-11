@@ -4,15 +4,13 @@
 ## warrenj 20150825 Routine to find PA_phot, PA_kin and Psi, the
 ## misalignment angle. Also to find photometry info e.g. ellipticity. 
 
-
 import numpy as np # for reading files
 import array
-
 
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[3]
+    galaxy = galaxies[8]
     wav_range = "4200-/"
 
 
@@ -23,7 +21,7 @@ def man_errors():
     bins, reps, vel, sig  =np.loadtxt(glamdring_file, unpack=True, 
         usecols=(1,2,3,4))
     i_line = np.arange(len(bins),dtype='int') 
-
+    n_bins = np.max(bins)+1
 
     repeated_bins = np.zeros((1,2), dtype=np.int)
     for bin in range(int(max(bins))):
@@ -49,10 +47,10 @@ def man_errors():
         sig = np.delete(sig, f)
 
 
-    v = np.zeros(np.max(bins))
-    v_s = np.zeros(np.max(bins))
-    s = np.zeros(np.max(bins))
-    s_s = np.zeros(np.max(bins))
+    v = np.zeros(n_bins)
+    v_s = np.zeros(n_bins)
+    s = np.zeros(n_bins)
+    s_s = np.zeros(n_bins)
 
 
 
@@ -102,10 +100,10 @@ def man_errors():
         h4s = np.delete(h4s, f)
 
 
-    h3 = np.zeros(np.max(bins))
-    h3_s = np.zeros(np.max(bins))
-    h4 = np.zeros(np.max(bins))
-    h4_s = np.zeros(np.max(bins))
+    h3 = np.zeros(n_bins)
+    h3_s = np.zeros(n_bins)
+    h4 = np.zeros(n_bins)
+    h4_s = np.zeros(n_bins)
 
 
 
