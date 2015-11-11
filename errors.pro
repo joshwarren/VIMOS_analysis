@@ -1,7 +1,8 @@
+
 ;; ==================================================================
 ;; Propergate uncertainty
 ;; ==================================================================
-;; warrenj 20151016 Process to progerate the uncertainty using Monty
+;; warrenj 20150216 Process to progerate the uncertainty using Monty
 ;; Carlo methods to get uncertainty in velocity space.
 
 
@@ -13,7 +14,7 @@ resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 ; 	galaxy = galaxies[1]
 galaxy = galaxies[i_gal]
-	reps = 4 ;; number of monte carlo reps per bin.
+	reps = 5000 ;; number of monte carlo reps per bin.
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d
@@ -36,14 +37,14 @@ galaxy = galaxies[i_gal]
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
-	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
+	tessellation_File = '~/analysis/' + galaxy + $
 		'/voronoi_2d_binning_output.txt'
 
 
 
 
 
-data_file = "/Data/vimosindi/analysis/galaxies.txt"
+data_file = "~/analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, $
     skipline=1, format='A,D,D,D', /SILENT
 
@@ -64,7 +65,7 @@ z = z_gals[index]
 
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '/Data/idl_libraries/ppxf/MILES_library/'
+	templatesDirectory = '~/ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -138,7 +139,7 @@ TEMPLATES /= median(log_temp_template)
 
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + Galaxy + $
+	dataCubeDirectory = FILE_SEARCH('~/reduced/' + Galaxy + $
 		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
@@ -349,7 +350,8 @@ bin_log = bestfit_sav + add_noise
 		DEGREE = degree, VSYST = dv, /QUIET
 
 
-print, galaxy, bin, rep, bin_dynamics_temp 
+print, "r1", bin, rep, bin_dynamics_temp[0], bin_dynamics_temp[1]
+print, "r2", bin, rep, bin_dynamics_temp[2], bin_dynamics_temp[3]
 endfor
 ;endfor 
 
