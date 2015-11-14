@@ -334,6 +334,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET
 
 
+bin_output=MAKE_ARRAY(reps,4)
 for rep=0,reps-1 do begin
 ;print, galaxy, bin, rep
 seed = !NULL
@@ -350,10 +351,23 @@ bin_log = bestfit_sav + add_noise
 		DEGREE = degree, VSYST = dv, /QUIET
 
 
-print, "r1", bin, rep, bin_dynamics_temp[0], bin_dynamics_temp[1]
-print, "r2", bin, rep, bin_dynamics_temp[2], bin_dynamics_temp[3]
+
+bin_output[reps,*] = bin_dynamics_temp[0:4]
+;print, "r1", bin, rep, bin_dynamics_temp[0], bin_dynamics_temp[1]
+;print, "r2", bin, rep, bin_dynamics_temp[2], bin_dynamics_temp[3]
 endfor
-;endfor 
+;endfor
+
+
+bin_file =  "~/results/", bin, ".dat"
+OPENW, 1, bin_file
+CLOSE, 1
+
+
+forprint, bin_output[*,0], bin_output[*,1], bin_output[*,2], $
+          bin_output[*,3], TEXTOUT = bin_file, /SILENT
+
+
 
 return
 end
