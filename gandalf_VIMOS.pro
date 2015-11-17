@@ -312,7 +312,7 @@ Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 ;; To count the number of spaxels
 count = 0
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
+for bin=41, n_bins-1 do begin
 ;bin = 1 ;;;;;************************************************
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
@@ -539,6 +539,8 @@ emission.fit[i_n1Hg] = 'f'
 
 ;; ----------======= Gas spectrum fitting 2 (Gandalf) ======--------- 
 sol = bin_dynamics_temp
+print, velscale
+print, sol
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
     DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
