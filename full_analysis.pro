@@ -26,11 +26,11 @@ galaxy = galaxies[gal]
 print, galaxy
 z = z_gals[gal]
 discard = 2
-targetSN = 30.0
+;targetSN = 30.0
 range = [4200, 10000]
 
 
-binning_spaxels, galaxy, discard=discard, targetSN=targetSN
+binning_spaxels, galaxy, discard=discard;, targetSN=targetSN
 
 ;find_template, galaxy, z=z, discard=discard, range=range
 

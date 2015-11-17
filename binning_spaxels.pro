@@ -6,13 +6,43 @@
 ;; sigma, and 40-50 for h3 and h4. 
  
 
+
+;; ----------===============================================---------
+;; ----------======== Check overwrite of target SN =========---------
+;; ----------===============================================---------
+pro check_overwrite, new, old
+if new ne old then begin
+A=''
+read, A, prompt='Are you sure you want to overwrite the old target of ' + $
+    strtrim(string(old),2) + ' with a new target of ' + $
+    strtrim(string(new),2) + '? (Y/N) '
+if A eq "N" then new = old
+endif
+return
+end
+
+
+
+
+
+
+
 pro binning_spaxels, galaxy, discard=discard, targetSN=targetSN
 
 ;; ----------===============================================---------
 ;; ----------============ Default parameters ===============---------
 ;; ----------===============================================---------
 
-if not keyword_set(targetSN) then targetSN=30.0
+data_file = "/Data/vimosindi/analysis/galaxies.txt"
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used_gals, $
+    skipline=1, format='A,D,D,D,D', /SILENT
+i_gal = where(galaxy_gals eq galaxy)
+
+if i_gal ne -1 then begin
+if not keyword_set(targetSN) then targetSN=SN_used_gals[i_gal]
+if keyword_set(targetSN) then check_overwrite, targetSN, SN_used_gals[i_gal]
+endif else if not keyword_set(targetSN) then targetSN = 30.0
+
 if not keyword_set(discard) then discard=2
 
 ;	galaxy = 'ngc3557'
@@ -153,6 +183,18 @@ forprint, xBar, yBar, $
 	'/voronoi_2d_binning_output2.txt', $
 	COMMENT='XBAR           YBAR', /SILENT
 
+;; ----------================= Save SN_used ===============---------
+if i_gal eq -1 then begin
+    galaxy_gals = [galaxy_gals, galaxy]
+    SN_used_gals = [SN_used_gals, targetSN]
+endif else begin
+    SN_used_gals[i_gal] = targetSN
+endelse
+
+
+forprint, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used_gals, $
+    textout=data_file, /SILENT, $
+    Comment = "Galaxy      z     velocity     velocity dispersion     Target SN"
 
 END
 ;----------------------------------------------------------------------------

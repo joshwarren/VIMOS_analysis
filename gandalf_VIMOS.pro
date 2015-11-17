@@ -99,8 +99,8 @@ if not keyword_set(range) then range=[4200,10000]
 ;if not keyword_set(sigma) then sigma=269.0d
 
 data_file = "/Data/vimosindi/analysis/galaxies.txt"
-readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, $
-    skipline=1, format='A,D,D,D', /SILENT
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used, $
+    skipline=1, format='A,D,D,D,D', /SILENT
 
 i_gal = where(galaxy_gals eq galaxy)
 index=i_gal[0]

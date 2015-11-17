@@ -62,8 +62,8 @@ sig = MEAN(results[1,*])
 ;; ----------================= Save Result =================---------
 ;; ----------===============================================---------
 data_file = "/Data/vimosindi/analysis/galaxies.txt"
-readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, $
-    skipline=1, format='A,D,D,D', /SILENT
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used, $
+    skipline=1, format='A,D,D,D,D', /SILENT
 
 i_gal = where(galaxy_gals eq galaxy)
 if i_gal eq -1 then begin
@@ -78,9 +78,9 @@ endif else begin
 endelse
 
 
-forprint, galaxy_gals, z_gals, vel_gals, sig_gals, textout=data_file, $
-    /SILENT, $
-    Comment = "Galaxy      z     velocity     velocity dispersion"
+forprint, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used, $
+    textout=data_file, /SILENT, $
+    Comment = "Galaxy      z     velocity     velocity dispersion   Target SN"
 
 
 
