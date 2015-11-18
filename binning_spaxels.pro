@@ -34,8 +34,8 @@ pro binning_spaxels, galaxy, discard=discard, targetSN=targetSN
 ;; ----------===============================================---------
 
 data_file = "/Data/vimosindi/analysis/galaxies.txt"
-readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used_gals, $
-    skipline=1, format='A,D,D,D,D', /SILENT
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
+    y_gals, SN_used_gals, skipline=1, format='A,D,D,D,I,I,D', /SILENT
 i_gal = where(galaxy_gals eq galaxy)
 
 if i_gal ne -1 then begin
@@ -192,9 +192,9 @@ endif else begin
 endelse
 
 
-forprint, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used_gals, $
-    textout=data_file, /SILENT, $
-    Comment = "Galaxy      z     velocity     velocity dispersion     Target SN"
+forprint, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, y_gals, $
+    SN_used_gals, textout=data_file, /SILENT, $
+    Comment = "Galaxy      z     velocity     velocity dispersion    x     y     Target SN"
 
 END
 ;----------------------------------------------------------------------------

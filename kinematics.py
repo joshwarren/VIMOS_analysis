@@ -26,8 +26,8 @@ def kinematics(galaxy, discard=0, wav_range="",
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     # different data types need to be read separetly
-    z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, 
-        unpack=True, skiprows=1, usecols=(1,2,3,4,5))
+    z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(data_file, 
+        unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
@@ -282,12 +282,13 @@ def kinematics(galaxy, discard=0, wav_range="",
 
 # ------------============= Save outputs =============----------
     f = open(data_file, 'w')
-    f.write('Galaxy      z     velocity     velocity dispersion      x    y \n')
+    f.write('Galaxy      z     velocity     velocity dispersion      x    y     Target SN \n')
     
     for i in range(len(galaxy_gals)):
         f.write(galaxy_gals[i] + '    ' + str(z_gals[i]) + '    ' + \
             str(vel_gals[i]) + '    ' + str(sig_gals[i]) + '    ' + \
-            str(x_gals[i]) + '    ' + str(y_gals[i]) +'\n')
+            str(int(x_gals[i])) + '    ' + str(int(y_gals[i])) + '    ' + \
+            str(SN_gals[i]) + '\n')
 
 
 

@@ -99,8 +99,8 @@ if not keyword_set(range) then range=[4200,10000]
 ;if not keyword_set(sigma) then sigma=269.0d
 
 data_file = "/Data/vimosindi/analysis/galaxies.txt"
-readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, SN_used, $
-    skipline=1, format='A,D,D,D,D', /SILENT
+readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
+    y_gals, SN_used, skipline=1, format='A,D,D,D,D,D,D', /SILENT
 
 i_gal = where(galaxy_gals eq galaxy)
 index=i_gal[0]
@@ -312,7 +312,7 @@ Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 ;; To count the number of spaxels
 count = 0
 ;; endfor is near the end - after ppxf has been run on this bin.
-for bin=41, n_bins-1 do begin
+for bin=0, n_bins-1 do begin
 ;bin = 1 ;;;;;************************************************
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
@@ -539,8 +539,7 @@ emission.fit[i_n1Hg] = 'f'
 
 ;; ----------======= Gas spectrum fitting 2 (Gandalf) ======--------- 
 sol = bin_dynamics_temp
-print, velscale
-print, sol
+
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
     DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
