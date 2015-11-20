@@ -22,7 +22,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     # different data types need to be read separetly
-    z_gals = np.loadtxt(data_file, skiprows=1, usecols=(1,))
+    z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
@@ -78,14 +78,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         "%sgal_Hd.dat" % (wav_range_dir)
     
 
-    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
-        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
-        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
-        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
-        "OIII" : output_OIII, "NI" : output_NI, 
+#    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
+#        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
+#        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
+#        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
+#        "OIII" : output_OIII, "NI" : output_NI, 
+#        "Hb" : output_Hb, "Hd" : output_Hd}
+    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
+        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"v":output_v}
-    outputs = {"h3_uncert":output_h3_uncert}
+#    outputs = {"h3_uncert":output_h3_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -95,12 +98,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     order = bin_num.argsort()
 
 # Read galaxies.txt file
-    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
-    # different data types need to be read separetly
-    x_gals, y_gals = np.loadtxt(data_file, 
-        unpack=True, skiprows=1, usecols=(4,5))
-    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-    i_gal = np.where(galaxy_gals==galaxy)[0][0]
+#    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+#    # different data types need to be read separetly
+#    x_gals, y_gals = np.loadtxt(data_file, 
+#        unpack=True, skiprows=1, usecols=(4,5))
+#    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+#    i_gal = np.where(galaxy_gals==galaxy)[0][0]
 
     center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 
