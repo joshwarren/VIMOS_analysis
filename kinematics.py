@@ -143,6 +143,7 @@ def kinematics(galaxy, discard=0, wav_range="",
 # ------------============== Fit kinemetry ===============----------
     save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
         "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, wav_range)
+
     k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots, \
         sav_fig=save_to)
 

@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'eso443-g024']
+galaxies=['ngc7075', 'pks0718-34']
 #galaxy = galaxies[0]
 
 discard = 2
@@ -29,8 +29,8 @@ for galaxy in galaxies:
 
     print galaxy
     kinematics(galaxy, discard=discard, wav_range=wav_range)
-    plt.close("all")
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=False)
-    plt.close("all")
-    GH_plots(galaxy, wav_range=wav_range)
+#    plt.close("all")
+#    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+#        nointerp=False)
+#    plt.close("all")
+#    GH_plots(galaxy, wav_range=wav_range)
