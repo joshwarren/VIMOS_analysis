@@ -25,12 +25,20 @@ def kinematics(galaxy, discard=0, wav_range="",
 
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+    data_file2 =  "/Data/vimosindi/analysis/galaxies2.txt"
     # different data types need to be read separetly
     z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(data_file, 
         unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
+
+
+
+
+    ellip_gals, star_psi_gals, gas_psi_gals = np.loadtxt(data_file2,
+        unpack=True, skiprows=1, usecols=(1,2,3))
+
 
 
     #discard = 2 # rows of pixels to discard- must have been the same 
@@ -115,6 +123,7 @@ def kinematics(galaxy, discard=0, wav_range="",
     #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
     x_gals[i_gal] = f.xpeak
     y_gals[i_gal] = f.ypeak
+    ellip_gals[i_gal] = f.eps
     print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
     print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 
@@ -157,6 +166,7 @@ def kinematics(galaxy, discard=0, wav_range="",
 
     mis = math.asin(abs(math.sin(phot-kine)))
     mis = math.degrees(mis)
+    star_psi_gals[i_gal] = mis
     print "Psi: " + str(mis)
 
 
@@ -176,6 +186,7 @@ def kinematics(galaxy, discard=0, wav_range="",
 
     gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
     gas_mis = math.degrees(gas_mis)
+    gas_psi_gals[i_gal] = gas_mis
     print "Psi: " + str(gas_mis)
 
 
@@ -291,7 +302,11 @@ def kinematics(galaxy, discard=0, wav_range="",
             str(int(x_gals[i])) + '    ' + str(int(y_gals[i])) + '    ' + \
             str(SN_gals[i]) + '\n')
 
-
+    f2 = open(data_file2, 'w')
+    f2.write('Galaxy      Ellipticity     Stellar Misalignment      Gas Misalignment \n')
+    for i in range(len(galaxy_gals)):
+        f2.write(galaxy_gals[i] + '    ' + str(ellip_gals[i]) + '    ' + \
+            str(star_psi_gals[i]) + '    ' + str(gas_psi_gals[i]) + '\n')
 
 ##############################################################################
 
