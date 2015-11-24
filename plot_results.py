@@ -78,17 +78,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         "%sgal_Hd.dat" % (wav_range_dir)
     
 
-#    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
-#        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
-#        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
-#        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
-#        "OIII" : output_OIII, "NI" : output_NI, 
-#        "Hb" : output_Hb, "Hd" : output_Hd}
-    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
-        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
+    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
+        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
+        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
+        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
+        "OIII" : output_OIII, "NI" : output_NI, 
         "Hb" : output_Hb, "Hd" : output_Hd}
+#    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
+#        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
+#        "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"v":output_v}
-#    outputs = {"h3_uncert":output_h3_uncert}
+#    outputs = {"v_uncert":output_v_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -175,8 +175,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         for spaxel in range(n_spaxels):
             v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
-        if plot=="v" or plot=="v_uncert" or plot=="OIII" or plot=="NI" \
-            or plot=="Hb" or plot=="Hd":
+        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             if norm == "lum":
                 v_binned -= v_binned[center_bin]
             if norm == "lwv":
@@ -238,9 +237,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)
-#            plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-#                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-#                plot, wav_range), bbox_inches="tight")
 
 # ------------===== Plot velfield - with interperlation ====----------
         else:
@@ -250,10 +246,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
                 nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
                 redshift = z, title=title, save=saveTo)
-#           plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-#                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range), 
-#                bbox_inches="tight")
-
 
 # ------------=========== Save and display plot =============----------
        

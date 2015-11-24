@@ -11,7 +11,7 @@ import sys # for early exit of python
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[2]
+    galaxy = galaxies[7]
     wav_range = "4200-/"
 
     glamdring_dir = "/Data/vimosindi/analysis/%s/montecarlo/" % (
@@ -35,8 +35,9 @@ def man_errors():
 #********************************************************************#
 #******************CURRENTLY MISSING FINAL BIN **********************#
 #****NEED TO REMOVE -1 FROM RANGE(N_BINS) COMMAND WHEN CORRECTED ****#
+#******	MISSING FROM GAL 0-3 - LATER GALS HAVE BEEN CORRECTED *******#
 #********************************************************************#
-    for bin in range(n_bins-1):
+    for bin in range(n_bins):
         glamdring_file = glamdring_dir + str(bin) + ".dat"
         vel, sig, h3s, h4s  =np.loadtxt(glamdring_file, unpack=True)
 
@@ -82,7 +83,7 @@ def man_errors():
 
 
 
-
+    print "Done"
 ##############################################################################
 
 # Use of plot_results.py
