@@ -32,7 +32,6 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
     if vmax is None:
         vmax = np.max(vel)
 
-
     xBar, yBar, vel = map(np.ravel, [xBar, yBar, vel])
     levels = np.linspace(vmin, vmax, ncolors)
 
@@ -46,7 +45,7 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
     im_xBar = np.copy(xBar)
     im_yBar = np.copy(yBar)
     bin_num = bin_num.astype(int)
-    v = vel[bin_num]
+    v = vel[bin_num].clip(vmin,vmax)
     pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
 
     xmin, xmax = np.min(x), np.max(x)

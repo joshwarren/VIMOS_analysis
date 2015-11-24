@@ -87,7 +87,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 #    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"v":output_v}
+#    outputs = {"sigma":output_sigma}
 #    outputs = {"v_uncert":output_v_uncert}
 
 # Read tessellation file
@@ -186,7 +186,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
                 v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
 #                v_binned -= np.mean(v_binned)
 
-
         vmax = max(v_binned)
         vmin = min(v_binned)
         v_sorted = sorted(np.unique(v_binned))
@@ -194,8 +193,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
             v_sorted = sorted(v_binned)
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]
-        if plot=="v" or plot=="v_uncert" or plot=="OIII" or plot=="NI" \
-            or plot=="Hb" or plot=="Hd":
+        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             if abs(vmin)<vmax:
                 vmin=-vmax
             else:
