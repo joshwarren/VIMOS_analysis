@@ -21,6 +21,8 @@ def GH_plots(galaxy, wav_range="", plots=False):
     else:
         wav_range_dir = ""
         wav_range = ""
+    limit=1 # how many of the lowest/highest errors to clip
+    scale=1 #scale the errors
 
 
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
@@ -29,15 +31,20 @@ def GH_plots(galaxy, wav_range="", plots=False):
         "voronoi_2d_binning_output2.txt"
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_vel.dat" % (wav_range_dir)
-    output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
-        "results/%stemplate_weighting.dat" % (wav_range_dir)
+    output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_vel_uncert.dat" % (wav_range_dir)
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_sigma.dat" % (wav_range_dir)
+    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_sigma_uncert.dat" % (wav_range_dir)
     output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3.dat" % (wav_range_dir)
+    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_h3_uncert.dat" % (wav_range_dir)
     output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h4.dat" % (wav_range_dir)
-
+    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_h4_uncert.dat" % (wav_range_dir)
 
 
 
@@ -48,8 +55,20 @@ def GH_plots(galaxy, wav_range="", plots=False):
     h3 = np.loadtxt(output_h3)
     h4 = np.loadtxt(output_h4)
 
+    vel_uncert = np.loadtxt(output_v_uncert, usecols=(1,))
+    sigma_uncert = np.loadtxt(output_sigma_uncert, usecols=(1,))
+    h3_uncert = np.loadtxt(output_h3_uncert, usecols=(1,))
+    h4_uncert = np.loadtxt(output_h4_uncert, usecols=(1,))
+
+
+
     vel += -np.mean(vel)
     x = vel/sigma
+
+    x_uncert = np.sqrt((vel_uncert/vel)**2 + (sigma_uncert/sigma)**2)*x/scale
+    x_uncert_sorted = sorted(x_uncert)
+    x_uncert_min = x_uncert_sorted[limit]
+    x_uncert_max = x_uncert_sorted[-limit-1]
 
     plot = "h3"
 
@@ -58,9 +77,11 @@ def GH_plots(galaxy, wav_range="", plots=False):
     
         if plot == "h3":
             y = h3
+            y_uncert = h3_uncert/scale
             ytitle = r"$h_3$"
         else:
             y = h4
+            y_uncert = h4_uncert/scale
             ytitle = r"$h_4$"
 
 
@@ -80,7 +101,9 @@ def GH_plots(galaxy, wav_range="", plots=False):
         plt.title("Local " + ytitle + " - (v/sigma) relation")
         plt.xlabel(r"$v/\sigma$")
         plt.ylabel(ytitle)
-        plt.scatter(x, y, c=z, s=50, edgecolor='')
+        plt.errorbar(x, y, xerr=np.clip(x_uncert,x_uncert_min,x_uncert_max), 
+            yerr=y_uncert, fmt='+',zorder=1)
+        plt.scatter(x, y, c=z, s=50, edgecolor='',zorder=2)
         ax=plt.gca()
         plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), 
             verticalalignment='top',
