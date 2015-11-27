@@ -214,8 +214,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
             title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
         elif plot=="v_uncert":
-            title = "Stellar Velocity Dispersion Uncertainty Map"
+            title = "Stellar Velocity Uncertainty Map"
             CBLabel = "LOSV (km s$^{-1}$)"
+        elif plot=="sigma_uncert":
+            title = "Stellar Velocity Dispersion Uncertainty Map"
+            CBLabel = "LOSVD (km s$^{-1}$)"
         elif plot=="h3_uncert":
             title = "h3 Uncertainty Map"
         elif plot=="h4_uncert":
