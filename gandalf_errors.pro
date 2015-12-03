@@ -1,10 +1,8 @@
 ;; ==================================================================
-;; Analyse reduced VIMOS data using pPFX and Gandalf
+;; Propergate uncertainty
 ;; ==================================================================
-;; warrenj 20150216 Process to analyse the reduced VIMOS data.
-;; warrenj 20150915 Gandalf code added to analyse hot gas componant.
-
-
+;; warrenj 20150216 Process to progerate the uncertainty using Monty
+;; Carlo methods to get uncertainty in velocity space for the gas.
 
 ;-----------------------------------------------------------------------------
 function determine_goodPixels, emission, logLam, lamRangeTemp, vel, z
@@ -85,20 +83,21 @@ end
 
 
 
+pro gandalf_errors, i_gal, bin
 
-pro gandalf_VIMOS, galaxy, discard=discard, range=range
 
 ;; ----------===============================================---------
 ;; ----------============ Default parameters ===============---------
 ;; ----------===============================================---------
+quiet = 1S ; 1 = yes = true
 
-;if not keyword_set(z) then z=0.01
-if not keyword_set(discard) then discard=2
-if not keyword_set(range) then range=[4200,10000]
-;if not keyword_set(vel) then vel=114.0d
-;if not keyword_set(sigma) then sigma=269.0d
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+; 	galaxy = galaxies[1]
+galaxy = galaxies[i_gal]
+	reps = 5000 ;; number of monte carlo reps per bin.
 
-data_file = "/Data/vimosindi/analysis/galaxies.txt"
+
+data_file = "~/analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
     y_gals, SN_used, skipline=1, format='A,D,D,D,D,D,D', /SILENT
 
@@ -112,17 +111,10 @@ z = z_gals[index]
 ;; ----------===============================================---------
 ;; ----------============= Input parameters ================---------
 ;; ----------===============================================---------
-	quiet = boolean(1) ; 1 = yes = true
-;  	galaxy = 'ngc3557'
-;	galaxy = 'ic1459'
-;	discard = 2
-;	range = [4200,10000]
-	c = 299792.458d
-;  	z = 0.01 ; redshift to move galaxy spectrum to its rest frame 
-;	vel = 114.0d ; Initial estimate of the galaxy velocity and
-;	sig = 269.0d ;velocity dispersion in km/s in the rest frame
-;vel = -1275.16d ; IC1459 
-;sig = 285.395 ; IC1459
+discard = 2
+range = [4200,10000]
+c = 299792.458d
+
         FWHM_gal = 4*0.571 ; The fibre FWHM on VIMOS is
                            ; about 4px with a dispersion of
                            ; 0.571A/px. (From: http://www.eso.org
@@ -133,37 +125,14 @@ z = z_gals[index]
                     ; keyword moments in ppxf.pro for more details)
 	degree = 4 ; order of addative Legendre polynomial used to 
 		   ; correct the template continuum shape during the fit 
-;; File for output: an array containing the calculated dynamics of the
-;; galaxy. 
-	output_v = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_vel.dat'
-	output_sigma = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_sigma.dat'
-	output_h3 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h3.dat'
-	output_h4 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h4.dat'
-	output_h5 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h5.dat'
-	output_h6 = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_h6.dat'
-	output_Chi = '/Data/vimosindi/analysis/' + galaxy + $
-		'/results/gal_Chi.dat'
-output_OIII = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
-    'gal_OIII.dat'
-output_NI = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
-    'gal_NI.dat'
-output_Hb = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
-    'gal_Hb.dat'
-output_Hd = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
-    'gal_Hd.dat'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
-	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
-		'/voronoi_2d_binning_output.txt'
+tessellation_File = '~/analysis/' + galaxy + '/voronoi_2d_binning_output.txt'
 ;; Emission line file
-	emission_File = "/Data/vimosindi/analysis/emission_line.dat"
+emission_File = "~/analysis/emission_line.dat"
+
+
 
 ;OIII = 0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ----------===============================================---------
@@ -173,7 +142,7 @@ output_Hd = '/Data/vimosindi/analysis/' + galaxy + '/results/' + $
 
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '/Data/idl_libraries/ppxf/MILES_library/'
+	templatesDirectory = '~/ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -249,19 +218,14 @@ templates /= median(templates)
 ;; one result. This is NOT equivalent to a scalar. 
 ; Final wildcard reflects the fact that depending on reduction method
 ; quadrants may or may not have beenflux calibrated.
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		Galaxy + $
+	dataCubeDirectory = FILE_SEARCH('~/reduced/' + Galaxy + $
 		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
-;; For analysis of just one quadrant - mst have used rss2cube_quadrant
-;;                                     and have binned the quadrant.
-;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
-;		galaxy + $
-;		'-3/Q2/calibrated/cube/*_fluxcal_cube.fits')
 
 
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
+	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
 
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
@@ -272,18 +236,14 @@ templates /= median(templates)
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+        galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
+		discard:s[2]-discard-1,*]
+	galaxy_noise = galaxy_noise_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
-
-;; ----------========= Arrays to hold results =============---------
-stellar_bin_dynamics = MAKE_ARRAY(7, n_bins)
-OIII_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
-NI_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
-Hb_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
-Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 
 ;; ----------===== Masking structure for emission lines =====---------
 ;; Find the pixels to ignore to avoid being distracted by gas emission
@@ -305,31 +265,31 @@ Hd_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 ; setting the galaxy systemic velocity and 50km/s as initial guesses
 ; for the gas velocities and velocity dispersions, over-writing the
 ; emission-line setup values
-	emission.v = vel & emission.s = 50.0d
+	emission.v = vel & emission.s = sig
 
 
 ;; ----------========== Spatially Binning =============---------
-;; To count the number of spaxels
-count = 0
-;; endfor is near the end - after ppxf has been run on this bin.
-for bin=0, n_bins-1 do begin
-;bin = 1 ;;;;;************************************************
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
 
 ;; Creates a new spectrum for a new bin.
         bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
 		VALUE = 0d) 
+        bin_lin_noise_temp = MAKE_ARRAY(n_elements(galaxy_noise[0,0,*]), $
+		VALUE = 0d) 
+
 
 for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
 	y_i = y[spaxels_in_bin[i]]
-	count++
 for k = 0, s[3]-1 do begin
 	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
-endfor
-endfor
+        bin_lin_noise_temp[k] += galaxy_noise[x_i, y_i, k]^2
+endfor ;k
+endfor ;i
+	bin_lin_noise_temp = sqrt(bin_lin_noise_temp)
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
+;; bin_lin_noise contains the errors combined in quadrature. 
 
 
 ;; --------======== Finding limits of the spectrum ========--------
@@ -382,9 +342,11 @@ ENDIF
 
 ;; ----------========= Writing the spectrum  =============---------
 	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
+	bin_lin_noise = MAKE_ARRAY(upper_limit-lower_limit)
 for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
-endfor
+	bin_lin_noise[i] = bin_lin_noise_temp[lower_limit+i]
+endfor ;i
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
@@ -395,19 +357,24 @@ endfor
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
-
+        bin_lin_noise = gauss_smooth(bin_lin_noise, sigma)
+;;;;;**************should there be any scaling here???*********;;;;;;;;;;;;;;;
 
 	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
-	lambda = EXP(logLam_bin)
+	log_rebin, lamrange, bin_lin_noise^2, bin_log_noise, $
+		velscale=velscale
+	bin_log_noise = sqrt(bin_log_noise) ;; from log_rebin.pro notes
+
 	log_gal_start = logLam_bin[0]
 	log_gal_step = logLam_bin[1]-logLam_bin[0]
 
 ;; normalise the spectrum
-;        norm_factor = MEDIAN(bin_log);;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	bin_log = bin_log/MEDIAN(bin_log)
+        med_bin = MEDIAN(bin_log)
+	bin_log = bin_log/med_bin
+        bin_log_noise = bin_log_noise/med_bin
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
@@ -428,10 +395,12 @@ endfor
 ;;     details).
 ;;     If no reliable noise is available this keyword can just be set
 ;;     to:
-	noise = MAKE_ARRAY(n_elements(bin_log), $
-		VALUE = 1d)
-		;galaxy*0+1 ; Same weight for all pixels
 
+;	noise = MAKE_ARRAY(n_elements(bin_log), $
+;		VALUE = 1d)
+;		;galaxy*0+1 ; Same weight for all pixels
+
+noise = bin_log_noise+0.0000000000001
 
 
 
@@ -447,42 +416,22 @@ endfor
 ; Initial mask for pPXF with all emission lines masked.
 	goodPixels = determine_goodPixels(emission, logLam_bin, $
 		lamRange_template, vel, z)    
+	lambda = EXP(logLam_bin)
 
 	start = [vel, sig] ; starting guess
 
 ;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
 
-print, "bin:", bin, "/", FIX(n_bins-1)
-if not quiet then begin
-    print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
-    print, "upper limit:", upper_limit, upper_limit*CDELT_spec + CRVAL_spec
-    print, "spaxels:"
-    print, 'x = ', x[spaxels_in_bin]
-    print, 'y = ', y[spaxels_in_bin]
-endif
-
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT, $
-		QUIET = quiet;, ERROR = error
-bin_dynamics_temp_sav = bin_dynamics_temp
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $
+		QUIET = quiet
+
+;bin_dynamics_temp_sav = bin_dynamics_temp
 
 ;; Add systematic velocity to the dynamics array.
 bin_dynamics_temp[0] += dv
-print, ""
-print, ""
-;	print, 'Best-fitting redshift z:', (z + 1)*((1 + $
-;		bin_dynamics[0]/c)/(1 - bin_dynamcics[0]/c)) - 1
-
-; CALLING SEQUENCE:
-;  PPXF, templates, galaxy, noise, velScale, start, sol, BESTFIT=bestFit, $
-;	BIAS=bias, CHI2DOF=chi2dof, /CLEAN, COMPONENT=component, $
-;	DEGREE=degree, ERROR=error, GOODPIXELS=goodPixels, LAMBDA=lambda, $
-;	MDEGREE=mdegree, MOMENTS=moments, MPOLYWEIGHTS=mpolyweights, $
-;	/OVERSAMPLE, /PLOT, POLYWEIGHTS=polyWeights, /QUIET, $
-;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
-;	VSYST=vsyst, WEIGHTS=weights
 
 
 ;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
@@ -493,11 +442,12 @@ goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
 
 if not quiet then PAUSE
 
+
 ;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
 sol = bin_dynamics_temp
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, $
     QUIET = quiet 
 
 ; CALLING SEQUENCE:
@@ -542,97 +492,182 @@ sol = bin_dynamics_temp
 
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit_sav, WEIGHTS = weights, $
     QUIET = quiet 
-print,""
+
+
 if not quiet then PAUSE
-
-;; ----------================ Saving results ===============--------- 
-stellar_bin_dynamics[0,bin]=bin_dynamics_temp_sav[0]
-stellar_bin_dynamics[1,bin]=bin_dynamics_temp_sav[1]
-stellar_bin_dynamics[2,bin]=bin_dynamics_temp_sav[2]
-stellar_bin_dynamics[3,bin]=bin_dynamics_temp_sav[3]
-stellar_bin_dynamics[4,bin]=bin_dynamics_temp_sav[4]
-stellar_bin_dynamics[5,bin]=bin_dynamics_temp_sav[5]
-stellar_bin_dynamics[6,bin]=bin_dynamics_temp_sav[6]
- 
-if sol[20] ne 0 then OIII_dynamics[bin] = sol[22]
-if sol[16] ne 0 then Hb_dynamics[bin] = sol[18]
-if sol[24] ne 0 then NI_dynamics[bin] = sol[26]
-if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
-
-
 
 
 
 ;; ----------======= Reset emission line structure =====--------- 
     emission.action = 'm'
     emission.v      = vel 
-    emission.s      = 50.0d
+    emission.s      = sig
     emission.fit[i_Hbo3] = 'f'
     emission.fit[i_n1Hg] = 'h'
-endfor ;;;;;************************************************
 
 
-;; Error check - making sure all spaxels have been read into some
-;; bin. 
-if (count LT n_spaxels) THEN BEGIN
-	print, 'ERROR: not all spaxels have been read'
-endif 
+
+OIII_output = MAKE_ARRAY(reps, 2, /FLOAT)
+Hb_output = MAKE_ARRAY(reps, 2, /FLOAT)
+Hd_output = MAKE_ARRAY(reps, 2, /FLOAT)
+NI_output = MAKE_ARRAY(reps, 2, /FLOAT)
+
+
+for rep = 0, reps-1 do begin 
+;print, rep
+;; ----------=========== Add noise to bestfit ===========--------- 
+seed=!NULL
+random = randomu(seed, n_elements(noise), /NORMAL)
+gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
+add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
+bin_log = Gbestfit_sav + add_noise
+
+
+
+;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
+
+	PPXF, templates, bin_log, noise, velscale, start, $
+		bin_dynamics_temp, BESTFIT = Pbestfit, $
+		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $
+		QUIET = quiet
+
+;bin_dynamics_temp_sav = bin_dynamics_temp
+
+;; Add systematic velocity to the dynamics array.
+bin_dynamics_temp[0] += dv
+
+
+;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
+i_HbO3 = where(emission.name eq 'Hb' or emission.name eq '[OIII]')
+emission.action[i_HbO3] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z) 
+
+if not quiet then PAUSE
+
+
+;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
+sol = bin_dynamics_temp
+GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
+    emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, QUIET = quiet 
+
+; CALLING SEQUENCE:
+; PRO GANDALF, templates, galaxy, noise, velScale, sol, $
+; 	emission_setup, l0_gal, lstep_gal, GOODPIXELS=goodPixels, $
+;	DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp, $
+;	BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, $
+;	WEIGHTS=weights, ERROR=esol, PLOT=plot, QUIET=quiet, $
+;	LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,$
+;	FOR_ERRORS=for_errors 
+;
+;i_O3 = where(emission.name eq '[OIII]');;;;;;;;;;;;;;;;;;;;;;;;;;
+;OIII +=emission.a[i_O3]*norm_factor;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;print, OIII
+if not quiet then PAUSE
+
+;; ----------============ Lift remaining masks ============--------- 
+i_mlines = where(emission.action eq 'm')
+emission.action[i_mlines] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z) 
+; fix Hb and [OIII] kinematics
+Hb = where(emission.name eq 'Hb')
+O3 = where(emission.name eq '[OIII]')
+emission.v[Hb] = sol[2]
+emission.s[Hb] = sol[3]
+emission.v[O3] = sol[6]
+emission.s[O3] = sol[7]
+emission.fit[i_Hbo3]  = 'h'
+; fix the [NI] and Hg kinematics to that of Hb
+i_n1Hg = where(emission.name eq '[NI]' and emission.name eq 'Hg')
+emission.v[i_n1Hg]       = sol[2]
+emission.s[i_n1Hg]       = sol[3]
+;emission.action[i_n1Hg] = 'f'
+goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
+    vel, z)
+
+emission.fit[i_n1Hg] = 'f'
+
+;; ----------======= Gas spectrum fitting 2 (Gandalf) ======--------- 
+sol = bin_dynamics_temp
+
+GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
+    emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
+    DEGREE = degree,  BESTFIT = Gbestfit_sav, WEIGHTS = weights, $
+    QUIET = quiet 
+
+
+if not quiet then PAUSE
+
+;; ----------======= Reset emission line structure =====--------- 
+    emission.action = 'm'
+    emission.v      = vel 
+    emission.s      = sig
+    emission.fit[i_Hbo3] = 'f'
+    emission.fit[i_n1Hg] = 'h'
+
+;; ----------================ Saving results ===============--------- 
+if sol[20] ne 0 then begin
+	OIII_output[rep,0] = sol[22] 
+	OIII_output[rep,1] = sol[23]
+endif
+if sol[16] ne 0 then begin
+	Hb_output[rep,0] = sol[18] 
+	Hb_output[rep,1] = sol[19]
+endif
+if sol[24] ne 0 then begin
+	NI_output[rep,0] = sol[26] 
+	NI_output[rep,1] = sol[27]
+endif
+if sol[8] ne 0 then begin
+	Hd_output[rep,0] = sol[10]
+	Hd_output[rep,1] = sol[11]
+endif
+
+endfor ;end of rep
+
+
+
 
 ;; ----------========== Write results to file ==========--------- 
+;; File for output: an array containing the calculated dynamics of the
+;; galaxy. 
+output_OIII = '~/' + galaxy + '/gandalf/OIII/' + $
+	STRTRIM(STRING(bin),2) + ".dat"
+output_NI = '~/' + galaxy + '/gandalf/NI/' + $
+	STRTRIM(STRING(bin),2) + ".dat"
+output_Hb =  '~/' + galaxy + '/gandalf/Hb/' + $
+	STRTRIM(STRING(bin),2) + ".dat"
+output_Hd =  '~/' + galaxy + '/gandalf/Hd/' + $
+	STRTRIM(STRING(bin),2) + ".dat"
+
+FILE_MKDIR, '~/' + galaxy + '/gandalf/OIII/'
+FILE_MKDIR, '~/' + galaxy + '/gandalf/NI/'
+FILE_MKDIR, '~/' + galaxy + '/gandalf/Hb/'
+FILE_MKDIR, '~/' + galaxy + '/gandalf/Hd/'
+
 ;; Open and print to files
-;	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-;	OPENW, 2, output_v
-;	OPENW, 3, output_sigma
-;	OPENW, 4, output_h3
-;	OPENW, 5, output_h4
-;	OPENW, 6, output_h5
-;	OPENW, 7, output_h6
-;	OPENW, 8, output_Chi
-;	OPENW, 9, output_OIII
-;	OPENW, 10, output_Hb
-;	OPENW, 11, output_NI
-;	OPENW, 12, output_Hd
-;for bin=0, n_bins-1 do begin
-;	PRINTF, 2, stellar_bin_dynamics[0,bin]
-;	PRINTF, 3, stellar_bin_dynamics[1,bin]
-;	PRINTF, 4, stellar_bin_dynamics[2,bin]
-;	PRINTF, 5, stellar_bin_dynamics[3,bin]
-;;	PRINTF, 6, stellar_bin_dynamics[4,bin]
-;;	PRINTF, 7, stellar_bin_dynamics[5,bin]
-;	PRINTF, 8, stellar_bin_dynamics[6,bin]
-;	PRINTF, 9, OIII_dynamics[bin]
-;	PRINTF, 10, Hb_dynamics[bin]
-;	PRINTF, 11, NI_dynamics[bin]
-;	PRINTF, 12, Hd_dynamics[bin]
-;endfor
-
-
-;CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-
-FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results'
-
-forprint, stellar_bin_dynamics[0,*], textout=output_v, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[2,*], textout=output_h3, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[3,*], textout=output_h4, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[4,*], textout=output_h5, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[5,*], textout=output_h6, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
-forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
-forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
-forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
-forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
+CLOSE, 1, 2, 3, 4
+OPENW, 1, output_OIII
+OPENW, 2, output_Hb
+OPENW, 3, output_NI
+OPENW, 4, output_Hd
+CLOSE, 1, 2, 3, 4
 
 
 
-;print, OIII;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
+forprint, OIII_output[*,0], OIII_output[*,1], textout=output_OIII, $
+	/SILENT, /NOCOMMENT
+forprint, NI_output[*,0],  NI_output[*,1], textout=output_NI, $
+	/SILENT, /NOCOMMENT
+forprint, Hb_output[*,0],  Hb_output[*,1], textout=output_Hb, $
+	/SILENT, /NOCOMMENT
+forprint, Hd_output[*,0],  Hd_output[*,1], textout=output_Hd, $
+	/SILENT, /NOCOMMENT
 
 
 return

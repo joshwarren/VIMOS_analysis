@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-#galaxies = ['ngc7075']
+#galaxies = ['ngc1399']
 
 discard = 2
 wav_range = '4200-'
@@ -34,5 +34,5 @@ for galaxy in galaxies:
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=False)
     plt.close("all")
-    GH_plots(galaxy, wav_range=wav_range)
-    plt.close("all")
+#    GH_plots(galaxy, wav_range=wav_range)
+#    plt.close("all")

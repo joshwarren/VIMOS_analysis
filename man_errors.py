@@ -1,8 +1,8 @@
 ## ==================================================================
 ## Manage the uncertain results from glamdring
 ## ==================================================================
-## warrenj 20150825 Routine to find PA_phot, PA_kin and Psi, the
-## misalignment angle. Also to find photometry info e.g. ellipticity. 
+## warrenj 20151015 Routine to manipulate the output from the 
+## galamdring monte carlo simulations into a useful form.
 
 import numpy as np # for reading files
 import array
