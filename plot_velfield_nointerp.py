@@ -16,7 +16,7 @@ import math
 import matplotlib.pyplot as plt # used for plotting
 
 
-def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None, 
+def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, vmin=None, 
     vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
     ncolors=64, title=None, save=None, **kwargs):
@@ -32,14 +32,15 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
     if vmax is None:
         vmax = np.max(vel)
 
-    xBar, yBar, vel = map(np.ravel, [xBar, yBar, vel])
+    xBar_pix, yBar_pix, vel = map(np.ravel, [xBar_pix, yBar_pix, vel])
     levels = np.linspace(vmin, vmax, ncolors)
 
     res = 0.67 #arcsec per pixel
-    xBar *= res
-    yBar *= res
+    xBar = xBar_pix*res
+    yBar = yBar_pix*res
+    x = x_pix*res
+    y = y_pix*res
     axis_label = "Angular Size (arcsec)"
-
 
 
     im_xBar = np.copy(xBar)
@@ -57,12 +58,10 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = v
 
-
-
     cs = plt.imshow(np.rot90(img), interpolation='none', 
         cmap=kwargs.get('cmap',sauron), extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
-
+    plt.clim(vmin,vmax)
 
     ax.set_ylabel(axis_label)
     ax.set_xlabel(axis_label)
@@ -136,20 +135,23 @@ def plot_velfield_nointerp(x, y, bin_num, xBar, yBar, vel, vmin=None,
     if flux_unbinned is not None:
 #        flux_unbinned[477]=0.001
         contours = -2.5*np.log10(flux_unbinned.ravel()/np.max(flux_unbinned))
-        ax.tricontour(x, y, contours, 
-            levels=np.arange(20), colors='k') # 1 mag contours
+# 1 mag contours
+        ax.tricontour(x, y, contours, levels=np.arange(20), colors='k')
 
     if not nodots:
-        xBar /= res # no idea why this needs removing...
-        yBar /= res
+#**********************************################
+#        xBar /= res # no idea why this needs removing...
+#        yBar /= res
+#**********************************################
         ax.plot(xBar, yBar, '.k', markersize=kwargs.get("markersize", 3))
 
     if colorbar:
 #        divider = make_axes_locatable(ax)
 #        cax = divider.append_axes("right", size="5%", pad=0.7)
-        fig.subplots_adjust(right=0.68, top=0.84)
+        fig.subplots_adjust(right=0.66, top=0.84)
         cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
-        ticks = MaxNLocator(nbins = nticks, symmetric=True)
+## symmetric should make VD plots odd... ******************************
+        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
         cbar = fig.colorbar(cs, cax=cax, ticks=ticks)
 #        plt.clim(vmin,vmax)  # make color axis symmetrical
         if label:

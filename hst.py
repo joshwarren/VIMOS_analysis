@@ -105,7 +105,7 @@ def unsharpmask(galaxy, level, xshift, yshift, size, **kwargs):
 # Use of hst.py
 
 if __name__ == '__main__':
-    galaxies = ["ic1459", "ngc1316", "ic4296", "ngc3557", "ngc1399"]
+    galaxies = ["ic1459", "ngc1316", "ic4296", "ngc3557", "ngc1399", "ngc0612"]
     levels = [6,6,6,6,6]
     xshifts = [10,-20,-10,20,-63]
     yshifts = [34,0,30,0,3]

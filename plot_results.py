@@ -87,7 +87,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 #    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"sigma":output_sigma}
+#    outputs = {"Hd":output_Hd}
 #    outputs = {"v_uncert":output_v_uncert}
 
 # Read tessellation file
@@ -159,7 +159,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
     for plot in outputs:
-        print plot
+        print "       ", plot
         if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
             plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             v_binned = np.loadtxt(outputs[plot])#, skiprows=1)
@@ -194,10 +194,19 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]
         if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            if abs(vmin)<vmax:
-                vmin=-vmax
+            if abs(vmin)>vmax:
+                if vmin*vmax>0:
+                    vmin, vmax = vmax, vmin
+                else:
+                    vmin=-abs(vmax)
             else:
-                vmax=-vmin
+                vmax=abs(vmin)
+        if "uncert" in plot:
+            mean_w = np.mean(v_binned)
+            d = vmax-mean_w
+            vmin = mean_w-d
+            if vmin < 0:
+                vmin=0
 
 # ------------============= Plot velfield ==============----------
 # automatically uses sauron colormap
@@ -210,6 +219,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
         elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             title = plot + ' Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
+            vmin = None
+            vmax = None
         elif plot=="sigma":
             title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
@@ -234,7 +245,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
-                vmin=vmin, vmax=vmax, nodots=False, colorbar=True, 
+                vmin=vmin, vmax=vmax, 
+                nodots=False, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)
