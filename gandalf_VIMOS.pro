@@ -486,7 +486,7 @@ print, ""
 
 
 ;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
-i_HbO3 = where(emission.name eq 'Hb' or emission.name eq '[OIII]')
+i_HbO3 = where(emission.name eq 'Hb' or emission.name eq 'OIII')
 emission.action[i_HbO3] = 'f'
 goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
     vel, z) 
@@ -521,14 +521,14 @@ goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
     vel, z) 
 ; fix Hb and [OIII] kinematics
 Hb = where(emission.name eq 'Hb')
-O3 = where(emission.name eq '[OIII]')
+O3 = where(emission.name eq 'OIII')
 emission.v[Hb] = sol[2]
 emission.s[Hb] = sol[3]
 emission.v[O3] = sol[6]
 emission.s[O3] = sol[7]
 emission.fit[i_Hbo3]  = 'h'
 ; fix the [NI] and Hg kinematics to that of Hb
-i_n1Hg = where(emission.name eq '[NI]' and emission.name eq 'Hg')
+i_n1Hg = where(emission.name eq 'NI' and emission.name eq 'Hg')
 emission.v[i_n1Hg]       = sol[2]
 emission.s[i_n1Hg]       = sol[3]
 ;emission.action[i_n1Hg] = 'f'
@@ -562,7 +562,10 @@ if sol[24] ne 0 then NI_dynamics[bin] = sol[26]
 if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
 
 
-
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
+forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
 
 
 ;; ----------======= Reset emission line structure =====--------- 
@@ -628,7 +631,6 @@ forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
 
 
 ;print, OIII;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 
