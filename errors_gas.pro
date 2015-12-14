@@ -109,7 +109,7 @@ resolve_routine, ['log_rebin', 'ppxf']
 ;; ----------===============================================---------
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 galaxy = galaxies[i_gal]
-reps = 2 ;; number of monte carlo reps per bin.
+reps = 5000 ;; number of monte carlo reps per bin.
 
 if not keyword_set(discard) then discard=2
 if not keyword_set(range) then range=[4200,10000]
@@ -128,10 +128,10 @@ degree = 4 ; order of addative Legendre polynomial used to
 	   ; correct the template continuum shape during the fit 
 
 ;; ----------======== Files/Directories List ===========---------	
-dir = "/Data/vimosindi/"
-;dir = "~/"
-dir2 = "/Data/idl_libraries/"
-;dir2 = "~/"
+;dir = "/Data/vimosindi/"
+dir = "~/"
+;dir2 = "/Data/idl_libraries/"
+dir2 = "~/"
 
 tessellation_File = dir + 'analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
@@ -148,9 +148,7 @@ emission_File = dir + "analysis/emission_line.dat"
 dataCubeDirectory = FILE_SEARCH(dir + 'reduced/' + Galaxy + $
 	'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
 
-FILE_MKDIR, dir + "analysis/" + galaxy + "/gamdring/"
-bin_file =  dir + "analysis/" + galaxy + "/gamdring/" + $
-	STRTRIM(STRING(bin),2) + ".dat"
+;; output files given at the end.
 
 
 
@@ -219,7 +217,6 @@ for i = 0, nstemplates - 1 do begin
 ;	READCOL, templateFiles[i], v1,v2, FORMAT = 'D,D', /SILENT
 
 ;; Rebinning templates logarthmically
-;	lamRange_template = CRVAL1 + [0d, CDELT1*(NAXIS1 - 1d)]
 	log_rebin, lamRange_template, v2, log_temp_template, $
 		velscale=velscale
 
@@ -291,8 +288,6 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 		discard:s[2]-discard-1,*]
 	galaxy_noise = galaxy_noise_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
-;; array to hold results
-;	bin_dynamics = MAKE_ARRAY(7, n_bins);, reps)
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
 		n_elements(galaxy_data[0,*,0])
@@ -363,8 +358,6 @@ IF range[0] GT lower_limit THEN lower_limit = range[0]
 IF range[1] LT upper_limit THEN upper_limit = range[1]
 ENDIF
 
-;lower_limit = 0 
-;upper_limit = n_elements(galaxy_data[0,0,*])-1
 	lamRange = MAKE_ARRAY(2)
 	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
 	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
@@ -404,24 +397,6 @@ endfor
         bin_log_noise = bin_log_noise/med_bin
 
 ;; ----------========= Assigning noise variable =============---------
-;;   NOISE: vector containing the 1*sigma error (per pixel) in the
-;;   galaxy spectrum, or covariance matrix describing the correlated
-;;   errors in the galaxy spectrum. Of course this vector/matrix must
-;;   have the same units as the galaxy spectrum.
-;;   - If GALAXY is a Nx2 array, NOISE has to be an array with the
-;;     same dimensions.
-;;   - When NOISE has dimensions NxN it is assumed to contain the
-;;     covariance matrix with elements sigma(i,j). When the errors in
-;;     the spectrum are uncorrelated it is mathematically equivalent
-;;     to input in PPXF an error vector NOISE=errvec or a NxN diagonal
-;;     matrix NOISE=DIAG_MATRIX(errvec^2) (note squared!).
-;;   - IMPORTANT: the penalty term of the pPXF method is based on the
-;;     *relative* change of the fit residuals. For this reason the
-;;     penalty will work as expected even if no reliable estimate of
-;;     the NOISE is available (see Cappellari & Emsellem [2004] for
-;;     details).
-;;     If no reliable noise is available this keyword can just be set
-;;     to:
 ;	noise = MAKE_ARRAY(n_elements(bin_log), $
 ;		VALUE = 1d)
 		;galaxy*0+1 ; Same weight for all pixels
@@ -450,7 +425,7 @@ lambda = EXP(logLam_bin)
 
 ;; Run once to get bestfit. Add noise to bestfit so that noise
 ;; is not 'added twice'.
-PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_temp, $
+PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_sav, $
 	BESTFIT = bestfit_sav, GOODPIXELS=goodPixels, LAMBDA=lambda, $
 	MOMENTS = moments, DEGREE = degree, VSYST = dv, WEIGHTS = weights, $
 	COMPONENT = component, /QUIET
@@ -459,9 +434,7 @@ PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_temp, $
 
 bin_output = MAKE_ARRAY(reps, 5, n_components, /FLOAT)
 
-;if reps ne 2 then begin
 for rep=0,reps-1 do begin
-;print, galaxy, bin, rep
 seed = !NULL
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
@@ -473,26 +446,55 @@ bin_log = bestfit_sav + add_noise
 PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_temp, $
 	BESTFIT = bestfit, GOODPIXELS=goodPixels, LAMBDA=lambda, $
 	MOMENTS = moments, DEGREE = degree, VSYST = dv, $
-	COMPONENT = component, /QUIET
+	COMPONENT = component, WEIGHTS = weights, /QUIET
 
 bin_output[rep,1:4,*] = bin_dynamics_temp[0:3,*]
 
-
-endfor
-;endif else rep=0
-;endfor
-
-
-
-CLOSE,1 ; closes if already open
-OPENW, 1, bin_file ; creates file
-CLOSE, 1 ; closes such that forprint can reopen
+;; weightings:
+for comp=0,n_components-1 do begin
+	if max(weights[where(component eq comp)]) then $
+		bin_output[rep,0,comp] = $
+			total(weights[where(component eq comp)] gt 0)
+endfor ;comp
 
 
-;forprint, bin_star_output[*,0], bin_star_output[*,1], bin_star_output[*,2], $
-;          bin_star_output[*,3], TEXTOUT = bin_file, /SILENT, /NOCOMMENT
+endfor ;rep
 
 
+
+;; ----------=========== Saving the outputs =============---------
+
+;; Creating output files/directories.
+output_dir = dir + "analysis/" + galaxy + "/montecarlo/"
+FILE_MKDIR, output_dir + "/stellar"
+FILE_MKDIR, output_dir + eml_name[uniq_lines]
+
+bin_files = [output_dir + "/stellar/" + STRTRIM(STRING(bin),2) + ".dat"]
+bin_files = [bin_files, output_dir + "/" + eml_name[uniq_lines] + "/" + $
+	STRTRIM(STRING(bin),2) + ".dat"]
+
+;; Save component dynamics
+for output=0,n_elements(bin_files)-1 do begin
+;CLOSE, output+1 ; closes if already open
+;OPENW, output+1, bin_files[output] ; creates file
+;CLOSE, output+1 ; closes such that forprint can reopen
+
+
+forprint, bin_output[*,0,output], bin_output[*,1,output], $
+	bin_output[*,2,output], bin_output[*,3,output], $
+	bin_output[*,4,output], TEXTOUT = bin_files[output],  $
+	/SILENT, /NOCOMMENT
+
+endfor ;output
+
+;; Save (noiseless) bestfit
+FILE_MKDIR, output_dir + "/bestfit/dynamics/"
+forprint, bestfit_sav, $
+	TEXTOUT= output_dir + "/bestfit/" + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
+
+forprint, bin_dynamics_sav[0:3], TEXTOUT = output_dir + "/bestfit/dynamics/" $
+	+ STRTRIM(STRING(bin),2) + ".dat", /SILENT, /NOCOMMENT
 
 
 
