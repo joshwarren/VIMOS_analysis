@@ -17,3 +17,13 @@ do
 
     done
 done
+
+
+
+mkdir -p ~/Desktop/results/residuals/
+for galaxy in ngc3557 ic1459 ic1531 ic4296 ngc0612 ngc1399 ngc3100 ngc7075\
+    pks0718-34 eso443-g024
+do
+    cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/median_residual_4200-.png ~/Desktop/results/residuals/$galaxy-residuals.png
+
+done

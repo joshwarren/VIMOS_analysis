@@ -29,10 +29,10 @@ for galaxy in galaxies:
 #    kinematics(galaxy, discard=discard, wav_range=wav_range)
 #    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True)
-    plt.close("all")
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=False)
-    plt.close("all")
+        nointerp=True, residuals=True)
+#    plt.close("all")
+#    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+#        nointerp=False)
+#    plt.close("all")
 #    GH_plots(galaxy, wav_range=wav_range)
 #    plt.close("all")
