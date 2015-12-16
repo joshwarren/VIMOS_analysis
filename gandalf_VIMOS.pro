@@ -464,7 +464,7 @@ endif
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /PLOT, $
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $;/PLOT, $
 		QUIET = quiet;, ERROR = error
 bin_dynamics_temp_sav = bin_dynamics_temp
 
@@ -497,7 +497,7 @@ if not quiet then PAUSE
 sol = bin_dynamics_temp
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, $;/PLOT, $
     QUIET = quiet 
 
 ; CALLING SEQUENCE:
@@ -542,7 +542,7 @@ sol = bin_dynamics_temp
 
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, /PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, $;/PLOT, $
     QUIET = quiet 
 print,""
 if not quiet then PAUSE
@@ -567,6 +567,10 @@ forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
 	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
 	/SILENT, /NOCOMMENT
 
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_input/'
+forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
 
 ;; ----------======= Reset emission line structure =====--------- 
     emission.action = 'm'
