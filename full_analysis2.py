@@ -29,7 +29,7 @@ for galaxy in galaxies:
 #    kinematics(galaxy, discard=discard, wav_range=wav_range)
 #    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, residuals=True)
+        nointerp=True, residual="mean")
 #    plt.close("all")
 #    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 #        nointerp=False)

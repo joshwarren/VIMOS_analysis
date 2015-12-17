@@ -7,6 +7,37 @@
 ## warrenj 20150917 Altered to plot and save all 8 plots.
 ## warrenj 20151216 Added section to plot residuals.
 
+## *************************** KEYWORDS ************************* ##
+# galaxy 		Name of the galaxy being plotted: used to find 
+#			correct files and to print onto the plot.
+# discard	0	Interger giving the number of rows and columns 
+#			to be removed from the plot to remove edge 
+#			effects.
+# wav_range 	null	Imposed wavelength range on top of the automated 
+#			limits.	
+# vLimit 	2      	Integer giving the number of lowest and highest 
+#			results in the plot to be discarded. Defualt 
+#			ignores 2 highest and 2 lowest bins.
+# norm		"lwv"	Normalisation methods for velocity fields:
+#			lwv: luminosity weighted mean of the whole 
+#				field is set to 0.
+#			lum: velocity of the brightest spaxel is set 
+#				to 0.
+# plots 	False   Boolean to show plots as routine runs.
+# nointerp 	False 	Boolean to use interpolation between bins in 
+#			plots or not.
+# residual 	False	Method to measure the residuals:
+#			mean: use the mean of the residuals in each 
+#				bin.
+#			median: use the median of the residuals in 
+#				each bin.
+#			max: use the maximum of the residuals in 
+#				each bin.
+#			False: do not calculate and produce plot of 
+#				residuals.
+## ************************************************************** ##
+
+
 from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for array handling
 import glob # for searching for files
@@ -18,8 +49,8 @@ from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no
 
 #-----------------------------------------------------------------------------
 
-def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False, 
-    nointerp=False, residuals=True, **kwargs):
+def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
+    plots=False, nointerp=False, residual=False, **kwargs):
 
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     # different data types need to be read separetly
@@ -27,12 +58,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
-
-# Normalisation methods:
-#  lum: velocity of brightest pixel is set to 0km/s
-#  lwv: luminosity weighted velocity mean is zero.
-    norm = "lwv" 
-#    norm = "lum"
 
 
 
@@ -89,7 +114,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"Hd":output_Hd}
-    outputs = {"v_uncert":output_v_uncert}
+#    outputs = {"v_uncert":output_v_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -269,44 +294,49 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, plots=False,
 
 # ------------================= Plot residuals ===============----------
 
-    if residuals:
-        print "        Residuals"
+    if residual:
+        print "        " + residual + " residuals"
         bestfit_dir = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
             "gandalf_bestfit/"
         data_dir = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
             "gandalf_input/"
 
-
-        mean_residuals = np.zeros(number_of_bins)
-        median_residuals = np.zeros(number_of_bins)
+        average_residuals = np.zeros(number_of_bins)
         for i in range(number_of_bins):
             bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i), unpack=True, 
                 skiprows = 1)
             spectrum = np.loadtxt(data_dir +'%d.dat' % (i), unpack=True, 
                 skiprows = 1)
-
+            
             residuals = np.abs(spectrum - bestfit)
-            mean_residuals[i] = np.mean(residuals)
-            median_residuals[i] = np.median(residuals)
-#            mean_residuals[i] = np.max(np.abs(residuals))
+            residuals = np.delete(residuals, [np.arange(5), 
+	        len(residuals)+np.arange(-5,0)], axis=0)
 
+            if residual=="mean":
+                average_residuals[i] = np.mean(residuals)
+            elif residual=="median":
+                average_residuals[i] = np.median(residuals)
+            elif residual=="max":
+                average_residuals[i] = np.max(np.abs(residuals))
 
-        res_sorted = sorted(np.unique(median_residuals))
+        res_sorted = sorted(np.unique(average_residuals))
         maxres = res_sorted[-vLimit-1]
 #        minres = res_sorted[vLimit]
 
-	mean_w = np.mean(median_residuals)
+	mean_w = np.mean(average_residuals)
         d = maxres-mean_w
         minres = mean_w-d
         if minres < 0:
             minres=0
+
         CBLabel = "Residuals"
-        title = "Mean Residuals of Bestfit to Normalised Spectrum"
+        title = str.capitalize(residual) + \
+	    " Residuals of Bestfit to Normalised Spectrum"
         saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/median_residual_%s.png" % (wav_range_dir, 
             wav_range)
 
-        plot_velfield_nointerp(x, y, bin_num, xBar, yBar, median_residuals, 
+        plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
             vmin=minres, vmax=maxres, 
             nodots=False, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
@@ -327,7 +357,7 @@ if __name__ == '__main__':
     wav_range="4200-"
     galaxy = "ngc3557"
 #    galaxy = "ngc1399"
-    galaxy = "ic1459"
+#    galaxy = "ic1459"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #
