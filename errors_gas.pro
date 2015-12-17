@@ -226,34 +226,6 @@ endfor
 stellar_templates /= median(log_temp_template)
 
 
-;; ----------====== Setting up gas templates  ==========---------
-; Read in emission-line setup file and fill in emission-line structure
-readcol, emission_File, eml_i, eml_name, eml_lambda, eml_action, $
-	eml_kind, eml_a, eml_v, eml_s, eml_fit, f='(i,a,f,a,a,f,f,f,a)', $
-	skipline=2,comment='#',/silent  
-
-emission_lines = set_lines(eml_lambda, logLam_template, FWHM_gal)
-
-;; ----------========= Combining componants  =============---------
-templates = [[stellar_templates], [emission_lines]]
-
-uniq_lines = UNIQ(eml_name, SORT(eml_name))
-
-component = [make_array(nstemplates, value=0),eml_i+1]
-
-start1 = [vel, sig] ; starting guess
-start = [[start1],[start1]]
-
-for line = 1, n_elements(eml_i)-1 do begin
-if eml_name[line] eq eml_name[line-1] then $
-	component[line+nstemplates:-1] -= 1 $
-else begin
-start = [[start],[start1]]
-endelse
-endfor 
-
-
-n_components = max(component)+1
 
 ;; ----------========= Reading Tessellation  =============---------
 
@@ -423,8 +395,46 @@ goodPixels = determine_goodpixels(logLam_bin, lamRange_template, vel, z)
 lambda = EXP(logLam_bin)
 
 
-;; Run once to get bestfit. Add noise to bestfit so that noise
-;; is not 'added twice'.
+;; ----------====== Setting up gas templates  ==========---------
+; Read in emission-line setup file and fill in emission-line structure
+readcol, emission_File, eml_i, eml_name, eml_lambda, eml_action, $
+	eml_kind, eml_a, eml_v, eml_s, eml_fit, f='(i,a,f,a,a,f,f,f,a)', $
+	skipline=2,comment='#',/silent  
+
+in_range = where((eml_lambda ge lamrange[0]) AND (eml_lambda le lamrange[1]))
+eml_i = eml_i[in_range]
+eml_name = eml_name[in_range]
+eml_lambda = eml_lambda[in_range]
+
+
+
+emission_lines = set_lines(eml_lambda, logLam_template, FWHM_gal)
+
+;; ----------========= Combining componants ==============---------
+templates = [[stellar_templates], [emission_lines]]
+
+uniq_lines = UNIQ(eml_name, SORT(eml_name))
+
+component = [make_array(nstemplates, value=0),make_array(n_elements(eml_i), $
+	/INDEX, /INTEGER)+1]
+
+start1 = [vel, sig] ; starting guess
+start = [[start1],[start1]]
+
+for line = 1, n_elements(eml_i)-1 do begin
+if eml_name[line] eq eml_name[line-1] then $
+	component[line+nstemplates:-1] -= 1 $
+else begin
+start = [[start],[start1]]
+endelse
+endfor 
+
+
+n_components = max(component)+1
+
+
+
+;; ----------====== Run to get noiseless bestfit ========---------
 PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_sav, $
 	BESTFIT = bestfit_sav, GOODPIXELS=goodPixels, LAMBDA=lambda, $
 	MOMENTS = moments, DEGREE = degree, VSYST = dv, WEIGHTS = weights, $
@@ -435,10 +445,6 @@ PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_sav, $
 bin_output = MAKE_ARRAY(reps, 5, n_components, /FLOAT)
 
 seed = !NULL
-
-
-
-
 for rep=0,reps-1 do begin
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
@@ -460,10 +466,7 @@ for comp=0,n_components-1 do begin
 		bin_output[rep,0,comp] = $
 			total(weights[where(component eq comp)] gt 0)
 endfor ;comp
-
 endfor ;rep
-
-
 
 ;; ----------=========== Saving the outputs =============---------
 
