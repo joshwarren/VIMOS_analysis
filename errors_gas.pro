@@ -109,7 +109,7 @@ resolve_routine, ['log_rebin', 'ppxf']
 ;; ----------===============================================---------
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 galaxy = galaxies[i_gal]
-reps = 5000 ;; number of monte carlo reps per bin.
+reps = 2 ;; number of monte carlo reps per bin.
 
 if not keyword_set(discard) then discard=2
 if not keyword_set(range) then range=[4200,10000]
@@ -128,10 +128,10 @@ degree = 4 ; order of addative Legendre polynomial used to
 	   ; correct the template continuum shape during the fit 
 
 ;; ----------======== Files/Directories List ===========---------	
-;dir = "/Data/vimosindi/"
-dir = "~/"
-;dir2 = "/Data/idl_libraries/"
-dir2 = "~/"
+dir = "/Data/vimosindi/"
+;dir = "~/"
+dir2 = "/Data/idl_libraries/"
+;dir2 = "~/"
 
 tessellation_File = dir + 'analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
@@ -434,29 +434,32 @@ PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_sav, $
 
 bin_output = MAKE_ARRAY(reps, 5, n_components, /FLOAT)
 
-for rep=0,reps-1 do begin
 seed = !NULL
+
+
+
+
+for rep=0,reps-1 do begin
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
 add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
 bin_log = bestfit_sav + add_noise
 
-
-
 PPXF, templates, bin_log, noise, velscale, start, bin_dynamics_temp, $
-	BESTFIT = bestfit, GOODPIXELS=goodPixels, LAMBDA=lambda, $
-	MOMENTS = moments, DEGREE = degree, VSYST = dv, $
+;	BESTFIT = bestfit, 
+	GOODPIXELS=goodPixels, $; LAMBDA=lambda, $
+	MOMENTS = moments,$; DEGREE = degree, 
+	VSYST = dv, $
 	COMPONENT = component, WEIGHTS = weights, /QUIET
 
 bin_output[rep,1:4,*] = bin_dynamics_temp[0:3,*]
 
 ;; weightings:
 for comp=0,n_components-1 do begin
-	if max(weights[where(component eq comp)]) then $
+	if max(weights[where(component eq comp)]) ne 0 then $
 		bin_output[rep,0,comp] = $
 			total(weights[where(component eq comp)] gt 0)
 endfor ;comp
-
 
 endfor ;rep
 
