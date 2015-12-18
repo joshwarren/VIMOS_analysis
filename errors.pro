@@ -33,17 +33,22 @@ galaxy = galaxies[i_gal]
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
 
+
+
+
+;dir = '~/'
+dir = '/Data/vimosindi/'
+;dir2 = '~/'
+dir2 = '/Data/idl_libraries/'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
-	tessellation_File = '~/analysis/' + galaxy + $
+	tessellation_File = dir + 'analysis/' + galaxy + $
 		'/voronoi_2d_binning_output.txt'
 
 
 
-
-
-data_file = "~/analysis/galaxies.txt"
+data_file = dir + "analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
     y_gals, SN_used, skipline=1, format='A,D,D,D,D,D,D', /SILENT
 
@@ -64,7 +69,7 @@ z = z_gals[index]
 
 ;; ----------=============== Miles library ================---------
 ; Finding the template files
-	templatesDirectory = '~/ppxf/MILES_library/'
+	templatesDirectory = dir2 + 'ppxf/MILES_library/'
 	templateFiles = FILE_SEARCH(templatesDirectory + $
 		'm0[0-9][0-9][0-9]V', COUNT=nfiles)
 
@@ -138,7 +143,7 @@ TEMPLATES /= median(log_temp_template)
 
 ;; FILE_SEARCH returns an array even in cases where it only returns
 ;; one result. This is NOT equivalent to a scalar. 
-	dataCubeDirectory = FILE_SEARCH('~/reduced/' + Galaxy + $
+	dataCubeDirectory = FILE_SEARCH(dir + 'reduced/' + Galaxy + $
 		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
         
 ;; For analysis of just one quadrant - mst have used rss2cube_quadrant
@@ -151,7 +156,6 @@ TEMPLATES /= median(log_temp_template)
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
-
 
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
@@ -179,7 +183,6 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 ;for bin=0, n_bins-1 do begin
 	spaxels_in_bin = WHERE(bin_num EQ bin, n_spaxels_in_bin)
 
-
 ;; Creates a new spectrum for a new bin.
         bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
 		VALUE = 0d) 
@@ -194,6 +197,7 @@ for k = 0, s[3]-1 do begin
         bin_lin_noise_temp[k] += galaxy_noise[x_i, y_i, k]^2
 endfor
 endfor
+
 	bin_lin_noise_temp = sqrt(bin_lin_noise_temp)
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
 ;; bin_lin_noise contains the errors combined in quadrature. 
@@ -260,7 +264,6 @@ endfor
 	FWHM_dif = SQRT(FWHM_tem^2 - FWHM_gal^2)
 	sigma = FWHM_dif/2.355/CDELT_temp ; Sigma difference 
 						     ; in pixels
-
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
         bin_lin_noise = gauss_smooth(bin_lin_noise, sigma)
@@ -303,7 +306,6 @@ endfor
 		;galaxy*0+1 ; Same weight for all pixels
 noise = bin_log_noise+0.0000000000001
 
-
 ; The galaxy and the template spectra do not have the same starting
 ; wavelength. For this reason an extra velocity shift DV has to be
 ; applied to the template to fit the galaxy spectrum. We remove this
@@ -334,20 +336,18 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 
 
 bin_output=MAKE_ARRAY(reps,4, /FLOAT)
+seed = !NULL
 TIC
 for rep=0,reps-1 do begin
-;print, galaxy, bin, rep
-seed = !NULL
+print, rep
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
 add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
 bin_log = bestfit_sav + add_noise
 
-
-
 	PPXF, templates, bin_log, noise, velscale, start, $
-		bin_dynamics_temp, BESTFIT = bestfit, $
-		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
+		bin_dynamics_temp, BIAS = 0.001, $
+		GOODPIXELS=goodPixels, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, /QUIET
 
 
@@ -360,8 +360,9 @@ endfor
 TOC
 ;endfor
 
-
-bin_file =  "~/results/" + STRTRIM(STRING(bin),2) + ".dat"
+FILE_MKDIR, dir + "analysis/" + galaxy + "/errors_results/"
+bin_file =  dir + "analysis/" + galaxy + "/errors_results/" + $
+	STRTRIM(STRING(bin),2) + ".dat"
 CLOSE,1
 OPENW, 1, bin_file
 CLOSE, 1
