@@ -7,6 +7,7 @@
 import numpy as np # for reading files
 import array
 import sys # for early exit of python
+import os.path
 
 def check_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
@@ -39,24 +40,25 @@ def check_errors():
 #********************************************************************#
     for bin in range(n_bins):
         glamdring_file = glamdring_dir + str(bin) + ".dat"
-        vel, sig, h3s, h4s  =np.loadtxt(glamdring_file, unpack=True)
+        if os.path.isfile(glamdring_file): 
+            vel, sig, h3s, h4s  = np.loadtxt(glamdring_file, unpack=True)
 
 # Error thrown if all 500 reps have not been completed for this bin        
-        if len(vel) != 5000:
-            print("Not all reps completed")
-            sys.exit()
+            if len(vel) != 5000:
+                print("Not all reps completed")
+                sys.exit()
 
 
 
 
-        v[bin] = np.mean(vel)
-        v_s[bin] = np.std(vel)
-        s[bin] = np.mean(sig)
-        s_s[bin] = np.std(sig)
-        h3[bin] = np.mean(h3s)
-        h3_s[bin] = np.std(h3s)
-        h4[bin] = np.mean(h4s)
-        h4_s[bin] = np.std(h4s)
+            v[bin] = np.mean(vel)
+            v_s[bin] = np.std(vel)
+            s[bin] = np.mean(sig)
+            s_s[bin] = np.std(sig)
+            h3[bin] = np.mean(h3s)
+            h3_s[bin] = np.std(h3s) 
+            h4[bin] = np.mean(h4s)
+            h4_s[bin] = np.std(h4s)
 
 
     
@@ -89,4 +91,4 @@ def check_errors():
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    man_errors()
+    check_errors()
