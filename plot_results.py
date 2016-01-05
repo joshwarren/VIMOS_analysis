@@ -188,9 +188,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         print "       ", plot
         if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
             plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            v_binned = np.loadtxt(outputs[plot])#, skiprows=1)
+            v_binned = np.loadtxt(outputs[plot], usecols=(0,), unpack=True)
         else:
-            v_binned = np.loadtxt(outputs[plot], usecols=(1,), unpack=True)#, skiprows=1)
+            # for uncertainties
+            v_binned = np.loadtxt(outputs[plot], usecols=(1,), unpack=True)
+
 
 #        if plot=="v":
 #            v_binned += -1.1*np.median(v_binned)

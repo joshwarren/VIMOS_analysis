@@ -113,6 +113,7 @@ z = z_gals[index]
 ;; ----------============= Input parameters ================---------
 ;; ----------===============================================---------
 	quiet = boolean(1) ; 1 = yes = true
+	gas = boolean(0)
 ;  	galaxy = 'ngc3557'
 ;	galaxy = 'ic1459'
 ;	discard = 2
@@ -280,6 +281,7 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 ;; ----------========= Arrays to hold results =============---------
 stellar_bin_dynamics = MAKE_ARRAY(7, n_bins)
+stellar_bin_error = MAKE_ARRAY(7, n_bins)
 OIII_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 NI_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
 Hb_dynamics = MAKE_ARRAY(n_bins, VALUE = 0.0)
@@ -465,9 +467,10 @@ endif
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $;/PLOT, $
-		QUIET = quiet;, ERROR = error
+		QUIET = quiet, ERROR = perror
 bin_dynamics_temp_sav = bin_dynamics_temp
 
+if gas then begin
 ;; Add systematic velocity to the dynamics array.
 bin_dynamics_temp[0] += dv
 print, ""
@@ -484,7 +487,6 @@ print, ""
 ;	REDDENING=reddening, REGUL=regul, REG_DIM=reg_dim, SKY=sky, $
 ;	VSYST=vsyst, WEIGHTS=weights
 
-
 ;; ----------======== Lift mask on [OIII] and Hb ===========--------- 
 i_HbO3 = where(emission.name eq 'Hb' or emission.name eq 'OIII')
 emission.action[i_HbO3] = 'f'
@@ -492,7 +494,6 @@ goodPixels = determine_goodPixels(emission, logLam_bin, lamRange_template, $
     vel, z) 
 
 if not quiet then PAUSE
-
 ;; ----------======= Gas spectrum fitting 1 (Gandalf) ======--------- 
 sol = bin_dynamics_temp
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
@@ -547,6 +548,7 @@ GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
 print,""
 if not quiet then PAUSE
 
+endif ; gas
 ;; ----------================ Saving results ===============--------- 
 stellar_bin_dynamics[0,bin]=bin_dynamics_temp_sav[0]
 stellar_bin_dynamics[1,bin]=bin_dynamics_temp_sav[1]
@@ -555,22 +557,22 @@ stellar_bin_dynamics[3,bin]=bin_dynamics_temp_sav[3]
 stellar_bin_dynamics[4,bin]=bin_dynamics_temp_sav[4]
 stellar_bin_dynamics[5,bin]=bin_dynamics_temp_sav[5]
 stellar_bin_dynamics[6,bin]=bin_dynamics_temp_sav[6]
- 
+
+stellar_bin_error[0,bin]=perror[0]
+stellar_bin_error[1,bin]=perror[1]
+stellar_bin_error[2,bin]=perror[2]
+stellar_bin_error[3,bin]=perror[3]
+stellar_bin_error[4,bin]=perror[4]
+stellar_bin_error[5,bin]=perror[5]
+stellar_bin_error[6,bin]=perror[6]
+
+if gas then begin 
 if sol[20] ne 0 then OIII_dynamics[bin] = sol[22]
 if sol[16] ne 0 then Hb_dynamics[bin] = sol[18]
 if sol[24] ne 0 then NI_dynamics[bin] = sol[26]
 if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
 
 
-FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
-forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
-	/SILENT, /NOCOMMENT
-
-FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_input/'
-forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
-	/SILENT, /NOCOMMENT
 
 ;; ----------======= Reset emission line structure =====--------- 
     emission.action = 'm'
@@ -578,6 +580,29 @@ forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
     emission.s      = 50.0d
     emission.fit[i_Hbo3] = 'f'
     emission.fit[i_n1Hg] = 'h'
+
+
+
+
+
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
+forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
+endif else begin
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
+forprint, Pbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_bestfit/ppxf' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
+endelse
+
+
+FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_input/'
+forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
+
+
 endfor ;;;;;************************************************
 
 
@@ -587,55 +612,24 @@ if (count LT n_spaxels) THEN BEGIN
 	print, 'ERROR: not all spaxels have been read'
 endif 
 
-;; ----------========== Write results to file ==========--------- 
-;; Open and print to files
-;	CLOSE, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-;	OPENW, 2, output_v
-;	OPENW, 3, output_sigma
-;	OPENW, 4, output_h3
-;	OPENW, 5, output_h4
-;	OPENW, 6, output_h5
-;	OPENW, 7, output_h6
-;	OPENW, 8, output_Chi
-;	OPENW, 9, output_OIII
-;	OPENW, 10, output_Hb
-;	OPENW, 11, output_NI
-;	OPENW, 12, output_Hd
-;for bin=0, n_bins-1 do begin
-;	PRINTF, 2, stellar_bin_dynamics[0,bin]
-;	PRINTF, 3, stellar_bin_dynamics[1,bin]
-;	PRINTF, 4, stellar_bin_dynamics[2,bin]
-;	PRINTF, 5, stellar_bin_dynamics[3,bin]
-;;	PRINTF, 6, stellar_bin_dynamics[4,bin]
-;;	PRINTF, 7, stellar_bin_dynamics[5,bin]
-;	PRINTF, 8, stellar_bin_dynamics[6,bin]
-;	PRINTF, 9, OIII_dynamics[bin]
-;	PRINTF, 10, Hb_dynamics[bin]
-;	PRINTF, 11, NI_dynamics[bin]
-;	PRINTF, 12, Hd_dynamics[bin]
-;endfor
 
-
-;CLOSE, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results'
 
-forprint, stellar_bin_dynamics[0,*], textout=output_v, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[2,*], textout=output_h3, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[3,*], textout=output_h4, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[4,*], textout=output_h5, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[5,*], textout=output_h6, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[0,*], stellar_bin_error[0,*], textout=output_v, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[1,*], stellar_bin_error[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[2,*], stellar_bin_error[2,*], textout=output_h3, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[3,*], stellar_bin_error[3,*], textout=output_h4, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[4,*], stellar_bin_error[4,*], textout=output_h5, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[5,*], stellar_bin_error[5,*], textout=output_h6, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[6,*], stellar_bin_error[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
+
+if gas then begin
 forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
 forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
 forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
 forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
-
-
-
-;print, OIII;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+endif
 
 
 

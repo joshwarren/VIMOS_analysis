@@ -144,7 +144,7 @@ def kinematics(galaxy, discard=0, wav_range="",
     xBar += -(40.0-2*discard)/2.0
     yBar += -(40.0-2*discard)/2.0
 
-    v_field = np.loadtxt(output_v, unpack=True)
+    v_field = np.loadtxt(output_v, usecols=(0,), unpack=True)
     v_field -= np.median(v_field)
 
 
@@ -171,7 +171,7 @@ def kinematics(galaxy, discard=0, wav_range="",
 
 
 # ------------================= Hot gas ================----------
-    OIII_vel = np.loadtxt(output_OIII, unpack=True)
+    OIII_vel = np.loadtxt(output_OIII, usecols=(0,), unpack=True)
     OIII_vel -= np.median(OIII_vel)
 
     save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
@@ -195,10 +195,10 @@ def kinematics(galaxy, discard=0, wav_range="",
 # Reload v_field and undo changes above
     xBar += (40.0-2*discard)/2.0
     yBar += (40.0-2*discard)/2.0
-    v_field = np.loadtxt(output_v, unpack=True)
+    v_field = np.loadtxt(output_v, usecols=(0,), unpack=True)
 
     r = np.sqrt(np.square(xBar-f.xmed)+np.square(yBar-f.ymed))
-    sigma = np.loadtxt(output_sigma, unpack=True)
+    sigma = np.loadtxt(output_sigma, usecols=(0,), unpack=True)
 
 
     order = np.argsort(r)

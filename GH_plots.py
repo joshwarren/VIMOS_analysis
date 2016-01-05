@@ -50,15 +50,15 @@ def GH_plots(galaxy, wav_range="", plots=False):
 
 
 
-    vel = np.loadtxt(output_v)
-    sigma = np.loadtxt(output_sigma)
-    h3 = np.loadtxt(output_h3)
-    h4 = np.loadtxt(output_h4)
+    vel = np.loadtxt(output_v, usecols=(0,), unpack=True)
+    sigma = np.loadtxt(output_sigma, usecols=(0,), unpack=True)
+    h3 = np.loadtxt(output_h3, usecols=(0,), unpack=True)
+    h4 = np.loadtxt(output_h4, usecols=(0,), unpack=True)
 
-    vel_uncert = np.loadtxt(output_v_uncert, usecols=(1,))
-    sigma_uncert = np.loadtxt(output_sigma_uncert, usecols=(1,))
-    h3_uncert = np.loadtxt(output_h3_uncert, usecols=(1,))
-    h4_uncert = np.loadtxt(output_h4_uncert, usecols=(1,))
+    vel_uncert = np.loadtxt(output_v_uncert, usecols=(1,), unpack=True)
+    sigma_uncert = np.loadtxt(output_sigma_uncert, usecols=(1,), unpack=True)
+    h3_uncert = np.loadtxt(output_h3_uncert, usecols=(1,), unpack=True)
+    h4_uncert = np.loadtxt(output_h4_uncert, usecols=(1,), unpack=True)
 
 
 
