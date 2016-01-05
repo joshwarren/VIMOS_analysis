@@ -33,18 +33,22 @@ def GH_plots(galaxy, wav_range="", plots=False):
         "%sgal_vel.dat" % (wav_range_dir)
     output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_vel_uncert.dat" % (wav_range_dir)
+    output_v_uncert = output_v
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_sigma.dat" % (wav_range_dir)
     output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_sigma_uncert.dat" % (wav_range_dir)
+    output_sigma_uncert = output_sigma
     output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3.dat" % (wav_range_dir)
     output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3_uncert.dat" % (wav_range_dir)
+    output_h3_uncert =  output_h3
     output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h4.dat" % (wav_range_dir)
     output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h4_uncert.dat" % (wav_range_dir)
+    output_h4_uncert = output_h4
 
 
 

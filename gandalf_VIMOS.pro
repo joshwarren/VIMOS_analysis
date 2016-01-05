@@ -263,6 +263,7 @@ templates /= median(templates)
 
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
+	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
 
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
@@ -273,7 +274,10 @@ templates /= median(templates)
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+        galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_data = galaxy_data_temp[discard:s[1]-discard-1, $
+		discard:s[2]-discard-1,*]
+	galaxy_noise = galaxy_noise_temp[discard:s[1]-discard-1, $
 		discard:s[2]-discard-1,*]
 
 	n_spaxels = n_elements(galaxy_data[*,0,0]) * $
@@ -322,6 +326,8 @@ for bin=0, n_bins-1 do begin
 ;; Creates a new spectrum for a new bin.
         bin_lin_temp = MAKE_ARRAY(n_elements(galaxy_data[0,0,*]), $
 		VALUE = 0d) 
+        bin_lin_noise_temp = MAKE_ARRAY(n_elements(galaxy_noise[0,0,*]), $
+		VALUE = 0d) 
 
 for i = 0, n_spaxels_in_bin-1 do begin
 	x_i = x[spaxels_in_bin[i]]
@@ -329,9 +335,12 @@ for i = 0, n_spaxels_in_bin-1 do begin
 	count++
 for k = 0, s[3]-1 do begin
 	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
+        bin_lin_noise_temp[k] += galaxy_noise[x_i, y_i, k]^2
 endfor
 endfor
+	bin_lin_noise_temp = sqrt(bin_lin_noise_temp)
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
+;; bin_lin_noise contains the errors combined in quadrature. 
 
 
 ;; --------======== Finding limits of the spectrum ========--------
@@ -384,9 +393,11 @@ ENDIF
 
 ;; ----------========= Writing the spectrum  =============---------
 	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
+	bin_lin_noise = MAKE_ARRAY(upper_limit-lower_limit)
 for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
-endfor
+	bin_lin_noise[i] = bin_lin_noise_temp[lower_limit+i]
+     endfor ; i
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
@@ -397,19 +408,24 @@ endfor
 
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
-
+        bin_lin_noise = gauss_smooth(bin_lin_noise, sigma)
 
 	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
+	log_rebin, lamrange, bin_lin_noise^2, bin_log_noise, $
+		velscale=velscale
+	bin_log_noise = sqrt(bin_log_noise) ;; from log_rebin.pro notes
+
 	lambda = EXP(logLam_bin)
 	log_gal_start = logLam_bin[0]
 	log_gal_step = logLam_bin[1]-logLam_bin[0]
 
 ;; normalise the spectrum
-;        norm_factor = MEDIAN(bin_log);;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	bin_log = bin_log/MEDIAN(bin_log)
+        med_bin = MEDIAN(bin_log)
+	bin_log = bin_log/med_bin
+        bin_log_noise = bin_log_noise/med_bin
 
 ;; ----------========= Assigning noise variable =============---------
 ;;   NOISE: vector containing the 1*sigma error (per pixel) in the
@@ -430,9 +446,10 @@ endfor
 ;;     details).
 ;;     If no reliable noise is available this keyword can just be set
 ;;     to:
-	noise = MAKE_ARRAY(n_elements(bin_log), $
-		VALUE = 1d)
-		;galaxy*0+1 ; Same weight for all pixels
+;	noise = MAKE_ARRAY(n_elements(bin_log), $
+;		VALUE = 0.01d)
+;		;galaxy*0+1 ; Same weight for all pixels
+noise = bin_log_noise+0.0000000000001
 
 
 
@@ -469,6 +486,7 @@ endif
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $;/PLOT, $
 		QUIET = quiet, ERROR = perror
 bin_dynamics_temp_sav = bin_dynamics_temp
+
 
 if gas then begin
 ;; Add systematic velocity to the dynamics array.

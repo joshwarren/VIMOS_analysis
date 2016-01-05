@@ -70,36 +70,52 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         "voronoi_2d_binning_output.txt"
     tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output2.txt"
+
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_vel.dat" % (wav_range_dir)
-    output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_vel_uncert.dat" % (wav_range_dir)
+ #   output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+ #       "%sgal_vel_uncert.dat" % (wav_range_dir)
+    output_v_uncert = output_v
+
     output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
         "results/%stemplate_weighting.dat" % (wav_range_dir)
+
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_sigma.dat" % (wav_range_dir)
-    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_sigma_uncert.dat" % (wav_range_dir)
+#    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+#        "%sgal_sigma_uncert.dat" % (wav_range_dir)
+    output_sigma_uncert = output_sigma
+
     output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3.dat" % (wav_range_dir)
-    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h3_uncert.dat" % (wav_range_dir)
+#    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+#        "%sgal_h3_uncert.dat" % (wav_range_dir)
+    output_h3_uncert = output_h3
+
     output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h3.dat" % (wav_range_dir)
-    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h4_uncert.dat" % (wav_range_dir)
+#    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+#        "%sgal_h4_uncert.dat" % (wav_range_dir)
+    output_h4_uncert =  output_h4
+
     output_h5 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h5.dat" % (wav_range_dir)
+
     output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_h6.dat" % (wav_range_dir)
+
     output_Chi = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_Chi.dat" % (wav_range_dir)
+
     output_OIII = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_OIII.dat" % (wav_range_dir)
+
     output_NI = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_NI.dat" % (wav_range_dir)
+
     output_Hb = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_Hb.dat" % (wav_range_dir)
+
     output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_Hd.dat" % (wav_range_dir)
     
@@ -114,7 +130,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"Hd":output_Hd}
-#    outputs = {"v_uncert":output_v_uncert}
+#    outputs = {"v" : output_v, "v_uncert":output_v_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
