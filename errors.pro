@@ -36,10 +36,10 @@ galaxy = galaxies[i_gal]
 
 
 
-;dir = '~/'
-dir = '/Data/vimosindi/'
-;dir2 = '~/'
-dir2 = '/Data/idl_libraries/'
+dir = '~/'
+;dir = '/Data/vimosindi/'
+dir2 = '~/'
+;dir2 = '/Data/idl_libraries/'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
@@ -332,10 +332,12 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = bestfit_sav, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET, $
+		ERRORS = errors
 
 
 bin_output=MAKE_ARRAY(reps,4, /FLOAT)
+bin_errors=MAKE_ARRAY(reps,4, /FLOAT)
 seed = !NULL
 TIC
 for rep=0,reps-1 do begin
@@ -356,13 +358,22 @@ bin_output[rep,1] = bin_dynamics_temp[1]
 bin_output[rep,2] = bin_dynamics_temp[2]
 bin_output[rep,3] = bin_dynamics_temp[3]
 
+bin_errors[rep,0] = errors[0]
+bin_errors[rep,1] = errors[1]
+bin_errors[rep,2] = errors[2]
+bin_errors[rep,3] = errors[3]
+
+
 endfor
 TOC
 ;endfor
 
-FILE_MKDIR, dir + "analysis/" + galaxy + "/errors_results/"
+FILE_MKDIR, dir + "analysis/" + galaxy + "/errors_results/errors"
 bin_file =  dir + "analysis/" + galaxy + "/errors_results/" + $
 	STRTRIM(STRING(bin),2) + ".dat"
+errors_file =  dir + "analysis/" + galaxy + "/errors_results/errors" + $
+	STRTRIM(STRING(bin),2) + ".dat"
+
 CLOSE,1
 OPENW, 1, bin_file
 CLOSE, 1
@@ -370,7 +381,8 @@ CLOSE, 1
 forprint, bin_output[*,0], bin_output[*,1], bin_output[*,2], $
           bin_output[*,3], TEXTOUT = bin_file, /SILENT, /NOCOMMENT
 
-
+forprint, bin_errors[*,0], bin_errors[*,1], bin_errors[*,2], $
+          bin_errors[*,3], TEXTOUT = error_file, /SILENT, /NOCOMMENT
 
 
 
