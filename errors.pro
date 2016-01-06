@@ -36,10 +36,10 @@ galaxy = galaxies[i_gal]
 
 
 
-dir = '~/'
-;dir = '/Data/vimosindi/'
-dir2 = '~/'
-;dir2 = '/Data/idl_libraries/'
+;dir = '~/'
+dir = '/Data/vimosindi/'
+;dir2 = '~/'
+dir2 = '/Data/idl_libraries/'
 	
 ;; Tessellation input
 ;	binning_spaxels, galaxy
@@ -333,7 +333,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 		bin_dynamics_temp, BESTFIT = bestfit_sav, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
 		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET, $
-		ERRORS = errors
+		ERROR = errors
 
 
 bin_output=MAKE_ARRAY(reps,4, /FLOAT)
@@ -341,7 +341,7 @@ bin_errors=MAKE_ARRAY(reps,4, /FLOAT)
 seed = !NULL
 TIC
 for rep=0,reps-1 do begin
-print, rep
+print, 'rep ', rep
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
 add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
@@ -350,7 +350,7 @@ bin_log = bestfit_sav + add_noise
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BIAS = 0.001, $
 		GOODPIXELS=goodPixels, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, /QUIET
+		DEGREE = degree, VSYST = dv, /QUIET, ERROR = errors
 
 
 bin_output[rep,0] = bin_dynamics_temp[0]
