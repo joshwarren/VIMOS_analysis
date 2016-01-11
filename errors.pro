@@ -120,7 +120,7 @@ for i = 0, nfiles - 1 do begin
 
 ;; Normalizing templates
 	templates[*,i] = log_temp_template
-endfor
+     endfor ; i
 TEMPLATES /= median(log_temp_template)
 
 
@@ -195,8 +195,8 @@ for i = 0, n_spaxels_in_bin-1 do begin
 for k = 0, s[3]-1 do begin
 	bin_lin_temp[k] += galaxy_data[x_i, y_i, k]
         bin_lin_noise_temp[k] += galaxy_noise[x_i, y_i, k]^2
-endfor
-endfor
+endfor ; k
+endfor ; i
 
 	bin_lin_noise_temp = sqrt(bin_lin_noise_temp)
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
@@ -256,7 +256,7 @@ ENDIF
 for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
 	bin_lin_noise[i] = bin_lin_noise_temp[lower_limit+i]
-endfor
+endfor ; i
 
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
@@ -283,49 +283,17 @@ endfor
         bin_log_noise = bin_log_noise/med_bin
 
 ;; ----------========= Assigning noise variable =============---------
-;;   NOISE: vector containing the 1*sigma error (per pixel) in the
-;;   galaxy spectrum, or covariance matrix describing the correlated
-;;   errors in the galaxy spectrum. Of course this vector/matrix must
-;;   have the same units as the galaxy spectrum.
-;;   - If GALAXY is a Nx2 array, NOISE has to be an array with the
-;;     same dimensions.
-;;   - When NOISE has dimensions NxN it is assumed to contain the
-;;     covariance matrix with elements sigma(i,j). When the errors in
-;;     the spectrum are uncorrelated it is mathematically equivalent
-;;     to input in PPXF an error vector NOISE=errvec or a NxN diagonal
-;;     matrix NOISE=DIAG_MATRIX(errvec^2) (note squared!).
-;;   - IMPORTANT: the penalty term of the pPXF method is based on the
-;;     *relative* change of the fit residuals. For this reason the
-;;     penalty will work as expected even if no reliable estimate of
-;;     the NOISE is available (see Cappellari & Emsellem [2004] for
-;;     details).
-;;     If no reliable noise is available this keyword can just be set
-;;     to:
-;	noise = MAKE_ARRAY(n_elements(bin_log), $
-;		VALUE = 1d)
-		;galaxy*0+1 ; Same weight for all pixels
 noise = bin_log_noise+0.0000000000001
 
-; The galaxy and the template spectra do not have the same starting
-; wavelength. For this reason an extra velocity shift DV has to be
-; applied to the template to fit the galaxy spectrum. We remove this
-; artificial shift by using the keyword VSYST in the call to PPXF
-; below, so that all velocities are measured with respect to DV. This
-; assume the redshift is negligible. In the case of a high-redshift
-; galaxy one should de-redshift its wavelength to the rest frame
-; before using the line below (see above). 
-
 dv = (logLam_template[0]-logLam_bin[0])*c ; km/s
-
-
 
 ; Find the pixels to ignore to avoid being distracted by gas emission
 ; lines or atmospheric absorbsion line.  
 goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
-	lambda = EXP(logLam_bin)
+lambda = EXP(logLam_bin)
 
-	start = [vel, sig] ; starting guess
+start = [vel, sig] ; starting guess
 
 ;; Run once to get bestfit. Add noise to bestfit so that noise
 ;; is not 'added twice'.
@@ -339,9 +307,9 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,lamRange_template,vel, z)
 bin_output=MAKE_ARRAY(reps,4, /FLOAT)
 bin_errors=MAKE_ARRAY(reps,4, /FLOAT)
 seed = !NULL
-TIC
+;TIC
 for rep=0,reps-1 do begin
-print, 'rep ', rep
+;print, 'rep ', rep
 random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
 add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
@@ -364,9 +332,8 @@ bin_errors[rep,2] = errors[2]
 bin_errors[rep,3] = errors[3]
 
 
-endfor
-TOC
-;endfor
+endfor ; rep
+;TOC
 
 FILE_MKDIR, dir + "analysis/" + galaxy + "/errors_results/errors"
 bin_file =  dir + "analysis/" + galaxy + "/errors_results/" + $
