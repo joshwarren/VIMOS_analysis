@@ -371,7 +371,7 @@ TOC
 FILE_MKDIR, dir + "analysis/" + galaxy + "/errors_results/errors"
 bin_file =  dir + "analysis/" + galaxy + "/errors_results/" + $
 	STRTRIM(STRING(bin),2) + ".dat"
-errors_file =  dir + "analysis/" + galaxy + "/errors_results/errors" + $
+errors_file =  dir + "analysis/" + galaxy + "/errors_results/errors/" + $
 	STRTRIM(STRING(bin),2) + ".dat"
 
 CLOSE,1
@@ -382,7 +382,7 @@ forprint, bin_output[*,0], bin_output[*,1], bin_output[*,2], $
           bin_output[*,3], TEXTOUT = bin_file, /SILENT, /NOCOMMENT
 
 forprint, bin_errors[*,0], bin_errors[*,1], bin_errors[*,2], $
-          bin_errors[*,3], TEXTOUT = error_file, /SILENT, /NOCOMMENT
+          bin_errors[*,3], TEXTOUT = errors_file, /SILENT, /NOCOMMENT
 
 
 
