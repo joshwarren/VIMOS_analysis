@@ -44,6 +44,7 @@ import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
+from plot_histogram import plot_histogram
 
 
 
@@ -130,7 +131,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"Hd":output_Hd}
-#    outputs = {"v" : output_v, "v_uncert":output_v_uncert}
+#    outputs = {"v" : output_v}#, "v_uncert":output_v_uncert}
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -202,6 +203,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # a spaxel)
     for plot in outputs:
         print "       ", plot
+        plt.close('all')
         if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
             plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             v_binned = np.loadtxt(outputs[plot], usecols=(0,), unpack=True)
@@ -257,32 +259,49 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if plot=="v":
             title = 'Stellar Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
+            htitle = 'Stellar Velocity Histogram'
         elif plot=="v_uncert":
             title = "Stellar Velocity Uncertainty Map"
             CBLabel = "LOSV (km s$^{-1}$)"
+            htitle = 'Stellar Velocity Uncertainty Histogram'
         elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             title = plot + ' Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
             vmin = None
             vmax = None
+            htitle = plot + ' Velocity Histogram'
         elif plot=="sigma":
             title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
-        elif plot=="v_uncert":
-            title = "Stellar Velocity Uncertainty Map"
-            CBLabel = "LOSV (km s$^{-1}$)"
+            htitle = 'Stellar Velocity Dispersion Histogram'
+#        elif plot=="v_uncert":
+#            title = "Stellar Velocity Uncertainty Map"
+#            CBLabel = "LOSV (km s$^{-1}$)"
+#            htitle = 'Stellar Velocity Histogram'
         elif plot=="sigma_uncert":
             title = "Stellar Velocity Dispersion Uncertainty Map"
             CBLabel = "LOSVD (km s$^{-1}$)"
+            htitle = 'Stellar Velocity Dispersion Uncertainty Histogram'
         elif plot=="h3_uncert":
             title = "h3 Uncertainty Map"
+            htitle = "h3 Uncertainty Histogram"
         elif plot=="h4_uncert":
             title = "h4 Uncertainty Map"
+            htitle = "h4 Uncertainty Histogram"
         else:
             title = plot + ' Map'
             CBLabel = ""
-  
+            htitle = plot + ' Histogram'
 
+  
+# ------------================= Plot Histogram ===============----------
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            "%splots/%s_hist_%s.png" % (wav_range_dir, plot, wav_range)
+
+        plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z, vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle, xaxis=CBLabel, save=saveTo)
+
+        if plots:
+            plt.show()
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
@@ -366,14 +385,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
 
-
 ##############################################################################
 
 # Use of plot_results.py
 
 if __name__ == '__main__':
     wav_range="4200-"
-    galaxy = "ngc3557"
+    galaxy = "pks0718-34"
 #    galaxy = "ngc1399"
 #    galaxy = "ic1459"
     discard = 2 # rows of pixels to discard- must have been the same 
