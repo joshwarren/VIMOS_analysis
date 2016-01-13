@@ -61,13 +61,13 @@ def man_errors():
 
     
 
-    v_file = "/Data/vimosindi/analysis/%s/results/%sgal_vel_uncert.dat" % (
+    v_file = "/Data/vimosindi/analysis/%s/results/%sgal_vel.dat" % (
         galaxy, wav_range)
-    s_file = "/Data/vimosindi/analysis/%s/results/%sgal_sigma_uncert.dat" % (
+    s_file = "/Data/vimosindi/analysis/%s/results/%sgal_sigma.dat" % (
         galaxy, wav_range)
-    h3_file = "/Data/vimosindi/analysis/%s/results/%sgal_h3_uncert.dat" % (
+    h3_file = "/Data/vimosindi/analysis/%s/results/%sgal_h3.dat" % (
         galaxy, wav_range)
-    h4_file = "/Data/vimosindi/analysis/%s/results/%sgal_h4_uncert.dat" % (
+    h4_file = "/Data/vimosindi/analysis/%s/results/%sgal_h4.dat" % (
         galaxy, wav_range)
 
 

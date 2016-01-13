@@ -6,6 +6,7 @@
 ## warrenj 20150727 Changing to a python script
 ## warrenj 20150917 Altered to plot and save all 8 plots.
 ## warrenj 20151216 Added section to plot residuals.
+## warrenj 20160111 Add section to plot histgrams of the fields.
 
 ## *************************** KEYWORDS ************************* ##
 # galaxy 		Name of the galaxy being plotted: used to find 
@@ -302,6 +303,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         if plots:
             plt.show()
+
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
