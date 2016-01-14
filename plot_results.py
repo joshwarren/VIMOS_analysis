@@ -261,6 +261,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             title = 'Stellar Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
             htitle = 'Stellar Velocity Histogram'
+	    vmin=-150
+	    vmax=-vmin
         elif plot=="v_uncert":
             title = "Stellar Velocity Uncertainty Map"
             CBLabel = "LOSV (km s$^{-1}$)"
@@ -268,17 +270,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
             title = plot + ' Velocity Map'
             CBLabel = "LOSV (km s$^{-1}$)"
-            vmin = None
-            vmax = None
+#            vmin = None
+#            vmax = None
             htitle = plot + ' Velocity Histogram'
         elif plot=="sigma":
             title = 'Velocity Dispersion Map'
             CBLabel = "LOSVD (km s$^{-1}$)"
             htitle = 'Stellar Velocity Dispersion Histogram'
-#        elif plot=="v_uncert":
-#            title = "Stellar Velocity Uncertainty Map"
-#            CBLabel = "LOSV (km s$^{-1}$)"
-#            htitle = 'Stellar Velocity Histogram'
         elif plot=="sigma_uncert":
             title = "Stellar Velocity Dispersion Uncertainty Map"
             CBLabel = "LOSVD (km s$^{-1}$)"
