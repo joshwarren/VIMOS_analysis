@@ -31,13 +31,13 @@ import array
 import sys # for early exit of python
 
 def man_errors():
-    vel_method = 'median'
-    err_method = 'median'
+    vel_method = None
+    err_method = 'std_vel'
     bias = True
 
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[8]
+    galaxy = galaxies[2]
     wav_range = "4200-/"
 
 # Bias not set
@@ -151,9 +151,9 @@ def man_errors():
     
     dir = "/Data/vimosindi/analysis/%s/results/4200-/" % (galaxy)
     if vel_method is None:
-        v = np.unpack(dir + "no_MC/gal_vel.dat", usecols=(0,), unpack=True)
+        v = np.loadtxt(dir + "no_MC/gal_vel.dat", usecols=(0,), unpack=True)
     if err_method is None:
-        v_s = np.unpack(dir + "no_MC/gal_vel.dat", usecols=(1,), unpack=True)
+        v_s = np.loadtxt(dir + "no_MC/gal_vel.dat", usecols=(1,), unpack=True)
 
 
 
@@ -176,8 +176,8 @@ def man_errors():
 
 
     print "Bias:       " + str(bias)
-    print "vel_method: " + vel_method
-    print "err_method: " + err_method
+    print "vel_method: " + str(vel_method)
+    print "err_method: " + str(err_method)
 ##############################################################################
 
 # Use of plot_results.py

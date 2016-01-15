@@ -391,9 +391,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 if __name__ == '__main__':
     wav_range="4200-"
-    galaxy = "pks0718-34"
-#    galaxy = "ngc1399"
-#    galaxy = "ic1459"
+#    galaxy = "pks0718-34"
+#    galaxy = "ngc3557"
+    galaxy = "ic1531"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #
