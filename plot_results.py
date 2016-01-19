@@ -393,7 +393,7 @@ if __name__ == '__main__':
     wav_range="4200-"
 #    galaxy = "pks0718-34"
 #    galaxy = "ngc3557"
-    galaxy = "ic1531"
+    galaxy = "ic4296"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #
