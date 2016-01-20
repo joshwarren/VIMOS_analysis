@@ -13,7 +13,7 @@ resolve_routine, ['log_rebin', 'ppxf'];, 'ppxf_determine_goodpixels']
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 ; 	galaxy = galaxies[1]
 galaxy = galaxies[i_gal]
-	reps = 5000 ;; number of monte carlo reps per bin.
+	reps = 1 ;; number of monte carlo reps per bin.
 	discard = 2
 	range = [4200,10000]
 	c = 299792.458d
@@ -156,7 +156,8 @@ TEMPLATES /= median(log_temp_template)
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
-
+print, galaxy_data_temp[11,10,500]
+print, galaxy_noise_temp[11,10,500]
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
 	CDELT_spec = sxpar(header,'CD3_3')
@@ -314,7 +315,10 @@ random = randomu(seed, n_elements(noise), /NORMAL)
 gaussian = gaussian(random, [1/sqrt(2*!pi),0,1])
 add_noise = (random/abs(random))*sqrt((-2*noise^2)*alog(gaussian*noise))
 bin_log = bestfit_sav + add_noise
-
+print,'bin_log ' + string(bin_log[50]);********************************
+print,'noise ' + string(noise[50])
+print, 'bestfit ' + string(bestfit_sav[50])
+print, 'add_noise ' + string(add_noise[50])
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BIAS = 0.001, $
 		GOODPIXELS=goodPixels, MOMENTS = moments, $

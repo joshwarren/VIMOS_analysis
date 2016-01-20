@@ -9,23 +9,90 @@ import numpy as np # for array handling
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
 import glob # for searching for files
+from scipy import ndimage # for gaussian blur
+import math
 
 from ppxf import ppxf
 import ppxf_util as util
 
+#-----------------------------------------------------------------------------
 def use_templates(galaxy):
     template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
 	'/templates.txt' 
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
     return templatesToUse
+#-----------------------------------------------------------------------------
+
+
+
+#-----------------------------------------------------------------------------
+def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
+# warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
+#
+# PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of
+#	goodPixels to be used as input keyword for the routine
+#	PPXF. This is useful to mask gas emission lines or atmospheric
+#	absorptions. It can be trivially adapted to mask different
+#	lines. 
+# 
+# INPUT PARAMETERS:
+# - LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom 
+#     of each pixel of the log rebinned *galaxy* spectrum.
+# - LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the
+#     minimum and maximum wavelength in Angstrom in the stellar
+#     *template* used in PPXF. 
+# - VEL: Estimate of the galaxy velocity in km/s.
+# 
+# V1.0: Michele Cappellari, Leiden, 9 September 2005
+# V1.01: Made a separate routine and included additional common
+#   emission lines. MC, Oxford 12 January 2012
+# V1.02: Included more lines. MC, Oxford, 7 Januray 2014
+
+    c = 299792.458 # speed of light in km/s
+
+## 20150617 warrenj Added Telluric lines (tell) at 5199 (is a blended sky
+## line)
+
+ 
+#dv = lines*0+800d # width/2 of masked gas emission region in km/s
+    dv = 800 # width/2 of masked gas emission region in km/s
+#    flag = bytearray([0]*len(logLam))
+    flag = logLam < 0
+
+# Marks telluric line
+#    tell = 5199
+#    flag |= logLam > np.log(tell) - z - dv/c \
+#        & logLam < np.log(tell) - z + dv/c 
+
+    if not gas:
+#                         -----[OII]-----   Hdelta    Hgamma   Hbeta;
+        lines = np.array([3726.03, 3728.82, 4101.76, 4340.47, 4861.33, \
+#            -----[OIII]----- ----??----   [OI]   
+            4958.92, 5006.84, 5528, 5535, 6300.30, \
+#           -----[NII]-----  Halpha   -----[SII]-----   
+            6548.03, 6583.41,  6562.80, 6716.47, 6730.85])
+
+    for j in range(len(lines)):
+        flag |= (logLam > np.log(lines[j]) + (vel- dv)/c) \
+            & (logLam < np.log(lines[j]) + (vel+ dv)/c)
+
+
+    flag |= logLam < np.log(lamRangeTemp[0]) + (vel + 900)/c # Mask edges of
+    flag |= logLam > np.log(lamRangeTemp[1]) + (vel - 900)/c # stellar library
+
+
+    flag[0:3] = 1 # Mask edge of data
+    flag[-4:]= 1 # to remove edge effects
+    return np.where(flag == 0)[0]
+#-----------------------------------------------------------------------------
 
 
 
 
 
 
-
+#-----------------------------------------------------------------------------
 def errors(i_gal, bin):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
@@ -35,7 +102,8 @@ def errors(i_gal, bin):
     galaxy = galaxies[i_gal]
     reps = 5000 ## number of monte carlo reps per bin.
     discard = 2
-    set_range = [4200,10000]
+#    set_range = None
+    set_range = np.array([4200,10000])
     c = 299792.458
 #    z = 0.01 # redshift to move galaxy spectrum to its rest frame 
 #    vel = 114.0d # Initial estimate of the galaxy velocity and
@@ -110,8 +178,8 @@ def errors(i_gal, bin):
 
 ## ****************************************************************
 ## NB: shouldn't this be 0.9A as this is resolution?
-    FWHM_tem = 2.5     # Miles spectra have a resolution
-                           # FWHM of 2.5A.
+    FWHM_tem = 2.5 # Miles spectra have a resolution
+                               # FWHM of 2.5A.
 
 
 ## Which templates to use are given in use_templates.pro. This is
@@ -150,9 +218,9 @@ def errors(i_gal, bin):
     dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
         "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
         
-    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
-    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 1)
-
+    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
+    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
+    
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
     CDELT_spec = header['CD3_3']
@@ -183,7 +251,7 @@ def errors(i_gal, bin):
         y_i = y[spaxels_in_bin[i]]
         for k in range(s[0]):
             bin_lin_temp[k] += galaxy_data[k,y_i,x_i]
-            bin_lin_noise_temp[k] += galaxy_noise[k,y_i,x_i]
+            bin_lin_noise_temp[k] += galaxy_noise[k,y_i,x_i]**2
 
     bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
 
@@ -199,42 +267,91 @@ def errors(i_gal, bin):
     h = np.delete(h,ignore2)
     
 
+    half = s[0]/2
+    a = h/np.median(h) - np.append(h[4:],[0,0,0,0])/np.median(h)
+    a = np.where(np.isfinite(a), a, 0)
 
+    lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+    upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
 
+    if upper_limit > ignore2[0]: upper_limit+=gap 
+    if upper_limit > ignore[0]: upper_limit+=gap
 
+    if lower_limit < 0:
+        lower_limit = min(np.where(a[:half] != 0)[0]) + 5
+        if lower_limit < 0: lower_limit = 0
+    else:
+        lower_limit +=5
 
+    if upper_limit > s[0]-1 or upper_limit < half:
+        upper_limit = s[0]-6 
+    else:
+        upper_limit += -5
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## --------========= Using set_range variable =========--------  
+    if set_range is not None:
 ## Change to pixel units
-#    if keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
+        set_range = (set_range - CRVAL_spec)/CDELT_spec
+        if set_range[0] > lower_limit: lower_limit = set_range[0] 
+        if set_range[1] < upper_limit: upper_limit = set_range[1]
+
+    lamRange = np.array([lower_limit, upper_limit])*CDELT_spec + CRVAL_spec
 
 
+## ----------========= Writing the spectrum  =============---------
+    bin_lin = bin_lin_temp[lower_limit:upper_limit]
+    bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
 
+## ----------======== Calibrating the spectrum  ===========---------
+## For calibrating the resolutions between templates and observations
+## using the gauss_smooth command
+    FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
+    sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 
+## smooth spectrum to fit with templates resolution
+    bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
+    bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
+    
+    lamRange = lamRange/(1+z)
+## rebin spectrum logarthmically
+    bin_log, logLam_bin, velscale = util.log_rebin(lamRange, bin_lin)
+    bin_log_noise, logLam_bin, velscale = util.log_rebin(lamRange, np.power(bin_lin_noise,2))
+    bin_log_noise = np.sqrt(bin_log_noise)
 
+## Normalis the spectrum
+    med_bin = np.median(bin_log)
+    bin_log /= med_bin
+    bin_log_noise /= med_bin
+## ----------========= Assigning noise variable =============---------
+    noise = bin_log_noise+0.0000000000001
 
+    dv = (logLam_template[0]-logLam_bin[0])*c # km/s
 
+# Find the pixels to ignore to avoid being distracted by gas emission
+#; lines or atmospheric absorbsion line.  
+    goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
 
+    lambdaq = np.exp(logLam_bin)
 
+    start = [vel, sig] # starting guess
 
+    pp = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, plot=False, quiet=True)
 
+    bestfit_sav = pp.bestfit
 
+    bin_output = np.zeros((reps, 4))
+    bin_errors = np.zeros((reps, 4))
 
+#    for rep in range(reps):
+    random = np.random.randn(len(noise))
+    gaussian = 1/(np.sqrt(2*math.pi)*noise)*np.exp(-0.5*((random)/noise)**2)
+    add_noise = (random/abs(random))* \
+        np.sqrt((-2*np.power(noise,2))*np.log(gaussian*noise))
+    print 'bestfit ' + str(bestfit_sav[50])
+    print 'noise ' +str(noise[50])
+    bin_log = bestfit_sav + add_noise
+    print 'bin_log ' + str(bin_log[50])
+    
 
 
 
@@ -275,4 +392,4 @@ def errors(i_gal, bin):
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    errors(0,0)
+    errors(0,10)
