@@ -18,9 +18,13 @@ from ppxf import ppxf
 import ppxf_util as util
 
 #-----------------------------------------------------------------------------
-def use_templates(galaxy):
-    template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
-	'/templates.txt' 
+def use_templates(galaxy, glamdring=False):
+    if glamdring:
+        template_weighting = '/users/warrenj/analysis/' + galaxy + \
+	    '/templates.txt' 
+    else:
+        template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
+	    '/templates.txt' 
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
     return templatesToUse
@@ -77,7 +81,7 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 
     for j in range(len(lines)):
         flag |= (logLam > np.log(lines[j]) + (vel- dv)/c) \
-            & (logLam < np.log(lines[j]) + (vel+ dv)/c)
+ls            & (logLam < np.log(lines[j]) + (vel+ dv)/c)
 
 
     flag |= logLam < np.log(lamRangeTemp[0]) + (vel + 900)/c # Mask edges of
@@ -102,10 +106,11 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
+    glamdring = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 1 ## number of monte carlo reps per bin.
+    reps = 2 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -127,14 +132,15 @@ def errors(i_gal=None, bin=None):
 ## galaxy. 
 
 
+    if glamdring:
+        dir = '/users/warrenj/'
+        dir2 = '/users/warrenj/'
+    else:
+        dir = '/Data/vimosindi/'
+        dir2 = '/Data/idl_libraries/'
 
-#    dir = '~/'
-    dir = '/Data/vimosindi/'
-#    dir2 = '~/'
-    dir2 = '/Data/idl_libraries/'
 
-
-    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+    data_file = dir + "analysis/galaxies.txt"
     # different data types need to be read separetly
     z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,2,3,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
@@ -145,9 +151,9 @@ def errors(i_gal=None, bin=None):
 
 
 
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File = dir + "analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File2 = dir + "analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output2.txt"
 
 
@@ -189,7 +195,7 @@ def errors(i_gal=None, bin=None):
 
 ## Which templates to use are given in use_templates.pro. This is
 ## transfered to the array templatesToUse.
-    templatesToUse = use_templates(galaxy)
+    templatesToUse = use_templates(galaxy, glamdring)
     nfiles = len(templatesToUse)
     templates = np.zeros((len(log_temp_template), nfiles))
 
@@ -220,7 +226,7 @@ def errors(i_gal=None, bin=None):
 
 ## ----------========= Reading the spectrum  =============---------
 
-    dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
+    dataCubeDirectory = glob.glob(dir + "reduced/%s/cube/" \
         "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
         
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
