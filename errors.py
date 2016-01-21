@@ -11,6 +11,8 @@ import pyfits # reads fits files (is from astropy)
 import glob # for searching for files
 from scipy import ndimage # for gaussian blur
 import math
+import os
+import sys
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -93,14 +95,17 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 
 
 #-----------------------------------------------------------------------------
-def errors(i_gal, bin):
+def errors(i_gal=None, bin=None):
+    if i_gal is None: i_gal=int(sys.argv[1])
+    if bin is None: bin=int(sys.argv[2])
+
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 5000 ## number of monte carlo reps per bin.
+    reps = 1 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -326,45 +331,75 @@ def errors(i_gal, bin):
     noise = bin_log_noise+0.0000000000001
 
     dv = (logLam_template[0]-logLam_bin[0])*c # km/s
-
 # Find the pixels to ignore to avoid being distracted by gas emission
 #; lines or atmospheric absorbsion line.  
     goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
-
     lambdaq = np.exp(logLam_bin)
-
     start = [vel, sig] # starting guess
+
+    bin_log_sav = bin_log
 
     pp = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, plot=False, quiet=True)
 
-    bestfit_sav = pp.bestfit
+    bin_output = np.zeros((reps, moments))
+    bin_errors = np.zeros((reps, moments))
 
-    bin_output = np.zeros((reps, 4))
-    bin_errors = np.zeros((reps, 4))
-
-#    for rep in range(reps):
-    random = np.random.randn(len(noise))
-    gaussian = 1/(np.sqrt(2*math.pi)*noise)*np.exp(-0.5*((random)/noise)**2)
-    add_noise = (random/abs(random))* \
-        np.sqrt((-2*np.power(noise,2))*np.log(gaussian*noise))
-    print 'bestfit ' + str(bestfit_sav[50])
-    print 'noise ' +str(noise[50])
-    bin_log = bestfit_sav + add_noise
-    print 'bin_log ' + str(bin_log[50])
+    for rep in range(reps):
+        random = np.random.randn(len(noise))
+#        gaussian = 1/(np.sqrt(2*math.pi)*noise)*np.exp(-0.5*((random)/noise)**2)
+#        add_noise = (random/abs(random))* \
+#            np.sqrt((-2*np.power(noise,2))*np.log(gaussian*noise))
+        add_noise = random*np.abs(noise)
+        bin_log = pp.bestfit + add_noise
     
+        ppMC = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, plot=False, quiet=True, bias=0.1)
+
+        bin_output[rep,:] = ppMC.sol[0:moments]
+        bin_errors[rep,:] = ppMC.error[0:moments]
+## ----------============ Write ouputs to file ==============---------
+
+    if not os.path.exists("%sanalysis/%s/gas_MC/MC/errors" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/MC/errors" % (dir, galaxy))
+    bin_file = "%sanalysis/%s/gas_MC/MC/%s.dat" % (dir, galaxy, str(bin))
+    errors_file = "%sanalysis/%s/gas_MC/MC/errors/%s.dat" % (dir, galaxy, 
+        str(bin))
+
+    f = open(bin_file, 'w')
+    e = open(errors_file, 'w')
+    for i in range(reps):
+        f.write(str(bin_output[i,0]) + "   " + str(bin_output[i,1]) + "   " + \
+            str(bin_output[i,2]) + "   " + str(bin_output[i,3]) + '\n')
+        e.write(str(bin_errors[i,0]) + "   " + str(bin_errors[i,1]) + \
+            "   " + str(bin_errors[i,2]) + "   " + str(bin_errors[i,3]) + '\n')
+
+## save bestfit spectrum
+    if not os.path.exists("%sanalysis/%s/gas_MC/bestfit" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/bestfit" % (dir, galaxy)) 
+    bestfit_file = "%sanalysis/%s/gas_MC/bestfit/%s.dat" % (dir, galaxy, 
+        str(bin))
+   
+    s = open(bestfit_file, 'w')
+    for i in range(len(pp.bestfit)):
+        s.write(str(pp.bestfit[i]) + '\n')
+
+## save input
+    if not os.path.exists("%sanalysis/%s/gas_MC/input" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/input" % (dir, galaxy)) 
+    input_file = "%sanalysis/%s/gas_MC/input/%s.dat" % (dir, galaxy, str(bin))
+   
+    inp = open(input_file, 'w')
+    for i in range(len(bin_log_sav)):
+        inp.write(str(bin_log_sav[i]) + '\n')
 
 
-
-
-
-
-
-
-
-
-
-
-
+## save bestfit output
+    if not os.path.exists("%sanalysis/%s/gas_MC/" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/" % (dir, galaxy)) 
+    bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
+   
+    b = open(bestfit_file, 'w')
+    b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
+        str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
 
 
@@ -392,4 +427,4 @@ def errors(i_gal, bin):
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    errors(0,10)
+    errors(0,10) if len(sys.argv)<3 else errors()
