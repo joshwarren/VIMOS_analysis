@@ -20,7 +20,7 @@ import ppxf_util as util
 
 #-----------------------------------------------------------------------------
 def set_lines (lines, logLam_temp, FWHM_gal):
-
+ex
 # In this routine all lines are free to have independent intensities.
 # One can fix the intensity ratio of different lines (e.g. the [OIII] doublet)
 # by placing them in the same emission template
