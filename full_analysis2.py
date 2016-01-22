@@ -31,8 +31,8 @@ for galaxy in galaxies:
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=True, residual="mean")
     plt.close("all")
-#    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-#        nointerp=False)
-#    plt.close("all")
-    GH_plots(galaxy, wav_range=wav_range)
+    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+        nointerp=False)
     plt.close("all")
+#    GH_plots(galaxy, wav_range=wav_range)
+#    plt.close("all")

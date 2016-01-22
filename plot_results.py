@@ -339,12 +339,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             "gandalf_input/"
 
         average_residuals = np.zeros(number_of_bins)
+
         for i in range(number_of_bins):
             bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i), unpack=True, 
                 skiprows = 1)
             spectrum = np.loadtxt(data_dir +'%d.dat' % (i), unpack=True, 
                 skiprows = 1)
-            
             residuals = np.abs(spectrum - bestfit)
             residuals = np.delete(residuals, [np.arange(5), 
 	        len(residuals)+np.arange(-5,0)], axis=0)
