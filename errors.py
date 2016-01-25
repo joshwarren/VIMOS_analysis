@@ -20,7 +20,6 @@ import ppxf_util as util
 
 #-----------------------------------------------------------------------------
 def set_lines (lines, logLam_temp, FWHM_gal):
-ex
 # In this routine all lines are free to have independent intensities.
 # One can fix the intensity ratio of different lines (e.g. the [OIII] doublet)
 # by placing them in the same emission template
@@ -129,7 +128,7 @@ def errors(i_gal=None, bin=None):
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 5000 ## number of monte carlo reps per bin.
+    reps = 2 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -143,8 +142,8 @@ def errors(i_gal=None, bin=None):
                            # /sci/facilities/paranal/instruments
                            # /vimos/inst/ifu.html)
  
-    moments = 4 # number of componants to calc with ppxf (see 
-                # keyword moments in ppxf.pro for more details)
+    stellar_moments = 4 # number of componants to calc with ppxf (see 
+                        # keyword moments in ppxf.pro for more details)
     gas_moments = 4
     degree = 4  # order of addative Legendre polynomial used to 
                 #; correct the template continuum shape during the fit 
@@ -302,7 +301,14 @@ def errors(i_gal=None, bin=None):
     a = h/np.median(h) - np.append(h[4:],[0,0,0,0])/np.median(h)
     a = np.where(np.isfinite(a), a, 0)
 
+#    if np.where(np.abs(a[:0.5*half]) > 0.2)[0]:
+#        lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+#    else: 
+#        lower_limit = 0
+#        print str(i_gal) + ', ' + str(bin)
+
     lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+
     upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
 
     if upper_limit > ignore2[0]: upper_limit+=gap 
@@ -365,6 +371,7 @@ def errors(i_gal=None, bin=None):
     component = [0]*len(templates[0,:])
 
 ## ----------============= Emission lines =================---------
+    moments = stellar_moments
     if gas:
         emission_file = dir + 'analysis/emission_line.dat'
         line_name = np.loadtxt(emission_file, unpack=True, skiprows=1, 
@@ -385,7 +392,7 @@ def errors(i_gal=None, bin=None):
         templates = np.column_stack((templates, emission_lines))
        
         start = [start,start]
-        moments = [moments, gas_moments]
+        moments = [stellar_moments, gas_moments]
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True) 
 
@@ -402,11 +409,11 @@ def errors(i_gal=None, bin=None):
               component=component, plot=False, quiet=True)
 
 ## ----------================= The MC part ==================---------
-    stellar_output = np.zeros((reps, moments[0]))
-    stellar_errors = np.zeros((reps, moments[0]))
-
-    gas_output = np.zeros((reps, moments[1]))
-    gas_errors = np.zeros((reps, moments[1]))
+    stellar_output = np.zeros((reps, stellar_moments))
+    stellar_errors = np.zeros((reps, stellar_moments))
+    if gas:
+        gas_output = np.zeros((reps, gas_moments))
+        gas_errors = np.zeros((reps, gas_moments))
 
     for rep in range(reps):
         random = np.random.randn(len(noise))
@@ -418,11 +425,11 @@ def errors(i_gal=None, bin=None):
     
         ppMC = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, plot=False, quiet=True, bias=0.1, component=component)
 
-        stellar_output[rep,:] = ppMC.sol[0:moments[0]][0]
-        stellar_errors[rep,:] = ppMC.error[0:moments[0]][0]
-
-        gas_output[rep,:] = ppMC.sol[0:moments[1]][1]
-        gas_errors[rep,:] = ppMC.error[0:moments[1]][1]
+        stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
+        stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]
+        if gas:
+            gas_output[rep,:] = ppMC.sol[0:gas_moments][1]
+            gas_errors[rep,:] = ppMC.error[0:gas_moments][1]
 ## ----------============ Write ouputs to file ==============---------
 
     if not os.path.exists("%sanalysis/%s/gas_MC/stellar/errors" % (dir,galaxy)):
@@ -447,10 +454,13 @@ def errors(i_gal=None, bin=None):
         e.write(str(stellar_errors[i,0]) + "   " + str(stellar_errors[i,1]) + \
             "   " + str(stellar_errors[i,2]) + "   " + \
             str(stellar_errors[i,3]) + '\n')
-        g.write(str(gas_output[i,0]) + "   " + str(gas_output[i,1]) + "   " + \
-            str(gas_output[i,2]) + "   " + str(gas_output[i,3]) + '\n')
-        ger.write(str(gas_errors[i,0]) + "   " + str(gas_errors[i,1]) + \
-            "   " + str(gas_errors[i,2]) + "   " + str(gas_errors[i,3]) + '\n')
+        if gas:
+            g.write(str(gas_output[i,0]) + "   " + str(gas_output[i,1]) + \
+                "   " + str(gas_output[i,2]) + "   " + \
+                str(gas_output[i,3]) + '\n')
+            ger.write(str(gas_errors[i,0]) + "   " + str(gas_errors[i,1]) + \
+                "   " + str(gas_errors[i,2]) + "   " + \
+                str(gas_errors[i,3]) + '\n')
 
 ## save bestfit spectrum
     if not os.path.exists("%sanalysis/%s/gas_MC/bestfit" % (dir, galaxy)):
@@ -476,11 +486,12 @@ def errors(i_gal=None, bin=None):
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
    
     b = open(bestfit_file, 'w')
-    b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + "   " + \
+    if gas: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + "   " + \
         str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
         str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
         str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
-
+    else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
+        str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
 
 
