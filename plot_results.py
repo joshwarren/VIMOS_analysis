@@ -73,6 +73,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output2.txt"
 
+    output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
+
+    outputs = glob.glob(output+'*.dat')
+
+
+
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
         "%sgal_vel.dat" % (wav_range_dir)
  #   output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
@@ -122,12 +128,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         "%sgal_Hd.dat" % (wav_range_dir)
     
 
-    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
-        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
-        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
-        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
-        "OIII" : output_OIII, "NI" : output_NI, 
-        "Hb" : output_Hb, "Hd" : output_Hd}
+#    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
+#        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
+#        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
+#        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
+#        "OIII" : output_OIII, "NI" : output_NI, 
+#        "Hb" : output_Hb, "Hd" : output_Hd}
 #    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
 #        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
 #        "Hb" : output_Hb, "Hd" : output_Hd}
@@ -203,36 +209,35 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # Read results files - each entry in array corresponds to a bin (not
 # a spaxel)
     for plot in outputs:
-        print "       ", plot
+        plot_title = plot.split('gal_')[-1].split('.')[0]
+        print "       ", plot_title
         plt.close('all')
-        if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
-            plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            v_binned = np.loadtxt(outputs[plot], usecols=(0,), unpack=True)
-        else:
-            # for uncertainties
-            v_binned = np.loadtxt(outputs[plot], usecols=(1,), unpack=True)
+#        if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
+#            plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
 
-
-#        if plot=="v":
-#            v_binned += -1.1*np.median(v_binned)
-#        if plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-#            v_binned += -np.median(v_binned)
 # Asign v to every spaxel in bin
         v_unbinned = np.zeros(galaxy_data_unbinned.shape)
+        v_uncert_unbinned = np.zeros(galaxy_data_unbinned.shape)
         for spaxel in range(n_spaxels):
             v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
+            v_uncert_unbinned[x[spaxel],y[spaxel]] = \
+                v_uncert_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
-        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            if norm == "lum":
-                v_binned -= v_binned[center_bin]
-            if norm == "lwv":
-#                galaxy_data_unbinned1=galaxy_data_unbinned/np.median(
-#                    galaxy_data_unbinned)
-                lwv = v_unbinned*galaxy_data_unbinned
+#        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+        if norm == "lum":
+            v_binned -= v_binned[center_bin]
+        if norm == "lwv":
+#            galaxy_data_unbinned1=galaxy_data_unbinned/np.median(
+#                galaxy_data_unbinned)
+            lwv = v_unbinned*galaxy_data_unbinned
 
-                v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
-#                v_binned -= np.mean(v_binned)
+            v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
+#            v_binned -= np.mean(v_binned)
 
+
+
+# Limits on field
         vmax = max(v_binned)
         vmin = min(v_binned)
         v_sorted = sorted(np.unique(v_binned))
@@ -240,7 +245,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             v_sorted = sorted(v_binned)
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]
-        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
+# Make velocity fields symmetric
+        if "vel" in plot_title:
             if abs(vmin)>vmax:
                 if vmin*vmax>0:
                     vmin, vmax = vmax, vmin
@@ -248,80 +254,106 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                     vmin=-abs(vmax)
             else:
                 vmax=abs(vmin)
-        if "uncert" in plot:
-            mean_w = np.mean(v_binned)
-            d = vmax-mean_w
-            vmin = mean_w-d
-            if vmin < 0:
-                vmin=0
+
+# Limits on uncertainty field
+#        if "uncert" in plot:
+        v_uncert_max = max(v_uncert_binned)
+        v_uncert_min = min(v_uncert_binned)
+        v_uncert_sorted = sorted(np.unique(v_uncert_binned))
+        if len(v_uncert_sorted) < 2*vLimit:
+            v_uncert_sorted = sorted(v_uncert_binned)
+        v_uncert_min = v_uncert_sorted[vLimit]
+        v_uncert_max = v_uncert_sorted[-vLimit-1]
+        mean_w_uncert = np.mean(v_uncert_binned)
+        d_uncert = v_uncert_max-mean_w_uncert
+        v_uncert_min = mean_w_uncert-d_uncert
+        if v_uncert_min < 0:
+            v_uncert_min=0
 
 # ------------============= Plot velfield ==============----------
-# automatically uses sauron colormap
-        if plot=="v":
-            title = 'Stellar Velocity Map'
+        CBLabel = None
+        if "vel" in plot_title:
+            title = 'Velocity'
             CBLabel = "LOSV (km s$^{-1}$)"
-            htitle = 'Stellar Velocity Histogram'
-	    vmin=-150
-	    vmax=-vmin
-        elif plot=="v_uncert":
-            title = "Stellar Velocity Uncertainty Map"
-            CBLabel = "LOSV (km s$^{-1}$)"
-            htitle = 'Stellar Velocity Uncertainty Histogram'
-        elif plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-            title = plot + ' Velocity Map'
-            CBLabel = "LOSV (km s$^{-1}$)"
-#            vmin = None
-#            vmax = None
-            htitle = plot + ' Velocity Histogram'
-        elif plot=="sigma":
-            title = 'Velocity Dispersion Map'
+#	    vmin=-150
+#	    vmax=-vmin
+        if "simga" in plot_title:
+            title = 'Velocity Dispersion'
             CBLabel = "LOSVD (km s$^{-1}$)"
-            htitle = 'Stellar Velocity Dispersion Histogram'
-        elif plot=="sigma_uncert":
-            title = "Stellar Velocity Dispersion Uncertainty Map"
-            CBLabel = "LOSVD (km s$^{-1}$)"
-            htitle = 'Stellar Velocity Dispersion Uncertainty Histogram'
-        elif plot=="h3_uncert":
-            title = "h3 Uncertainty Map"
-            htitle = "h3 Uncertainty Histogram"
-        elif plot=="h4_uncert":
-            title = "h4 Uncertainty Map"
-            htitle = "h4 Uncertainty Histogram"
+        if "h3" in plot_title: title = 'h3'
+        if "h4" in plot_title: title = 'h4'
+
+
+
+        if "stellar" in plot_title:
+            title = "Stellar " + title + " Map"
+            utitle = "Stellar Uncertainty " + utitle + " Map"
+            htitle = "Stellar " + htitle + " Histogram"
+            uhtitle = "Stellar Uncertainty " + uhtitle + " Histogram"
         else:
-            title = plot + ' Map'
-            CBLabel = ""
-            htitle = plot + ' Histogram'
+            title = "Hot Gas " + title + " Map"
+            utitle = "Hot Gas Uncertainty " + title + " Map"
+            htitle = "Hot Gas " + title + " Histogram"
+            uhtitle = "Hot Gas Uncertainty " + title + " Histogram"
+
 
   
 # ------------================= Plot Histogram ===============----------
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-            "%splots/%s_hist_%s.png" % (wav_range_dir, plot, wav_range)
+# Field histogram
 
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title, wav_range)
         plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z, vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle, xaxis=CBLabel, save=saveTo)
+# Uncertainty histogram
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title+'_uncert', 
+            wav_range)
+        plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z, vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin, title=uhtitle, xaxis=CBLabel, save=saveTo)
 
         if plots:
             plt.show()
 
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
+# Field plot
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot, wav_range)
+                plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, 
                 nodots=False, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)
+# Uncertainty plot
+            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
+                plot_title+'_uncert', wav_range)
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
+                vmin=v_uncert_min, vmax=v_uncert_max, 
+                nodots=False, colorbar=True, 
+                label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+                galaxy = galaxy.upper(), redshift = z, title=utitle, 
+                save=saveTo)
 
 # ------------===== Plot velfield - with interperlation ====----------
         else:
+# Field plot
            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-                "%splots/%s_field_%s.png" % (wav_range_dir, plot, wav_range)
+                "%splots/%s_field_%s.png" % (wav_range_dir, plot_title, 
+                wav_range)
            plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
                 nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
                 redshift = z, title=title, save=saveTo)
+# Uncertainty plot
+           saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+                "%splots/%s_field_%s.png" % (wav_range_dir, 
+                plot_title+'_uncert', wav_range)
+           plot_velfield(xBar, yBar, v_uncert_binned, vmin=v_uncert_min, 
+                vmax=v_uncert_max, nodots=False, colorbar=True, label=CBLabel, 
+                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
+                redshift = z, title=utitle, save=saveTo)
 
 # ------------=========== Save and display plot =============----------
        
@@ -333,19 +365,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     if residual:
         print "        " + residual + " residuals"
-        bestfit_dir = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-            "gandalf_bestfit/"
-        data_dir = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-            "gandalf_input/"
+        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy) +\
+            "bestfit/"
+        data_dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy) +\
+            "input/"
 
         average_residuals = np.zeros(number_of_bins)
 
         for i in range(number_of_bins):
-            bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i), unpack=True, 
-                skiprows = 1)
-            spectrum = np.loadtxt(data_dir +'%d.dat' % (i), unpack=True, 
-                skiprows = 1)
+            bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i))
+            spectrum = np.loadtxt(data_dir +'%d.dat' % (i))
             residuals = np.abs(spectrum - bestfit)
+# remove edge pixels
             residuals = np.delete(residuals, [np.arange(5), 
 	        len(residuals)+np.arange(-5,0)], axis=0)
 
