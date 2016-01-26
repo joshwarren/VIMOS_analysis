@@ -1,5 +1,5 @@
 pro create_params_file
-i_gal_beg = 0
+i_gal_beg = 1
 code = "python"
 ;code = "IDL"
 
@@ -22,7 +22,6 @@ RDFLOAT, tessellation_File, bin_num, COLUMNS = [3], $
 n_bins = max(bin_num)+1
 
 
-PRINTF, 1, "idl -e '.compile errors_gas'"
 
 for i = 0, n_bins-1 do begin
 if code eq "IDL" then PRINTF, 1, "idl -e 'errors, " + $

@@ -33,7 +33,7 @@ import sys # for early exit of python
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[5]
+    galaxy = galaxies[0]
     wav_range = "4200-/"
 
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
@@ -52,19 +52,18 @@ def man_errors():
     h4 = np.zeros(n_bins)
     h4_s = np.zeros(n_bins)
 
-    componants = [stellar, gas] #,SF_gas, shock_g] 
+    componants = ["stellar", "gas"] #,"SF_gas", "shock_g"] 
     dynamics = [v, s, h3, h4]
     dynamics_uncert = [v_s, s_s, h3_s, h4_s]
 
 # ------------====== Reading Files and calc std_devs ==========----------
     for i in range(len(componants)):
         for bin in range(n_bins):
-
 # Bestfit values
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
             v[bin] = vel[i]
-            sig[bin] = sig[i]
+            s[bin] = sig[i]
             h3[bin] = h3s[i]
             h4[bin] = h4s[i]
 
@@ -113,7 +112,7 @@ def man_errors():
             f_h3.write(str(h3[i]) + '    ' + str(h3_s[i]) + '\n')
             f_h4.write(str(h4[i]) + '    ' + str(h4_s[i]) + '\n')
 
-
+    print "Done"
 
 ##############################################################################
 

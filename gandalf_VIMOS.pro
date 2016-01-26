@@ -113,7 +113,8 @@ z = z_gals[index]
 ;; ----------============= Input parameters ================---------
 ;; ----------===============================================---------
 	quiet = boolean(1) ; 1 = yes = true
-	gas = boolean(0)
+	gas = boolean(1)
+	plot = boolean(1)
 ;  	galaxy = 'ngc3557'
 ;	galaxy = 'ic1459'
 ;	discard = 2
@@ -342,7 +343,6 @@ endfor
 ;; bin_lin now contains linearly binned spectrum of the spatial bin.
 ;; bin_lin_noise contains the errors combined in quadrature. 
 
-
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
@@ -355,7 +355,6 @@ endfor
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
-
 
 	half = s[3]/2
 	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
@@ -390,7 +389,6 @@ ENDIF
 	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
 	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
 
-
 ;; ----------========= Writing the spectrum  =============---------
 	bin_lin = MAKE_ARRAY(upper_limit-lower_limit)
 	bin_lin_noise = MAKE_ARRAY(upper_limit-lower_limit)
@@ -398,7 +396,6 @@ for i = 0, n_elements(bin_lin)-1 do begin
 	bin_lin[i] = bin_lin_temp[lower_limit+i]
 	bin_lin_noise[i] = bin_lin_noise_temp[lower_limit+i]
      endfor ; i
-
 ;; ----------======== Calibrating the spectrum  ===========---------
 ;; For calibrating the resolutions between templates and observations
 ;; using the gauss_smooth command
@@ -483,7 +480,7 @@ endif
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics_temp, BESTFIT = Pbestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, $;/PLOT, $
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, PLOT=plot, $
 		QUIET = quiet, ERROR = perror
 bin_dynamics_temp_sav = bin_dynamics_temp
 
@@ -516,7 +513,7 @@ if not quiet then PAUSE
 sol = bin_dynamics_temp
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, $;/PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, PLOT=plot, $
     QUIET = quiet 
 
 ; CALLING SEQUENCE:
@@ -561,7 +558,7 @@ sol = bin_dynamics_temp
 
 GANDALF, templates, bin_log, noise, velscale, sol, $;bin_dynamics_temp, $
     emission, log_gal_start, log_gal_step, GOODPIXELS = goodPixels, $
-    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, $;/PLOT, $
+    DEGREE = degree,  BESTFIT = Gbestfit, WEIGHTS = weights, PLOT=plot, $
     QUIET = quiet 
 print,""
 if not quiet then PAUSE
@@ -604,21 +601,21 @@ if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
 
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
-forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
-	/SILENT, /NOCOMMENT
+;forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+;	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
+;	/SILENT, /NOCOMMENT
 endif else begin
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
-forprint, Pbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-	'/results/gandalf_bestfit/ppxf' + STRTRIM(STRING(bin),2) + ".dat", $
-	/SILENT, /NOCOMMENT
+;forprint, Pbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+;	'/results/gandalf_bestfit/ppxf' + STRTRIM(STRING(bin),2) + ".dat", $
+;	/SILENT, /NOCOMMENT
 endelse
 
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_input/'
-forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
-	/SILENT, /NOCOMMENT
+;forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+;	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
+;	/SILENT, /NOCOMMENT
 
 
 endfor ;;;;;************************************************
@@ -634,19 +631,19 @@ endif
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results'
 
-forprint, stellar_bin_dynamics[0,*], stellar_bin_error[0,*], textout=output_v, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[1,*], stellar_bin_error[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[2,*], stellar_bin_error[2,*], textout=output_h3, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[3,*], stellar_bin_error[3,*], textout=output_h4, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[4,*], stellar_bin_error[4,*], textout=output_h5, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[5,*], stellar_bin_error[5,*], textout=output_h6, /SILENT, /NOCOMMENT
-forprint, stellar_bin_dynamics[6,*], stellar_bin_error[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[0,*], stellar_bin_error[0,*], textout=output_v, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[1,*], stellar_bin_error[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[2,*], stellar_bin_error[2,*], textout=output_h3, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[3,*], stellar_bin_error[3,*], textout=output_h4, /SILENT, /NOCOMMENT
+;;forprint, stellar_bin_dynamics[4,*], stellar_bin_error[4,*], textout=output_h5, /SILENT, /NOCOMMENT
+;;forprint, stellar_bin_dynamics[5,*], stellar_bin_error[5,*], textout=output_h6, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[6,*], stellar_bin_error[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
 
 if gas then begin
-forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
-forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
-forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
-forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
+;forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
+;forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
+;forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
+;forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
 endif
 
 

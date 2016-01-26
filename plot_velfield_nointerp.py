@@ -14,6 +14,7 @@ from matplotlib.ticker import MaxNLocator
 from sauron_colormap import sauron
 import math
 import matplotlib.pyplot as plt # used for plotting
+import os
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
@@ -158,6 +159,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
             cbar.set_label(label, rotation=270)
 
     if save is not None:
+        if not os.path.exists(os.path.dirname(save)):
+            os.makedirs(os.path.dirname(save))
         plt.savefig(save, bbox_inches="tight")
 
     return cs

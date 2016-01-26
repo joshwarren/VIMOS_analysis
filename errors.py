@@ -123,12 +123,12 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
-    gas = True
+    glamdring = False
+    gas = False
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 2 ## number of monte carlo reps per bin.
+    reps = 0 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -284,18 +284,16 @@ def errors(i_gal=None, bin=None):
             bin_lin_noise_temp[k] += galaxy_noise[k,y_i,x_i]**2
 
     bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-
 ## --------======== Finding limits of the spectrum ========--------
 ## limits are the cuts in pixel units, while lamRange is the cuts in
 ## wavelength unis.
     gap=12
-    ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap,gap)  
-    ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap,gap) 
+    ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap)  
+    ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap) 
 
 ## h is the spectrum with the peak enclosed by 'ignore' removed.
     h = np.delete(bin_lin_temp, ignore)
     h = np.delete(h,ignore2)
-    
 
     half = s[0]/2
     a = h/np.median(h) - np.append(h[4:],[0,0,0,0])/np.median(h)
@@ -308,7 +306,6 @@ def errors(i_gal=None, bin=None):
 #        print str(i_gal) + ', ' + str(bin)
 
     lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-
     upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
 
     if upper_limit > ignore2[0]: upper_limit+=gap 
@@ -328,17 +325,15 @@ def errors(i_gal=None, bin=None):
 ## --------========= Using set_range variable =========--------  
     if set_range is not None:
 ## Change to pixel units
-        set_range = (set_range - CRVAL_spec)/CDELT_spec
+        set_range = ((set_range - CRVAL_spec)/CDELT_spec).astype(int)
         if set_range[0] > lower_limit: lower_limit = set_range[0] 
         if set_range[1] < upper_limit: upper_limit = set_range[1]
 
     lamRange = np.array([lower_limit, upper_limit])*CDELT_spec + CRVAL_spec
 
-
 ## ----------========= Writing the spectrum  =============---------
     bin_lin = bin_lin_temp[lower_limit:upper_limit]
     bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
-
 ## ----------======== Calibrating the spectrum  ===========---------
 ## For calibrating the resolutions between templates and observations
 ## using the gauss_smooth command
@@ -406,7 +401,7 @@ def errors(i_gal=None, bin=None):
 
     pp = ppxf(templates, bin_log, noise, velscale, start, 
               goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-              component=component, plot=False, quiet=True)
+              component=component, lam=lambdaq, plot=True, quiet=False)
 
 ## ----------================= The MC part ==================---------
     stellar_output = np.zeros((reps, stellar_moments))
@@ -416,6 +411,7 @@ def errors(i_gal=None, bin=None):
         gas_errors = np.zeros((reps, gas_moments))
 
     for rep in range(reps):
+        print rep
         random = np.random.randn(len(noise))
 #        gaussian = 1/(np.sqrt(2*math.pi)*noise)*np.exp(-0.5*((random)/noise)**2)
 #        add_noise = (random/abs(random))* \
@@ -423,7 +419,7 @@ def errors(i_gal=None, bin=None):
         add_noise = random*np.abs(noise)
         bin_log = pp.bestfit + add_noise
     
-        ppMC = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, plot=False, quiet=True, bias=0.1, component=component)
+        ppMC = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, lam=lambdaq, plot=True, quiet=False, bias=0.1, component=component)
 
         stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
         stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]
