@@ -123,12 +123,12 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
-    gas = False
+    glamdring = True
+    gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 0 ## number of monte carlo reps per bin.
+    reps = 5000 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -225,7 +225,7 @@ def errors(i_gal=None, bin=None):
         v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
 ## Rebinning templates logarthmically
         log_temp_template, logLam_template, velscale = \
-            util.log_rebin(lamRange_template, v2)
+            util.log_rebin(lamRange_template, v2, velscale=velscale)
 ## ****************************************************************
 ## ^^^ this has changed from the last time we called this: we called v1 before...
         templates[:,i] = log_temp_template
@@ -334,6 +334,7 @@ def errors(i_gal=None, bin=None):
 ## ----------========= Writing the spectrum  =============---------
     bin_lin = bin_lin_temp[lower_limit:upper_limit]
     bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
+
 ## ----------======== Calibrating the spectrum  ===========---------
 ## For calibrating the resolutions between templates and observations
 ## using the gauss_smooth command
@@ -343,11 +344,13 @@ def errors(i_gal=None, bin=None):
 ## smooth spectrum to fit with templates resolution
     bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
     bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
-    
+
     lamRange = lamRange/(1+z)
 ## rebin spectrum logarthmically
-    bin_log, logLam_bin, velscale = util.log_rebin(lamRange, bin_lin)
-    bin_log_noise, logLam_bin, velscale = util.log_rebin(lamRange, np.power(bin_lin_noise,2))
+    bin_log, logLam_bin, velscale = util.log_rebin(lamRange, bin_lin, 
+        velscale=velscale)
+    bin_log_noise, logLam_bin, velscale = util.log_rebin(lamRange, 
+        np.power(bin_lin_noise,2), velscale=velscale)
     bin_log_noise = np.sqrt(bin_log_noise)
 
 ## Normalis the spectrum
@@ -368,20 +371,24 @@ def errors(i_gal=None, bin=None):
 ## ----------============= Emission lines =================---------
     moments = stellar_moments
     if gas:
-        emission_file = dir + 'analysis/emission_line.dat'
-        line_name = np.loadtxt(emission_file, unpack=True, skiprows=1, 
-            usecols=(1,), dtype=str)
-        line_wav = np.loadtxt(emission_file, unpack=True, skiprows=1, 
-            usecols=(2,))
+#        emission_file = dir + 'analysis/emission_line.dat'
+#        line_name = np.loadtxt(emission_file, unpack=True, skiprows=1, 
+#            usecols=(1,), dtype=str)
+#        line_wav = np.loadtxt(emission_file, unpack=True, skiprows=1, 
+#            usecols=(2,))
+#
+#        outOfRange = np.where((line_wav < lamRange[0]) | \
+#                              (line_wav > lamRange[1]))[0]
+#
+#        line_name = np.delete(line_name, outOfRange)
+#        line_wav = np.delete(line_wav, outOfRange)
+#
+#        emission_lines = set_lines(line_wav, logLam_template, FWHM_gal)
+#
+#
 
-        outOfRange = np.where((line_wav < lamRange[0]) | \
-                              (line_wav > lamRange[1]))[0]
-
-        line_name = np.delete(line_name, outOfRange)
-        line_wav = np.delete(line_wav, outOfRange)
-
-        emission_lines = set_lines(line_wav, logLam_template, FWHM_gal)
-
+        emission_lines, line_name, line_wav = util.emission_lines(
+            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
 
         component = component + [1]*len(line_name)
         templates = np.column_stack((templates, emission_lines))
@@ -391,17 +398,13 @@ def errors(i_gal=None, bin=None):
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True) 
 
-
-
-
 ## ----------=========== The bestfit part =================---------
-
-
     bin_log_sav = bin_log
 
     pp = ppxf(templates, bin_log, noise, velscale, start, 
               goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-              component=component, lam=lambdaq, plot=True, quiet=False)
+              component=component, lam=lambdaq, plot=not glamdring, 
+              quiet=glamdring)
 
 ## ----------================= The MC part ==================---------
     stellar_output = np.zeros((reps, stellar_moments))
@@ -419,7 +422,10 @@ def errors(i_gal=None, bin=None):
         add_noise = random*np.abs(noise)
         bin_log = pp.bestfit + add_noise
     
-        ppMC = ppxf(templates, bin_log, noise, velscale, start, goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, lam=lambdaq, plot=True, quiet=False, bias=0.1, component=component)
+        ppMC = ppxf(templates, bin_log, noise, velscale, start, 
+            goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
+            lam=lambdaq, plot=not glamdring, quiet=glamdring, bias=0.1, 
+            component=component)
 
         stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
         stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]

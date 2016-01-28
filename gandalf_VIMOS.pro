@@ -406,15 +406,14 @@ for i = 0, n_elements(bin_lin)-1 do begin
 ;; smooth spectrum to fit with templates resolution
 	bin_lin = gauss_smooth(bin_lin, sigma)
         bin_lin_noise = gauss_smooth(bin_lin_noise, sigma)
-
 	lamRange = lamRange/(1+z)
 ;; rebin spectrum logarthmically
 	log_rebin, lamrange, bin_lin, bin_log, logLam_bin, $
 		velscale=velscale
+
 	log_rebin, lamrange, bin_lin_noise^2, bin_log_noise, $
 		velscale=velscale
 	bin_log_noise = sqrt(bin_log_noise) ;; from log_rebin.pro notes
-
 	lambda = EXP(logLam_bin)
 	log_gal_start = logLam_bin[0]
 	log_gal_step = logLam_bin[1]-logLam_bin[0]
@@ -467,7 +466,6 @@ noise = bin_log_noise+0.0000000000001
 	start = [vel, sig] ; starting guess
 
 ;; ----------======= Stellar spectrum fitting (pPXF) ========--------- 
-
 print, "bin:", bin, "/", FIX(n_bins-1)
 if not quiet then begin
     print, "lower limit:", lower_limit, lower_limit*CDELT_spec + CRVAL_spec
@@ -601,21 +599,21 @@ if sol[8] ne 0 then Hd_dynamics[bin] = sol[10]
 
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
-;forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-;	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
-;	/SILENT, /NOCOMMENT
+forprint, Gbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_bestfit/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
 endif else begin
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_bestfit/'
-;forprint, Pbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-;	'/results/gandalf_bestfit/ppxf' + STRTRIM(STRING(bin),2) + ".dat", $
-;	/SILENT, /NOCOMMENT
+forprint, Pbestfit, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_bestfit/ppxf' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
 endelse
 
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results/gandalf_input/'
-;forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
-;	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
-;	/SILENT, /NOCOMMENT
+forprint, bin_log, TEXTOUT = '/Data/vimosindi/analysis/' + galaxy + $
+	'/results/gandalf_input/' + STRTRIM(STRING(bin),2) + ".dat", $
+	/SILENT, /NOCOMMENT
 
 
 endfor ;;;;;************************************************
@@ -631,19 +629,19 @@ endif
 
 FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy + '/results'
 
-;forprint, stellar_bin_dynamics[0,*], stellar_bin_error[0,*], textout=output_v, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[1,*], stellar_bin_error[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[2,*], stellar_bin_error[2,*], textout=output_h3, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[3,*], stellar_bin_error[3,*], textout=output_h4, /SILENT, /NOCOMMENT
-;;forprint, stellar_bin_dynamics[4,*], stellar_bin_error[4,*], textout=output_h5, /SILENT, /NOCOMMENT
-;;forprint, stellar_bin_dynamics[5,*], stellar_bin_error[5,*], textout=output_h6, /SILENT, /NOCOMMENT
-;forprint, stellar_bin_dynamics[6,*], stellar_bin_error[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[0,*], stellar_bin_error[0,*], textout=output_v, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[1,*], stellar_bin_error[1,*], textout=output_sigma, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[2,*], stellar_bin_error[2,*], textout=output_h3, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[3,*], stellar_bin_error[3,*], textout=output_h4, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[4,*], stellar_bin_error[4,*], textout=output_h5, /SILENT, /NOCOMMENT
+;forprint, stellar_bin_dynamics[5,*], stellar_bin_error[5,*], textout=output_h6, /SILENT, /NOCOMMENT
+forprint, stellar_bin_dynamics[6,*], stellar_bin_error[6,*], textout=output_Chi, /SILENT, /NOCOMMENT
 
 if gas then begin
-;forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
-;forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
-;forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
-;forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
+forprint, OIII_dynamics[*], textout=output_OIII, /SILENT, /NOCOMMENT
+forprint, NI_dynamics[*], textout=output_NI, /SILENT, /NOCOMMENT
+forprint, Hb_dynamics[*], textout=output_Hb, /SILENT, /NOCOMMENT
+forprint, Hd_dynamics[*], textout=output_Hd, /SILENT, /NOCOMMENT
 endif
 
 
