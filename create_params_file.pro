@@ -1,5 +1,5 @@
 pro create_params_file
-i_gal_beg = 1
+i_gal_beg = 0
 code = "python"
 ;code = "IDL"
 

@@ -123,7 +123,7 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
+    glamdring = False
     gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
@@ -153,7 +153,7 @@ def errors(i_gal=None, bin=None):
 
     if glamdring:
         dir = '/users/warrenj/'
-        dir2 = '/users/warrenj/'
+	dir2 = '/users/warrenj/'
     else:
         dir = '/Data/vimosindi/'
         dir2 = '/Data/idl_libraries/'
@@ -314,6 +314,7 @@ def errors(i_gal=None, bin=None):
     if lower_limit < 0:
         lower_limit = min(np.where(a[:half] != 0)[0]) + 5
         if lower_limit < 0: lower_limit = 0
+
     else:
         lower_limit +=5
 
@@ -413,6 +414,7 @@ def errors(i_gal=None, bin=None):
         gas_output = np.zeros((reps, gas_moments))
         gas_errors = np.zeros((reps, gas_moments))
 
+
     for rep in range(reps):
         print rep
         random = np.random.randn(len(noise))
@@ -494,13 +496,6 @@ def errors(i_gal=None, bin=None):
         str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
         str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
-
-
-
-
-
-
-
 
 
 
