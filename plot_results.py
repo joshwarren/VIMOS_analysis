@@ -286,16 +286,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
         if "stellar" in plot_title:
+            utitle = "Stellar Uncertainty " + title + " Map"
+            htitle = "Stellar " + title + " Histogram"
+            uhtitle = "Stellar Uncertainty " + title + " Histogram"
             title = "Stellar " + title + " Map"
-            utitle = "Stellar Uncertainty " + utitle + " Map"
-            htitle = "Stellar " + htitle + " Histogram"
-            uhtitle = "Stellar Uncertainty " + uhtitle + " Histogram"
         else:
-            title = "Hot Gas " + title + " Map"
             utitle = "Hot Gas Uncertainty " + title + " Map"
             htitle = "Hot Gas " + title + " Histogram"
             uhtitle = "Hot Gas Uncertainty " + title + " Histogram"
-
+            title = "Hot Gas " + title + " Map"
 
   
 # ------------================= Plot Histogram ===============----------
