@@ -33,7 +33,7 @@ import sys # for early exit of python
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[9]
+    galaxy = galaxies[8]
     wav_range = "4200-/"
 
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
@@ -60,6 +60,7 @@ def man_errors():
     for i in range(len(componants)):
         for bin in range(n_bins):
 # Bestfit values
+            print dir
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
             v[bin] = vel[i]
