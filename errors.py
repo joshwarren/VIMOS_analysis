@@ -125,7 +125,7 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
+    glamdring = True
     gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
@@ -302,7 +302,7 @@ def errors(i_gal=None, bin=None):
         h[4:]/np.median(h)
     a = np.where(np.isfinite(a), a, 0)
 
-    if np.where(np.abs(a[:0.5*half]) > 0.2)[0]:
+    if any(np.abs(a[:0.5*half]) > 0.2):
         lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
     else: 
         lower_limit = -1
@@ -310,8 +310,11 @@ def errors(i_gal=None, bin=None):
 
     
 #    lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-    upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
-
+    if any(np.abs(a[1.5*half:]) > 0.2):
+        upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
+    else:
+        upper_limit = -1
+        
     if upper_limit > ignore2[0]: upper_limit+=gap 
     if upper_limit > ignore[0]: upper_limit+=gap
 
@@ -421,7 +424,7 @@ def errors(i_gal=None, bin=None):
 
 
     for rep in range(reps):
-        print rep
+#        print rep
         random = np.random.randn(len(noise))
 #        gaussian = 1/(np.sqrt(2*math.pi)*noise)*np.exp(-0.5*((random)/noise)**2)
 #        add_noise = (random/abs(random))* \
