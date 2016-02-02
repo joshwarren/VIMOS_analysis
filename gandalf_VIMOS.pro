@@ -365,8 +365,6 @@ endfor
 	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
 
 
-
-
 IF (upper_limit GT ignore2[0]) then upper_limit += gap
 IF (upper_limit GT ignore[0]) then upper_limit += gap
 
