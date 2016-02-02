@@ -1,3 +1,8 @@
 aksjdhkjhk
+<<<<<<< HEAD
 asjdhl
 conflict1
+=======
+asjdh
+conflict2
+>>>>>>> origin/master
