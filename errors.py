@@ -13,6 +13,8 @@ from scipy import ndimage # for gaussian blur
 import math
 import os
 import sys
+import matplotlib.pyplot as plt # used for plotting
+
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -153,7 +155,7 @@ def errors(i_gal=None, bin=None):
 
     if glamdring:
         dir = '/users/warrenj/'
-	dir2 = '/users/warrenj/'
+        dir2 = '/users/warrenj/'
     else:
         dir = '/Data/vimosindi/'
         dir2 = '/Data/idl_libraries/'
@@ -296,16 +298,18 @@ def errors(i_gal=None, bin=None):
     h = np.delete(h,ignore2)
 
     half = s[0]/2
-    a = h/np.median(h) - np.append(h[4:],[0,0,0,0])/np.median(h)
+    a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h) - \
+        h[4:]/np.median(h)
     a = np.where(np.isfinite(a), a, 0)
 
-#    if np.where(np.abs(a[:0.5*half]) > 0.2)[0]:
-#        lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-#    else: 
-#        lower_limit = 0
+    if np.where(np.abs(a[:0.5*half]) > 0.2)[0]:
+        lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+    else: 
+        lower_limit = -1
 #        print str(i_gal) + ', ' + str(bin)
 
-    lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+    
+#    lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
     upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
 
     if upper_limit > ignore2[0]: upper_limit+=gap 
@@ -401,11 +405,12 @@ def errors(i_gal=None, bin=None):
 
 ## ----------=========== The bestfit part =================---------
     bin_log_sav = bin_log
-
+    saveTo="%sanalysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
+    
     pp = ppxf(templates, bin_log, noise, velscale, start, 
               goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
               component=component, lam=lambdaq, plot=not glamdring, 
-              quiet=glamdring)
+              quiet=glamdring, save=saveTo)
 
 ## ----------================= The MC part ==================---------
     stellar_output = np.zeros((reps, stellar_moments))
