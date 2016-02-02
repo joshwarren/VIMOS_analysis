@@ -1,5 +1,2 @@
-python errors.py 3 125
-python errors.py 4 1
-python errors.py 5 1
-python errors.py 6 0
-python errors.py 7 1
+aksjdhkjhk
+asjdhl
