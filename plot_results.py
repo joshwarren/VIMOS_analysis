@@ -277,7 +277,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             CBLabel = "LOSV (km s$^{-1}$)"
 #	    vmin=-150
 #	    vmax=-vmin
-        if "simga" in plot_title:
+        if "sigma" in plot_title:
             title = 'Velocity Dispersion'
             CBLabel = "LOSVD (km s$^{-1}$)"
         if "h3" in plot_title: title = 'h3'
@@ -390,7 +390,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         maxres = res_sorted[-vLimit-1]
 #        minres = res_sorted[vLimit]
 
-	mean_w = np.mean(average_residuals)
+        mean_w = np.mean(average_residuals)
         d = maxres-mean_w
         minres = mean_w-d
         if minres < 0:
@@ -400,8 +400,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         title = str.capitalize(residual) + \
 	    " Residuals of Bestfit to Normalised Spectrum"
         saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/median_residual_%s.png" % (wav_range_dir, 
-            wav_range)
+            "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
+            residual, wav_range)
 
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
             vmin=minres, vmax=maxres, 
@@ -420,16 +420,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # Use of plot_results.py
 
 if __name__ == '__main__':
+
+    galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+        'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+    galaxy = galaxies[0]
+
     wav_range="4200-"
-#    galaxy = "pks0718-34"
-    galaxy = "ngc3557"
-#    galaxy = "ic4296"
     discard = 2 # rows of pixels to discard- must have been the same 
             #    for all routines 
     vLimit = 2 #
 
     plot_results(galaxy, discard=discard, vLimit=vLimit, 
-        wav_range=wav_range, plots=False, nointerp = True)
+        wav_range=wav_range, plots=False, nointerp = True, residual = "median")
 
 
 

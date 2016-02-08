@@ -13,6 +13,8 @@ from scipy import ndimage # for gaussian blur
 import math
 import os
 import sys
+import matplotlib # 20160202 JP to stop lack-of X-windows error
+matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 import matplotlib.pyplot as plt # used for plotting
 
 

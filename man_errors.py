@@ -60,7 +60,6 @@ def man_errors():
     for i in range(len(componants)):
         for bin in range(n_bins):
 # Bestfit values
-            print dir
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
             v[bin] = vel[i]
