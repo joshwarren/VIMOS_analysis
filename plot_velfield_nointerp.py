@@ -4,7 +4,9 @@
 ## warrenj 20151015 Routine to plot velocity (or similar) fields using
 ## methods from Michele Cappellari's plot_velfield routine and his 
 ## voronoi binning routine (both contained in the voronoi binning package),
-## with some of my own inventions. 
+## with some of my own inventions.
+# warrenj 20160209 Added show_bin_num keyword.
+
 
 
 import numpy as np # for reading files
@@ -20,7 +22,7 @@ import os
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
-    ncolors=64, title=None, save=None, **kwargs):
+    ncolors=64, title=None, save=None, show_bin_num=False, **kwargs):
 
     fig, ax = plt.subplots(nrows=1,ncols=1)
 
@@ -115,8 +117,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 #    y1, y2 = ax.get_ylim()
 
-
-
+        
 
     if galaxy is not None:
         plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
@@ -139,13 +140,20 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 # 1 mag contours
         ax.tricontour(x, y, contours, levels=np.arange(20), colors='k')
 
-    if not nodots:
+    if not nodots and not show_bin_num:
 #**********************************################
 #        xBar /= res # no idea why this needs removing...
 #        yBar /= res
 #**********************************################
         ax.plot(xBar, yBar, '.k', markersize=kwargs.get("markersize", 3))
 
+    if show_bin_num:
+        for i in range(len(xBar)):
+            ax.text(xBar[i]-0.25, yBar[i]-0.25, str(i), color='grey',
+                    fontsize='xx-small')
+
+
+        
     if colorbar:
 #        divider = make_axes_locatable(ax)
 #        cax = divider.append_axes("right", size="5%", pad=0.7)
