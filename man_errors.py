@@ -33,10 +33,11 @@ import sys # for early exit of python
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[8]
+    galaxy = galaxies[0]
     wav_range = "4200-/"
 
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
+    output_dir = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy, wav_range)
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -81,8 +82,7 @@ def man_errors():
             h3_s[bin] = np.std(h3s)
             h4_s[bin] = np.std(h4s)
 
-        output_dir = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy, 
-            wav_range)
+
 #        if componant == "stellar":
 #            v_file = output_dir + "gal_vel.dat"
 #            s_file = output_dir + "gal_sigma.dat"
@@ -113,6 +113,18 @@ def man_errors():
             f_h4.write(str(h4[i]) + '    ' + str(h4_s[i]) + '\n')
 
     print "Done"
+
+
+# ------------============= Collecting Chi2/DOF =============----------
+    chi2_file = output_dir + "gas_chi2.dat"
+    f_c2 = open(chi2_file, 'w')
+    for bin in range(n_bins):
+        chi2_bin_file = dir + "chi2/%s.dat" % (str(bin))
+        f_c2.write(str(np.loadtxt(chi2_bin_file)) + '\n')
+
+    
+
+    
 
 ##############################################################################
 

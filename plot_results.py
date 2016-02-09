@@ -79,67 +79,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
 
-    output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_vel.dat" % (wav_range_dir)
- #   output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
- #       "%sgal_vel_uncert.dat" % (wav_range_dir)
-    output_v_uncert = output_v
-
-    output_temp_weighting = "/Data/vimosindi/analysis/%s/" % (galaxy) +\
-        "results/%stemplate_weighting.dat" % (wav_range_dir)
-
-    output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_sigma.dat" % (wav_range_dir)
-#    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-#        "%sgal_sigma_uncert.dat" % (wav_range_dir)
-    output_sigma_uncert = output_sigma
-
-    output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h3.dat" % (wav_range_dir)
-#    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-#        "%sgal_h3_uncert.dat" % (wav_range_dir)
-    output_h3_uncert = output_h3
-
-    output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h3.dat" % (wav_range_dir)
-#    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-#        "%sgal_h4_uncert.dat" % (wav_range_dir)
-    output_h4_uncert =  output_h4
-
-    output_h5 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h5.dat" % (wav_range_dir)
-
-    output_h6 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h6.dat" % (wav_range_dir)
-
-    output_Chi = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_Chi.dat" % (wav_range_dir)
-
-    output_OIII = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_OIII.dat" % (wav_range_dir)
-
-    output_NI = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_NI.dat" % (wav_range_dir)
-
-    output_Hb = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_Hb.dat" % (wav_range_dir)
-
-    output_Hd = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_Hd.dat" % (wav_range_dir)
-    
-
-#    outputs = {"v" : output_v, "v_uncert" : output_v_uncert, 
-#        "sigma" : output_sigma, "sigma_uncert" : output_sigma_uncert, 
-#        "h3" : output_h3, "h3_uncert" : output_h3_uncert, 
-#        "h4" : output_h4, "h4_uncert" : output_h4_uncert, 
-#        "OIII" : output_OIII, "NI" : output_NI, 
-#        "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"v" : output_v, "sigma" : output_sigma, "h3" : output_h3, 
-#        "h4" : output_h4, "OIII" : output_OIII, "NI" : output_NI, 
-#        "Hb" : output_Hb, "Hd" : output_Hd}
-#    outputs = {"Hd":output_Hd}
-#    outputs = {"v" : output_v}#, "v_uncert":output_v_uncert}
-
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1) 
@@ -147,13 +86,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
 
-# Read galaxies.txt file
-#    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
-#    # different data types need to be read separetly
-#    x_gals, y_gals = np.loadtxt(data_file, 
-#        unpack=True, skiprows=1, usecols=(4,5))
-#    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-#    i_gal = np.where(galaxy_gals==galaxy)[0][0]
 
     center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 
@@ -212,8 +144,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plot_title = plot.split('gal_')[-1].split('.')[0]
         print "       ", plot_title
         plt.close('all')
-#        if plot=="v" or plot=="sigma" or plot=="h3" or plot=="h4" or \
-#            plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
         v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
 
 # Asign v to every spaxel in bin
@@ -224,17 +154,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             v_uncert_unbinned[x[spaxel],y[spaxel]] = \
                 v_uncert_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
-#        if plot=="v" or plot=="OIII" or plot=="NI" or plot=="Hb" or plot=="Hd":
-        if norm == "lum":
-            v_binned -= v_binned[center_bin]
-        if norm == "lwv":
-#            galaxy_data_unbinned1=galaxy_data_unbinned/np.median(
-#                galaxy_data_unbinned)
-            lwv = v_unbinned*galaxy_data_unbinned
-
-            v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
-#            v_binned -= np.mean(v_binned)
-
+        if "vel" in plot_title:
+            if norm == "lum":
+                v_binned -= v_binned[center_bin]
+            if norm == "lwv":
+                lwv = v_unbinned*galaxy_data_unbinned
+                v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
 
 
 # Limits on field
@@ -323,7 +248,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 nodots=False, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
-                save=saveTo)
+                save=saveTo, show_bin_num=True)
 # Uncertainty plot
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 

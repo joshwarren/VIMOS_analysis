@@ -509,6 +509,13 @@ def errors(i_gal=None, bin=None):
 
 
 
+## save input
+    if not os.path.exists("%sanalysis/%s/gas_MC/chi2" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/chi2" % (dir, galaxy)) 
+    chi2_file = "%sanalysis/%s/gas_MC/chi2/%s.dat" % (dir, galaxy, str(bin))
+   
+    c2 = open(chi2_file, 'w')
+    c2.write(str(pp.chi2) + '\n')
 
 
 

@@ -63,7 +63,7 @@ sig = MEAN(results[1,*])
 ;; ----------===============================================---------
 data_file = "/Data/vimosindi/analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
-    y_gals, SN_used, skipline=1, format='A,D,D,D,I,I,D', /SILENT
+    y_gals, SN_used, skipline=1, format='A,D,D,D,I,I,I', /SILENT
 
 i_gal = where(galaxy_gals eq galaxy)
 if i_gal eq -1 then begin

@@ -30,42 +30,28 @@ def GH_plots(galaxy, wav_range="", plots=False):
     tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output2.txt"
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_vel.dat" % (wav_range_dir)
-    output_v_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_vel_uncert.dat" % (wav_range_dir)
+        "%sgal_stellar_vel.dat" % (wav_range_dir)
     output_v_uncert = output_v
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_sigma.dat" % (wav_range_dir)
-    output_sigma_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_sigma_uncert.dat" % (wav_range_dir)
+        "%sgal_stellar_sigma.dat" % (wav_range_dir)
     output_sigma_uncert = output_sigma
     output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h3.dat" % (wav_range_dir)
-    output_h3_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h3_uncert.dat" % (wav_range_dir)
+        "%sgal_stellar_h3.dat" % (wav_range_dir)
     output_h3_uncert =  output_h3
     output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h4.dat" % (wav_range_dir)
-    output_h4_uncert = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_h4_uncert.dat" % (wav_range_dir)
+        "%sgal_stellar_h4.dat" % (wav_range_dir)
     output_h4_uncert = output_h4
 
 
 
 
 
-    vel = np.loadtxt(output_v, usecols=(0,), unpack=True)
-    sigma = np.loadtxt(output_sigma, usecols=(0,), unpack=True)
-    h3 = np.loadtxt(output_h3, usecols=(0,), unpack=True)
-    h4 = np.loadtxt(output_h4, usecols=(0,), unpack=True)
+    vel, vel_uncert = np.loadtxt(output_v, unpack=True)
+    sigma, sigma_uncert = np.loadtxt(output_sigma, unpack=True)
+    h3, h3_uncert = np.loadtxt(output_h3, unpack=True)
+    h4, h4_uncert = np.loadtxt(output_h4, unpack=True)
 
-    vel_uncert = np.loadtxt(output_v_uncert, usecols=(1,), unpack=True)
-    sigma_uncert = np.loadtxt(output_sigma_uncert, usecols=(1,), unpack=True)
-    h3_uncert = np.loadtxt(output_h3_uncert, usecols=(1,), unpack=True)
-    h4_uncert = np.loadtxt(output_h4_uncert, usecols=(1,), unpack=True)
-
-
-
+    
     vel += -np.mean(vel)
     x = vel/sigma
 

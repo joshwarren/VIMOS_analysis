@@ -161,67 +161,34 @@ endfor
 ;; --------======== Finding limits of the spectrum ========--------
 ;; limits are the cuts in pixel units, while lamRange is the cuts in
 ;; wavelength unis.
-	gap = 12
-	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap
-	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap
+	gap=12
+	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
+	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
 
 
-;; h is the spectrum with the peak enclosed by 'ignore' and ignore2
-;; removed. 
+;; h is the spectrum with the peak enclosed by 'ignore' removed.
 	h =[bin_lin_temp[0:ignore[0]],bin_lin_temp[ignore[1]:*]]
-;	lower_limit = MIN(WHERE(h/MEDIAN(h) GT 1.2), MAX=upper_limit)
+
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
-
-
-;; --------======= Finding limits of the spectrum 2 =======--------
-;; a is an array containing the difference between the ith element and
-;; the (i+#)th element of h
-;a = MAKE_ARRAY(n_elements(h)-4)
 	half = s[3]/2
-;plot, h[0:half]/MEDIAN(h)
 	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
 	a[WHERE(~FINITE(a))] = 0
-;for i=0, n_elements(h)-5 do begin
-;	a[i]=h[i]/MEDIAN(h)-h[i+4]/MEDIAN(h)
-;	if (FINITE(a[i]) NE 1) THEN a[i]=0
-;endfor
-
-;print, "here", WHERE(ABS(a) GT 0.2)
-;oplot, ABS(a[0:half])+0.5, color = 10000
-
-;	lower_limit = MIN(WHERE(ABS(a) GT 0.3), MAX=upper_limit)
+	
+;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
 	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
 	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
 
-;print, MAX(ABS(a[0:half]))
-;print, ABS(a[0:half])
 
-;print, "a", lower_limit, upper_limit
-
-	IF (upper_limit GT ignore2[0]) then upper_limit += gap
-;print, "b", lower_limit, upper_limit
-	IF (upper_limit GT ignore[0]) then upper_limit += gap
-
-;print, "c", lower_limit, upper_limit
+IF (upper_limit GT ignore2[0]) then upper_limit += gap
+IF (upper_limit GT ignore[0]) then upper_limit += gap
 
 IF (lower_limit LT 0) THEN BEGIN
 	lower_limit = MIN(WHERE(a[0:half] NE 0)) + 5
 	IF (lower_limit LT 0) THEN lower_limit = 0 
 ENDIF ELSE lower_limit += 5
-;print, "d", lower_limit, upper_limit
 IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
-;print, "e", lower_limit, upper_limit
-	
-
-;upper_limit +=200
-
-;lower_limit = FIX(3900-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-;upper_limit = FIX(5500-sxpar(header,'CRVAL3'))/sxpar(header,'CD3_3')
-;lower_limit = 0 
-;upper_limit = n_elements(galaxy_data[0,0,*])-1
-
 
 ;; --------=========== Using range variable ===========--------
 IF keyword_set(range) THEN BEGIN
@@ -230,7 +197,6 @@ IF keyword_set(range) THEN BEGIN
 IF range[0] GT lower_limit THEN lower_limit = range[0]
 IF range[1] LT upper_limit THEN upper_limit = range[1]
 ENDIF
-
 
 
 
@@ -247,8 +213,6 @@ ENDIF
 		sxpar(header,'CRVAL3')
 
 ;print, bin_lin_temp[upper_limit-20:upper_limit+20]/MEDIAN(bin_lin_temp)
-
-
 
 
 
@@ -337,7 +301,7 @@ goodPixels = ppxf_determine_goodpixels(logLam_bin,$
 	PPXF, templates, bin_log, noise, velscale, start, $
 		bin_dynamics, BESTFIT = bestfit, $
 		GOODPIXELS=goodPixels, LAMBDA=lambda, MOMENTS = moments, $
-		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET;, /PLOT
+		DEGREE = degree, VSYST = dv, WEIGHTS = weights, /QUIET, /PLOT
 ;;		ERROR = error
 
 

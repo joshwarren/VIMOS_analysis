@@ -26,13 +26,13 @@ for galaxy in galaxies:
         os.makedirs(path+"/notinterpolated")
 
     print galaxy
-    kinematics(galaxy, discard=discard, wav_range=wav_range)
-    plt.close("all")
+#    kinematics(galaxy, discard=discard, wav_range=wav_range)
+#    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, residual="mean")
+        nointerp=True, residual="median")
     plt.close("all")
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=False)
-    plt.close("all")
+#    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+#        nointerp=False)
+#    plt.close("all")
 #    GH_plots(galaxy, wav_range=wav_range)
 #    plt.close("all")

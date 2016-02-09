@@ -23,7 +23,6 @@ def spxToKpc(x, z):
 def kinematics(galaxy, discard=0, wav_range="", 
     corrections=0, plots=False):
 
-
     data_file =  "/Data/vimosindi/analysis/galaxies.txt"
     data_file2 =  "/Data/vimosindi/analysis/galaxies2.txt"
     # different data types need to be read separetly
@@ -66,11 +65,11 @@ def kinematics(galaxy, discard=0, wav_range="",
         "voronoi_2d_binning_output2.txt"
 
     output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_vel.dat" % (wav_range_dir)
+        "%sgal_stellar_vel.dat" % (wav_range_dir)
     output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_sigma.dat" % (wav_range_dir)
-    output_OIII = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_OIII.dat" % (wav_range_dir)
+        "%sgal_stellar_sigma.dat" % (wav_range_dir)
+    output_gas_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+        "%sgal_gas_vel.dat" % (wav_range_dir)
 
 # ------------=============== Photometry =================----------
 # ------------========== Reading the data cube ===========----------
@@ -100,14 +99,7 @@ def kinematics(galaxy, discard=0, wav_range="",
     galaxy_data_error /= np.median(galaxy_data)
     galaxy_data /= np.median(galaxy_data)
 
-#print galaxy_data[12:15,8:11]
-#print galaxy_data[34:,0:3]
-#galaxy_data[13,9]=np.median(galaxy_data)
-#galaxy_data[35,1]=np.median(galaxy_data)
-#galaxy_data_error[13,9]=np.median(galaxy_data_error)
-#galaxy_data_error[35,1]=np.median(galaxy_data_error)
-#print np.min(galaxy_data)
-#print np.max(galaxy_data)
+
     if corrections:
         for i in range(len(corrections)):
             galaxy_data[corrections[i][0],corrections[i][1]] = \
@@ -171,12 +163,12 @@ def kinematics(galaxy, discard=0, wav_range="",
 
 
 # ------------================= Hot gas ================----------
-    OIII_vel = np.loadtxt(output_OIII, usecols=(0,), unpack=True)
-    OIII_vel -= np.median(OIII_vel)
+    gas_vel = np.loadtxt(output_gas_v, usecols=(0,), unpack=True)
+    gas_vel -= np.median(gas_vel)
 
     save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%s/plots/OIII_kinematics_%s.png" % (wav_range_dir, wav_range)
-    gas_k = fit_kinematic_pa(xBar, yBar, OIII_vel, quiet=True, 
+        "%s/plots/gas_kinematics_%s.png" % (wav_range_dir, wav_range)
+    gas_k = fit_kinematic_pa(xBar, yBar, gas_vel, quiet=True, 
         plot=plots, sav_fig=save_to)
 
     print "Gas_PA_kin: " + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
