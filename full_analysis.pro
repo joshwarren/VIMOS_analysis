@@ -8,13 +8,14 @@
 
 pro full_analysis
 
-galaxies = ['ngc3557', $
-	'ic1459', $
+galaxies = [$
+;	'ngc3557', $
+;	'ic1459', $
 	'ic1531', $
-	'ic4296', $
-	'ngc0612', $
+;	'ic4296', $
+;	'ngc0612', $
 	'ngc1399', $
-	'ngc3100', $
+;	'ngc3100', $
 	'ngc7075', $
 	'pks0718-34', $
 	'eso443-g024']
