@@ -29,6 +29,7 @@
 import numpy as np # for reading files
 import array
 import sys # for early exit of python
+import os
 
 def man_errors():
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
@@ -83,17 +84,11 @@ def man_errors():
             h4_s[bin] = np.std(h4s)
 
 
-#        if componant == "stellar":
-#            v_file = output_dir + "gal_vel.dat"
-#            s_file = output_dir + "gal_sigma.dat"
-#            h3_file = output_dir + "gal_h3.dat"
-#            h4_file = output_dir + "gal_h4.dat"
-#        else:
-#            v_file = output_dir + "gal_" + componants[i] + "_vel.dat"
-#            s_file = output_dir + "gal_" + componants[i] + "_sigma.dat"
-#            h3_file = output_dir + "gal_" + componants[i] + "_h3.dat"
-#            h4_file = output_dir + "gal_" + componants[i] + "_h4.dat"
 
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir) 
+            
         v_file = output_dir + "gal_" + componants[i] + "_vel.dat"
         s_file = output_dir + "gal_" + componants[i] + "_sigma.dat"
         h3_file = output_dir + "gal_" + componants[i] + "_h3.dat"

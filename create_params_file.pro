@@ -6,12 +6,15 @@ code = "python"
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 
+gals=[2,5,7,8,9]
+
+
 output_file = "~/VIMOS_project/analysis/params.txt"
 CLOSE, 1
 OPENW, 1, output_file
 i_gal=i_gal_beg
-for i_gal=i_gal_beg, 9 do begin
-galaxy = galaxies[i_gal]
+for i_gal=i_gal_beg, 4 do begin
+galaxy = galaxies[gals[i_gal]]
 
 tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
@@ -27,7 +30,7 @@ for i = 0, n_bins-1 do begin
 if code eq "IDL" then PRINTF, 1, "idl -e 'errors, " + $
     strtrim(string(i_gal),2) + ", " + strtrim(string(i),2) + "'"
 if code eq "python" then PRINTF, 1, "python errors.py " + $
-    strtrim(string(i_gal),2) + " " + strtrim(string(i),2)
+    strtrim(string(gals[i_gal]),2) + " " + strtrim(string(i),2)
 endfor
 endfor
 CLOSE,1

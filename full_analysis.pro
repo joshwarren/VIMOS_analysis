@@ -9,20 +9,20 @@
 pro full_analysis
 
 galaxies = [$
-;	'ngc3557', $
-;	'ic1459', $
+	'ngc3557', $
+	'ic1459', $
 	'ic1531', $
-;	'ic4296', $
-;	'ngc0612', $
+	'ic4296', $
+	'ngc0612', $
 	'ngc1399', $
-;	'ngc3100', $
+	'ngc3100', $
 	'ngc7075', $
 	'pks0718-34', $
 	'eso443-g024']
 ; an inital guess from quick internet search of redshift.
 z_gals = [0.01, 0.005, 0.02, 0.01, 0.03, 0.005, 0.01, 0.02, 0.03, 0.015] 
 ;for gal=0, n_elements(z_gals)-1 do begin
-gal=2
+gal=0
 galaxy = galaxies[gal]
 print, galaxy
 z = z_gals[gal]
@@ -34,7 +34,7 @@ range = [4200, 10000]
 
 find_template, galaxy, z=z, discard=discard, range=range
 
-mcmc, galaxy, z=z, discard=discard, range=range
+mcmc, galaxy, z=z;, discard=discard, range=range
 
 ;gandalf_VIMOS, galaxy, discard=discard, range=range
 ;endfor

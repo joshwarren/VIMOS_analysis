@@ -19,15 +19,6 @@ if not keyword_set(discard) then discard=2
 if not keyword_set(range) then range=[4200,10000]
 if not keyword_set(vel) then vel=0.0d
 if not keyword_set(sigma) then sig=200.0d
-data_file = "/Data/vimosindi/analysis/galaxies.txt"
-readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
-    y_gals, SN_used, skipline=1, format='A,D,D,D,I,I,I', /SILENT
-
-i_gal = where(galaxy_gals eq galaxy)
-index=i_gal[0]
-;z = z_gals[index]
-;vel = vel_gals[index]
-;sig = sig_gals[index]
 
 ;; ----------===============================================---------
 ;; ----------============= Input parameters ================---------
@@ -276,18 +267,22 @@ print, "chi2 from this fit: ",chi
 	    vel=v_sav + (randomu(seed1)*2*step_range)-step_range
             sig=sigma_sav + (randomu(seed2)*2*step_range)-step_range
 	    chi=chi_sav
-            print, "here"
         ENDIF
     endelse
-endfor 
-
-print, MEAN(results[0,*]), MEAN(results[1,*])
-show_rst = SCATTERPLOT(results[0,*],results[1,*], XTITLE="velocity", $
-    YTITLE="velocity dispersion")
-
+endfor
 
 vel = MEAN(results[0,*])
 sig = MEAN(results[1,*])
+
+print, "Mean vel: :",vel
+print, "MEAN vel dispersion: ",sig
+show_rst = SCATTERPLOT(results[0,*],results[1,*], XTITLE="velocity", $
+    YTITLE="velocity dispersion", TITLE="MCMC for initial conditions")
+show_mean = SCATTERPLOT(vel,sig, SYMBOL='star', SYM_SIZE=2.0, /OVERPLOT, $
+    /SYM_FILLED)
+
+show_mean.Save, "/Data/vimosindi/analysis/"+galaxy+"/MCMC_inital fit.png", $
+    BORDER=10, RESOLUTION=300;, TRANSPARENT=[255, 255, 255] 
 
 
 
@@ -315,8 +310,8 @@ endif else begin
 endelse
 
 
-forprint, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_used, $
-    textout=data_file, /SILENT, $
+forprint2, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_used, $
+    textout=data_file, /SILENT, WIDTH=90,$
     Comment = "Galaxy      z     velocity     velocity dispersion    x    y    Target SN"
 
 
