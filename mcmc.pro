@@ -25,7 +25,7 @@ readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
 
 i_gal = where(galaxy_gals eq galaxy)
 index=i_gal[0]
-z = z_gals[index]
+;z = z_gals[index]
 ;vel = vel_gals[index]
 ;sig = sig_gals[index]
 
@@ -263,7 +263,7 @@ print, "input chi2: ",chi_sav
 print, "chi2 from this fit: ",chi
 
     if i le 1 then begin
-        z = (z + 1)*((1 + vel/c)/(1 - vel/c)) - 1 
+        z = (z + 1)*sqrt((1 + vel/c)/(1 - vel/c)) - 1 
         vel = v_sav
         sig = sigma_sav
         chi = chi_sav
