@@ -5,25 +5,12 @@
 ## galamdring monte carlo simulations into a useful form.
 ## warrenj 20160114 Combined man_errors and man_errors2 with use of 
 ## keywords.
-
-## ************************************************************** ##
-## NB: only vel and vel uncertainty are affected by different methods.
-## ************************************************************** ##
-
+## warrenj 20160215 Removed options as they were incorrect methods
+## and not in use any longer.
 
 ## *************************** KEYWORDS ************************* ##
-# vel_method	median	Method of calculating velocity for bin:
-#			median: use median of MC
-#			mean: use mean (min and max value discarded)
-#			None: bestfit results (no MC)
-# err_method	median	Method of calculating uncertainty for bin:
-#			median: use median of MC
-#			mean: use mean (min and max value discarded)
-#			std_vel: standard deviation of velocity in MC
-#			None: bestfit results (no MC)
-# bias		True	Boolean for if the bias keyword was set. NB: if
-#			False then err_method must be std_vel (default) 
-#			or None.
+# Galaxy
+# wav_range
 ## ************************************************************** ##
 
 import numpy as np # for reading files
@@ -31,14 +18,9 @@ import array
 import sys # for early exit of python
 import os
 
-def man_errors():
-    galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
-        'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[0]
-    wav_range = "4200-/"
-
+def man_errors(galaxy, wav_range=""):
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
-    output_dir = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy, wav_range)
+    output_dir = "/Data/vimosindi/analysis/%s/results/%s/" % (galaxy, wav_range)
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
@@ -111,7 +93,7 @@ def man_errors():
 
 
 # ------------============= Collecting Chi2/DOF =============----------
-    chi2_file = output_dir + "gas_chi2.dat"
+    chi2_file = output_dir + "chi2.dat"
     f_c2 = open(chi2_file, 'w')
     for bin in range(n_bins):
         chi2_bin_file = dir + "chi2/%s.dat" % (str(bin))
@@ -126,4 +108,9 @@ def man_errors():
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    man_errors()
+    galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+        'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+    galaxy = galaxies[0]
+    wav_range = "4200-"
+
+    man_errors(galaxy, wav_range=wav_range)
