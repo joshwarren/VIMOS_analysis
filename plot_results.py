@@ -245,17 +245,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, 
-                nodots=False, colorbar=True, 
+                nodots=False, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
-                save=saveTo, show_bin_num=True)
+                save=saveTo)
 # Uncertainty plot
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
                 vmin=v_uncert_min, vmax=v_uncert_max, 
-                nodots=False, colorbar=True, 
+                nodots=False, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
                 save=saveTo)
@@ -330,15 +330,37 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
             vmin=minres, vmax=maxres, 
-            nodots=False, colorbar=True, 
+            nodots=False, show_bin_num=True, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
             save=saveTo)
         if plots:
             plt.show()
 
+# ------------================= Plot Chi2/DOF ===============----------
+    print "        chi2"
+    chi2_dir = "/Data/vimosindi/analysis/%s/gas_MC/chi2/" % (galaxy)
+    chi2 = np.zeros(number_of_bins)
+    for i in range(number_of_bins):
+        chi2[i] = np.loadtxt("%s%d.dat" % (chi2_dir, i))
 
+    chi2_sorted = sorted(np.unique(chi2))
+    maxchi2 = chi2_sorted[-vLimit-1]
+    minchi2 = 0 # chi2_sorted[vLimit]
+    
+    CBLabel = "Chi2/DOF"
+    title = "Chi2/DOF of the bestfit"
+    saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
 
+    plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
+        vmin=minchi2, vmax=maxchi2, 
+        nodots=False, show_bin_num=True, colorbar=True, 
+        label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+        galaxy = galaxy.upper(), redshift = z, title=title, 
+        save=saveTo)
+    if plots:
+        plt.show()
 
 ##############################################################################
 
@@ -348,7 +370,7 @@ if __name__ == '__main__':
 
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[0]
+    galaxy = galaxies[9]
 
     wav_range="4200-"
     discard = 2 # rows of pixels to discard- must have been the same 

@@ -30,7 +30,8 @@ def set_lines (lines, logLam_temp, FWHM_gal):
     lam = np.exp(logLam_temp)
 #    lines = lines[where((lines gt min(lam)) and (lines lt max(lam)))]
     sigma = FWHM_gal/2.355 # Assumes instrumental sigma is constant in Angstrom
-    emission_lines = np.zeros((len(logLam_temp),len(lines)))
+    emission_lines = np.zeros((len(logLam_temp),len
+                               (lines)))
     for j in range(len(lines)):
         emission_lines[:,j] = np.exp(-0.5*np.power((lam - lines[j])/sigma,2))
     return emission_lines

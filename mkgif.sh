@@ -2,8 +2,9 @@
 
 # Bash script to create gifs from kinematic maps produced by plot_results.py
 
-for galaxy in ngc3557 ic1459 ic1531 ic4296 ngc0612 ngc1399 ngc3100 ngc7075 \
-    pks0718-34 eso443-g024
+#for galaxy in ngc3557 ic1459 ic1531 ic4296 ngc0612 ngc1399 ngc3100 ngc7075 \
+#    pks0718-34 eso443-g024
+for galaxy in $(find /Data/vimosindi/analysis/ -mindepth 1 -maxdepth 1 -type d | sed 's/\/Data\/vimosindi\/analysis\///')
 do
     dir=/Data/vimosindi/analysis/$galaxy/results/4200-/plots/\
 notinterpolated/gifs
