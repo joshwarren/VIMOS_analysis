@@ -30,8 +30,7 @@ def set_lines (lines, logLam_temp, FWHM_gal):
     lam = np.exp(logLam_temp)
 #    lines = lines[where((lines gt min(lam)) and (lines lt max(lam)))]
     sigma = FWHM_gal/2.355 # Assumes instrumental sigma is constant in Angstrom
-    emission_lines = np.zeros((len(logLam_temp),len
-                               (lines)))
+    emission_lines = np.zeros((len(logLam_temp),len(lines)))
     for j in range(len(lines)):
         emission_lines[:,j] = np.exp(-0.5*np.power((lam - lines[j])/sigma,2))
     return emission_lines
@@ -299,10 +298,12 @@ def errors(i_gal=None, bin=None):
 ## h is the spectrum with the peak enclosed by 'ignore' removed.
     h = np.delete(bin_lin_temp, ignore)
     h = np.delete(h,ignore2)
+    plt.plot(h)
+    plt.show()
 
     half = s[0]/2
-    a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h) - \
-        h[4:]/np.median(h)
+    a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
+        h[4:]/np.median(h[np.nonzero(h)])
     a = np.where(np.isfinite(a), a, 0)
 
     if any(np.abs(a[:0.5*half]) > 0.2):

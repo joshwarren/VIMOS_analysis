@@ -245,7 +245,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, 
-                nodots=False, show_bin_num=True, colorbar=True, 
+                nodots=True, show_bin_num=False, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)
@@ -255,7 +255,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
                 vmin=v_uncert_min, vmax=v_uncert_max, 
-                nodots=False, show_bin_num=True, colorbar=True, 
+                nodots=True, show_bin_num=False, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
                 save=saveTo)
@@ -330,7 +330,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
             vmin=minres, vmax=maxres, 
-            nodots=False, show_bin_num=True, colorbar=True, 
+            nodots=True, show_bin_num=False, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
             save=saveTo)
@@ -355,7 +355,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
         vmin=minchi2, vmax=maxchi2, 
-        nodots=False, show_bin_num=True, colorbar=True, 
+        nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
         save=saveTo)
