@@ -10,23 +10,23 @@
 
 ## *************************** KEYWORDS ************************* ##
 # galaxy 		Name of the galaxy being plotted: used to find 
-#			correct files and to print onto the plot.
+#				correct files and to print onto the plot.
 # discard	0	Interger giving the number of rows and columns 
-#			to be removed from the plot to remove edge 
-#			effects.
+#				to be removed from the plot to remove edge 
+#				effects.
 # wav_range 	null	Imposed wavelength range on top of the automated 
-#			limits.	
-# vLimit 	2      	Integer giving the number of lowest and highest 
-#			results in the plot to be discarded. Defualt 
-#			ignores 2 highest and 2 lowest bins.
+#				limits.	
+# vLimit 	2 	Integer giving the number of lowest and highest 
+#				results in the plot to be discarded. Defualt 
+#				ignores 2 highest and 2 lowest bins.
 # norm		"lwv"	Normalisation methods for velocity fields:
-#			lwv: luminosity weighted mean of the whole 
+#				lwv: luminosity weighted mean of the whole 
 #				field is set to 0.
-#			lum: velocity of the brightest spaxel is set 
+#				lum: velocity of the brightest spaxel is set 
 #				to 0.
 # plots 	False   Boolean to show plots as routine runs.
 # nointerp 	False 	Boolean to use interpolation between bins in 
-#			plots or not.
+#				plots or not.
 # residual 	False	Method to measure the residuals:
 #			mean: use the mean of the residuals in each 
 #				bin.
@@ -76,7 +76,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-
+    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file
@@ -129,6 +129,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             galaxy_data[:,y[spaxel],x[spaxel]])
         n_spaxels_in_bin[int(bin_num[spaxel])] += 1
 
+        
 
 
     for bin in range(number_of_bins):
@@ -181,7 +182,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 vmax=abs(vmin)
 
 # Limits on uncertainty field
-#        if "uncert" in plot:
         v_uncert_max = max(v_uncert_binned)
         v_uncert_min = min(v_uncert_binned)
         v_uncert_sorted = sorted(np.unique(v_uncert_binned))
@@ -200,8 +200,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if "vel" in plot_title:
             title = 'Velocity'
             CBLabel = "LOSV (km s$^{-1}$)"
-#	    vmin=-150
+#	    vmin=-35
 #	    vmax=-vmin
+#        vmax=375
+#        vmin=240
+#        v_binned += 90
+#        v_uncert_max = 100
         if "sigma" in plot_title:
             title = 'Velocity Dispersion'
             CBLabel = "LOSVD (km s$^{-1}$)"
@@ -370,7 +374,7 @@ if __name__ == '__main__':
 
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[9]
+    galaxy = galaxies[7]
 
     wav_range="4200-"
     discard = 2 # rows of pixels to discard- must have been the same 
