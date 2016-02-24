@@ -40,3 +40,4 @@ for galaxy in galaxies:
 #    plt.close("all")
 #    GH_plots(galaxy, wav_range=wav_range)
 #    plt.close("all")
+#v_vd_ellip()

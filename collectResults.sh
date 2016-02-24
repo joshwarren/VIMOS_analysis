@@ -43,5 +43,12 @@ do
 
     cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/chi2_4200-.png ~/Desktop/results/chi2/$galaxy-Chi2.png
 
+
+
+
+    mkdir -p ~/Desktop/results/PA_fit/
+
+    cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/stellar_kinematics_4200-.png ~/Desktop/results/PA_fit/$galaxy-vel.png
+
 done
 
