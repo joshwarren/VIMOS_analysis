@@ -7,7 +7,7 @@ code = "python"
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 
 gals=[2,5,7,8,9]
-gals=[1]
+gals=[0]
 
 output_file = "~/VIMOS_project/analysis/params.txt"
 CLOSE, 1

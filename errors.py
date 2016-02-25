@@ -128,7 +128,7 @@ def errors(i_gal=None, bin=None):
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
     glamdring = True
-    gas = True
+    gas = False
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]

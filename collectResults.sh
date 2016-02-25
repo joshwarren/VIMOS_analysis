@@ -50,5 +50,10 @@ do
 
     cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/stellar_kinematics_4200-.png ~/Desktop/results/PA_fit/$galaxy-vel.png
 
+
+    mkdir -p ~/Desktop/results/photometry/
+
+    cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/photometry_4200-.png ~/Desktop/results/photometry/$galaxy.png
+
 done
 
