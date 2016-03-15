@@ -128,7 +128,7 @@ def errors(i_gal=None, bin=None):
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
     glamdring = True
-    gas = False
+    gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
@@ -249,8 +249,7 @@ def errors(i_gal=None, bin=None):
 
 ## ----------========= Reading the spectrum  =============---------
 
-    dataCubeDirectory = glob.glob(dir + "reduced/%s/cube/" \
-        "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
+    dataCubeDirectory = glob.glob(dir+"reduced/%s/cube/*_cube.fits" % (galaxy)) 
         
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
     galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)

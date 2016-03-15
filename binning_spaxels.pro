@@ -54,8 +54,7 @@ if not keyword_set(discard) then discard=2
 ; Final wildcard notes that depending on the method used the quadrants
 ; may or may not have been flux calibrated. 
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		galaxy + $
-		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits')
+		galaxy + '/cube/*_cube.fits')
 
 ;;Bins just one quadrant - must have used rss2cube_quadrant.pro script
 ;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $

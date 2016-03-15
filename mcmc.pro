@@ -107,8 +107,7 @@ templates /= median(templates)
 ; Final wildcard reflects the fact that depending on reduction method
 ; quadrants may or may not have beenflux calibrated.
 	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		Galaxy + $
-		'/cube/*crcl_oextr1*vmcmb_darc_cexp_cube.fits') 
+		Galaxy + '/cube/*_cube.fits') 
         
 
 
