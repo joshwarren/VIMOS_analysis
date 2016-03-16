@@ -76,7 +76,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-    outputs = glob.glob(output+'gal_stellar_vel*.dat')
+#    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file
@@ -95,7 +95,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # FILE_SEARCH returns an array even in cases where it only returns
 # one result. This is NOT equivalent to a scalar. 
     dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-        "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
+        "*_cube.fits" % (galaxy)) 
 
 ## Directory for plotting single quadrant
 #dataCubeDirectory = glob.glob("/Data/vimosindi/%s-3/Q2/calibrated/cube/" \
@@ -249,7 +249,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, 
-                nodots=True, show_bin_num=False, colorbar=True, 
+                nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)
@@ -259,7 +259,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
                 vmin=v_uncert_min, vmax=v_uncert_max, 
-                nodots=True, show_bin_num=False, colorbar=True, 
+                nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
                 save=saveTo)

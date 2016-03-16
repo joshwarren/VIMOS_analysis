@@ -57,7 +57,7 @@ def kinematics(galaxy, discard=0, wav_range="",
         wav_range = ""
 
     dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-        "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy)) 
+        "*_cube.fits" % (galaxy)) 
 
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"

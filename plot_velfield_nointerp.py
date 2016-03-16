@@ -150,8 +150,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     if show_bin_num:
         for i in range(len(xBar)):
             ax.text(xBar[i]-0.25, yBar[i]-0.25, str(i), color='grey',
-                    fontsize='xx-small')
-
+#                    fontsize='xx-small')
+                    fontsize=5)
 
         
     if colorbar:
