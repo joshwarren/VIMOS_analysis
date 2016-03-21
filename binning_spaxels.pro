@@ -98,22 +98,21 @@ if not keyword_set(discard) then discard=2
 for i = 0, s[1]-1 do begin
 for j = 0, s[2]-1 do begin
 
-	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *])
-	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *])
+	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *], /nan)
+	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *], /nan)
 
 ;; Assign x and y
 	x(i*s[1]+j) = i
 	y(i*s[2]+j) = j
+
+
+
+;if i*s[1] + j eq 1287 then forprint, galaxy_data[i,j,*], galaxy_noise[i,j,*], textout=2
 endfor
 endfor
 
 
-
-
-
-
-
-	n_spaxels = n_elements(signal)
+n_spaxels = n_elements(signal)
 
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
 
@@ -128,20 +127,25 @@ window, xsize=r[0]*0.4, ysize=r[1]*0.8
 ; Perform the actual computation. The vectors
 ; (binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale)
 ; are all generated in *output*
+med = median(signal)
+
+;; ****** Fudging!!! ******
+;l=where(noise/med gt 100000)
+;print, l
+;signal[l]=make_array(n_elements(l), value=0)
+;noise[l]=make_array(n_elements(l), value=0)
 
 
-
-
-
+;print, total(signal)/sqrt(total(noise^2))
 voronoi_2d_binning, x, y, signal, noise, targetSN, $
     binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale, /PLOT, /QUIET
 
 
 
 
-	order = sort(binNum)
-	xBin = MAKE_ARRAY(n_elements(x))
-	yBin = MAKE_ARRAY(n_elements(y))
+order = sort(binNum)
+xBin = MAKE_ARRAY(n_elements(x))
+yBin = MAKE_ARRAY(n_elements(y))
 ;; spaxel number
 i = 0
 for bin = 0, MAX(binNum) do begin
@@ -170,6 +174,7 @@ OPENW, 1, '/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
 CLOSE,1
 astrolib
+
 forprint, x, y, binNum, xBin, yBin, $
 	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt', $

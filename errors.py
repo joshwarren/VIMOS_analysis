@@ -8,7 +8,6 @@
 import numpy as np # for array handling
 import glob # for searching for files
 import pyfits # reads fits files (is from astropy)
-import glob # for searching for files
 from scipy import ndimage # for gaussian blur
 import math
 import os
@@ -127,12 +126,12 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
+    glamdring = False
     gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 5000 ## number of monte carlo reps per bin.
+    reps = 0 ## number of monte carlo reps per bin.
     discard = 2
 #    set_range = None
     set_range = np.array([4200,10000])
@@ -140,7 +139,7 @@ def errors(i_gal=None, bin=None):
 #    z = 0.01 # redshift to move galaxy spectrum to its rest frame 
 #    vel = 114.0d # Initial estimate of the galaxy velocity and
 #    sig = 269.0d # velocity dispersion in km/s in the rest frame
-    FWHM_gal = 4*0.571 # The fibre FWHM on VIMOS is
+    FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
                            # about 4px with a dispersion of
                            # 0.571A/px. (From: http://www.eso.org
                            # /sci/facilities/paranal/instruments
@@ -221,12 +220,15 @@ def errors(i_gal=None, bin=None):
     templatesToUse = use_templates(galaxy, glamdring)
     nfiles = len(templatesToUse)
     templates = np.zeros((len(log_temp_template), nfiles))
+    FWHM_dif = np.sqrt(FWHM_gal**2 - FWHM_tem**2)
+    sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 
 
 ## Reading the contents of the files into the array templates. 
 ## Including rebinning them.
     for i in range(nfiles):
         v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
+        v2 = ndimage.gaussian_filter1d(v2,sigma)
 ## Rebinning templates logarthmically
         log_temp_template, logLam_template, velscale = \
             util.log_rebin(lamRange_template, v2, velscale=velscale)
@@ -349,13 +351,14 @@ def errors(i_gal=None, bin=None):
 ## ----------======== Calibrating the spectrum  ===========---------
 ## For calibrating the resolutions between templates and observations
 ## using the gauss_smooth command
-    FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
-    sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+#    FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
+#    sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 
 ## smooth spectrum to fit with templates resolution
-    bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
-    bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
-
+#    bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
+#    bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
+	
+    
     lamRange = lamRange/(1+z)
 ## rebin spectrum logarthmically
     bin_log, logLam_bin, velscale = util.log_rebin(lamRange, bin_lin, 
@@ -411,8 +414,9 @@ def errors(i_gal=None, bin=None):
 
 ## ----------=========== The bestfit part =================---------
     bin_log_sav = bin_log
+    noise_sav = noise
     saveTo="%sanalysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
-    
+
     pp = ppxf(templates, bin_log, noise, velscale, start, 
               goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
               component=component, lam=lambdaq, plot=not glamdring, 
@@ -495,7 +499,14 @@ def errors(i_gal=None, bin=None):
     inp = open(input_file, 'w')
     for i in range(len(bin_log_sav)):
         inp.write(str(bin_log_sav[i]) + '\n')
-
+## save input noise
+    if not os.path.exists("%sanalysis/%s/gas_MC/noise_input" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/noise_input" % (dir, galaxy)) 
+    input_file = "%sanalysis/%s/gas_MC/noise_input/%s.dat" % (dir, galaxy, str(bin))
+   
+    inp = open(input_file, 'w')
+    for i in range(len(noise_sav)):
+        inp.write(str(noise_sav[i]) + '\n')
 
 ## save bestfit output
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
