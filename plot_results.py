@@ -76,7 +76,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-#    outputs = glob.glob(output+'gal_stellar_vel*.dat')
+    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file
@@ -160,7 +160,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_binned -= v_binned[center_bin]
             if norm == "lwv":
                 lwv = v_unbinned*galaxy_data_unbinned
-                v_binned -= np.mean(lwv)*n_spaxels/np.sum(galaxy_data_unbinned)
+                v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(galaxy_data_unbinned)
 
 
 # Limits on field
@@ -180,6 +180,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                     vmin=-abs(vmax)
             else:
                 vmax=abs(vmin)
+
 
 # Limits on uncertainty field
         v_uncert_max = max(v_uncert_binned)
@@ -374,7 +375,7 @@ if __name__ == '__main__':
 
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[7]
+    galaxy = galaxies[5]
 
     wav_range="4200-"
     discard = 2 # rows of pixels to discard- must have been the same 

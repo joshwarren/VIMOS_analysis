@@ -55,7 +55,7 @@ def man_errors(galaxy, wav_range=""):
             glamdring_file = dir + componants[i] + "/" + str(bin) + ".dat"
             vel, sig, h3s, h4s =np.loadtxt(glamdring_file, unpack=True)
 
-# Error thrown if all 500 reps have not been completed for this bin        
+# Error thrown if all 5000 reps have not been completed for this bin        
             if len(vel) != 5000:
                 print("Not all reps completed")
                 sys.exit()
