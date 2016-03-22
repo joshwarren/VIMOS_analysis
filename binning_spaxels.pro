@@ -85,6 +85,8 @@ if not keyword_set(discard) then discard=2
 	
 	s = size(galaxy_data)
 	n_spaxels = s[1]*s[2]
+	CRVAL_spec = sxpar(header,'CRVAL3')
+	CDELT_spec = sxpar(header,'CD3_3')
 
 
 	signal = MAKE_ARRAY(n_spaxels)
@@ -98,8 +100,41 @@ if not keyword_set(discard) then discard=2
 for i = 0, s[1]-1 do begin
 for j = 0, s[2]-1 do begin
 
-	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, *], /nan)
-	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, *], /nan)
+	gap=12
+	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
+	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
+
+
+;; h is the spectrum with the peak enclosed by 'ignore' removed.
+	h =[reform(galaxy_data[i,j,0:ignore[0]]),reform(galaxy_data[i,j,ignore[1]:*])]
+
+	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
+
+
+	half = s[3]/2
+	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
+	a[WHERE(~FINITE(a))] = 0
+	
+;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
+	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
+	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
+
+
+
+
+IF (upper_limit GT ignore2[0]) then upper_limit += gap
+IF (upper_limit GT ignore[0]) then upper_limit += gap
+
+IF (lower_limit LT 0) THEN BEGIN
+	lower_limit = MIN(WHERE(a[0:half] NE 0)) + 5
+	IF (lower_limit LT 0) THEN lower_limit = 0 
+ENDIF ELSE lower_limit += 5
+IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
+	ELSE upper_limit += - 5
+
+
+	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, lower_limit:upper_limit])
+	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, lower_limit:upper_limit])
 
 ;; Assign x and y
 	x(i*s[1]+j) = i
