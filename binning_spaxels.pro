@@ -133,6 +133,7 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
 
 
+;	signal[i*s[1] + j] = STDDEV(galaxy_data[i, j, lower_limit:upper_limit])
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, lower_limit:upper_limit])
 	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, lower_limit:upper_limit])
 

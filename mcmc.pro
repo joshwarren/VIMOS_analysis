@@ -280,7 +280,7 @@ show_rst = SCATTERPLOT(results[0,*],results[1,*], XTITLE="velocity", $
 show_mean = SCATTERPLOT(vel,sig, SYMBOL='star', SYM_SIZE=2.0, /OVERPLOT, $
     /SYM_FILLED)
 
-show_mean.Save, "/Data/vimosindi/analysis/"+galaxy+"/MCMC_inital fit.png", $
+show_mean.Save, "/Data/vimosindi/analysis/"+galaxy+"/MCMC_inital_fit.png", $
     BORDER=10, RESOLUTION=300;, TRANSPARENT=[255, 255, 255] 
 
 
