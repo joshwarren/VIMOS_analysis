@@ -76,7 +76,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-    outputs = glob.glob(output+'gal_stellar_vel*.dat')
+#    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file

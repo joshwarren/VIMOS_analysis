@@ -14,9 +14,9 @@ import os # for creating directory
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 galaxies = ['ic1531', 'ngc1399', 'ngc7075', 'pks0718-34', 'eso443-g024']
-#galaxies = ['pks0718-34']
 galaxies = ['ngc1399']
-galaxies = ['ic1459']
+#galaxies = ['ngc3100']
+#galaxies = ['ic1459']
 
 discard = 2
 wav_range = '4200-'
