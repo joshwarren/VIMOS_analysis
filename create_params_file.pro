@@ -1,13 +1,13 @@
-pro create_params_file, gal
+pro create_params_file;, gal
 ;gal = 5
 i_gal_beg = 0
 code = "python"
 ;code = "IDL"
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-;gals=[2,5,7,8,9]
+gals=[0,2,3,4,6,7,8,9]
 ;gals=[0]
-gals = where(galaxies eq gal)
+;gals = where(galaxies eq gal)
 
 
 output_file = "~/VIMOS_project/analysis/params.txt"

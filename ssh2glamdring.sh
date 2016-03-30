@@ -10,6 +10,7 @@ p_file=/home/warrenj/VIMOS_project/analysis/params.txt
 
 
 scp -r $reduced warrenj@glamdring.physics.ox.ac.uk:reduced/
+#idl -e "full_analysis, galaxy='$1'"
 scp $analysis1 $analysis2 $analysis3 warrenj@glamdring.physics.ox.ac.uk:analysis/$1/
-idl -e "create_params_file, '$1'"
-scp $p_file warrenj@glamdring.physics.ox.ac.uk:
+#idl -e "create_params_file, '$1'"
+#scp $p_file warrenj@glamdring.physics.ox.ac.uk:
