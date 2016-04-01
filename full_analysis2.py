@@ -12,11 +12,12 @@ from man_errors import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-galaxies = ['ic1531', 'ngc1399', 'ngc7075', 'pks0718-34', 'eso443-g024']
-galaxies = ['ngc1399']
-#galaxies = ['ngc3100']
-#galaxies = ['ic1459']
+galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100']#, 'ngc7075', 'pks0718-34', 'eso443-g024']
+#galaxies = ['ic1531', 'ngc1399', 'ngc7075', 'pks0718-34', 'eso443-g024']
+#galaxies = ['ngc1399']
+galaxies = ['ngc7075']
+#galaxies = ['eso443-g024']
+#galaxies = ['pks0718-34']
 
 discard = 2
 wav_range = '4200-'
@@ -31,7 +32,7 @@ for galaxy in galaxies:
 
     print galaxy
     man_errors(galaxy, wav_range=wav_range)
-#    kinematics(galaxy, discard=discard, wav_range=wav_range)
+    kinematics(galaxy, discard=discard, wav_range=wav_range)
     plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=True, residual="median")

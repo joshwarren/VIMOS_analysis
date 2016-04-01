@@ -1,6 +1,6 @@
 pro create_params_file;, gal
 ;gal = 5
-i_gal_beg = 0
+i_gal_beg = 6
 code = "python"
 ;code = "IDL"
 
@@ -13,8 +13,8 @@ gals=[0,2,3,4,6,7,8,9]
 output_file = "~/VIMOS_project/analysis/params.txt"
 CLOSE, 1
 OPENW, 1, output_file
-i_gal=i_gal_beg
-for i_gal=0, n_elements(gals)-1 do begin
+;i_gal=i_gal_beg
+for i_gal=i_gal_beg, n_elements(gals)-1 do begin
 ;galaxy = galaxies[i_gal]
 galaxy = galaxies[gals[i_gal]]
 
