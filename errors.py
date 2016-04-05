@@ -12,8 +12,8 @@ from scipy import ndimage # for gaussian blur
 import math
 import os
 import sys
-import matplotlib # 20160202 JP to stop lack-of X-windows error
-matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
+#import matplotlib # 20160202 JP to stop lack-of X-windows error
+#matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 import matplotlib.pyplot as plt # used for plotting
 
 
@@ -285,10 +285,24 @@ def errors(i_gal=None, bin=None):
         x_i = x[spaxels_in_bin[i]]
         y_i = y[spaxels_in_bin[i]]
         for k in range(s[0]):
-            bin_lin_temp[k] += galaxy_data[k,y_i,x_i]
-            bin_lin_noise_temp[k] += galaxy_noise[k,y_i,x_i]**2
+            bin_lin_temp[k] += galaxy_data[k,x_i,y_i]
+            bin_lin_noise_temp[k] += galaxy_noise[k,x_i,y_i]**2
 
     bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
+
+    ## see if spectrum is zeros
+    if not os.path.exists("%sanalysis/%s/gas_MC/zeros" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/zeros" % (dir, galaxy))
+    zeros_file = "%sanalysis/%s/gas_MC/zeros/%s.dat" % (dir, galaxy, str(bin))
+    if np.sum(bin_lin_temp) < 0.01: open(zeros_file, 'a').close()
+
+    
+#    fl = np.sum(galaxy_data, axis=0)
+#    plt.contour(fl)
+
+#    plt.scatter(x[spaxels_in_bin], y[spaxels_in_bin])
+#    plt.show()
+
 ## --------======== Finding limits of the spectrum ========--------
 ## limits are the cuts in pixel units, while lamRange is the cuts in
 ## wavelength unis.
@@ -299,8 +313,7 @@ def errors(i_gal=None, bin=None):
 ## h is the spectrum with the peak enclosed by 'ignore' removed.
     h = np.delete(bin_lin_temp, ignore)
     h = np.delete(h,ignore2)
-    plt.plot(h)
-    plt.show()
+
 
     half = s[0]/2
     a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
@@ -544,4 +557,4 @@ def errors(i_gal=None, bin=None):
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    errors(0,10) if len(sys.argv)<3 else errors()
+    errors(5,29) if len(sys.argv)<3 else errors()
