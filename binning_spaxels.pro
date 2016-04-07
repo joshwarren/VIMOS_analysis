@@ -16,7 +16,7 @@ A=''
 read, A, prompt='Are you sure you want to overwrite the old target of ' + $
     strtrim(string(old),2) + ' with a new target of ' + $
     strtrim(string(new),2) + '? (Y/N) '
-if A eq "N" then new = old
+if (A eq "N") or (a eq "n") then new = old
 endif
 return
 end

@@ -12,13 +12,8 @@ from scipy import ndimage # for gaussian blur
 import math
 import os
 import sys
-#import matplotlib # 20160202 JP to stop lack-of X-windows error
-#matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
-import matplotlib.pyplot as plt # used for plotting
+# import of matplotlib.pyplot is within errors routine
 
-
-from ppxf import ppxf
-import ppxf_util as util
 
 
 #-----------------------------------------------------------------------------
@@ -126,7 +121,7 @@ def errors(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
+    glamdring = True
     gas = True
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
@@ -157,9 +152,19 @@ def errors(i_gal=None, bin=None):
     if glamdring:
         dir = '/users/warrenj/'
         dir2 = '/users/warrenj/'
+        
+        import matplotlib # 20160202 JP to stop lack-of X-windows error
+        matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
+        import matplotlib.pyplot as plt # used for plotting
+        from ppxf import ppxf
+        import ppxf_util as util
     else:
         dir = '/Data/vimosindi/'
         dir2 = '/Data/idl_libraries/'
+        import matplotlib.pyplot as plt # used for plotting
+        from ppxf import ppxf
+        import ppxf_util as util
+
 
 
     data_file = dir + "analysis/galaxies.txt"
@@ -255,7 +260,9 @@ def errors(i_gal=None, bin=None):
         
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
     galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
-    
+
+## change from varience to noise (Std dev.)
+    galaxy_noise = np.sqrt(galaxy_noise)
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
     CDELT_spec = header['CD3_3']
@@ -289,13 +296,6 @@ def errors(i_gal=None, bin=None):
             bin_lin_noise_temp[k] += galaxy_noise[k,x_i,y_i]**2
 
     bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-
-    ## see if spectrum is zeros
-    if not os.path.exists("%sanalysis/%s/gas_MC/zeros" % (dir, galaxy)):
-        os.makedirs("%sanalysis/%s/gas_MC/zeros" % (dir, galaxy))
-    zeros_file = "%sanalysis/%s/gas_MC/zeros/%s.dat" % (dir, galaxy, str(bin))
-    if np.sum(bin_lin_temp) < 0.01: open(zeros_file, 'a').close()
-
     
 #    fl = np.sum(galaxy_data, axis=0)
 #    plt.contour(fl)
