@@ -261,8 +261,6 @@ def errors(i_gal=None, bin=None):
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
     galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
 
-## change from varience to noise (Std dev.)
-    galaxy_noise = np.sqrt(galaxy_noise)
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
     CDELT_spec = header['CD3_3']
