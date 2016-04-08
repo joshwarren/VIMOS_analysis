@@ -66,6 +66,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
     plt.clim(vmin,vmax)
 
+#    plt.gca().invert_yaxis()
+
     ax.set_ylabel(axis_label)
     ax.set_xlabel(axis_label)
     ax.axis('tight')  # Equal axes and no rescaling
@@ -165,6 +167,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 #        plt.clim(vmin,vmax)  # make color axis symmetrical
         if label:
             cbar.set_label(label, rotation=270)
+
 
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):

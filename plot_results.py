@@ -147,6 +147,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plt.close('all')
         v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
 
+
 # Asign v to every spaxel in bin
         v_unbinned = np.zeros(galaxy_data_unbinned.shape)
         v_uncert_unbinned = np.zeros(galaxy_data_unbinned.shape)
@@ -161,7 +162,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             if norm == "lwv":
                 lwv = v_unbinned*galaxy_data_unbinned
                 v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(galaxy_data_unbinned)
-
 
 # Limits on field
         vmax = max(v_binned)
