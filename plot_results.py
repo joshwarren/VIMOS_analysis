@@ -75,13 +75,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
-    outputs = glob.glob(output+'gal_*.dat')
-#    outputs = glob.glob(output+'gal_stellar_vel*.dat')
+#    outputs = glob.glob(output+'gal_*.dat')
+    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
-        skiprows = 1) 
+        skiprows = 1)
+#    x = x[::-1]
+#    xBin = xBin[::-1]
+#    y = y[::-1]
+#    yBin = yBin[::-1]
     n_spaxels = len(bin_num)
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
@@ -103,6 +107,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
+#    galaxy_data = np.rot90(galaxy_data,2)
     s = galaxy_data.shape
     rows_to_remove = range(discard)
     rows_to_remove.extend([s[1]-1-i for i in range(discard)])
@@ -119,7 +124,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 # ------------========== Spatially binning ===========----------
     xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
-        skiprows = 1) 
+        skiprows = 1)
+#    xBar = yBar1[::-1]
+#    yBar = xBar1[::-1]
     flux_bar_binned = np.zeros((number_of_bins))
     n_spaxels_in_bin = np.zeros((number_of_bins))
 
@@ -248,7 +255,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
-            plot_velfield_nointerp(y, x, bin_num, yBar, xBar, v_binned, 
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, 
                 nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
@@ -258,7 +265,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
-            plot_velfield_nointerp(y, x, bin_num, yBar, xBar, v_uncert_binned, 
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
                 vmin=v_uncert_min, vmax=v_uncert_max, 
                 nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
@@ -271,7 +278,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/%s_field_%s.png" % (wav_range_dir, plot_title, 
                 wav_range)
-           plot_velfield(yBar, xBar, v_binned, vmin=vmin, vmax=vmax, 
+           plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
                 nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
                 redshift = z, title=title, save=saveTo)
@@ -279,7 +286,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
-           plot_velfield(yBar, xBar, v_uncert_binned, vmin=v_uncert_min, 
+           plot_velfield(xBar, yBar, v_uncert_binned, vmin=v_uncert_min, 
                 vmax=v_uncert_max, nodots=False, colorbar=True, label=CBLabel, 
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
                 redshift = z, title=utitle, save=saveTo)
@@ -333,9 +340,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
             residual, wav_range)
 
-        plot_velfield_nointerp(y, x, bin_num, yBar, xBar, average_residuals, 
+        plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
             vmin=minres, vmax=maxres, 
-            nodots=True, show_bin_num=False, colorbar=True, 
+            nodots=True, show_bin_num=True, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
             save=saveTo)
@@ -358,7 +365,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
 
-    plot_velfield_nointerp(y, x, bin_num, yBar, xBar, chi2, 
+    plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
         vmin=minchi2, vmax=maxchi2, 
         nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 

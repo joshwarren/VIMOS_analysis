@@ -61,7 +61,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = v
 
-    cs = plt.imshow(np.rot90(img), interpolation='none', 
+    cs = plt.imshow(np.rot90(img,3), interpolation='none', 
         cmap=kwargs.get('cmap',sauron), extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
     plt.clim(vmin,vmax)
@@ -132,7 +132,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
     if flux is not None:
-        ax.tricontour(x, y, -2.5*np.log10(flux.ravel()/np.max(flux)),
+        ax.tricontour(x[::-1], y[::-1],
+                      -2.5*np.log10(flux.ravel()/np.max(flux)),
                       levels=np.arange(20), colors='k') # 1 mag contours
 
 # NB: have assumed a square image!!!!
@@ -140,18 +141,21 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 #        flux_unbinned[477]=0.001
         contours = -2.5*np.log10(flux_unbinned.ravel()/np.max(flux_unbinned))
 # 1 mag contours
-        ax.tricontour(x, y, contours, levels=np.arange(20), colors='k')
+        ax.tricontour(x[::-1], y[::-1], contours, levels=np.arange(20),
+                      colors='k')
 
     if not nodots and not show_bin_num:
 #**********************************################
 #        xBar /= res # no idea why this needs removing...
 #        yBar /= res
 #**********************************################
-        ax.plot(xBar, yBar, '.k', markersize=kwargs.get("markersize", 3))
+        ax.plot(ax.get_xlim()[1]-xBar, ax.get_ylim()[1]-yBar, '.k',
+                markersize=kwargs.get("markersize", 3))
 
     if show_bin_num:
         for i in range(len(xBar)):
-            ax.text(xBar[i]-0.25, yBar[i]-0.25, str(i), color='grey',
+            ax.text(ax.get_xlim()[1]-xBar[i]-0.5,
+                    ax.get_ylim()[1]-yBar[i]-0.5, str(i), color='grey',
 #                    fontsize='xx-small')
                     fontsize=5)
 
