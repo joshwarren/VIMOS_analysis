@@ -6,6 +6,7 @@
 ## voronoi binning routine (both contained in the voronoi binning package),
 ## with some of my own inventions.
 # warrenj 20160209 Added show_bin_num keyword.
+# warrenj 20160413 Added flux_type keyword
 
 
 
@@ -22,7 +23,8 @@ import os
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
-    ncolors=64, title=None, save=None, show_bin_num=False, **kwargs):
+    ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
+    **kwargs):
 
     fig, ax = plt.subplots(nrows=1,ncols=1)
 
@@ -139,10 +141,17 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 # NB: have assumed a square image!!!!
     if flux_unbinned is not None:
 #        flux_unbinned[477]=0.001
-        contours = -2.5*np.log10(flux_unbinned.ravel()/np.max(flux_unbinned))
+        if flux_type == 'mag':
+            contours = -2.5*np.log10(flux_unbinned.ravel()/
+                                     np.max(flux_unbinned))
 # 1 mag contours
-        ax.tricontour(x[::-1], y[::-1], contours, levels=np.arange(20),
+            ax.tricontour(x[::-1], y[::-1], contours, levels=np.arange(20),
                       colors='k')
+        else:
+            ax.contour(np.reshape(x[::-1],np.shape(flux_unbinned)),
+                       np.reshape(y[::-1],np.shape(flux_unbinned)),
+                       flux_unbinned, colors='k')
+#                       np.rot90(flux_unbinned,2), colors='k')
 
     if not nodots and not show_bin_num:
 #**********************************################

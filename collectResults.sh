@@ -10,20 +10,22 @@ do
     gas_dir=~/Desktop/results/hot_gas/$Type-fields/
     comparison_dir=~/Desktop/results/comparison/$Type-fields
 
+    mkdir -p $stellar_dir/uncertainties/
     mkdir -p $stellar_dir/gifs/
+    mkdir -p $gas_dir/uncertainties/
     mkdir -p $gas_dir/gifs/
     mkdir -p $comparison_dir/
 
 
         cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/stellar_${Type}_field_4200-.png $stellar_dir/$galaxy-$Type.png
-        cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/stellar_${Type}_uncert_field_4200-.png $stellar_dir/$galaxy-${Type}_uncert.png
+        cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/stellar_${Type}_uncert_field_4200-.png $stellar_dir/uncertainties/$galaxy-${Type}_uncert.png
 
 
         cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/gifs/stellar_${Type}.gif $stellar_dir/gifs/$galaxy-${Type}.gif
 
 
         cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/gas_${Type}_field_4200-.png $gas_dir/$galaxy-$Type.png
-        cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/gas_${Type}_uncert_field_4200-.png $gas_dir/$galaxy-${Type}_uncert.png
+        cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/gas_${Type}_uncert_field_4200-.png $gas_dir/uncertainties/$galaxy-${Type}_uncert.png
 
 
         cp /Data/vimosindi/analysis/$galaxy/results/4200-/plots/notinterpolated/gifs/gas_${Type}.gif $gas_dir/gifs/$galaxy-${Type}.gif

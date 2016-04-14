@@ -24,6 +24,8 @@
 #				field is set to 0.
 #				lum: velocity of the brightest spaxel is set 
 #				to 0.
+#				sig: Noralised to the mean velocity of 5 bins with the
+#				highest LOSVD.
 # plots 	False   Boolean to show plots as routine runs.
 # nointerp 	False 	Boolean to use interpolation between bins in 
 #				plots or not.
@@ -76,16 +78,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
- #   outputs = glob.glob(output+'gal_stellar*.dat')
+#    outputs = glob.glob(output+'gal_stellar_vel*.dat')
 
 
 # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1)
-#    x = x[::-1]
-#    xBin = xBin[::-1]
-#    y = y[::-1]
-#    yBin = yBin[::-1]
     n_spaxels = len(bin_num)
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
@@ -125,8 +123,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------========== Spatially binning ===========----------
     xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
         skiprows = 1)
-#    xBar = yBar1[::-1]
-#    yBar = xBar1[::-1]
     flux_bar_binned = np.zeros((number_of_bins))
     n_spaxels_in_bin = np.zeros((number_of_bins))
 
@@ -164,11 +160,24 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_uncert_binned[bin_num[spaxel]]
 # ------------============ Setting v range =============----------
         if "vel" in plot_title:
+            norm='lwv'
             if norm == "lum":
                 v_binned -= v_binned[center_bin]
             if norm == "lwv":
                 lwv = v_unbinned*galaxy_data_unbinned
                 v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(galaxy_data_unbinned)
+            if norm == "sig":
+                sig_file = glob.glob(output+'gal_stellar_sigma*.dat')
+                s_binned, s_uncert_binned = np.loadtxt(sig_file[0], unpack=True)
+                s_sort = sorted(np.unique(s_binned))
+                c = np.where(s_binned > s_sort[-6])
+                v_binned -= np.mean(v_binned[c[0]])
+
+
+
+
+                
+#            v_binned -=5
 
 # Limits on field
         vmax = max(v_binned)
@@ -177,7 +186,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if len(v_sorted) < 2*vLimit:
             v_sorted = sorted(v_binned)
         vmin = v_sorted[vLimit]
-        vmax = v_sorted[-vLimit-1]
+        vmax = v_sorted[-vLimit-1]       
+
 # Make velocity fields symmetric
         if "vel" in plot_title:
             if abs(vmin)>vmax:
@@ -188,7 +198,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             else:
                 vmax=abs(vmin)
 
-
+                
 # Limits on uncertainty field
         v_uncert_max = max(v_uncert_binned)
         v_uncert_min = min(v_uncert_binned)
@@ -202,6 +212,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         v_uncert_min = mean_w_uncert-d_uncert
         if v_uncert_min < 0:
             v_uncert_min=0
+           
 
 # ------------============= Plot velfield ==============----------
         CBLabel = None
@@ -256,7 +267,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
-                vmin=vmin, vmax=vmax, 
+                vmin=vmin, vmax=vmax, flux_type='notmag',
                 nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
@@ -266,7 +277,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
-                vmin=v_uncert_min, vmax=v_uncert_max, 
+                vmin=v_uncert_min, vmax=v_uncert_max, flux_type='notmag',
                 nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
@@ -341,7 +352,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             residual, wav_range)
 
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, average_residuals, 
-            vmin=minres, vmax=maxres, 
+            vmin=minres, vmax=maxres, flux_type='notmag',
             nodots=True, show_bin_num=True, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
@@ -366,7 +377,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
 
     plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
-        vmin=minchi2, vmax=maxchi2, 
+        vmin=minchi2, vmax=maxchi2, flux_type='notmag',
         nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
