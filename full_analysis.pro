@@ -22,7 +22,7 @@ galaxies = [$
 ; an inital guess from quick internet search of redshift.
 z_gals = [0.01, 0.005, 0.02, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
 ;for gal=5, n_elements(z_gals)-1 do begin
-gal=4
+gal=9
 if not keyword_set(galaxy) then galaxy = galaxies[gal]
 print, galaxy
 z = z_gals[gal]

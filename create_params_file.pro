@@ -1,6 +1,6 @@
 pro create_params_file;, gal
 ;gal = 5
-i_gal_beg = 0
+i_gal_beg = 9
 code = "python"
 ;code = "IDL"
 
