@@ -45,6 +45,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     yBar = yBar_pix*res
     x = x_pix*res
     y = y_pix*res
+
+    x -= max(x)/2
+    y -= max(y)/2
     axis_label = "Angular Size (arcsec)"
 
 
@@ -89,13 +92,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     if redshift is not None:
         c = 299792 #km/s
-        H = 67.8 #(km/s)/Mpc
+#        H = 67.8 #(km/s)/Mpc # Planck value
+        H = 70.0 # value used by Bolonga group.
         xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
         ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
         xmax = xlim[1]
         ymax = ylim[1]
-        xlim -= xmax/2
-        ylim -= ymax/2
+#        xlim -= xmax/2
+#        ylim -= ymax/2
         axis_label = "Distance (Mpc)"
         if max(xlim) < 1.0:
             xlim *= 1000
@@ -187,7 +191,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
             os.makedirs(os.path.dirname(save))
         plt.savefig(save, bbox_inches="tight")
 
-    return cs
+    return ax
 
 
 
