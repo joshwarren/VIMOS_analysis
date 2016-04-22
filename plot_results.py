@@ -268,7 +268,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title, wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, #flux_type='notmag',
-                nodots=True, show_bin_num=False, colorbar=True, 
+                nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo)

@@ -251,8 +251,8 @@ def plot_results(galaxy, discard=2, wav_range="4200-", vLimit=1, norm="lwv",
                 plot_title, wav_range)
             ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, flux_type='notmag',
-                nodots=True, show_bin_num=True, colorbar=True, 
-                label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+                nodots=True, show_bin_num=False, colorbar=True, 
+                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title)#, 
 #                save=saveTo)
 # Uncertainty plot
@@ -296,7 +296,7 @@ def plot_results(galaxy, discard=2, wav_range="4200-", vLimit=1, norm="lwv",
         CO_y *=60*60
 
         
-#        ax.contour(CO_x,CO_y,CO_image, colors='k')
+        ax.contour(CO_x,CO_y,CO_image, colors='k')
 
  #       plt.show()
 

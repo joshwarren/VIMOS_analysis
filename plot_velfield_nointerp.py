@@ -27,7 +27,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     **kwargs):
 
     fig, ax = plt.subplots(nrows=1,ncols=1)
-
+    
     if title is not None:
         plt.title(title, y=1.1)
 
@@ -66,7 +66,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = v
 
-    cs = plt.imshow(np.rot90(img,3), interpolation='none', 
+    cs = plt.imshow(img[:][::-1], interpolation='none', 
         cmap=kwargs.get('cmap',sauron), extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
     plt.clim(vmin,vmax)
@@ -92,7 +92,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     if redshift is not None:
         c = 299792 #km/s
-#        H = 67.8 #(km/s)/Mpc # Planck value
+#        H = 67.8 #(km/s)/Mpc
         H = 70.0 # value used by Bolonga group.
         xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
         ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
@@ -152,10 +152,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
             ax.tricontour(x[::-1], y[::-1], contours, levels=np.arange(20),
                       colors='k')
         else:
-            ax.contour(np.reshape(x[::-1],np.shape(flux_unbinned)),
-                       np.reshape(y[::-1],np.shape(flux_unbinned)),
+            ax.contour(np.reshape(y,np.shape(flux_unbinned)),
+                       np.reshape(x,np.shape(flux_unbinned)), 
                        flux_unbinned, colors='k')
-#                       np.rot90(flux_unbinned,2), colors='k')
 
     if not nodots and not show_bin_num:
 #**********************************################
@@ -167,8 +166,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     if show_bin_num:
         for i in range(len(xBar)):
-            ax.text(ax.get_xlim()[1]-xBar[i]-0.5,
-                    ax.get_ylim()[1]-yBar[i]-0.5, str(i), color='grey',
+            ax.text(ax.get_ylim()[0]+yBar[i],
+                    ax.get_xlim()[0]+xBar[i], str(i), color='grey',
 #                    fontsize='xx-small')
                     fontsize=5)
 
