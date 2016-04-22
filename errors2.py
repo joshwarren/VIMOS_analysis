@@ -4,6 +4,7 @@
 ## warrenj 20150216 Process to progerate the uncertainty using Monty
 ## Carlo methods to get uncertainty in velocity space.
 ## warrenj 20160118 Python version of errors.pro
+## warrenj 20160422 Will futher separate ionised gases.
 
 import numpy as np # for array handling
 import glob # for searching for files
@@ -114,21 +115,24 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 
 
 #-----------------------------------------------------------------------------
-def errors2(i_gal=None, bin=None):
+def errors(i_gal=None, bin=None):
     if i_gal is None: i_gal=int(sys.argv[1])
     if bin is None: bin=int(sys.argv[2])
 
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
-    gas = True
+    glamdring = False
+    gas = 3 # 0   No gas emission lines
+            # 1   Probe ionised gas
+            # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
+            #     (Hb and Hd)
+            # 3   All gas seperate.
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 # 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
     reps = 0 ## number of monte carlo reps per bin.
     discard = 2
-    two_components = True
 #    set_range = None
     set_range = np.array([4200,10000])
     c = 299792.458
@@ -394,44 +398,61 @@ def errors2(i_gal=None, bin=None):
     start = [vel, sig] # starting guess
     component = [0]*len(templates[0,:])
 
-    start_sav = start
-    templates_sav = templates
-## ----------============= Emission lines =================---------
-    moments = stellar_moments
-    if gas:
-#        emission_file = dir + 'analysis/emission_line.dat'
-#        line_name = np.loadtxt(emission_file, unpack=True, skiprows=1, 
-#            usecols=(1,), dtype=str)
-#        line_wav = np.loadtxt(emission_file, unpack=True, skiprows=1, 
-#            usecols=(2,))
-#
-#        outOfRange = np.where((line_wav < lamRange[0]) | \
-#                              (line_wav > lamRange[1]))[0]
-#
-#        line_name = np.delete(line_name, outOfRange)
-#        line_wav = np.delete(line_wav, outOfRange)
-#
-#        emission_lines = set_lines(line_wav, logLam_template, FWHM_gal)
-#
-#
 
+## ----------===============================================---------
+## ----------============= Emission lines ==================---------
+## ----------===============================================---------
+    moments = stellar_moments
+## ----------============ All lines together ===============---------
+    if gas == 1:
         emission_lines, line_name, line_wav = util.emission_lines(
             logLam_template, lamRange, FWHM_gal, quiet=glamdring)
 
+        templatesToUse = np.append(templatesToUse, line_name)
+
         component = component + [1]*len(line_name)
         templates = np.column_stack((templates, emission_lines))
+       
+        start = [start,start]
+        moments = [stellar_moments, gas_moments]
+        goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
+            gas=True)
+## ----------=============== SF and shocks lines ==============---------
+    if gas == 2:
+        emission_lines, line_name, line_wav = util.emission_lines(
+            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
+
+        print np.where("H" in line_name)
+        templatesToUse = np.append(templatesToUse, line_name)
+
+        component = component + [1]*len(line_name)
+        templates = np.column_stack((templates, emission_lines))
+       
         start = [start,start]
         moments = [stellar_moments, gas_moments]
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True)
 
-## ----------============= Two components =================---------
-    if two_components:
-        start.append(start_sav)
-        templates = np.column_stack((templates, templates_sav))
-        component.extend([2]*len(templates_sav[0,:]))
-        moments.extend([stellar_moments])
+## ----------=========== All lines inderpendantly ==============---------
+    if gas == 3:
+        emission_lines, line_name, line_wav = util.emission_lines(
+            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
+        print np.where('H' in line_name.tolist())
+
+        templatesToUse = np.append(templatesToUse, line_name)
+
+        component = component + [1]*len(line_name)
+        templates = np.column_stack((templates, emission_lines))
+       
+        start = [start,start]
+        moments = [stellar_moments, gas_moments]
+        goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
+            gas=True)
+
+
+    asjdasj
         
+
 ## ----------=========== The bestfit part =================---------
     bin_log_sav = bin_log
     noise_sav = noise
@@ -448,9 +469,6 @@ def errors2(i_gal=None, bin=None):
     if gas:
         gas_output = np.zeros((reps, gas_moments))
         gas_errors = np.zeros((reps, gas_moments))
-    if two_components:
-        stellar2_output = np.zeros((reps, stellar_moments))
-        stellar2_errors = np.zeros((reps, stellar_moments))
 
 
     for rep in range(reps):
@@ -472,9 +490,6 @@ def errors2(i_gal=None, bin=None):
         if gas:
             gas_output[rep,:] = ppMC.sol[0:gas_moments][1]
             gas_errors[rep,:] = ppMC.error[0:gas_moments][1]
-        if two_components:
-            stellar2_output[rep,:] = ppMC.sol[0:stellar_moments][2]
-            stellar2_errors[rep,:] = ppMC.error[0:stellar_moments][2]
 ## ----------============ Write ouputs to file ==============---------
 
     if not os.path.exists("%sanalysis/%s/gas_MC/stellar/errors" % (dir,galaxy)):
@@ -538,28 +553,16 @@ def errors2(i_gal=None, bin=None):
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
    
     b = open(bestfit_file, 'w')
-    if two_components:
-        if gas: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
-            "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-            str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-            str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n' + \
-            str(pp.sol[2][0]) + "   " + str(pp.sol[2][1]) + "   " + \
-            str(pp.sol[2][2]) + "   " + str(pp.sol[2][3]) + '\n')
-        else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
-            str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n' + \
-            str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-            str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
-    else:
-        if gas: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
-            "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-            str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-            str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
-        else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
-            str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
+    if gas: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + "   " + \
+        str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
+        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
+        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
+    else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
+        str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
 
 
-## save chi2
+## save input
     if not os.path.exists("%sanalysis/%s/gas_MC/chi2" % (dir, galaxy)):
         os.makedirs("%sanalysis/%s/gas_MC/chi2" % (dir, galaxy)) 
     chi2_file = "%sanalysis/%s/gas_MC/chi2/%s.dat" % (dir, galaxy, str(bin))
@@ -567,27 +570,17 @@ def errors2(i_gal=None, bin=None):
     c2 = open(chi2_file, 'w')
     c2.write(str(pp.chi2) + '\n')
 
+## save weights
+    if not os.path.exists("%sanalysis/%s/gas_MC/temp_weights" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/temp_weights" % (dir, galaxy)) 
+    weights_file = "%sanalysis/%s/gas_MC/temp_weights/%s.dat" % (dir, galaxy,
+        str(bin))
 
-## save 2nd population
-    if two_components:
-        if not os.path.exists("%sanalysis/%s/gas_MC/stellar2/errors" % (dir,galaxy)):
-            os.makedirs("%sanalysis/%s/gas_MC/stellar2/errors" % (dir, galaxy))
-        bin2_file = "%sanalysis/%s/gas_MC/stellar2/%s.dat" % (dir, galaxy,
-                    str(bin))
-        errors2_file = "%sanalysis/%s/gas_MC/stellar2/errors/%s.dat" % (dir,
-                       galaxy, str(bin))
+    w = open(weights_file, 'w')
+    for i in range(len(pp.weights)):
+        w.write(templatesToUse[i] + "   " + str(pp.weights[i]) + '\n') 
 
-        f2 = open(bin_file, 'w')
-        e2 = open(errors_file, 'w')
-        for i in range(reps):
-
-            f2.write(str(stellar2_output[i,0]) + "   " + \
-                str(stellar2_output[i,1]) + "   " + str(stellar_2output[i,2]) + \
-                "   " + str(stellar2_output[i,3]) + '\n')
-            e2.write(str(stellar2_errors[i,0]) + "   " + \
-                str(stellar2_errors[i,1]) + "   " + str(stellar2_errors[i,2]) + \
-                "   " + str(stellar2_errors[i,3]) + '\n')
-
+                                   
 
 
 
@@ -600,4 +593,4 @@ def errors2(i_gal=None, bin=None):
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    errors2(5,29) if len(sys.argv)<3 else errors2()
+    errors(5,29) if len(sys.argv)<3 else errors()
