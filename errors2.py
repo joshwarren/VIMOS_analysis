@@ -123,7 +123,7 @@ def errors(i_gal=None, bin=None):
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
     glamdring = False
-    gas = 3 # 0   No gas emission lines
+    gas = 2 # 0   No gas emission lines
             # 1   Probe ionised gas
             # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
             #     (Hb and Hd)
@@ -403,6 +403,10 @@ def errors(i_gal=None, bin=None):
 ## ----------============= Emission lines ==================---------
 ## ----------===============================================---------
     moments = stellar_moments
+    if gas:
+        moments = [stellar_moments]
+        start_sav = start
+
 ## ----------============ All lines together ===============---------
     if gas == 1:
         emission_lines, line_name, line_wav = util.emission_lines(
@@ -413,8 +417,8 @@ def errors(i_gal=None, bin=None):
         component = component + [1]*len(line_name)
         templates = np.column_stack((templates, emission_lines))
        
-        start = [start,start]
-        moments = [stellar_moments, gas_moments]
+        start = [start_sav,start_sav]
+        moments.append(gas_moments)
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True)
 ## ----------=============== SF and shocks lines ==============---------
@@ -422,14 +426,24 @@ def errors(i_gal=None, bin=None):
         emission_lines, line_name, line_wav = util.emission_lines(
             logLam_template, lamRange, FWHM_gal, quiet=glamdring)
 
-        print np.where("H" in line_name)
-        templatesToUse = np.append(templatesToUse, line_name)
+        for i in range(len(line_name)):
+            
 
-        component = component + [1]*len(line_name)
-        templates = np.column_stack((templates, emission_lines))
-       
-        start = [start,start]
-        moments = [stellar_moments, gas_moments]
+            if 'H' in line_name[i]:
+                templatesToUse = np.append(templatesToUse, line_name[i])
+                templates = np.column_stack((templates, emission_lines[:,i]))
+                component = component + [1]
+            if 'OIII' in line_name[i]:
+                templatesToUse = np.append(templatesToUse, line_name[i])
+                templates = np.column_stack((templates, emission_lines[:,i]))
+                component = component + [2]
+            if 'NI' in line_name[i]:
+                templatesToUse = np.append(templatesToUse, line_name[i])
+                templates = np.column_stack((templates, emission_lines[:,i]))
+                component = component + [2]               
+
+        start = [start, start_sav, start_sav]
+        moments = [stellar_moments, gas_moments, gas_moments]
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True)
 
@@ -437,19 +451,21 @@ def errors(i_gal=None, bin=None):
     if gas == 3:
         emission_lines, line_name, line_wav = util.emission_lines(
             logLam_template, lamRange, FWHM_gal, quiet=glamdring)
-        print np.where('H' in line_name.tolist())
 
-        templatesToUse = np.append(templatesToUse, line_name)
+        for i in range(len(line_name)):
+            templatesToUse = np.append(templatesToUse, line_name[i])
 
-        component = component + [1]*len(line_name)
-        templates = np.column_stack((templates, emission_lines))
+            component = component + [i+1]
+            templates = np.column_stack((templates, emission_lines[:,i]))
        
-        start = [start,start]
-        moments = [stellar_moments, gas_moments]
-        goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
-            gas=True)
+            start.append(start_sav)
+            moments.append(gas_moments)
+        goodPixels = determine_goodpixels(logLam_bin,lamRange_template,
+            vel, z, gas=True)
 
 
+
+        
     asjdasj
         
 
@@ -467,8 +483,8 @@ def errors(i_gal=None, bin=None):
     stellar_output = np.zeros((reps, stellar_moments))
     stellar_errors = np.zeros((reps, stellar_moments))
     if gas:
-        gas_output = np.zeros((reps, gas_moments))
-        gas_errors = np.zeros((reps, gas_moments))
+        gas_output = np.zeros((gas+1, reps, gas_moments))
+        gas_errors = np.zeros((gas+1, reps, gas_moments))
 
 
     for rep in range(reps):
@@ -522,6 +538,7 @@ def errors(i_gal=None, bin=None):
                 "   " + str(gas_errors[i,2]) + "   " + \
                 str(gas_errors[i,3]) + '\n')
 
+            
 ## save bestfit spectrum
     if not os.path.exists("%sanalysis/%s/gas_MC/bestfit" % (dir, galaxy)):
         os.makedirs("%sanalysis/%s/gas_MC/bestfit" % (dir, galaxy)) 
@@ -553,10 +570,27 @@ def errors(i_gal=None, bin=None):
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
    
     b = open(bestfit_file, 'w')
-    if gas: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + "   " + \
-        str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
+#    if gas == 3: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
+#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
+#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
+#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n' + \
+#        str(pp.sol[2][0]) + "   " + str(pp.sol[2][1]) + "   " + \
+#        str(pp.sol[2][2]) + "   " + str(pp.sol[2][3]) + '\n')
+#        str(pp.sol[3][0]) + "   " + str(pp.sol[3][1]) + "   " + \
+#        str(pp.sol[3][2]) + "   " + str(pp.sol[3][3]) + '\n')
+#    if gas == 2: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
+#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
+#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
+#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n' + \
+#        str(pp.sol[2][0]) + "   " + str(pp.sol[2][1]) + "   " + \
+#        str(pp.sol[2][2]) + "   " + str(pp.sol[2][3]) + '\n')
+#    if gas == 1: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
+#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
+#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
+#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
+    if gas: b.write(for i in range(gas): \
+        str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
+        str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
         str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
