@@ -33,7 +33,7 @@ n_bins = max(bin_num)+1
 for i = 0, n_bins do begin
 if code eq "IDL" then PRINTF, 1, "idl -e 'errors, " + $
     strtrim(string(i_gal),2) + ", " + strtrim(string(i),2) + "'"
-if code eq "python" then PRINTF, 1, "python errors.py " + $
+if code eq "python" then PRINTF, 1, "python errors2.py " + $
 ;     strtrim(string(i_gal),2) + " " + strtrim(string(i),2)
     strtrim(string(gals[i_gal]),2) + " " + strtrim(string(i),2)
 endfor

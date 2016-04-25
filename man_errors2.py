@@ -7,6 +7,8 @@
 ## keywords.
 ## warrenj 20160215 Removed options as they were incorrect methods
 ## and not in use any longer.
+## warrenj 20160322 Use man_errors2 for when there are no rep
+## performed by errors.py
 
 ## *************************** KEYWORDS ************************* ##
 # Galaxy
@@ -18,7 +20,7 @@ import array
 import sys # for early exit of python
 import os
 
-def man_errors(galaxy, wav_range="4200-"):
+def man_errors(galaxy, wav_range=""):
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
     output_dir = "/Data/vimosindi/analysis/%s/results/%s/" % (galaxy, wav_range)
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
@@ -36,12 +38,11 @@ def man_errors(galaxy, wav_range="4200-"):
     h4 = np.zeros(n_bins)
     h4_s = np.zeros(n_bins)
 
+#    componants = ["stellar", "gas"] #,"SF_gas", "shock_g"]
     componants = ["stellar"]
 
     componants.extend([d for d in os.listdir(dir + "gas/") if \
-               os.path.isdir(os.path.join(dir + "gas/", d))])
-    
-#    componants.append("stellar")#, "gas"] #,"gas_SF", "gas_Shocks"]
+               os.path.isdir(os.path.join(dir + "gas/", d))])    
 
     dynamics = [v, s, h3, h4]
     dynamics_uncert = [v_s, s_s, h3_s, h4_s]
@@ -57,22 +58,13 @@ def man_errors(galaxy, wav_range="4200-"):
             h3[bin] = h3s[i]
             h4[bin] = h4s[i]
 
-# Calculating uncertainties
-            ex_dir = ""
-            if componants[i] != "stellar": ex_dir = "gas/"
-            glamdring_file = dir + ex_dir + componants[i] + "/" + str(bin) + \
-                ".dat"
-            vel, sig, h3s, h4s =np.loadtxt(glamdring_file, unpack=True)
 
-# Error thrown if all 5000 reps have not been completed for this bin        
-            if len(vel) != 5000:
-                print("Not all reps completed")
-                sys.exit()
+        v_s =v
+        s_s=s
+        h3_s=h3
+        h4_s=h4
 
-            v_s[bin] = np.std(vel)
-            s_s[bin] = np.std(sig)
-            h3_s[bin] = np.std(h3s)
-            h4_s[bin] = np.std(h4s)
+
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir) 
@@ -81,6 +73,9 @@ def man_errors(galaxy, wav_range="4200-"):
         s_file = output_dir + "gal_" + componants[i] + "_sigma.dat"
         h3_file = output_dir + "gal_" + componants[i] + "_h3.dat"
         h4_file = output_dir + "gal_" + componants[i] + "_h4.dat"
+            
+
+
 
         f_v = open(v_file, 'w')
         f_s = open(s_file, 'w')
@@ -113,7 +108,7 @@ def man_errors(galaxy, wav_range="4200-"):
 if __name__ == '__main__':
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
         'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxy = galaxies[6]
+    galaxy = galaxies[0]
     wav_range = "4200-"
 
     man_errors(galaxy, wav_range=wav_range)

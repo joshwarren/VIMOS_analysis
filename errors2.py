@@ -15,6 +15,33 @@ import os
 import sys
 # import of matplotlib.pyplot is within errors routine
 
+#-----------------------------------------------------------------------------
+def set_params():
+## ----------===============================================---------
+## ----------============= Input parameters  ===============---------
+## ----------===============================================---------
+    glamdring = False
+    gas = 3 # 0   No gas emission lines
+            # 1   Probe ionised gas
+            # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
+            #     (Hb and Hd)
+            # 3   All gas seperate.
+    reps = 0 ## number of monte carlo reps per bin.
+    discard = 2
+    set_range = np.array([4200,10000])
+    FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
+                           # about 4px with a dispersion of
+                           # 0.571A/px. (From: http://www.eso.org
+                           # /sci/facilities/paranal/instruments
+                           # /vimos/inst/ifu.html)
+    stellar_moments = 4 # number of componants to calc with ppxf (see 
+                        # keyword moments in ppxf.pro for more details)
+    gas_moments = 4
+    degree = 4  # order of addative Legendre polynomial used to 
+                #; correct the template continuum shape during the fit
+    return glamdring, gas, reps, discard, set_range, FWHM_gal, \
+        stellar_moments, gas_moments, degree
+#-----------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------
@@ -115,44 +142,20 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 
 
 #-----------------------------------------------------------------------------
-def errors(i_gal=None, bin=None):
+def errors2(i_gal=None, bin=None):
     if i_gal is None: i_gal=int(sys.argv[1])
     if bin is None: bin=int(sys.argv[2])
 
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
-    gas = 2 # 0   No gas emission lines
-            # 1   Probe ionised gas
-            # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
-            #     (Hb and Hd)
-            # 3   All gas seperate.
+    glamdring, gas, reps, discard, set_range, FWHM_gal, stellar_moments, \
+        gas_moments, degree = set_params()
+    
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-# 	galaxy = galaxies[1]
     galaxy = galaxies[i_gal]
-    reps = 0 ## number of monte carlo reps per bin.
-    discard = 2
-#    set_range = None
-    set_range = np.array([4200,10000])
-    c = 299792.458
-#    z = 0.01 # redshift to move galaxy spectrum to its rest frame 
-#    vel = 114.0d # Initial estimate of the galaxy velocity and
-#    sig = 269.0d # velocity dispersion in km/s in the rest frame
-    FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
-                           # about 4px with a dispersion of
-                           # 0.571A/px. (From: http://www.eso.org
-                           # /sci/facilities/paranal/instruments
-                           # /vimos/inst/ifu.html)
- 
-    stellar_moments = 4 # number of componants to calc with ppxf (see 
-                        # keyword moments in ppxf.pro for more details)
-    gas_moments = 4
-    degree = 4  # order of addative Legendre polynomial used to 
-                #; correct the template continuum shape during the fit 
-## File for output: an array containing the calculated dynamics of the
-## galaxy. 
 
+    c = 299792.458
 
     if glamdring:
         dir = '/users/warrenj/'
@@ -173,7 +176,7 @@ def errors(i_gal=None, bin=None):
 
 
     data_file = dir + "analysis/galaxies.txt"
-    # different data types need to be read separetly
+# different data types need to be read separetly
     z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,2,3,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
@@ -433,14 +436,15 @@ def errors(i_gal=None, bin=None):
                 templatesToUse = np.append(templatesToUse, line_name[i])
                 templates = np.column_stack((templates, emission_lines[:,i]))
                 component = component + [1]
-            if 'OIII' in line_name[i]:
+            else:
+#            if 'OIII' in line_name[i]:
                 templatesToUse = np.append(templatesToUse, line_name[i])
                 templates = np.column_stack((templates, emission_lines[:,i]))
                 component = component + [2]
-            if 'NI' in line_name[i]:
-                templatesToUse = np.append(templatesToUse, line_name[i])
-                templates = np.column_stack((templates, emission_lines[:,i]))
-                component = component + [2]               
+#            if 'NI' in line_name[i]:
+#                templatesToUse = np.append(templatesToUse, line_name[i])
+#                templates = np.column_stack((templates, emission_lines[:,i]))
+#                component = component + [2]               
 
         start = [start, start_sav, start_sav]
         moments = [stellar_moments, gas_moments, gas_moments]
@@ -453,21 +457,24 @@ def errors(i_gal=None, bin=None):
             logLam_template, lamRange, FWHM_gal, quiet=glamdring)
 
         for i in range(len(line_name)):
+            if '[' in line_name[i]:
+                j = line_name[i]
+                j = j[j.find('[')+len('['):j.rfind(']')]
+                line_name[i] = j
+
+        aph_lin = np.sort(line_name)
+
+        for i in range(len(line_name)):
             templatesToUse = np.append(templatesToUse, line_name[i])
 
-            component = component + [i+1]
+# line listed alphabetically
+            component = component + [np.where(line_name[i] == aph_lin)[0][0]+1]
             templates = np.column_stack((templates, emission_lines[:,i]))
-       
-            start.append(start_sav)
             moments.append(gas_moments)
+# Bit of a fudge for start (limits ability to set different start for gas)
+        start = [start_sav]*(len(line_name)+1)
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,
             vel, z, gas=True)
-
-
-
-        
-    asjdasj
-        
 
 ## ----------=========== The bestfit part =================---------
     bin_log_sav = bin_log
@@ -483,9 +490,8 @@ def errors(i_gal=None, bin=None):
     stellar_output = np.zeros((reps, stellar_moments))
     stellar_errors = np.zeros((reps, stellar_moments))
     if gas:
-        gas_output = np.zeros((gas+1, reps, gas_moments))
-        gas_errors = np.zeros((gas+1, reps, gas_moments))
-
+        gas_output = np.zeros((gas, reps, gas_moments))
+        gas_errors = np.zeros((gas, reps, gas_moments))
 
     for rep in range(reps):
 #        print rep
@@ -503,26 +509,19 @@ def errors(i_gal=None, bin=None):
 
         stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
         stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]
-        if gas:
-            gas_output[rep,:] = ppMC.sol[0:gas_moments][1]
-            gas_errors[rep,:] = ppMC.error[0:gas_moments][1]
+        for g in range(gas):
+            gas_output[g,rep,:] = ppMC.sol[0:gas_moments][g]
+            gas_errors[g,rep,:] = ppMC.error[0:gas_moments][g]
 ## ----------============ Write ouputs to file ==============---------
 
+# stellar MC results
     if not os.path.exists("%sanalysis/%s/gas_MC/stellar/errors" % (dir,galaxy)):
         os.makedirs("%sanalysis/%s/gas_MC/stellar/errors" % (dir, galaxy))
-    if not os.path.exists("%sanalysis/%s/gas_MC/gas/errors" % (dir, galaxy)):
-        os.makedirs("%sanalysis/%s/gas_MC/gas/errors" % (dir, galaxy))
     bin_file = "%sanalysis/%s/gas_MC/stellar/%s.dat" % (dir, galaxy, str(bin))
     errors_file = "%sanalysis/%s/gas_MC/stellar/errors/%s.dat" % (dir, galaxy, 
         str(bin))
-    gas_file = "%sanalysis/%s/gas_MC/gas/%s.dat" % (dir, galaxy, str(bin))
-    gas_errors_file = "%sanalysis/%s/gas_MC/gas/errors/%s.dat" % (dir, galaxy, 
-        str(bin))
-
     f = open(bin_file, 'w')
     e = open(errors_file, 'w')
-    g = open(gas_file, 'w')
-    ger = open(gas_errors_file, 'w')
     for i in range(reps):
         f.write(str(stellar_output[i,0]) + "   " + \
             str(stellar_output[i,1]) + "   " + str(stellar_output[i,2]) + \
@@ -530,13 +529,34 @@ def errors(i_gal=None, bin=None):
         e.write(str(stellar_errors[i,0]) + "   " + str(stellar_errors[i,1]) + \
             "   " + str(stellar_errors[i,2]) + "   " + \
             str(stellar_errors[i,3]) + '\n')
-        if gas:
-            g.write(str(gas_output[i,0]) + "   " + str(gas_output[i,1]) + \
-                "   " + str(gas_output[i,2]) + "   " + \
-                str(gas_output[i,3]) + '\n')
-            ger.write(str(gas_errors[i,0]) + "   " + str(gas_errors[i,1]) + \
-                "   " + str(gas_errors[i,2]) + "   " + \
-                str(gas_errors[i,3]) + '\n')
+
+# gas MC results
+    gas_dir=[]
+    if gas == 1: gas_dir  = ["gas"]
+    if gas == 2: gas_dir  = ["SF", "Shocks"]
+    if gas == 3: gas_dir  = line_name
+    for d in range(len(gas_dir)):
+        if not os.path.exists("%sanalysis/%s/gas_MC/gas/%s/errors" % (dir,
+            galaxy, gas_dir[d])):
+            os.makedirs("%sanalysis/%s/gas_MC/gas/%s/errors" % (dir,
+                galaxy, gas_dir[d]))
+
+        gas_file = "%sanalysis/%s/gas_MC/gas/%s/%s.dat" % (dir, galaxy,
+            gas_dir[d], str(bin))
+        gas_errors_file = "%sanalysis/%s/gas_MC/gas/%s/errors/%s.dat" % (
+            dir, galaxy, gas_dir[d], str(bin))
+
+        g = open(gas_file, 'w')
+        ger = open(gas_errors_file, 'w')
+        
+        for i in range(reps):
+
+            g.write(str(gas_output[d,i,0]) + "   " + str(gas_output[d,i,1]) + \
+                "   " + str(gas_output[d,i,2]) + "   " + \
+                str(gas_output[d,i,3]) + '\n')
+            ger.write(str(gas_errors[d,i,0]) + "   " + \
+                str(gas_errors[d,i,1]) + "   " + str(gas_errors[d,i,2]) + \
+                "   " + str(gas_errors[d,i,3]) + '\n')
 
             
 ## save bestfit spectrum
@@ -570,27 +590,10 @@ def errors(i_gal=None, bin=None):
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
    
     b = open(bestfit_file, 'w')
-#    if gas == 3: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
-#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n' + \
-#        str(pp.sol[2][0]) + "   " + str(pp.sol[2][1]) + "   " + \
-#        str(pp.sol[2][2]) + "   " + str(pp.sol[2][3]) + '\n')
-#        str(pp.sol[3][0]) + "   " + str(pp.sol[3][1]) + "   " + \
-#        str(pp.sol[3][2]) + "   " + str(pp.sol[3][3]) + '\n')
-#    if gas == 2: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
-#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n' + \
-#        str(pp.sol[2][0]) + "   " + str(pp.sol[2][1]) + "   " + \
-#        str(pp.sol[2][2]) + "   " + str(pp.sol[2][3]) + '\n')
-#    if gas == 1: b.write(str(pp.sol[0][0]) + "   " + str(pp.sol[0][1]) + \
-#        "   " + str(pp.sol[0][2]) + "   " + str(pp.sol[0][3]) + '\n' + \
-#        str(pp.sol[1][0]) + "   " + str(pp.sol[1][1]) + "   " + \
-#        str(pp.sol[1][2]) + "   " + str(pp.sol[1][3]) + '\n')
-    if gas: b.write(for i in range(gas): \
-        str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
-        str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
+    if gas:
+        for i in range(gas):
+            b.write(str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
+                str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
         str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
@@ -612,7 +615,7 @@ def errors(i_gal=None, bin=None):
 
     w = open(weights_file, 'w')
     for i in range(len(pp.weights)):
-        w.write(templatesToUse[i] + "   " + str(pp.weights[i]) + '\n') 
+        w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
                                    
 
@@ -627,4 +630,4 @@ def errors(i_gal=None, bin=None):
 # Use of plot_results.py
 
 if __name__ == '__main__':
-    errors(5,29) if len(sys.argv)<3 else errors()
+    errors2(5,29) if len(sys.argv)<3 else errors2()
