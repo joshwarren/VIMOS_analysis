@@ -51,6 +51,7 @@ from plot_histogram import plot_histogram
 
 
 
+
 #-----------------------------------------------------------------------------
 
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
@@ -230,6 +231,26 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             CBLabel = "LOSVD (km s$^{-1}$)"
         if "h3" in plot_title: title = 'h3'
         if "h4" in plot_title: title = 'h4'
+        
+
+
+        im_type = plot_title.split('_')[0]
+        if im_type == "gas":
+            im_type=""
+        elif im_type == "SF":
+            im_type=" (Star Forming)"
+        elif im_type == "Shocks":
+            im_type=" (Shocking)"
+#        elif 'Hbeta' in im_type:
+#            im_type=" ("+r'H_\beta'+")"
+#        elif 'Hdelta' in im_type:
+#            im_type=" ("+r'H_\delta'+")"
+#        elif 'Hgamma' in im_type:
+#            im_type=" ("+r'H_\gamma'+")"  
+        elif 'OIII' in im_type:
+            im_type=" (OIII)"
+        else:
+            im_type=" (" + im_type + ")"
 
 
 
@@ -239,10 +260,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             uhtitle = "Stellar Uncertainty " + title + " Histogram"
             title = "Stellar " + title + " Map"
         else:
-            utitle = "Ionised Gas Uncertainty " + title + " Map"
-            htitle = "Ionised Gas " + title + " Histogram"
-            uhtitle = "Ionised Gas Uncertainty " + title + " Histogram"
-            title = "Ionised Gas " + title + " Map"
+            utitle = "Ionised" + im_type + " Gas Uncertainty " + title + " Map"
+            htitle = "Ionised" + im_type + " Gas " + title + " Histogram"
+            uhtitle = "Ionised" + im_type + " Gas Uncertainty " + title + \
+                " Histogram"
+            title = "Ionised" + im_type + " Gas " + title + " Map"
 
   
 # ------------================= Plot Histogram ===============----------
@@ -385,6 +407,50 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     if plots:
         plt.show()
 
+
+# ------------============== Plot intensity ==================----------
+    components = []
+    for plot in outputs:
+        if 'stellar' not in plot:
+            components.append(plot.split('gal_')[-1].split('.')[0]
+                              .split('_')[0])
+
+    components = np.unique(components)
+
+
+
+    weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(0))
+    temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
+    all_temp_weights = []
+    for i in range(number_of_bins):
+        weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(i))
+        temp_weight = np.loadtxt(weights_dir, unpack=True, usecols=(1,))
+
+        all_temp_weights.append(temp_weight)
+    all_temp_weights = np.array(all_temp_weights)
+
+    for c in components:
+        i = np.where(temp_name == c)[0][0]
+        c_weight = all_temp_weights[:,i]
+
+        w_max = max(c_weight)
+        w_min = min(c_weight)
+        w_sorted = sorted(np.unique(c_weight))
+        w_min = w_sorted[vLimit]
+        w_max = w_sorted[-vLimit-1]
+
+        w_title = "%s Template weighting map" % (c)
+
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
+
+        plot_velfield_nointerp(x, y, bin_num, xBar, yBar, c_weight,
+            vmin=w_min, vmax=w_max, colorbar=True, nodots=True,
+            galaxy=galaxy.upper(), redshift=z, title=w_title, save=saveTo)
+
+        if plots: plt.show()
+
+    
 ##############################################################################
 
 # Use of plot_results.py

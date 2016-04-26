@@ -9,7 +9,7 @@ from kinematics import kinematics
 #from plot_results_CO import plot_results
 from plot_results import plot_results
 from GH_plots import GH_plots
-from man_errors import man_errors
+from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
@@ -38,7 +38,7 @@ for galaxy in galaxies:
 #    man_errors(galaxy, wav_range=wav_range)
 #    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, residual="median")#, norm='sig')
+        nointerp=True, residual=False)#residual="median")#, norm='sig')
     plt.close("all")
 #    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 #        nointerp=False)

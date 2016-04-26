@@ -53,6 +53,7 @@ def man_errors(galaxy, wav_range=""):
 # Bestfit values
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
+
             v[bin] = vel[i]
             s[bin] = sig[i]
             h3[bin] = h3s[i]

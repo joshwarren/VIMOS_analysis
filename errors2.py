@@ -591,7 +591,7 @@ def errors2(i_gal=None, bin=None):
    
     b = open(bestfit_file, 'w')
     if gas:
-        for i in range(gas):
+        for i in range(gas+1):
             b.write(str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
                 str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
@@ -617,6 +617,16 @@ def errors2(i_gal=None, bin=None):
     for i in range(len(pp.weights)):
         w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
+
+## save polyweights
+    if not os.path.exists("%sanalysis/%s/gas_MC/polyweights" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/polyweights" % (dir, galaxy)) 
+    polyweights_file = "%sanalysis/%s/gas_MC/polyweights/%s.dat" % (dir, galaxy,
+        str(bin))
+
+    pw = open(polyweights_file, 'w')
+    for i in range(len(pp.polyweights)):
+        pw.write(str(pp.polyweights[i]) + '\n') 
                                    
 
 

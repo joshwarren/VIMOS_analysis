@@ -249,11 +249,11 @@ def plot_results(galaxy, discard=2, wav_range="4200-", vLimit=1, norm="lwv",
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
-            ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
-                vmin=vmin, vmax=vmax, flux_type='notmag',
-                nodots=True, show_bin_num=False, colorbar=True, 
-                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-                galaxy = galaxy.upper(), redshift = z, title=title)#, 
+#            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
+#                vmin=vmin, vmax=vmax, flux_type='notmag',
+#                nodots=True, show_bin_num=False, colorbar=True, 
+#                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
+#                galaxy = galaxy.upper(), redshift = z, title=title)#, 
 #                save=saveTo)
 # Uncertainty plot
 #            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
@@ -267,6 +267,48 @@ def plot_results(galaxy, discard=2, wav_range="4200-", vLimit=1, norm="lwv",
 #                save=saveTo)
 
 
+# ------------============== Plot intensity ==================----------
+    components = []
+    for plot in outputs:
+        if 'stellar' not in plot:
+            components.append(plot.split('gal_')[-1].split('.')[0]
+                              .split('_')[0])
+
+    components = np.unique(components)
+
+
+
+    weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(0))
+    temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
+    all_temp_weights = []
+    for i in range(number_of_bins):
+        weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(i))
+        temp_weight = np.loadtxt(weights_dir, unpack=True, usecols=(1,))
+
+        all_temp_weights.append(temp_weight)
+    all_temp_weights = np.array(all_temp_weights)
+
+    for c in components:
+        i = np.where(temp_name == c)[0][0]
+        c_weight = all_temp_weights[:,i]
+
+        w_max = max(c_weight)
+        w_min = min(c_weight)
+        w_sorted = sorted(np.unique(c_weight))
+        w_min = w_sorted[vLimit]
+        w_max = w_sorted[-vLimit-1]
+
+        w_title = "%s Template weighting map" % (c)
+
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        "%splots/notinterpolated/withCO/%s_img_%s.png" % (wav_range_dir, c, wav_range)
+
+        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, c_weight,
+            vmin=w_min, vmax=w_max, colorbar=True, nodots=True,
+            galaxy=galaxy.upper(), redshift=z, title=w_title)#, save=saveTo)
+
+        if plots: plt.show()
+        
 # ------------=================== CO ========================----------
 
         CO_image_file = "/Data/alma/ngc3100-mom0.fits"
@@ -302,9 +344,9 @@ def plot_results(galaxy, discard=2, wav_range="4200-", vLimit=1, norm="lwv",
 
         
 
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-                "%splots/notinterpolated/withCO/%s_field_%s.png" % (
-                wav_range_dir, plot_title, wav_range)
+ #       saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+ #               "%splots/notinterpolated/withCO/%s_field_%s.png" % (
+ #               wav_range_dir, plot_title, wav_range)
         
         if not os.path.exists(os.path.dirname(saveTo)):
             os.makedirs(os.path.dirname(saveTo))
