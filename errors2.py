@@ -456,11 +456,11 @@ def errors2(i_gal=None, bin=None):
         emission_lines, line_name, line_wav = util.emission_lines(
             logLam_template, lamRange, FWHM_gal, quiet=glamdring)
 
-        for i in range(len(line_name)):
-            if '[' in line_name[i]:
-                j = line_name[i]
-                j = j[j.find('[')+len('['):j.rfind(']')]
-                line_name[i] = j
+#        for i in range(len(line_name)):
+#            if '[' in line_name[i]:
+#                j = line_name[i]
+#                j = j[j.find('[')+len('['):j.rfind(']')]
+#                line_name[i] = j
 
         aph_lin = np.sort(line_name)
 
@@ -476,7 +476,9 @@ def errors2(i_gal=None, bin=None):
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,
             vel, z, gas=True)
 
+## ----------===============================================---------
 ## ----------=========== The bestfit part =================---------
+## ----------===============================================---------
     bin_log_sav = bin_log
     noise_sav = noise
     saveTo="%sanalysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
@@ -486,7 +488,9 @@ def errors2(i_gal=None, bin=None):
               component=component, lam=lambdaq, plot=not glamdring, 
               quiet=glamdring, save=saveTo)
 
+## ----------===============================================---------
 ## ----------================= The MC part ==================---------
+## ----------===============================================---------
     stellar_output = np.zeros((reps, stellar_moments))
     stellar_errors = np.zeros((reps, stellar_moments))
     if gas:
@@ -513,7 +517,6 @@ def errors2(i_gal=None, bin=None):
             gas_output[g,rep,:] = ppMC.sol[0:gas_moments][g]
             gas_errors[g,rep,:] = ppMC.error[0:gas_moments][g]
 ## ----------============ Write ouputs to file ==============---------
-
 # stellar MC results
     if not os.path.exists("%sanalysis/%s/gas_MC/stellar/errors" % (dir,galaxy)):
         os.makedirs("%sanalysis/%s/gas_MC/stellar/errors" % (dir, galaxy))
@@ -626,7 +629,17 @@ def errors2(i_gal=None, bin=None):
 
     pw = open(polyweights_file, 'w')
     for i in range(len(pp.polyweights)):
-        pw.write(str(pp.polyweights[i]) + '\n') 
+        pw.write(str(pp.polyweights[i]) + '\n')
+
+## save lambda input
+    if not os.path.exists("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)) 
+    lambda_file = "%sanalysis/%s/gas_MC/lambda/%s.dat" % (dir, galaxy,
+        str(bin))
+
+    l = open(lambda_file, 'w')
+    for i in range(len(lambdaq)):
+        l.write(str(lambdaq[i]) + '\n')    
                                    
 
 

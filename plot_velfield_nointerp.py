@@ -66,8 +66,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = v
 
+    if 'cmap' not in kwargs:
+        cmap=kwargs.get('cmap',sauron)
+    else:
+        cmap=plt.cm.get_cmap(kwargs.get('cmap'))
+
+
     cs = plt.imshow(img[:][::-1], interpolation='none', 
-        cmap=kwargs.get('cmap',sauron), extent=[xmin - pixelSize/2, 
+        cmap=cmap,extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
     plt.clim(vmin,vmax)
 

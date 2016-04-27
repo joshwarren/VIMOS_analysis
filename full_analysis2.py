@@ -4,10 +4,9 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
-
+from plot_results import plot_results
 from kinematics import kinematics
 #from plot_results_CO import plot_results
-from plot_results import plot_results
 from GH_plots import GH_plots
 from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
