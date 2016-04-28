@@ -20,11 +20,15 @@ import matplotlib.pyplot as plt # used for plotting
 import os
 
 
+
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
     **kwargs):
+
+    kwg = {}
+    kwg.update(kwargs)
 
     fig, ax = plt.subplots(nrows=1,ncols=1)
     
@@ -65,12 +69,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     j = np.round((x - xmin)/pixelSize).astype(int)
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = v
-
+    
     if 'cmap' not in kwargs:
         cmap=kwargs.get('cmap',sauron)
     else:
-        cmap=plt.cm.get_cmap(kwargs.get('cmap'))
-
+        cmap = kwg['cmap']
+        if isinstance(cmap, str):
+            cmap = plt.get_cmap(cmap)
 
     cs = plt.imshow(img[:][::-1], interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 

@@ -53,7 +53,7 @@ from plot_histogram import plot_histogram
 import ppxf_util as util
 from numpy.polynomial import legendre
 import os
-
+from colormaps import blue
 
 
 
@@ -86,6 +86,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
+    outputs = []
 
 
 # Read tessellation file
@@ -409,20 +410,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo)
+        save=saveTo)#, cmap='grey_r')
     if plots:
         plt.show()
 
 
-# ------------============== Plot intensity ==================----------
-    print "        gas map(s) and equivent width"
-    components = []
-    for plot in outputs:
-        if 'stellar' not in plot:
-            components.append(plot.split('gal_')[-1].split('.')[0]
-                              .split('_')[0])
+# ------------============ Plot intensity (& EW) ===============----------
+    print "        gas map(s) and equivalent widths"
 
-    components = np.unique(components)
 
 ## Getting the gas templates used. Assumes all gas is in range of bin 0.
     lam_dir = "/Data/vimosindi/analysis/%s/gas_MC/lambda/%s.dat" % (galaxy,str(0))
@@ -457,8 +452,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     temp_weights = np.array(temp_weights)
     continuum = np.array(continuum)
 
+    components = []
+    for n in temp_name:
+        if not str.isdigit(n):
+            components.append(n)
 
-
+    
     for c in components:
         i = np.where(line_name == c)[0][0]
         temp_flux = np.trapz(emission_lines[:,i], x=lam)
@@ -478,11 +477,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
-
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux,
             vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle,
             galaxy=galaxy.upper(), redshift=z, title=f_title, save=saveTo,
-            cmap='gray_r')
+            cmap = 'gray_r')
 
         if plots: plt.show()
 
@@ -504,7 +502,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, equiv_width,
             vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
             label=eqCBtitle, galaxy=galaxy.upper(), redshift=z,
-            title=eq_title, save=saveTo)
+            title=eq_title, save=saveTo, cmap='gray_r')
 
 # ------------============== Line ratio maps ==================----------
     print "        line ratios"
