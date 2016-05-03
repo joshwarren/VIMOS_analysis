@@ -54,6 +54,23 @@ import ppxf_util as util
 from numpy.polynomial import legendre
 import os
 from colormaps import blue
+from colormaps import blue2
+import colormaps as cm
+
+
+
+#-----------------------------------------------------------------------------
+def use_templates(galaxy, glamdring=False):
+    if glamdring:
+        template_weighting = '/users/warrenj/analysis/' + galaxy + \
+	    '/templates.txt' 
+    else:
+        template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
+	    '/templates.txt' 
+
+    templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
+    return templatesToUse
+#-----------------------------------------------------------------------------
 
 
 
@@ -431,26 +448,36 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 ## Getting the contiuum model used in ppxf    
     l = np.linspace(-1, 1, len(lam))
 # degree = 4 in all our analysis.
-    degree = 4
-    vand = legendre.legvander(l, degree)
+#    degree = 4
+#    vand = legendre.legvander(l, degree)
 
-        
 
+
+    
     weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(0))
     temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
 
     temp_weights = []
-    continuum = []
+#    continuum = []
+    bestfit = []
     for i in range(number_of_bins):
         weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(i))
         temp_weights.append(np.loadtxt(weights_dir, unpack=True, usecols=(1,)))
 
-        ployweights_dir = "/Data/vimosindi/analysis/%s/gas_MC/polyweights/%s.dat" % (galaxy,str(i))
-        polyweights_bin = np.loadtxt(ployweights_dir, unpack=True)
-        continuum.append(np.sum(np.multiply(np.transpose(polyweights_bin),vand),axis=1))
+#        apweights_dir = "/Data/vimosindi/analysis/%s/gas_MC/polyweights/%s.dat" % (galaxy,str(i))
+#        apweights_bin = np.loadtxt(apweights_dir, unpack=True)
+#        apoly = np.polynomial.legendre.legval(l, apweights_bin)
+
+        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/bestfit/%s.dat" % (galaxy,str(i))
+        bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
+        bestfit.append(bestfit_bin)
         
+#        continuum.append(np.sum(np.multiply(np.transpose(apweights_bin),vand),axis=1))
+#        continuum.append(apoly)
+
     temp_weights = np.array(temp_weights)
-    continuum = np.array(continuum)
+#    continuum = np.array(continuum)
+    bestfit = np.array(bestfit)
 
     components = []
     for n in temp_name:
@@ -462,9 +489,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         i = np.where(line_name == c)[0][0]
         temp_flux = np.trapz(emission_lines[:,i], x=lam)
         wav = line_wav[i]
-        i = np.where(temp_name == c)[0][0]
-        flux = temp_weights[:,i]*temp_flux
-
+        j = np.where(temp_name == c)[0][0]
+        flux = temp_weights[:,j]*temp_flux
+        
         f_max = max(flux)
         f_min = min(flux)
         f_sorted = sorted(np.unique(flux))
@@ -480,19 +507,19 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux,
             vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle,
             galaxy=galaxy.upper(), redshift=z, title=f_title, save=saveTo,
-            cmap = 'gray_r')
+            cmap = blue)#'gray_r')
 
         if plots: plt.show()
 
-        
-        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
+#        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
+        equiv_width = flux/(bestfit[0][np.argmin(np.abs(lam-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
         
         eq_max = max(equiv_width)
         eq_min = min(equiv_width)
         eq_sorted = sorted(np.unique(equiv_width))
         eq_min = eq_sorted[vLimit]
         eq_max = eq_sorted[-vLimit-1]
-
+        
         eq_title = "%s Equivalent Width" % (c)
         eqCBtitle = r"Equivalent Width (\AA)"
 
@@ -502,7 +529,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, equiv_width,
             vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
             label=eqCBtitle, galaxy=galaxy.upper(), redshift=z,
-            title=eq_title, save=saveTo, cmap='gray_r')
+            title=eq_title, save=saveTo, cmap=cm.blue)#blue2)#'gray_r')
 
 # ------------============== Line ratio maps ==================----------
     print "        line ratios"
@@ -552,7 +579,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             "%s_%s_line_ratio_%s.png" % (cA, cB, wav_range)
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True,
-            galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo)
+            galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo,
+            cmap=blue2)
             
     
 ##############################################################################

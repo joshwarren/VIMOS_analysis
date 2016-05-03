@@ -20,13 +20,13 @@ def set_params():
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
+    glamdring = True
     gas = 3 # 0   No gas emission lines
             # 1   Probe ionised gas
             # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
             #     (Hb and Hd)
             # 3   All gas seperate.
-    reps = 0 ## number of monte carlo reps per bin.
+    reps = 5000 ## number of monte carlo reps per bin.
     discard = 2
     set_range = np.array([4200,10000])
     FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
@@ -621,15 +621,25 @@ def errors2(i_gal=None, bin=None):
         w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
 
-## save polyweights
-    if not os.path.exists("%sanalysis/%s/gas_MC/polyweights" % (dir, galaxy)):
-        os.makedirs("%sanalysis/%s/gas_MC/polyweights" % (dir, galaxy)) 
-    polyweights_file = "%sanalysis/%s/gas_MC/polyweights/%s.dat" % (dir, galaxy,
+## save addative polyweights
+    if not os.path.exists("%sanalysis/%s/gas_MC/apweights" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/apweights" % (dir, galaxy)) 
+    polyweights_file = "%sanalysis/%s/gas_MC/apweights/%s.dat" % (dir, galaxy,
         str(bin))
 
-    pw = open(polyweights_file, 'w')
+    apw = open(polyweights_file, 'w')
     for i in range(len(pp.polyweights)):
-        pw.write(str(pp.polyweights[i]) + '\n')
+        apw.write(str(pp.polyweights[i]) + '\n')
+
+## save multiplicative polyweights
+    if not os.path.exists("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)):
+        os.makedirs("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
+    polyweights_file = "%sanalysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
+        str(bin))
+
+    mpw = open(polyweights_file, 'w')
+    for i in range(len(pp.mpolyweights)):
+        mpw.write(str(pp.mpolyweights[i]) + '\n')
 
 ## save lambda input
     if not os.path.exists("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)):
