@@ -20,13 +20,14 @@ def set_params():
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
+    glamdring = False
+    quiet = True
     gas = 3 # 0   No gas emission lines
             # 1   Probe ionised gas
             # 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
             #     (Hb and Hd)
             # 3   All gas seperate.
-    reps = 5000 ## number of monte carlo reps per bin.
+    reps = 0 ## number of monte carlo reps per bin.
     discard = 2
     set_range = np.array([4200,10000])
     FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
@@ -39,7 +40,7 @@ def set_params():
     gas_moments = 4
     degree = 4  # order of addative Legendre polynomial used to 
                 #; correct the template continuum shape during the fit
-    return glamdring, gas, reps, discard, set_range, FWHM_gal, \
+    return glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
         stellar_moments, gas_moments, degree
 #-----------------------------------------------------------------------------
 
@@ -149,8 +150,8 @@ def errors2(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring, gas, reps, discard, set_range, FWHM_gal, stellar_moments, \
-        gas_moments, degree = set_params()
+    glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
+        stellar_moments, gas_moments, degree = set_params()
     
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
     galaxy = galaxies[i_gal]
@@ -413,7 +414,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------============ All lines together ===============---------
     if gas == 1:
         emission_lines, line_name, line_wav = util.emission_lines(
-            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
+            logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
         templatesToUse = np.append(templatesToUse, line_name)
 
@@ -427,7 +428,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------=============== SF and shocks lines ==============---------
     if gas == 2:
         emission_lines, line_name, line_wav = util.emission_lines(
-            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
+            logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
         for i in range(len(line_name)):
             
@@ -454,7 +455,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------=========== All lines inderpendantly ==============---------
     if gas == 3:
         emission_lines, line_name, line_wav = util.emission_lines(
-            logLam_template, lamRange, FWHM_gal, quiet=glamdring)
+            logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
 #        for i in range(len(line_name)):
 #            if '[' in line_name[i]:
@@ -485,8 +486,8 @@ def errors2(i_gal=None, bin=None):
 
     pp = ppxf(templates, bin_log, noise, velscale, start, 
               goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-              component=component, lam=lambdaq, plot=not glamdring, 
-              quiet=glamdring, save=saveTo)
+              component=component, lam=lambdaq, plot=not quiet, 
+              quiet=quiet, save=saveTo)
 
 ## ----------===============================================---------
 ## ----------================= The MC part ==================---------
@@ -508,7 +509,7 @@ def errors2(i_gal=None, bin=None):
     
         ppMC = ppxf(templates, bin_log, noise, velscale, start, 
             goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-            lam=lambdaq, plot=not glamdring, quiet=glamdring, bias=0.1, 
+            lam=lambdaq, plot=not quiet, quiet=quiet, bias=0.1, 
             component=component)
 
         stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
@@ -632,14 +633,14 @@ def errors2(i_gal=None, bin=None):
         apw.write(str(pp.polyweights[i]) + '\n')
 
 ## save multiplicative polyweights
-    if not os.path.exists("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)):
-        os.makedirs("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
-    polyweights_file = "%sanalysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
-        str(bin))
-
-    mpw = open(polyweights_file, 'w')
-    for i in range(len(pp.mpolyweights)):
-        mpw.write(str(pp.mpolyweights[i]) + '\n')
+#    if not os.path.exists("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)):
+#        os.makedirs("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
+#    polyweights_file = "%sanalysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
+#        str(bin))
+#
+#    mpw = open(polyweights_file, 'w')
+#    for i in range(len(pp.mpolyweights)):
+#        mpw.write(str(pp.mpolyweights[i]) + '\n')
 
 ## save lambda input
     if not os.path.exists("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)):

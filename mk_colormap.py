@@ -7,7 +7,7 @@ import re
 import numpy as np
 from matplotlib import colors
 
-name = "red"
+name = "velcmap"
 
 
 

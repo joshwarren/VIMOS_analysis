@@ -103,7 +103,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
-    outputs = []
+#    outputs = []
 
 
 # Read tessellation file
@@ -190,7 +190,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_binned -= v_binned[center_bin]
             if norm == "lwv":
                 lwv = v_unbinned*galaxy_data_unbinned
-                v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(galaxy_data_unbinned)
+                v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(
+                    galaxy_data_unbinned)
             if norm == "sig":
                 sig_file = glob.glob(output+'gal_stellar_sigma*.dat')
                 s_binned, s_uncert_binned = np.loadtxt(sig_file[0], unpack=True)
@@ -244,12 +245,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if "vel" in plot_title:
             title = 'Velocity'
             CBLabel = "LOSV (km s$^{-1}$)"
+            cmap = cm.velcmap
 #	    vmin=-35
 #	    vmax=-vmin
 #        vmax=375
 #        vmin=240
 #        v_binned += 90
 #        v_uncert_max = 100
+        else:
+            cmap = cm.blue
         if "sigma" in plot_title:
             title = 'Velocity Dispersion'
             CBLabel = "LOSVD (km s$^{-1}$)"
@@ -296,12 +300,16 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title, wav_range)
-        plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z, vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle, xaxis=CBLabel, save=saveTo)
+        plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
+            vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
+            xaxis=CBLabel, save=saveTo)
 # Uncertainty histogram
         saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title+'_uncert', 
             wav_range)
-        plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z, vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin, title=uhtitle, xaxis=CBLabel, save=saveTo)
+        plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
+            vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin,
+            title=uhtitle, xaxis=CBLabel, save=saveTo)
 
         if plots:
             plt.show()
@@ -312,22 +320,22 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
-#            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
-#                vmin=vmin, vmax=vmax, #flux_type='notmag',
-#                nodots=True, show_bin_num=True, colorbar=True, 
-#                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-#                galaxy = galaxy.upper(), redshift = z, title=title, 
-#                save=saveTo)
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
+                vmin=vmin, vmax=vmax, #flux_type='notmag',
+                nodots=True, show_bin_num=True, colorbar=True, 
+                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
+                galaxy = galaxy.upper(), redshift = z, title=title, 
+                save=saveTo, cmap=cmap)
 # Uncertainty plot
             saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
-#            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
-#                vmin=v_uncert_min, vmax=v_uncert_max, flux_type='notmag',
-#                nodots=True, show_bin_num=True, colorbar=True, 
-#                label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
-#                galaxy = galaxy.upper(), redshift = z, title=utitle, 
-#                save=saveTo)
+            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
+                vmin=v_uncert_min, vmax=v_uncert_max, flux_type='notmag',
+                nodots=True, show_bin_num=True, colorbar=True, 
+                label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+                galaxy = galaxy.upper(), redshift = z, title=utitle, 
+                save=saveTo, cmap=cm.blue)
 
 # ------------===== Plot velfield - with interperlation ====----------
         else:
@@ -402,7 +410,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             nodots=True, show_bin_num=True, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
-            save=saveTo)
+            save=saveTo, cmap = cm.blue)
         if plots:
             plt.show()
 
@@ -427,7 +435,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo)#, cmap='grey_r')
+        save=saveTo, cmap=cm.blue)
     if plots:
         plt.show()
 
@@ -436,17 +444,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     print "        gas map(s) and equivalent widths"
 
 
-## Getting the gas templates used. Assumes all gas is in range of bin 0.
-    lam_dir = "/Data/vimosindi/analysis/%s/gas_MC/lambda/%s.dat" % (galaxy,str(0))
-    lam = np.loadtxt(lam_dir, unpack=True)
-    loglam = np.log(lam)
+## Getting the gas templates used.
     FWHM_gal = 4*0.71
-    emission_lines, line_name, line_wav = util.emission_lines(
-        loglam, [lam[0],lam[-1]], FWHM_gal, quiet=True)
 
 
-## Getting the contiuum model used in ppxf    
-    l = np.linspace(-1, 1, len(lam))
+
+
 # degree = 4 in all our analysis.
 #    degree = 4
 #    vand = legendre.legvander(l, degree)
@@ -454,21 +457,39 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
     
-    weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(0))
+    weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (
+        galaxy,str(0))
     temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
 
     temp_weights = []
 #    continuum = []
     bestfit = []
+    lam = []
+    emission_lines = []
     for i in range(number_of_bins):
-        weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (galaxy,str(i))
+        lam_dir = "/Data/vimosindi/analysis/%s/gas_MC/lambda/%s.dat" % (
+            galaxy,str(i))
+        lam_bin = np.loadtxt(lam_dir, unpack=True)
+        lam.append(lam_bin)
+## Getting the contiuum model used in ppxf
+        l = np.linspace(-1, 1, len(lam))
+
+
+        loglam_bin = np.log(lam_bin)
+        emission_lines_bin, line_name, line_wav = util.emission_lines(
+            loglam_bin, [lam_bin[0],lam_bin[-1]], FWHM_gal, quiet=True)
+        emission_lines.append(emission_lines_bin)
+        
+        weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat"\
+            % (galaxy,str(i))
         temp_weights.append(np.loadtxt(weights_dir, unpack=True, usecols=(1,)))
 
 #        apweights_dir = "/Data/vimosindi/analysis/%s/gas_MC/polyweights/%s.dat" % (galaxy,str(i))
 #        apweights_bin = np.loadtxt(apweights_dir, unpack=True)
 #        apoly = np.polynomial.legendre.legval(l, apweights_bin)
 
-        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/bestfit/%s.dat" % (galaxy,str(i))
+        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/bestfit/%s.dat" % (
+            galaxy,str(i))
         bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
         bestfit.append(bestfit_bin)
         
@@ -478,6 +499,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     temp_weights = np.array(temp_weights)
 #    continuum = np.array(continuum)
     bestfit = np.array(bestfit)
+    lam = np.array(lam)
+    emission_lines = np.array(emission_lines)
+
+
 
     components = []
     for n in temp_name:
@@ -487,7 +512,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     
     for c in components:
         i = np.where(line_name == c)[0][0]
-        temp_flux = np.trapz(emission_lines[:,i], x=lam)
+        temp_flux = np.trapz(emission_lines[0][:,i], x=lam[0])
         wav = line_wav[i]
         j = np.where(temp_name == c)[0][0]
         flux = temp_weights[:,j]*temp_flux
@@ -512,7 +537,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if plots: plt.show()
 
 #        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
-        equiv_width = flux/(bestfit[0][np.argmin(np.abs(lam-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
+        continuum = np.zeros(number_of_bins)
+        for k in range(number_of_bins):
+            continuum[k] = bestfit[k][np.argmin(np.abs(lam[k]-wav))] - \
+                np.max(emission_lines[k][i])*temp_weights[k,j]
+        equiv_width = flux/continuum#(bestfit[0][np.argmin(np.abs(lam[0]-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
         
         eq_max = max(equiv_width)
         eq_min = min(equiv_width)
@@ -554,17 +583,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         cB = line_name[plotB]
         
         iA = np.where(line_name == cA)[0][0]
-        temp_fluxA = np.trapz(emission_lines[:,iA], x=lam)
+        temp_fluxA = np.trapz(emission_lines[0][:,iA], x=lam[0])
         iA = np.where(temp_name == cA)[0][0]
         fluxA = temp_weights[:,iA]*temp_fluxA
     
         iB = np.where(line_name == cB)[0][0]
-        temp_fluxB = np.trapz(emission_lines[:,iB], x=lam)
+        temp_fluxB = np.trapz(emission_lines[0][:,iB], x=lam[0])
         iB = np.where(temp_name == cB)[0][0]
         fluxB = temp_weights[:,iB]*temp_fluxB
 
         line_ratio = fluxA/fluxB
 
+#        vLimit = 3
         lr_max = max(line_ratio)
         lr_min = min(line_ratio)
         lr_sorted = sorted(np.unique(line_ratio))
@@ -580,8 +610,26 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True,
             galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo,
-            cmap=blue2)
-            
+            cmap=cm.blue)
+
+## Plotting the inverse of the above
+#        vLimit = 3 
+        line_ratio = fluxB/fluxA
+        eq_title = "%s/%s Line Ratio" % (cB, cA)
+        lr_max = max(line_ratio)
+        lr_min = min(line_ratio)
+        lr_sorted = sorted(np.unique(line_ratio))
+        lr_min = lr_sorted[vLimit]
+        lr_max = lr_sorted[-vLimit-1]
+
+        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
+            "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
+        plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
+            vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True, 
+            galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo,
+            cmap=cm.blue)
+
     
 ##############################################################################
 

@@ -37,7 +37,7 @@ for galaxy in galaxies:
 #    man_errors(galaxy, wav_range=wav_range)
 #    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, residual=False)#residual="median")#, norm='sig')
+        nointerp=True, residual="median")#, norm='sig')
     plt.close("all")
 #    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 #        nointerp=False)
