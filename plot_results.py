@@ -56,10 +56,8 @@ from plot_histogram import plot_histogram
 import ppxf_util as util
 from numpy.polynomial import legendre
 import os
-from colormaps import blue
-from colormaps import blue2
 import colormaps as cm
-
+from sauron_colormap import sauron
 
 
 #-----------------------------------------------------------------------------
@@ -142,7 +140,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
-#    outputs = []
+    outputs = []
 
 
 # Read tessellation file
@@ -284,7 +282,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if "vel" in plot_title:
             title = 'Velocity'
             CBLabel = "LOSV (km s$^{-1}$)"
-            cmap = cm.velcmap
+            cmap = sauron
 #	    vmin=-35
 #	    vmax=-vmin
 #        vmax=375
@@ -292,7 +290,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #        v_binned += 90
 #        v_uncert_max = 100
         else:
-            cmap = cm.blue
+            cmap = sauron#cm.blue
         if "sigma" in plot_title:
             title = 'Velocity Dispersion'
             CBLabel = "LOSVD (km s$^{-1}$)"
@@ -382,7 +380,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 nodots=True, show_bin_num=True, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
-                save=saveTo, cmap=cm.blue)
+                save=saveTo)#, cmap=cm.blue)
             if CO:
                 add_CO(ax, galaxy, header, saveTo)
             plt.close('all')
@@ -465,7 +463,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             nodots=True, show_bin_num=True, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
-            save=saveTo, cmap = cm.blue)
+            save=saveTo)#, cmap = cm.blue)
         if plots:
             plt.show()
         if CO:
@@ -493,7 +491,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         nodots=True, show_bin_num=False, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo, cmap=cm.blue)
+        save=saveTo)#, cmap=cm.blue)
     if plots:
         plt.show()
     if CO:
@@ -508,22 +506,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 ## Getting the gas templates used.
     FWHM_gal = 4*0.71
 
-
-
-
-# degree = 4 in all our analysis.
-#    degree = 4
-#    vand = legendre.legvander(l, degree)
-
-
-
+    degree = 4 # in all our analysis.
     
     weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (
         galaxy,str(0))
     temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
 
     temp_weights = []
-#    continuum = []
     bestfit = []
     lam = []
     emission_lines = []
@@ -545,20 +534,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             % (galaxy,str(i))
         temp_weights.append(np.loadtxt(weights_dir, unpack=True, usecols=(1,)))
 
-#        apweights_dir = "/Data/vimosindi/analysis/%s/gas_MC/polyweights/%s.dat" % (galaxy,str(i))
-#        apweights_bin = np.loadtxt(apweights_dir, unpack=True)
-#        apoly = np.polynomial.legendre.legval(l, apweights_bin)
-
         bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/bestfit/%s.dat" % (
             galaxy,str(i))
         bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
         bestfit.append(bestfit_bin)
         
-#        continuum.append(np.sum(np.multiply(np.transpose(apweights_bin),vand),axis=1))
-#        continuum.append(apoly)
+
 
     temp_weights = np.array(temp_weights)
-#    continuum = np.array(continuum)
     bestfit = np.array(bestfit)
     lam = np.array(lam)
     emission_lines = np.array(emission_lines)
@@ -592,8 +575,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux,
             vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle,
-            galaxy=galaxy.upper(), redshift=z, title=f_title, save=saveTo,
-            cmap = blue)#'gray_r')
+            galaxy=galaxy.upper(), redshift=z, title=f_title, save=saveTo)#,
+#            cmap = cm.blue)#'gray_r')
 
         if plots: plt.show()
         if CO:
@@ -622,7 +605,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, equiv_width,
             vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
             label=eqCBtitle, galaxy=galaxy.upper(), redshift=z,
-            title=eq_title, save=saveTo, cmap=cm.blue)#blue2)#'gray_r')
+            title=eq_title, save=saveTo)#, cmap=cm.blue)
         if CO:
             add_CO(ax, galaxy, header, saveTo)
         plt.close('all')
@@ -661,7 +644,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         line_ratio = np.log10(fluxA/fluxB)
 
-#        vLimit = 3
+ #       vLimit = 5
         lr_max = max(line_ratio)
         lr_min = min(line_ratio)
         lr_sorted = sorted(np.unique(line_ratio))
@@ -678,7 +661,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True,
             galaxy=galaxy.upper(), redshift=z, title=lr_title, save=saveTo,
-            label=lrCBtitle, cmap=cm.blue)
+            label=lrCBtitle)#, cmap=cm.blue)
         if CO:
             add_CO(ax, galaxy, header, saveTo)
         plt.close('all')        
@@ -701,7 +684,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True, 
             galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo,
-            label=lrCBtitle, cmap=cm.blue)
+            label=lrCBtitle)#, cmap=cm.blue)
         if CO:
             add_CO(ax, galaxy, header, saveTo)
         plt.close('all')

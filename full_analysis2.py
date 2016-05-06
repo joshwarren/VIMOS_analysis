@@ -14,7 +14,7 @@ import os # for creating directory
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024', 'ngc1399']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-galaxies = ['ngc1399']
+#galaxies = ['ngc1399']
 #galaxies = ['ngc7075']
 #galaxies = ['eso443-g024']
 #galaxies = ['pks0718-34']
