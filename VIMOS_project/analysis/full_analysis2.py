@@ -8,7 +8,7 @@ from plot_results import plot_results
 from kinematics import kinematics
 #from plot_results_CO import plot_results
 from GH_plots import GH_plots
-from man_errors import man_errors
+from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 

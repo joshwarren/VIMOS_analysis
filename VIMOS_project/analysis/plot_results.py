@@ -66,7 +66,7 @@ def use_templates(galaxy, glamdring=False):
         template_weighting = '/users/warrenj/analysis/' + galaxy + \
 	    '/templates.txt' 
     else:
-        template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
+        template_weighting = '/Data/vimos/analysis/' + galaxy + \
 	    '/templates.txt' 
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
@@ -117,7 +117,7 @@ def add_CO(ax, galaxy, header, saveTo):
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
     plots=False, nointerp=False, residual=False, CO=False, **kwargs):
 
-    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
+    data_file =  "/Data/vimos/analysis/galaxies.txt"
     # different data types need to be read separetly
     z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
@@ -131,12 +131,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     else:
         wav_range_dir = ""
 
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File = "/Data/vimos/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File2 = "/Data/vimos/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output2.txt"
 
-    output = "/Data/vimosindi/analysis/%s/results/%s" % (galaxy,wav_range_dir)
+    output = "/Data/vimos/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
@@ -158,12 +158,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 # FILE_SEARCH returns an array even in cases where it only returns
 # one result. This is NOT equivalent to a scalar. 
-    dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-        "*_cube.fits" % (galaxy)) 
-
-## Directory for plotting single quadrant
-#dataCubeDirectory = glob.glob("/Data/vimosindi/%s-3/Q2/calibrated/cube/" \
-#    "*_fluxcal_cube.fits" % (galaxy)) 
+    dataCubeDirectory = glob.glob("/Data/vimos/cubes/%s.cube.combined.fits" \
+        % (galaxy)) 
 
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
@@ -339,13 +335,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------================= Plot Histogram ===============----------
 # Field histogram
 
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title, wav_range)
         plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
             vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
             xaxis=CBLabel, save=saveTo)
 # Uncertainty histogram
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title+'_uncert', 
             wav_range)
         plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
@@ -358,7 +354,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
 # Field plot
-            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
             ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
@@ -372,7 +368,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             plt.close('all')
                 
 # Uncertainty plot
-            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
@@ -388,7 +384,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------===== Plot velfield - with interperlation ====----------
         else:
 # Field plot
-            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/%s_field_%s.png" % (wav_range_dir, plot_title, 
                 wav_range)
             plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
@@ -396,7 +392,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
                 redshift = z, title=title, save=saveTo)
 # Uncertainty plot
-            saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
             plot_velfield(xBar, yBar, v_uncert_binned, vmin=v_uncert_min, 
@@ -419,9 +415,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     if residual:
         print "        " + residual + " residuals"
-        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy) +\
+        bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
             "bestfit/"
-        data_dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy) +\
+        data_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
             "input/"
 
         average_residuals = np.zeros(number_of_bins)
@@ -454,7 +450,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         CBLabel = "Residuals"
         title = str.capitalize(residual) + \
 	    " Residuals of Bestfit to Normalised Spectrum"
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
             residual, wav_range)
 
@@ -472,7 +468,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
   
 # ------------================= Plot Chi2/DOF ===============----------
     print "        chi2"
-    chi2_dir = "/Data/vimosindi/analysis/%s/gas_MC/chi2/" % (galaxy)
+    chi2_dir = "/Data/vimos/analysis/%s/gas_MC/chi2/" % (galaxy)
     chi2 = np.zeros(number_of_bins)
     for i in range(number_of_bins):
         chi2[i] = np.loadtxt("%s%d.dat" % (chi2_dir, i))
@@ -483,7 +479,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     
     CBLabel = "Chi2/DOF"
     title = "Chi2/DOF of the bestfit"
-    saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
 
     ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
@@ -508,7 +504,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     degree = 4 # in all our analysis.
     
-    weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat" % (
+    weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat" % (
         galaxy,str(0))
     temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
 
@@ -517,7 +513,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     lam = []
     emission_lines = []
     for i in range(number_of_bins):
-        lam_dir = "/Data/vimosindi/analysis/%s/gas_MC/lambda/%s.dat" % (
+        lam_dir = "/Data/vimos/analysis/%s/gas_MC/lambda/%s.dat" % (
             galaxy,str(i))
         lam_bin = np.loadtxt(lam_dir, unpack=True)
         lam.append(lam_bin)
@@ -530,11 +526,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             loglam_bin, [lam_bin[0],lam_bin[-1]], FWHM_gal, quiet=True)
         emission_lines.append(emission_lines_bin)
         
-        weights_dir = "/Data/vimosindi/analysis/%s/gas_MC/temp_weights/%s.dat"\
+        weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat"\
             % (galaxy,str(i))
         temp_weights.append(np.loadtxt(weights_dir, unpack=True, usecols=(1,)))
 
-        bestfit_dir = "/Data/vimosindi/analysis/%s/gas_MC/bestfit/%s.dat" % (
+        bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/bestfit/%s.dat" % (
             galaxy,str(i))
         bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
         bestfit.append(bestfit_bin)
@@ -571,7 +567,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 ## from header
         fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
 
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux,
             vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle,
@@ -599,7 +595,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         eq_title = "%s Equivalent Width" % (c)
         eqCBtitle = r"Equivalent Width (\AA)"
 
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
             c, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, equiv_width,
@@ -612,9 +608,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
   
 # ------------============== Line ratio maps ==================----------
     print "        line ratios"
-    if not os.path.exists("/Data/vimosindi/analysis/%s/" % (galaxy) + \
+    if not os.path.exists("/Data/vimos/analysis/%s/" % (galaxy) + \
         "results/%splots/notinterpolated/lineratio" % (wav_range_dir)):
-        os.makedirs("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        os.makedirs("/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/lineratio" % (wav_range_dir)) 
 
 
@@ -655,7 +651,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         lrCBtitle = r"log$_{10}$ (%s/%s)" %(cA,cB)
 
         
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
             "%s_%s_line_ratio_%s.png" % (cA, cB, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
@@ -678,7 +674,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         lr_min = lr_sorted[vLimit]
         lr_max = lr_sorted[-vLimit-1]
 
-        saveTo = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
+        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
             "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,

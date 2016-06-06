@@ -19,9 +19,9 @@ import sys # for early exit of python
 import os
 
 def man_errors(galaxy, wav_range="4200-"):
-    dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
-    output_dir = "/Data/vimosindi/analysis/%s/results/%s/" % (galaxy, wav_range)
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy)
+    output_dir = "/Data/vimos/analysis/%s/results/%s/" % (galaxy, wav_range)
+    tessellation_File = "/Data/vimos/analysis/%s/" %(galaxy) +\
         "voronoi_2d_binning_output.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1) 

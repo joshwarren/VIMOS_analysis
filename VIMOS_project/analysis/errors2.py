@@ -20,7 +20,7 @@ def set_params():
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = False
+    glamdring = True
     quiet = True
     gas = 3 # 0   No gas emission lines
             # 1   Probe ionised gas
@@ -67,7 +67,7 @@ def use_templates(galaxy, glamdring=False):
         template_weighting = '/users/warrenj/analysis/' + galaxy + \
 	    '/templates.txt' 
     else:
-        template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
+        template_weighting = '/Data/vimos/analysis/' + galaxy + \
 	    '/templates.txt' 
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
@@ -153,7 +153,7 @@ def errors2(i_gal=None, bin=None):
     glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
         stellar_moments, gas_moments, degree = set_params()
     
-    galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+    galaxies = ['ngc3557', 'IC1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
     galaxy = galaxies[i_gal]
 
     c = 299792.458
@@ -168,7 +168,7 @@ def errors2(i_gal=None, bin=None):
         from ppxf import ppxf
         import ppxf_util as util
     else:
-        dir = '/Data/vimosindi/'
+        dir = '/Data/vimos/'
         dir2 = '/Data/idl_libraries/'
         import matplotlib.pyplot as plt # used for plotting
         from ppxf import ppxf
@@ -265,14 +265,14 @@ def errors2(i_gal=None, bin=None):
 
 ## ----------========= Reading the spectrum  =============---------
 
-    dataCubeDirectory = glob.glob(dir+"reduced/%s/cube/*_cube.fits" % (galaxy)) 
+    dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
         
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
     galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
 
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
-    CDELT_spec = header['CD3_3']
+    CDELT_spec = header['CDELT3']
     s = galaxy_data.shape
 
     rows_to_remove = range(discard)

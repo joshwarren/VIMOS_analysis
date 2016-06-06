@@ -106,8 +106,8 @@ templates /= median(templates)
 ;; one result. This is NOT equivalent to a scalar. 
 ; Final wildcard reflects the fact that depending on reduction method
 ; quadrants may or may not have beenflux calibrated.
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		Galaxy + '/cube/*_cube.fits') 
+	dataCubeDirectory = FILE_SEARCH('/Data/vimos/cubes/' + $
+		Galaxy + '.cube.combined.fits') 
         
 
 
@@ -116,7 +116,7 @@ templates /= median(templates)
 
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
-	CDELT_spec = sxpar(header,'CD3_3')
+	CDELT_spec = sxpar(header,'CDELT3')
 	s = size(galaxy_data_temp)
 
 ;; Change to pixel units
@@ -138,7 +138,9 @@ galaxy_noise = SQRT(total(total(galaxy_noise_temp[discard:s[1]-discard-1, $
 
 
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
-	h =[galaxy_data[0:ignore[0]],galaxy_data[ignore[1]:*]]
+	if 5581 lt CRVAL_spec+s[3]*CDELT_spec then begin
+		h =[galaxy_data[0:ignore[0]],galaxy_data[ignore[1]:*]]
+        endif else h = galaxy_data
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
@@ -280,7 +282,7 @@ show_rst = SCATTERPLOT(results[0,*],results[1,*], XTITLE="velocity", $
 show_mean = SCATTERPLOT(vel,sig, SYMBOL='star', SYM_SIZE=2.0, /OVERPLOT, $
     /SYM_FILLED)
 
-show_mean.Save, "/Data/vimosindi/analysis/"+galaxy+"/MCMC_inital_fit.png", $
+show_mean.Save, "/Data/vimos/analysis/"+galaxy+"/MCMC_inital_fit.png", $
     BORDER=10, RESOLUTION=300;, TRANSPARENT=[255, 255, 255] 
 
 
@@ -292,7 +294,7 @@ show_mean.Save, "/Data/vimosindi/analysis/"+galaxy+"/MCMC_inital_fit.png", $
 ;; ----------===============================================---------
 ;; ----------================= Save Result =================---------
 ;; ----------===============================================---------
-data_file = "/Data/vimosindi/analysis/galaxies.txt"
+data_file = "/Data/vimos/analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
     y_gals, SN_used, skipline=1, format='A,D,D,D,I,I,I', /SILENT
 

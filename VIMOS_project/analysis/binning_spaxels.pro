@@ -33,7 +33,7 @@ pro binning_spaxels, galaxy, discard=discard, targetSN=targetSN
 ;; ----------============ Default parameters ===============---------
 ;; ----------===============================================---------
 
-data_file = "/Data/vimosindi/analysis/galaxies.txt"
+data_file = "/Data/vimos/analysis/galaxies.txt"
 readcol, data_file, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, $
     y_gals, SN_used_gals, skipline=1, format='A,D,D,D,I,I,I', /SILENT
 i_gal = where(galaxy_gals eq galaxy)
@@ -53,19 +53,19 @@ if not keyword_set(discard) then discard=2
 ;; ----------================ Find S/N ================------------
 ; Final wildcard notes that depending on the method used the quadrants
 ; may or may not have been flux calibrated. 
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		galaxy + '/cube/*_cube.fits')
+	dataCubeDirectory = FILE_SEARCH('/Data/vimos/cubes/' + $
+		galaxy + '.cube.combined.fits')
 
 ;;Bins just one quadrant - must have used rss2cube_quadrant.pro script
 ;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
 ;		galaxy + $
 ;		'-3/Q2/calibrated/cube/*_fluxcal_cube.fits')
 
-
 	;galaxy_data = MRDFITS(dataCubeDirectory[0], 1, header, /SILENT)
-	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
+;	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 1, /SILENT)
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
-;print, size(galaxy_data)
+	FITS_READ, dataCubeDirectory[0], galaxy_noise_temp, EXTEN_NO=1
+        
 
 ;plot, galaxy_data(10,10,*)
 
@@ -86,7 +86,7 @@ if not keyword_set(discard) then discard=2
 	s = size(galaxy_data)
 	n_spaxels = s[1]*s[2]
 	CRVAL_spec = sxpar(header,'CRVAL3')
-	CDELT_spec = sxpar(header,'CD3_3')
+	CDELT_spec = sxpar(header,'CDELT3')
 
 
 	signal = MAKE_ARRAY(n_spaxels)
@@ -103,10 +103,10 @@ for j = 0, s[2]-1 do begin
 	gap=12
 	ignore = FIX((5581 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap  
 	ignore2 =FIX((5199 - CRVAL_spec)/CDELT_spec) + [-1,+1]*gap 
-
-
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
-	h =[reform(galaxy_data[i,j,0:ignore[0]]),reform(galaxy_data[i,j,ignore[1]:*])]
+        if 5581 lt CRVAL_spec+s[3]*CDELT_spec then begin
+		h =[reform(galaxy_data[i,j,0:ignore[0]]),reform(galaxy_data[i,j,ignore[1]:*])]
+        endif else h = reform(galaxy_data)
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
@@ -131,7 +131,6 @@ IF (lower_limit LT 0) THEN BEGIN
 ENDIF ELSE lower_limit += 5
 IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
-
 
 ;	signal[i*s[1] + j] = STDDEV(galaxy_data[i, j, lower_limit:upper_limit])
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, lower_limit:upper_limit])
@@ -205,21 +204,21 @@ endfor
 ; binNum uniquely specifies the bins and for this reason it is the only
 ; number required for any subsequent calculation on the bins.
 ;
-FILE_MKDIR, '/Data/vimosindi/analysis/' + galaxy
-OPENW, 1, '/Data/vimosindi/analysis/' + galaxy + $
+FILE_MKDIR, '/Data/vimos/analysis/' + galaxy
+OPENW, 1, '/Data/vimos/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
 CLOSE,1
 astrolib
 
 forprint, x, y, binNum, xBin, yBin, $
-	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
+	TEXTOUT='/Data/vimos/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt', $
 	COMMENT='          X"              Y"           BIN_NUM           XBIN           YBIN', /SILENT
 
 
 
 forprint, xBar, yBar, $
-	TEXTOUT='/Data/vimosindi/analysis/' + galaxy + $
+	TEXTOUT='/Data/vimos/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output2.txt', $
 	COMMENT='XBAR           YBAR', /SILENT
 
