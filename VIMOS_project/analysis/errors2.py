@@ -153,7 +153,7 @@ def errors2(i_gal=None, bin=None):
     glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
         stellar_moments, gas_moments, degree = set_params()
     
-    galaxies = ['ngc3557', 'IC1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+    galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
     galaxy = galaxies[i_gal]
 
     c = 299792.458
@@ -267,8 +267,8 @@ def errors2(i_gal=None, bin=None):
 
     dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
         
-    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
-    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
+    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
+    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 1)
 
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
@@ -284,7 +284,6 @@ def errors2(i_gal=None, bin=None):
     galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
     galaxy_noise = np.delete(galaxy_noise, rows_to_remove, axis=1)
     galaxy_noise = np.delete(galaxy_noise, cols_to_remove, axis=2)
-
 
     n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
 
@@ -306,7 +305,6 @@ def errors2(i_gal=None, bin=None):
     
 #    fl = np.sum(galaxy_data, axis=0)
 #    plt.contour(fl)
-
 #    plt.scatter(x[spaxels_in_bin], y[spaxels_in_bin])
 #    plt.show()
 
@@ -392,6 +390,7 @@ def errors2(i_gal=None, bin=None):
     bin_log /= med_bin
     bin_log_noise /= med_bin
     noise = bin_log_noise+0.0000000000001
+
 
 
     dv = (logLam_template[0]-logLam_bin[0])*c # km/s
@@ -480,6 +479,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------=========== The bestfit part =================---------
 ## ----------===============================================---------
+    noise = np.abs(noise)
     bin_log_sav = bin_log
     noise_sav = noise
     saveTo="%sanalysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
@@ -595,7 +595,7 @@ def errors2(i_gal=None, bin=None):
    
     b = open(bestfit_file, 'w')
     if gas:
-        for i in range(gas+1):
+        for i in range(np.shape(pp.sol)[0]):
             b.write(str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
                 str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \

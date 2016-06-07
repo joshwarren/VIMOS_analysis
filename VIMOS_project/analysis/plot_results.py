@@ -140,7 +140,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
-#    outputs = []
+    outputs = []
 
 
 # Read tessellation file
@@ -555,6 +555,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         temp_flux = np.trapz(emission_lines[0][:,i], x=lam[0])
         wav = line_wav[i]
         j = np.where(temp_name == c)[0][0]
+        print np.shape(temp_weights)
         flux = temp_weights[:,j]*temp_flux
         
         f_max = max(flux)
