@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt # used for plotting
 import glob # for searching for files
-import pyfits # reads fits files (is from astropy)
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
 
 
 def removerows(gal):
@@ -28,4 +28,4 @@ if __name__ == '__main__':
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
     for gal in galaxies:
         print gal
-        removerows(str.upper(gal))
+        removerows(gal)

@@ -63,15 +63,11 @@ if not keyword_set(discard) then discard=2
 
 	;galaxy_data = MRDFITS(dataCubeDirectory[0], 1, header, /SILENT)
 ;	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 1, /SILENT)
-	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
+	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header, EXTEN_NO=0
 	FITS_READ, dataCubeDirectory[0], galaxy_noise_temp, EXTEN_NO=1
-        
-
-;plot, galaxy_data(10,10,*)
-
-
 
 	s = size(galaxy_data_temp)
+
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 
@@ -81,7 +77,6 @@ if not keyword_set(discard) then discard=2
 		[discard:s[2]-discard-1],*]
 ;	galaxy_noise[where(galaxy_noise<0)]=0
 ;print, n_elements(where(galaxy_noise<0))/1600
-
 	
 	s = size(galaxy_data)
 	n_spaxels = s[1]*s[2]
@@ -93,6 +88,7 @@ if not keyword_set(discard) then discard=2
 	noise = MAKE_ARRAY(n_spaxels)
 	x = MAKE_ARRAY(n_spaxels)
 	y = MAKE_ARRAY(n_spaxels)
+
 
 
 
@@ -131,7 +127,7 @@ IF (lower_limit LT 0) THEN BEGIN
 ENDIF ELSE lower_limit += 5
 IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
-
+;print, i,j,i*s[1] + j, n_spaxels
 ;	signal[i*s[1] + j] = STDDEV(galaxy_data[i, j, lower_limit:upper_limit])
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, lower_limit:upper_limit])
 	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, lower_limit:upper_limit])
@@ -145,8 +141,10 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 ;if i*s[1] + j eq 1287 then forprint, galaxy_data[i,j,*], galaxy_noise[i,j,*], textout=2
 endfor
 endfor
+z= where(signal lt 0)
 
 
+scatter, x[z],y[z]
 n_spaxels = n_elements(signal)
 
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
