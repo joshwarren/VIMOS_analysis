@@ -140,7 +140,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 #    outputs = glob.glob(output+'gal_stellar_vel*.dat')
-    outputs = []
+#    outputs = []
 
 
 # Read tessellation file
@@ -665,9 +665,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         fluxA=np.array(fluxA)+0.00001
         fluxB=np.array(fluxB)+0.00001
 
-        print fluxA
-        print ""
-        print fluxB
         line_ratio = np.log10(fluxA/fluxB)
 
  #       vLimit = 5

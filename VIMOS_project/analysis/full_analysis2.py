@@ -24,7 +24,7 @@ galaxies = ['ic1459']
 
 discard = 2
 wav_range = '4200-'
-vLimit = 1
+vLimit = 2
 for galaxy in galaxies:
 
     path = "/Data/vimosindi/analysis/%s/results/%s/plots" % (galaxy, wav_range)
@@ -32,8 +32,8 @@ for galaxy in galaxies:
         os.makedirs(path+"/notinterpolated")
 
     print galaxy
-#    man_errors(galaxy, wav_range=wav_range)
-#    plt.close("all")
+    man_errors(galaxy, wav_range=wav_range)
+    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=True, CO = True, residual="median")#, norm='sig')
     plt.close("all")
