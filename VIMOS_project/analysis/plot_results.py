@@ -48,7 +48,7 @@
 from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for array handling
 import glob # for searching for files
-import pyfits # reads fits files (is from astropy)
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
 
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
@@ -504,11 +504,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     degree = 4 # in all our analysis.
     
-    weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat" % (
-        galaxy,str(0))
-    temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
+
 
     temp_weights = []
+    temp_name = []
     bestfit = []
     lam = []
     emission_lines = []
@@ -528,35 +527,51 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         
         weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat"\
             % (galaxy,str(i))
-        temp_weights.append(np.loadtxt(weights_dir, unpack=True, usecols=(1,)))
+        temp_weights_temp = np.loadtxt(weights_dir, unpack=True, usecols=(1,))
+        temp_name_temp=np.loadtxt(weights_dir, unpack=True, usecols=(0,), dtype=str)
+        if '[OIII]5007d' not in temp_name_temp: np.concatenate((temp_name_temp, [0]))
+        temp_weights.append(temp_weights_temp)
+        temp_name.append(temp_name_temp)
+
+
+
+
+
+        
 
         bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/bestfit/%s.dat" % (
             galaxy,str(i))
         bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
         bestfit.append(bestfit_bin)
+
         
-
-
     temp_weights = np.array(temp_weights)
     bestfit = np.array(bestfit)
     lam = np.array(lam)
     emission_lines = np.array(emission_lines)
 
+    
 
-
+    
     components = []
-    for n in temp_name:
-        if not str.isdigit(n):
-            components.append(n)
-
+    temp_name_temp = [item for sublist in temp_name for item in sublist]
+    temp_name_lines = [i for i in list(set(temp_name_temp)) if not i.isdigit()]
+    check_bins = {i:temp_name_temp.count(i) for i in temp_name_lines}
+    
+    components = [i for i in temp_name_lines if check_bins[i]==number_of_bins]
+    
+#    weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat" % (
+#        galaxy,str(0))
+#    temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
     
     for c in components:
         i = np.where(line_name == c)[0][0]
         temp_flux = np.trapz(emission_lines[0][:,i], x=lam[0])
         wav = line_wav[i]
-        j = np.where(temp_name == c)[0][0]
-        print np.shape(temp_weights)
-        flux = temp_weights[:,j]*temp_flux
+        flux = []
+        for i in range(len(temp_weights)):
+            j = np.where(temp_name[i] == c)[0][0]
+            flux.append(temp_weights[i][j]*temp_flux)
         
         f_max = max(flux)
         f_min = min(flux)
@@ -584,7 +599,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         continuum = np.zeros(number_of_bins)
         for k in range(number_of_bins):
             continuum[k] = bestfit[k][np.argmin(np.abs(lam[k]-wav))] - \
-                np.max(emission_lines[k][i])*temp_weights[k,j]
+                np.max(emission_lines[k][i])*temp_weights[k][j]
         equiv_width = flux/continuum#(bestfit[0][np.argmin(np.abs(lam[0]-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
         
         eq_max = max(equiv_width)
@@ -631,14 +646,28 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         
         iA = np.where(line_name == cA)[0][0]
         temp_fluxA = np.trapz(emission_lines[0][:,iA], x=lam[0])
-        iA = np.where(temp_name == cA)[0][0]
-        fluxA = temp_weights[:,iA]*temp_fluxA
-    
         iB = np.where(line_name == cB)[0][0]
         temp_fluxB = np.trapz(emission_lines[0][:,iB], x=lam[0])
-        iB = np.where(temp_name == cB)[0][0]
-        fluxB = temp_weights[:,iB]*temp_fluxB
 
+        fluxA = []
+        fluxB = []
+        for i in range(len(temp_weights)):
+            iA = np.where(temp_name[i] == cA)[0][0]
+            fluxA.append(temp_weights[i][iA]*temp_fluxA)
+            iB = np.where(temp_name[i] == cB)[0][0]
+            fluxB.append(temp_weights[i][iB]*temp_fluxB)
+  #      iA = np.where(temp_name == cA)[0][0]
+  #      fluxA = temp_weights[:,iA]*temp_fluxA
+    
+        
+ #       iB = np.where(temp_name == cB)[0][0]
+ #       fluxB = temp_weights[:,iB]*temp_fluxB
+        fluxA=np.array(fluxA)+0.00001
+        fluxB=np.array(fluxB)+0.00001
+
+        print fluxA
+        print ""
+        print fluxB
         line_ratio = np.log10(fluxA/fluxB)
 
  #       vLimit = 5

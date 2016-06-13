@@ -30,6 +30,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     kwg = {}
     kwg.update(kwargs)
 
+    if len(vel) != max(bin_num)+1:
+        print "Not enough bins provided to vel keyword"
+        return
+
+    
     fig, ax = plt.subplots(nrows=1,ncols=1)
     
     if title is not None:
@@ -58,6 +63,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     im_xBar = np.copy(xBar)
     im_yBar = np.copy(yBar)
     bin_num = bin_num.astype(int)
+
     v = vel[bin_num].clip(vmin,vmax)
     pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
 

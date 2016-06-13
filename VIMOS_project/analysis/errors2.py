@@ -20,7 +20,7 @@ def set_params():
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-    glamdring = True
+    glamdring = False
     quiet = True
     gas = 3 # 0   No gas emission lines
             # 1   Probe ionised gas

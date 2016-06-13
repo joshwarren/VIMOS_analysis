@@ -141,14 +141,10 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 ;if i*s[1] + j eq 1287 then forprint, galaxy_data[i,j,*], galaxy_noise[i,j,*], textout=2
 endfor
 endfor
-z= where(signal lt 0)
 
-
-scatter, x[z],y[z]
 n_spaxels = n_elements(signal)
 
 ;data_file = '~/VIMOS_project/analysis_v2/rebinning/voronoi_2d_binning_input.txt'
-
 ;rdfloat, data_file, x, y, signal, noise, SKIPLINE=3, NUMLINE=3107, /DOUBLE
 
 ; Load a colortable and open a graphic window
