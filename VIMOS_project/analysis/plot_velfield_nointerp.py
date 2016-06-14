@@ -33,7 +33,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     if len(vel) != max(bin_num)+1:
         print "Not enough bins provided to vel keyword"
         return
-
     
     fig, ax = plt.subplots(nrows=1,ncols=1)
     
@@ -83,7 +82,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         if isinstance(cmap, str):
             cmap = plt.get_cmap(cmap)
 
-    cs = plt.imshow(img[:][::-1], interpolation='none', 
+    cs = plt.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
     plt.clim(vmin,vmax)

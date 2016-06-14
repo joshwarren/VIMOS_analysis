@@ -50,6 +50,20 @@ if not keyword_set(discard) then discard=2
 ;	discard = 2
 ;	targetSN = 30.0
 
+;; ----------================= Save SN_used ===============---------
+if i_gal eq -1 then begin
+    galaxy_gals = [galaxy_gals, galaxy]
+    SN_used_gals = [SN_used_gals, targetSN]
+endif else begin
+    SN_used_gals[i_gal] = targetSN
+endelse
+
+
+forprint2, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, y_gals, $
+    SN_used_gals, textout=data_file, /SILENT, WIDTH=90, $
+    Comment = "Galaxy      z     velocity     velocity dispersion    x     y     Target SN"
+
+
 ;; ----------================ Find S/N ================------------
 ; Final wildcard notes that depending on the method used the quadrants
 ; may or may not have been flux calibrated. 
@@ -65,15 +79,19 @@ if not keyword_set(discard) then discard=2
 ;	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 1, /SILENT)
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header, EXTEN_NO=0
 	FITS_READ, dataCubeDirectory[0], galaxy_noise_temp, EXTEN_NO=1
+	FITS_READ, dataCubeDirectory[0], galaxy_badpix_temp, EXTEN_NO=3
 
 	s = size(galaxy_data_temp)
 
 	galaxy_data = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 	galaxy_noise = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
+	galaxy_badpix = MAKE_ARRAY(s[1]-2*discard,s[2]-2*discard,s[3])
 
 	galaxy_data = galaxy_data_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
 	galaxy_noise = galaxy_noise_temp[[discard:s[1]-discard-1], $
+		[discard:s[2]-discard-1],*]
+	galaxy_badpix = galaxy_badpix_temp[[discard:s[1]-discard-1], $
 		[discard:s[2]-discard-1],*]
 ;	galaxy_noise[where(galaxy_noise<0)]=0
 ;print, n_elements(where(galaxy_noise<0))/1600
@@ -111,7 +129,7 @@ for j = 0, s[2]-1 do begin
 	a = h/MEDIAN(h) - h[4:*]/MEDIAN(h)
 	a[WHERE(~FINITE(a))] = 0
 	
-;	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
+	lower_limit = MIN(WHERE(ABS(a) GT 0.2), MAX=upper_limit)
 	lower_limit = MAX(WHERE(ABS(a[0:0.5*half]) GT 0.2))
 	upper_limit = MIN(WHERE(ABS(a[1.5*half:*]) GT 0.2))+1.5*half
 
@@ -127,8 +145,11 @@ IF (lower_limit LT 0) THEN BEGIN
 ENDIF ELSE lower_limit += 5
 IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	ELSE upper_limit += - 5
+
+upper_limit = (5300-CRVAL_spec)/CDELT_spec
 ;print, i,j,i*s[1] + j, n_spaxels
-;	signal[i*s[1] + j] = STDDEV(galaxy_data[i, j, lower_limit:upper_limit])
+;	signal[i*s[1] + j] = STDDEV(galaxy_data[i, j,
+;	lower_limit:upper_limit])
 	signal[i*s[1] + j] = MEAN(galaxy_data[i, j, lower_limit:upper_limit])
 	noise[i*s[1] + j] = MEAN(galaxy_noise[i, j, lower_limit:upper_limit])
 
@@ -136,7 +157,11 @@ IF (upper_limit GT s[3]-1) OR (upper_limit LT half) THEN upper_limit=s[3]-6 $
 	x(i*s[1]+j) = i
 	y(i*s[2]+j) = j
 
-
+	a =where(galaxy_badpix[i,j,*] eq 1, count)
+	if count ne 0 then begin
+		signal[i*s[1] + j] = 0
+		noise[i*s[1] + j] = 0
+	endif
 
 ;if i*s[1] + j eq 1287 then forprint, galaxy_data[i,j,*], galaxy_noise[i,j,*], textout=2
 endfor
@@ -163,9 +188,12 @@ med = median(signal)
 ;print, l
 ;signal[l]=make_array(n_elements(l), value=0)
 ;noise[l]=make_array(n_elements(l), value=0)
+print, noise[where(noise gt signal)]
+
+print, total(signal)/sqrt(total(noise^2))
 
 
-;print, total(signal)/sqrt(total(noise^2))
+signal[where(signal le 0)]=0.00001
 voronoi_2d_binning, x, y, signal, noise, targetSN, $
     binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale, /PLOT, /QUIET
 
@@ -216,18 +244,7 @@ forprint, xBar, yBar, $
 	'/voronoi_2d_binning_output2.txt', $
 	COMMENT='XBAR           YBAR', /SILENT
 
-;; ----------================= Save SN_used ===============---------
-if i_gal eq -1 then begin
-    galaxy_gals = [galaxy_gals, galaxy]
-    SN_used_gals = [SN_used_gals, targetSN]
-endif else begin
-    SN_used_gals[i_gal] = targetSN
-endelse
 
-
-forprint2, galaxy_gals, z_gals, vel_gals, sig_gals, x_gals, y_gals, $
-    SN_used_gals, textout=data_file, /SILENT, WIDTH=90, $
-    Comment = "Galaxy      z     velocity     velocity dispersion    x     y     Target SN"
 
 END
 ;----------------------------------------------------------------------------

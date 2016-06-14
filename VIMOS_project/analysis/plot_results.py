@@ -83,23 +83,22 @@ def add_CO(ax, galaxy, header, saveTo):
 #remove random extra dimenisons.
         CO_image = np.sum(np.sum(CO_image,axis=0), axis=0)
 
-        CO_x = np.arange(CO_header['NAXIS1'])[::-1]*CO_header['CDELT1']
-        CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']
+        CO_x = -np.arange(CO_header['NAXIS1'])*CO_header['CDELT1']*60*60
+        CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']*60*60
 
 #        x += max(ax.get_xlim())
 #        y -= max(ax.get_ylim())
 
-        x0 = header['CRVAL1']
-        y0 = header['CRVAL2']
-
-        CO_x += -CO_header['CDELT1']*CO_header['CRPIX1'] + header['CRVAL1'] - \
-            CO_header['CRVAL1']
-        CO_y -= CO_header['CDELT2']*CO_header['CRPIX2']+ header['CRVAL2'] - \
-            CO_header['CRVAL2']
-
-        CO_x *=60*60
-        CO_y *=60*60
+        CO_x += ((header['HIERARCH CCD1 ESO INS IFU RA'] -
+                  header['CRPIX1']*header['CDELT1']/(60*60)) -
+                 (CO_header['CRVAL1'] +
+                  CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
                 
+        CO_y += ((header['HIERARCH CCD1 ESO INS IFU DEC'] -
+                  header['CRPIX2']*header['CDELT2']/(60*60)) -
+                 (CO_header['CRVAL2'] +
+                  CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
+            
         ax.contour(CO_x,CO_y,CO_image, colors='k')
 
 
@@ -115,7 +114,8 @@ def add_CO(ax, galaxy, header, saveTo):
 #-----------------------------------------------------------------------------
 
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
-    plots=False, nointerp=False, residual=False, CO=False, **kwargs):
+    plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
+    **kwargs):
 
     data_file =  "/Data/vimos/analysis/galaxies.txt"
     # different data types need to be read separetly
@@ -156,7 +156,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------========== Total flux per bin ===========----------
 # ----------========= Reading the spectrum  =============---------
 
-# FILE_SEARCH returns an array even in cases where it only returns
+# FILE_SEARH returns an array even in cases where it only returns
 # one result. This is NOT equivalent to a scalar. 
     dataCubeDirectory = glob.glob("/Data/vimos/cubes/%s.cube.combined.fits" \
         % (galaxy)) 
@@ -277,10 +277,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         CBLabel = None
         if "vel" in plot_title:
             title = 'Velocity'
-            CBLabel = "LOSV (km s$^{-1}$)"
+            CBLabel = "V (km s$^{-1}$)"
             cmap = sauron
-#	    vmin=-35
-#	    vmax=-vmin
+            vmin=-100
+            vmax=-vmin
 #        vmax=375
 #        vmin=240
 #        v_binned += 90
@@ -289,7 +289,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             cmap = sauron#cm.blue
         if "sigma" in plot_title:
             title = 'Velocity Dispersion'
-            CBLabel = "LOSVD (km s$^{-1}$)"
+            CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
+            vmin=160
+            vmax=300
         if "h3" in plot_title: title = 'h3'
         if "h4" in plot_title: title = 'h4'
         
@@ -359,7 +361,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title, wav_range)
             ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
                 vmin=vmin, vmax=vmax, #flux_type='notmag',
-                nodots=True, show_bin_num=True, colorbar=True, 
+                nodots=True, show_bin_num=show_bin_num, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=title, 
                 save=saveTo, cmap=cmap)
@@ -373,7 +375,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 plot_title+'_uncert', wav_range)
             plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
                 vmin=v_uncert_min, vmax=v_uncert_max, flux_type='notmag',
-                nodots=True, show_bin_num=True, colorbar=True, 
+                nodots=True, show_bin_num=show_bin_num, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
                 galaxy = galaxy.upper(), redshift = z, title=utitle, 
                 save=saveTo)#, cmap=cm.blue)
@@ -456,7 +458,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
             average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
-            nodots=True, show_bin_num=True, colorbar=True, 
+            nodots=True, show_bin_num=show_bin_num, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
             save=saveTo)#, cmap = cm.blue)
@@ -484,7 +486,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
         vmin=minchi2, vmax=maxchi2, flux_type='notmag',
-        nodots=True, show_bin_num=False, colorbar=True, 
+        nodots=True, show_bin_num=show_bin_num, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
         save=saveTo)#, cmap=cm.blue)
