@@ -51,7 +51,7 @@ import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 
 import matplotlib.pyplot as plt # used for plotting
-from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
+from plot_velfield_nointerp2 import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
 import ppxf_util as util
 from numpy.polynomial import legendre
@@ -74,8 +74,31 @@ def use_templates(galaxy, glamdring=False):
 #-----------------------------------------------------------------------------
 
 
+
 #-----------------------------------------------------------------------------
-def add_CO(ax, galaxy, header, saveTo):
+def set_ax_y(plt_title):
+    if "gas" in plt_title:
+        ax_y=2
+    elif "SF" in plt_title:
+        ax_y=2
+    elif "Shocks" in plt_title:
+        ax_y=4
+    elif 'Hbeta' in plt_title:
+        ax_y=4
+    elif 'Hgamma' in plt_title:
+        ax_y=6
+    elif 'OIII' in plt_title:
+        ax_y=2
+    elif 'stellar' in plt_title:
+       ax_y=0
+       
+    return ax_y
+#-----------------------------------------------------------------------------
+
+
+
+#-----------------------------------------------------------------------------
+def add_CO(ax, galaxy, header):
     CO_image_dir="/Data/alma/%s-mom0.fits" %(galaxy)
     if os.path.exists(CO_image_dir):
         CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
@@ -101,12 +124,6 @@ def add_CO(ax, galaxy, header, saveTo):
             
         ax.contour(CO_x,CO_y,CO_image, colors='k')
 
-
-        saveTo = os.path.dirname(saveTo)+"/withCO/"+os.path.basename(saveTo)
-
-        if not os.path.exists(os.path.dirname(saveTo)):
-            os.makedirs(os.path.dirname(saveTo))
-        plt.savefig(saveTo, bbox_inches="tight")
 #-----------------------------------------------------------------------------
 
 
@@ -139,8 +156,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimos/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-#    outputs = glob.glob(output+'gal_Hg*.dat')
-#    outputs = []
+    
+    f, ax_array = plt.subplots(len(outputs)/2, 3, sharex='col', sharey='row')
+    ax_array[1,0].axis('off')
 
 
 # Read tessellation file
@@ -205,7 +223,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     for plot in outputs:
         plot_title = plot.split('gal_')[-1].split('.')[0]
         print "       ", plot_title
-        plt.close('all')
         v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
 
 
@@ -272,10 +289,34 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if v_uncert_min < 0:
             v_uncert_min=0
            
-
 # ------------============= Plot velfield ==============----------
+        im_type = plot_title.split('_')[0]
+        if im_type == "gas":
+            im_type=""
+            ax_y=set_ax_y(plot_title)
+        elif im_type == "SF":
+            im_type=" (Star Forming)"
+            ax_y=set_ax_y(plot_title)
+        elif im_type == "Shocks":
+            im_type=" (Shocking)"
+            ax_y=set_ax_y(plot_title)
+        elif 'Hbeta' in im_type:
+            im_type=" ("+r'H$_\beta$'+")"
+            ax_y=set_ax_y(plot_title)
+        elif 'Hgamma' in im_type:
+            im_type=" ("+r'H$_\gamma$'+")"
+            ax_y=set_ax_y(plot_title)
+        elif 'OIII' in im_type:
+            im_type=" (OIII)"
+            ax_y=set_ax_y(plot_title)
+        else:
+            im_type=" (" + im_type + ")"
+            ax_y=set_ax_y(plot_title)
+
+            
         CBLabel = None
         if "vel" in plot_title:
+            ax_x=1
             title = 'Velocity'
             CBLabel = "V (km s$^{-1}$)"
             cmap = sauron
@@ -286,38 +327,28 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         else:
             cmap = sauron#cm.blue
         if "sigma" in plot_title:
+            ax_x=2
             title = 'Velocity Dispersion'
             CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
 #            vmin=60
 #            vmax=360
         if "h3" in plot_title:
+            ax_x=1
+            ax_y+=1
             title = 'h3'
 #            vmax = 0.07
 #            vmin = -0.15
         if "h4" in plot_title:
+            ax_x=2
+            ax_y+=1
             title = 'h4'
 #            vmax=0.2
 #            vmin=-0.08
+
         
 
 
-        im_type = plot_title.split('_')[0]
-        if im_type == "gas":
-            im_type=""
-        elif im_type == "SF":
-            im_type=" (Star Forming)"
-        elif im_type == "Shocks":
-            im_type=" (Shocking)"
-#        elif 'Hbeta' in im_type:
-#            im_type=" ("+r'H_\beta'+")"
-#        elif 'Hdelta' in im_type:
-#            im_type=" ("+r'H_\delta'+")"
-#        elif 'Hgamma' in im_type:
-#            im_type=" ("+r'H_\gamma'+")"  
-        elif 'OIII' in im_type:
-            im_type=" (OIII)"
-        else:
-            im_type=" (" + im_type + ")"
+ 
 
 
 
@@ -338,77 +369,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             galaxy_data_unbinned = None
             
   
-# ------------================= Plot Histogram ===============----------
-# Field histogram
-
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title, wav_range)
-        plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
-            vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
-            xaxis=CBLabel, save=saveTo)
-# Uncertainty histogram
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/%s_hist_%s.png" % (wav_range_dir, plot_title+'_uncert', 
-            wav_range)
-        plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
-            vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin,
-            title=uhtitle, xaxis=CBLabel, save=saveTo)
-
-        if plots:
-            plt.show()
-
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
 # Field plot
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot_title, wav_range)
-            ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_binned, 
-                vmin=vmin, vmax=vmax, #flux_type='notmag',
+            ax_array[ax_y,ax_x] = plot_velfield_nointerp(x, y, bin_num, xBar,
+                yBar, v_binned, vmin=vmin, vmax=vmax, #flux_type='notmag',
                 nodots=True, show_bin_num=show_bin_num, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-                galaxy = galaxy.upper(), redshift = z, title=title, 
-                save=saveTo, cmap=cmap)
+                title=title, cmap=cmap, ax=ax_array[ax_y,ax_x])
             if CO:
-                add_CO(ax, galaxy, header, saveTo)
-            plt.close('all')
+                add_CO(ax_array[ax_y,ax_x], galaxy, header)
                 
-# Uncertainty plot
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot_title+'_uncert', wav_range)
-            plot_velfield_nointerp(x, y, bin_num, xBar, yBar, v_uncert_binned, 
-                vmin=v_uncert_min, vmax=v_uncert_max, flux_type='notmag',
-                nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-                galaxy = galaxy.upper(), redshift = z, title=utitle, 
-                save=saveTo)#, cmap=cm.blue)
-            if CO:
-                add_CO(ax, galaxy, header, saveTo)
-            plt.close('all')
-
-# ------------===== Plot velfield - with interperlation ====----------
-        else:
-# Field plot
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-                "%splots/%s_field_%s.png" % (wav_range_dir, plot_title, 
-                wav_range)
-            plot_velfield(xBar, yBar, v_binned, vmin=vmin, vmax=vmax, 
-                nodots=False, colorbar=True, label=CBLabel, 
-                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
-                redshift = z, title=title, save=saveTo)
-# Uncertainty plot
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-                "%splots/%s_field_%s.png" % (wav_range_dir, 
-                plot_title+'_uncert', wav_range)
-            plot_velfield(xBar, yBar, v_uncert_binned, vmin=v_uncert_min, 
-                vmax=v_uncert_max, nodots=False, colorbar=True, label=CBLabel, 
-                flux_unbinned=galaxy_data_unbinned, galaxy = galaxy.upper(),
-                redshift = z, title=utitle, save=saveTo)
-            if CO:
-                add_CO(ax, galaxy, header, saveTo)
-            plt.close('all')
-
 # ------------=========== Save and display plot =============----------
         if plots:
             plt.show()
@@ -428,100 +399,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     fmax = f_sorted[-vLimit-1]
     title = "Total Flux"
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
-    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-        "%splots/notinterpolated/total_image_%s.png" % (wav_range_dir,
-        wav_range)
-    ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux_bar_binned,
-        vmin=fmin, vmax=fmax, nodots=True, show_bin_num=show_bin_num,
-        colorbar=True, label=CBLabel, galaxy = galaxy.upper(), redshift = z,
-        title=title, save=saveTo, cmap="gist_yarg")
+    ax_array[0,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+        flux_bar_binned, vmin=fmin, vmax=fmax, nodots=True,
+        show_bin_num=show_bin_num, colorbar=True, label=CBLabel,
+        title=title, cmap="gist_yarg", ax=ax_array[0,0])
     if CO:
-        add_CO(ax, galaxy, header, saveTo)
+        add_CO(ax_array[0,0], galaxy, header)
     if plots:
         plt.show()
 
-# ------------================= Plot residuals ===============----------
 
-    if residual:
-        print "        " + residual + " residuals"
-        bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
-            "bestfit/"
-        data_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
-            "input/"
 
-        average_residuals = np.zeros(number_of_bins)
-
-        for i in range(number_of_bins):
-            bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i))
-            spectrum = np.loadtxt(data_dir +'%d.dat' % (i))
-            residuals = np.abs(spectrum - bestfit)
-# remove edge pixels
-            residuals = np.delete(residuals, [np.arange(5), 
-	        len(residuals)+np.arange(-5,0)], axis=0)
-
-            if residual=="mean":
-                average_residuals[i] = np.mean(residuals)
-            elif residual=="median":
-                average_residuals[i] = np.median(residuals)
-            elif residual=="max":
-                average_residuals[i] = np.max(np.abs(residuals))
-
-        res_sorted = sorted(np.unique(average_residuals))
-        maxres = res_sorted[-vLimit-1]
-#        minres = res_sorted[vLimit]
-
-        mean_w = np.mean(average_residuals)
-        d = maxres-mean_w
-        minres = mean_w-d
-        if minres < 0:
-            minres=0
-
-        CBLabel = "Residuals"
-        title = str.capitalize(residual) + \
-	    " Residuals of Bestfit to Normalised Spectrum"
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
-            residual, wav_range)
-
-        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
-            average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
-            nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-            label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
-            galaxy = galaxy.upper(), redshift = z, title=title, 
-            save=saveTo)#, cmap = cm.blue)
-        if plots:
-            plt.show()
-        if CO:
-            add_CO(ax, galaxy, header, saveTo)
-        plt.close('all')
-  
-# ------------================= Plot Chi2/DOF ===============----------
-    print "        chi2"
-    chi2_dir = "/Data/vimos/analysis/%s/gas_MC/chi2/" % (galaxy)
-    chi2 = np.zeros(number_of_bins)
-    for i in range(number_of_bins):
-        chi2[i] = np.loadtxt("%s%d.dat" % (chi2_dir, i))
-
-    chi2_sorted = sorted(np.unique(chi2))
-    maxchi2 = chi2_sorted[-vLimit-1]
-    minchi2 = 0 # chi2_sorted[vLimit]
-    
-    CBLabel = "Chi2/DOF"
-    title = "Chi2/DOF of the bestfit"
-    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-        "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
-
-    ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
-        vmin=minchi2, vmax=maxchi2, flux_type='notmag',
-        nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-        label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
-        galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo)#, cmap=cm.blue)
-    if plots:
-        plt.show()
-    if CO:
-        add_CO(ax, galaxy, header, saveTo)
-    plt.close('all')
   
 
 # ------------============ Plot intensity (& EW) ===============----------
@@ -612,17 +500,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 ## from header
         fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
 
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-        "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
-        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, flux,
-            vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle,
-            galaxy=galaxy.upper(), redshift=z, title=f_title, save=saveTo,
-            cmap = 'gist_yarg')
+        print f_title
+        ax_y = set_ax_y(f_title)
+        print ax_y
+
+        ax_array[ax_y,0] = plot_velfield_nointerp(x, y,
+            bin_num, xBar, yBar, flux, vmin=f_min, vmax=f_max, colorbar=True,
+            nodots=True, label=fCBtitle, title=f_title, cmap = 'gist_yarg',
+            ax=ax_array[ax_y,0])
 
         if plots: plt.show()
         if CO:
-            add_CO(ax, galaxy, header, saveTo)
-        plt.close('all')
+            add_CO(ax_array[ax_y,0], galaxy, header)
   
 #        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
         continuum = np.zeros(number_of_bins)
@@ -640,16 +529,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         eq_title = "%s Equivalent Width" % (c)
         eqCBtitle = r"Equivalent Width ($\AA$)"
 
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
-            c, wav_range)
-        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, equiv_width,
-            vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
-            label=eqCBtitle, galaxy=galaxy.upper(), redshift=z,
-            title=eq_title, save=saveTo)#, cmap=cm.blue)
+        ax_array[ax_y+1,0] = plot_velfield_nointerp(x, y,
+            bin_num, xBar, yBar, equiv_width, vmin=eq_min, vmax=eq_max,
+            colorbar=True, nodots=True, label=eqCBtitle, title=eq_title,
+            ax=ax_array[ax_y+1,0])
         if CO:
-            add_CO(ax, galaxy, header, saveTo)
-        plt.close('all')
+            add_CO(ax_array[ax_y+1,0], galaxy, header)
+    plt.show()
+
   
 # ------------============== Line ratio maps ==================----------
     print "        line ratios"
@@ -707,16 +594,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         lrCBtitle = r"log$_{10}$ (%s/%s)" %(cA,cB)
 
         
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
-            "%s_%s_line_ratio_%s.png" % (cA, cB, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True,
-            galaxy=galaxy.upper(), redshift=z, title=lr_title, save=saveTo,
-            label=lrCBtitle)#, cmap=cm.blue)
+            galaxy=galaxy.upper(), redshift=z, title=lr_title, label=lrCBtitle)
         if CO:
-            add_CO(ax, galaxy, header, saveTo)
-        plt.close('all')        
+            add_CO(ax, galaxy, header)
 
 ## Plotting the inverse of the above
 #        vLimit = 3 
@@ -730,16 +612,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         lr_min = lr_sorted[vLimit]
         lr_max = lr_sorted[-vLimit-1]
 
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
-            "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
         ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
             vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True, 
-            galaxy=galaxy.upper(), redshift=z, title=eq_title, save=saveTo,
-            label=lrCBtitle)#, cmap=cm.blue)
+            galaxy=galaxy.upper(), redshift=z, title=eq_title,label=lrCBtitle)
         if CO:
-            add_CO(ax, galaxy, header, saveTo)
-        plt.close('all')
+            add_CO(ax, galaxy, header)
+
   
     
 ##############################################################################

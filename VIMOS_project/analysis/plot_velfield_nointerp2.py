@@ -7,6 +7,8 @@
 ## with some of my own inventions.
 # warrenj 20160209 Added show_bin_num keyword.
 # warrenj 20160413 Added flux_type keyword
+# warrenj 20160615 New routine to handle plot as just ax item so that it
+#                  can be used in subplots.
 
 
 
@@ -25,7 +27,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-    fig = None, ax = None, **kwargs):
+    ax = None, **kwargs):
 
     kwg = {}
     kwg.update(kwargs)
@@ -37,6 +39,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     if ax is None:
         fig, ax = plt.subplots(nrows=1,ncols=1)
+
     
     if title is not None:
         plt.title(title, y=1.1)
@@ -92,6 +95,19 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     ax.invert_xaxis()
 
 #    plt.gca().invert_yaxis()
+    
+    if colorbar:
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+#        fig.subplots_adjust(right=0.66, top=0.84)
+#        cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
+## symmetric should make VD plots odd... ******************************
+        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
+        cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
+#        plt.clim(vmin,vmax)  # make color axis symmetrical
+        if label:
+            cbar.set_label(label, rotation=270)
+
 
     ax.set_ylabel(axis_label)
     ax.set_xlabel(axis_label)
@@ -192,18 +208,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
                     fontsize=5)
 
         
-    if colorbar:
-#        divider = make_axes_locatable(ax)
-#        cax = divider.append_axes("right", size="5%", pad=0.7)
-        fig.subplots_adjust(right=0.66, top=0.84)
-        cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
-## symmetric should make VD plots odd... ******************************
-        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
-        cbar = fig.colorbar(cs, cax=cax, ticks=ticks)
-#        plt.clim(vmin,vmax)  # make color axis symmetrical
-        if label:
-            cbar.set_label(label, rotation=270)
-
 
 
 
@@ -211,6 +215,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         if not os.path.exists(os.path.dirname(save)):
             os.makedirs(os.path.dirname(save))
         plt.savefig(save, bbox_inches="tight")
+    ax.axis('equal')
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax3.xaxis.set_visible(False)
+    ax2.yaxis.set_visible(False)    
 
     return ax
 
