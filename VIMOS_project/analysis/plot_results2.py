@@ -156,9 +156,19 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     output = "/Data/vimos/analysis/%s/results/%s" % (galaxy,wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
-    
-    f, ax_array = plt.subplots(len(outputs)/2, 3, sharex='col', sharey='row')
+
+# Create figure and array of axes
+    if any('OIII' in o for o in outputs):
+        n_rows = len(outputs)/2 +1
+    else:
+        n_rows = len(outputs)/2
+    f, ax_array = plt.subplots(n_rows, 3, sharex='col', sharey='row')
+    f.set_size_inches(8,n_rows*1.8)
+    f.tight_layout(h_pad=2.0)#pad=0.4, w_pad=0.5, h_pad=1.0)
     ax_array[1,0].axis('off')
+    ax_array[0,0].invert_xaxis()
+    f.subplots_adjust(top=0.94)
+    f.suptitle(galaxy.upper())
 
 
 # Read tessellation file
@@ -362,11 +372,73 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             htitle = "Ionised" + im_type + " Gas " + title + " Histogram"
             uhtitle = "Ionised" + im_type + " Gas Uncertainty " + title + \
                 " Histogram"
-            title = "Ionised" + im_type + " Gas " + title + " Map"
+            title = "Ionised" + im_type + " Gas\n" + title + " Map"
 
         if CO:
             galaxy_data_unbinned_sav = galaxy_data_unbinned
             galaxy_data_unbinned = None
+
+
+        if 'stellar' in plot_title:
+            if 'vel' in plot_title:
+                vmin=-130
+                vmax=-vmin
+            if 'sigma' in plot_title:
+                vmin=130
+                vmax=250
+            if 'h3' in plot_title:
+                vmin=-0.09
+                vmax=0.06
+            if 'h4' in plot_title:
+                vmin=-0.06
+                vmax=0.12
+
+        if 'OIII' in plot_title:
+            if 'vel' in plot_title:
+                vmin=-85
+                vmax=-vmin
+            if 'sigma' in plot_title:
+                vmin=50
+                vmax=480
+            if 'h3' in plot_title:
+                vmin=-0.07
+                vmax=0.07
+            if 'h4' in plot_title:
+                vmin=-0.07
+                vmax=0.09
+
+        if 'Hbeta' in plot_title:
+            if 'vel' in plot_title:
+                vmin=-140
+                vmax=-vmin
+            if 'sigma' in plot_title:
+                vmin=40
+                vmax=420
+            if 'h3' in plot_title:
+                vmin=-0.05
+                vmax=0.06
+            if 'h4' in plot_title:
+                vmin=-0.04
+                vmax=0.04
+
+        if 'Hgamma' in plot_title:
+            if 'vel' in plot_title:
+                vmin=-120
+                vmax=-vmin
+            if 'sigma' in plot_title:
+                vmin=40
+                vmax=360
+            if 'h3' in plot_title:
+                vmin=-0.15
+                vmax=0.15
+            if 'h4' in plot_title:
+                vmin=-0.08
+                vmax=0.20
+
+
+
+
+
             
   
 # ------------===== Plot velfield - no interperlation ======----------
@@ -397,6 +469,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         v_sorted = sorted(f_bar_binned)
     fmin = f_sorted[vLimit]
     fmax = f_sorted[-vLimit-1]
+
+
+    fmin = 50
+    fmax = 750
+
+    
     title = "Total Flux"
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
     ax_array[0,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
@@ -496,17 +574,47 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         f_min = f_sorted[vLimit]
         f_max = f_sorted[-vLimit-1]
 
-        f_title = "%s Flux" % (c)
+
+        if 'OIII' in c:
+            f_min = 1
+            f_max = 10
+
+            eq_min = 0.6
+            eq_max = 3.7
+            
+        if 'Hbeta' in c:
+            f_min = 0.5
+            f_max = 3.7
+
+            eq_min = 0.3
+            eq_max = 2.1
+
+        if 'Hgamma' in c:
+            f_min = 0.1
+            f_max = 1.8
+
+            eq_min = 0.1
+            eq_max = 1.9
+
+        
+
+        if 'OIII' in c:
+            c_title = '[OIII]'
+        elif 'Hbeta' in c:
+            c_title = r'H$_\beta$'
+        elif 'Hgamma' in c:
+            c_title = r'H$_\gamma$'
+        else:
+            c_title = c
+
+        f_title = "%s Flux" % (c_title)
 ## from header
         fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
 
-        print f_title
-        ax_y = set_ax_y(f_title)
-        print ax_y
-
-        ax_array[ax_y,0] = plot_velfield_nointerp(x, y,
-            bin_num, xBar, yBar, flux, vmin=f_min, vmax=f_max, colorbar=True,
-            nodots=True, label=fCBtitle, title=f_title, cmap = 'gist_yarg',
+        ax_y = set_ax_y(c)
+        ax_array[ax_y,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+            flux, vmin=f_min, vmax=f_max, colorbar=True, nodots=True,
+            label=fCBtitle, title=f_title, cmap = 'gist_yarg',
             ax=ax_array[ax_y,0])
 
         if plots: plt.show()
@@ -520,105 +628,110 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 np.max(emission_lines[k][i])*temp_weights[k][j]
         equiv_width = flux/continuum#(bestfit[0][np.argmin(np.abs(lam[0]-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
         
-        eq_max = max(equiv_width)
-        eq_min = min(equiv_width)
-        eq_sorted = sorted(np.unique(equiv_width))
-        eq_min = eq_sorted[vLimit]
-        eq_max = eq_sorted[-vLimit-1]
+#        eq_max = max(equiv_width)
+#        eq_min = min(equiv_width)
+#        eq_sorted = sorted(np.unique(equiv_width))
+#        eq_min = eq_sorted[vLimit]
+#        eq_max = eq_sorted[-vLimit-1]
         
-        eq_title = "%s Equivalent Width" % (c)
+        eq_title = "%s Equivalent Width" % (c_title)
         eqCBtitle = r"Equivalent Width ($\AA$)"
 
-        ax_array[ax_y+1,0] = plot_velfield_nointerp(x, y,
-            bin_num, xBar, yBar, equiv_width, vmin=eq_min, vmax=eq_max,
-            colorbar=True, nodots=True, label=eqCBtitle, title=eq_title,
-            ax=ax_array[ax_y+1,0])
+        ax_array[ax_y+1,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+            equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
+            label=eqCBtitle, title=eq_title, ax=ax_array[ax_y+1,0])
         if CO:
             add_CO(ax_array[ax_y+1,0], galaxy, header)
-    plt.show()
 
   
 # ------------============== Line ratio maps ==================----------
-    print "        line ratios"
-    if not os.path.exists("/Data/vimos/analysis/%s/" % (galaxy) + \
-        "results/%splots/notinterpolated/lineratio" % (wav_range_dir)):
-        os.makedirs("/Data/vimos/analysis/%s/results/" % (galaxy) + \
-            "%splots/notinterpolated/lineratio" % (wav_range_dir)) 
+    if any('OIII' in o for o in outputs):
+        print "        line ratios"
 
+        t_num = (len(components)-1)*len(components)/2
+        for n in range(t_num):
+            i = 0
+            m = t_num
+            while m > n:
+                i += 1
+                m -= i
 
-    t_num = (len(components)-1)*len(components)/2
-    for n in range(t_num):
-        i = 0
-        m = t_num
-        while m > n:
-            i += 1
-            m -= i
+            plotA = len(components)-i-1
+            plotB = len(components)-i+n-m
 
-        plotA = len(components)-i-1
-        plotB = len(components)-i+n-m
-
-        cA = line_name[plotA]
-        cB = line_name[plotB]
+            cA = line_name[plotA]
+            cB = line_name[plotB]
         
-        iA = np.where(line_name == cA)[0][0]
-        temp_fluxA = np.trapz(emission_lines[0][:,iA], x=lam[0])
-        iB = np.where(line_name == cB)[0][0]
-        temp_fluxB = np.trapz(emission_lines[0][:,iB], x=lam[0])
+            iA = np.where(line_name == cA)[0][0]
+            temp_fluxA = np.trapz(emission_lines[0][:,iA], x=lam[0])
+            iB = np.where(line_name == cB)[0][0]
+            temp_fluxB = np.trapz(emission_lines[0][:,iB], x=lam[0])
 
-        fluxA = []
-        fluxB = []
-        for i in range(len(temp_weights)):
-            iA = np.where(temp_name[i] == cA)[0][0]
-            fluxA.append(temp_weights[i][iA]*temp_fluxA)
-            iB = np.where(temp_name[i] == cB)[0][0]
-            fluxB.append(temp_weights[i][iB]*temp_fluxB)
-  #      iA = np.where(temp_name == cA)[0][0]
-  #      fluxA = temp_weights[:,iA]*temp_fluxA
-    
-        
- #       iB = np.where(temp_name == cB)[0][0]
- #       fluxB = temp_weights[:,iB]*temp_fluxB
-        fluxA=np.array(fluxA)+0.00001
-        fluxB=np.array(fluxB)+0.00001
+            fluxA = []
+            fluxB = []
+            for i in range(len(temp_weights)):
+                iA = np.where(temp_name[i] == cA)[0][0]
+                fluxA.append(temp_weights[i][iA]*temp_fluxA)
+                iB = np.where(temp_name[i] == cB)[0][0]
+                fluxB.append(temp_weights[i][iB]*temp_fluxB)
 
-        line_ratio = np.log10(fluxA/fluxB)
+            fluxA=np.array(fluxA)+0.00001
+            fluxB=np.array(fluxB)+0.00001
 
- #       vLimit = 5
-        lr_max = max(line_ratio)
-        lr_min = min(line_ratio)
-        lr_sorted = sorted(np.unique(line_ratio))
-        lr_min = lr_sorted[vLimit]
-        lr_max = lr_sorted[-vLimit-1]
-
-        lr_title = "%s/%s Line Ratio" % (cA, cB)
-        lrCBtitle = r"log$_{10}$ (%s/%s)" %(cA,cB)
-
-        
-        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
-            vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True,
-            galaxy=galaxy.upper(), redshift=z, title=lr_title, label=lrCBtitle)
-        if CO:
-            add_CO(ax, galaxy, header)
 
 ## Plotting the inverse of the above
-#        vLimit = 3 
-        line_ratio = np.log10(fluxB/fluxA)
-        eq_title = "%s/%s Line Ratio" % (cB, cA)
-        lrCBtitle = r"log$_{10}$ (%s/%s)" %(cB,cA)
+#            vLimit = 3 
+            line_ratio = np.log10(fluxB/fluxA)
 
-        lr_max = max(line_ratio)
-        lr_min = min(line_ratio)
-        lr_sorted = sorted(np.unique(line_ratio))
-        lr_min = lr_sorted[vLimit]
-        lr_max = lr_sorted[-vLimit-1]
+            if 'OIII' in cA:
+                cA_title = '[OIII]'
+            elif 'Hbeta' in cA:
+                cA_title = r'H$_\beta$'
+            elif 'Hgamma' in cA:
+                cA_title = r'H$_\gamma$'
+            else:
+                cA_title = cA
 
-        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, line_ratio,
-            vmin=lr_min, vmax=lr_max, colorbar=True, nodots=True, 
-            galaxy=galaxy.upper(), redshift=z, title=eq_title,label=lrCBtitle)
-        if CO:
-            add_CO(ax, galaxy, header)
+            if 'OIII' in cB:
+                cB_title = '[OIII]'
+            elif 'Hbeta' in cB:
+                cB_title = r'H$_\beta$'
+            elif 'Hgamma' in cB:
+                cB_title = r'H$_\gamma$'
+            else:
+                cB_title = cB
+                
+            lr_title = "%s/%s Line Ratio" % (cB_title, cA_title)
+            lrCBtitle = r"log$_{10}$ (%s/%s)" %(cB_title,cA_title)
 
-  
+            lr_max = max(line_ratio)
+            lr_min = min(line_ratio)
+            lr_sorted = sorted(np.unique(line_ratio))
+            lr_min = lr_sorted[vLimit]
+            lr_max = lr_sorted[-vLimit-1]
+
+            if 'OIII' in cB and 'Hbeta' in cA:
+                lr_min = -0.5
+                lr_max = 0.75
+            if 'OIII' in cB and 'Hgamma' in cA:
+                lr_min = -0.5
+                lr_max = 2.1
+            if 'Hbeta' in cB and 'Hgamma' in cA:
+                lr_min = -0.5
+                lr_max = 1
+
+            ax_array[-1,n] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+                line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
+                nodots=True, title=lr_title, label=lrCBtitle, ax=ax_array[-1,n])
+            if CO:
+                add_CO(ax_array[-1,n], galaxy, header)
+
+    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+            "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
+
+    f.savefig(saveTo, bbox_inches="tight",format='pdf')
+    
+
     
 ##############################################################################
 

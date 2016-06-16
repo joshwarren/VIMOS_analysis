@@ -25,7 +25,7 @@ import os
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
-    flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
+    flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
     ax = None, **kwargs):
 
@@ -42,7 +42,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     
     if title is not None:
-        plt.title(title, y=1.1)
+        ax.set_title(title, fontdict={'fontsize':'small'})
 
     if vmin is None:
         vmin = np.min(vel)
@@ -92,7 +92,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
         clim = (vmin,vmax))
 #    ax.clim(vmin,vmax)
-    ax.invert_xaxis()
+#    ax.invert_xaxis()
 
 #    plt.gca().invert_yaxis()
     
@@ -104,9 +104,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 ## symmetric should make VD plots odd... ******************************
         ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
         cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
+        cbar.ax.tick_params(labelsize=8) 
 #        plt.clim(vmin,vmax)  # make color axis symmetrical
         if label:
-            cbar.set_label(label, rotation=270)
+            cbar.set_label(label, rotation=270, fontsize='small')
 
 
     ax.set_ylabel(axis_label)

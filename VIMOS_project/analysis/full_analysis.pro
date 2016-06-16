@@ -32,9 +32,9 @@ range = [4200, 10000]
 
 binning_spaxels, galaxy, discard=discard, targetSN=targetSN
 
-find_template, galaxy, z=z, discard=discard, range=range
+;find_template, galaxy, z=z, discard=discard, range=range
 
-mcmc, galaxy, z=z;, discard=discard, range=range
+;mcmc, galaxy, z=z;, discard=discard, range=range
 
 ;gandalf_VIMOS, galaxy, discard=discard, range=range
 galaxy=0
