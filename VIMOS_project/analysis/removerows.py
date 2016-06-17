@@ -26,7 +26,7 @@ def removerows(gal):
     
 if __name__ == '__main__':
     galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-    galaxies = ['ngc3100']
+    galaxies = ['pks0718-34']
     for gal in galaxies:
         print gal
         removerows(gal)
