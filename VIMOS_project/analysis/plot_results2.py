@@ -59,6 +59,71 @@ import os
 import colormaps as cm
 from sauron_colormap import sauron
 
+#-----------------------------------------------------------------------------
+def set_lims(galaxy, vmin, vmax, plot_species, plot_type, glamdring=False):
+    if 'stellar' in plot_species:
+        plot_species = 'stellar'
+    if 'Hbeta' in plot_species:
+        plot_species = 'Hbeta'
+    if 'Hgamma' in plot_species:
+        plot_species = 'Hgamma'
+    if 'OIII' in plot_species:
+        plot_species = 'OIII'
+
+    if 'vel' in plot_type or 'velocity' in plot_type:
+        plot_type = 'velocity'
+    if 'sigma' in plot_type:
+        plot_type = 'sigma'
+    if 'h3' in plot_type:
+        plot_type = 'h3'
+    if 'h4' in plot_type:
+        plot_type = 'h4'
+    if 'image' in plot_type or 'flux' in plot_type:
+        plot_type = 'image'
+    if 'equivalent width' in plot_type:
+        plot_type = 'equivalent_width'
+    if 'line ratio' in plot_type and 'OIII' in plot_type:
+        plot_type = 'lrOIII'
+    elif 'line ratio' in plot_type and 'Hbeta' in plot_type:
+        plot_type = 'lrHbeta'
+
+
+        
+    
+    if glamdring:
+        f = '/users/warrenj/analysis/' + galaxy + '/limits.dat'
+    else:
+        f = '/Data/vimos/analysis/' + galaxy + ' /limits.dat'
+
+    species, types = np.loadtxt(f, unpack=True, dtype=str, usecols=(0,1),
+                                skiprows=1)
+    mins, maxs = np.loadtxt(f, unpack=True, usecols=(2,3), skiprows=1)
+
+
+    n = np.where(species == plot_species, count=c) ### needs more than this to search plot_type too.
+
+
+    if c:
+        return vmin, vmax
+    else:
+        if mins[n] < maxs[n]:
+            return mins[n], maxs[n]
+        else:
+######       throw error
+
+    
+
+    
+
+    
+
+
+
+    
+
+#-----------------------------------------------------------------------------
+
+
 
 #-----------------------------------------------------------------------------
 def use_templates(galaxy, glamdring=False):
@@ -425,6 +490,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #            if 'h4' in plot_title:
 #                vmin=-0.08
 #                vmax=0.20
+
+        vmin, vmax = set_lims(galaxy, vmin, vmax, plot_title, plot_title,
+                              glamdring=glamdring)
             
   
 # ------------===== Plot velfield - no interperlation ======----------
@@ -472,17 +540,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         v_sorted = sorted(f_bar_binned)
     fmin = f_sorted[vLimit]
     fmax = f_sorted[-vLimit-1]
-
-
-    fmin = 50
-    fmax = 750
-
     
     title = "Total Flux"
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
     saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/total_image_%s.png" % (wav_range_dir,
         wav_range)
+
+    fmin, fmax = set_lims(galaxy, fmin, fmax, 'stellar', title,
+                              glamdring=glamdring)
         
     ax_array[0,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
         flux_bar_binned, vmin=fmin, vmax=fmax, nodots=True,
@@ -681,7 +747,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #            eq_min = 0.1
 #            eq_max = 1.9
 
-        
+
+ 
 
         if 'OIII' in c:
             c_title = '[OIII]'
@@ -695,7 +762,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         f_title = "%s Flux" % (c_title)
 ## from header
         fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
-
+        f_min, f_max = set_lims(galaxy, f_min, f_max, c, f_title,
+                                glamdring=glamdring)
+    
         ax_y = set_ax_y(c)
         saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
@@ -724,7 +793,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         
         eq_title = "%s Equivalent Width" % (c_title)
         eqCBtitle = r"Equivalent Width ($\AA$)"
-
+        eq_min, eq_max = set_lims(galaxy, eq_min, eq_max, c, eq_title,
+                                  glamdring=glamdring)
+    
         saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
             c, wav_range)
@@ -801,6 +872,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             lr_sorted = sorted(np.unique(line_ratio))
             lr_min = lr_sorted[vLimit]
             lr_max = lr_sorted[-vLimit-1]
+
+            lr_min, lr_max = set_lims(galaxy, lr_min, lr_max, cA, lr_title,
+                                    glamdring=glamdring)
 
 #            if 'OIII' in cB and 'Hbeta' in cA:
 #                lr_min = -0.5
