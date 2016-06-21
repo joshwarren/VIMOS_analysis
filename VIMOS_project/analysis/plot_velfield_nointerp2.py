@@ -210,13 +210,20 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
         
 
+    ax.axis('equal')
 
 
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):
             os.makedirs(os.path.dirname(save))
+        ax.xaxis.set_visible(True)
+        ax.yaxis.set_visible(True)
+        ax3.xaxis.set_visible(True)
+        ax2.yaxis.set_visible(True)    
+
         plt.savefig(save, bbox_inches="tight")
-    ax.axis('equal')
+        
+        
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax3.xaxis.set_visible(False)
