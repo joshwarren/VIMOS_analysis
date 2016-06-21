@@ -8,7 +8,7 @@
 
 import matplotlib.pyplot as plt # used for plotting
 import glob # for searching for files
-import pyfits # reads fits files (is from astropy)
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
 import numpy as np # for array handling
 from sauron_colormap import sauron
 from matplotlib.ticker import MaxNLocator
