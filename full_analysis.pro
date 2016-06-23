@@ -21,7 +21,7 @@ galaxies = [$
 	'eso443-g024']
 ; an inital guess from quick internet search of redshift.
 z_gals = [0.01, 0.005, 0.02, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
-;for gal=5, n_elements(z_gals)-1 do begin
+;for gal=0, n_elements(z_gals)-1 do begin
 gal=6
 if not keyword_set(galaxy) then galaxy = galaxies[gal]
 print, galaxy

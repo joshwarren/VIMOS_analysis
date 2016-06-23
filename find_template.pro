@@ -13,7 +13,6 @@ if not keyword_set(z) then z=0.01
 if not keyword_set(discard) then discard=2
 if not keyword_set(range) then range=[4200,10000]
 
-
 ;; ----------===============================================---------
 ;; ----------============= Input parameters  ===============---------
 ;; ----------===============================================---------
@@ -37,7 +36,7 @@ if not keyword_set(range) then range=[4200,10000]
 		   ; correct the template continuum shape during the fit 
 ;; File for output: an array containing the calculated dynamics of the
 ;; galaxy. 
-	output_temp_weighting = '/Data/vimosindi/analysis/' + $
+	output_temp_weighting = '/Data/vimos/analysis/' + $
 		galaxy + '/templates.txt'
 
 	CLOSE, 1
@@ -45,7 +44,7 @@ if not keyword_set(range) then range=[4200,10000]
 
 ;; Tessellation input
 ;	binning_spaxels, galaxy
-	tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
+	tessellation_File = '/Data/vimos/analysis/' + galaxy + $
 		'/voronoi_2d_binning_output.txt'
 
 
@@ -107,27 +106,19 @@ endfor
 ;; one result. This is NOT equivalent to a scalar. 
 ; Final wildcard reflects the fact that depending on reduction method
 ; quadrants may or may not have beenflux calibrated.
-	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/reduced/' + $
-		Galaxy + '/cube/*_cube.fits') 
-        
-;; For analysis of just one quadrant - mst have used rss2cube_quadrant
-;;                                     and have binned the quadrant.
-;	dataCubeDirectory = FILE_SEARCH('/Data/vimosindi/' + $
-;		galaxy + $
-;		'-3/Q2/calibrated/cube/*_fluxcal_cube.fits')
-
+	dataCubeDirectory = FILE_SEARCH('/Data/vimos/cubes/' + $
+		Galaxy + '.cube.combined.fits') 
 
 
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
-	CDELT_spec = sxpar(header,'CD3_3')
+	CDELT_spec = sxpar(header,'CDELT3')
 	s = size(galaxy_data_temp)
 
 ;; Change to pixel units
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
-
 
 	gal_temp = total(total(galaxy_data_temp[discard:s[1]-discard-1, discard:s[2]-discard-1,*], 1), 1)
 
@@ -141,7 +132,9 @@ IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 
 ;; h is the spectrum with the peak enclosed by 'ignore' removed.
-	h =[gal_temp[0:ignore[0]],gal_temp[ignore[1]:*]]
+	if 5581 lt CRVAL_spec+s[3]*CDELT_spec then begin
+		h =[gal_temp[0:ignore[0]],gal_temp[ignore[1]:*]]
+        endif else h = gal_temp
 
 	h =[h[0:ignore2[0]],h[ignore2[1]:*]]
 
@@ -178,7 +171,6 @@ ENDIF
 	lamRange = MAKE_ARRAY(2)
 	lamRange[0] = lower_limit*CDELT_spec + CRVAL_spec
 	lamRange[1] = upper_limit*CDELT_spec + CRVAL_spec
-
 
 ;; ----------========= Writing the spectrum  =============---------
 

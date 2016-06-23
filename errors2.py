@@ -67,7 +67,7 @@ def use_templates(galaxy, glamdring=False):
         template_weighting = '/users/warrenj/analysis/' + galaxy + \
 	    '/templates.txt' 
     else:
-        template_weighting = '/Data/vimosindi/analysis/' + galaxy + \
+        template_weighting = '/Data/vimos/analysis/' + galaxy + \
 	    '/templates.txt' 
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
@@ -168,7 +168,7 @@ def errors2(i_gal=None, bin=None):
         from ppxf import ppxf
         import ppxf_util as util
     else:
-        dir = '/Data/vimosindi/'
+        dir = '/Data/vimos/'
         dir2 = '/Data/idl_libraries/'
         import matplotlib.pyplot as plt # used for plotting
         from ppxf import ppxf
@@ -265,14 +265,14 @@ def errors2(i_gal=None, bin=None):
 
 ## ----------========= Reading the spectrum  =============---------
 
-    dataCubeDirectory = glob.glob(dir+"reduced/%s/cube/*_cube.fits" % (galaxy)) 
+    dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
         
-    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 1, header=True)
-    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 2)
+    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
+    galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 1)
 
 ## write key parameters from header - can then be altered in future	
     CRVAL_spec = header['CRVAL3']
-    CDELT_spec = header['CD3_3']
+    CDELT_spec = header['CDELT3']
     s = galaxy_data.shape
 
     rows_to_remove = range(discard)
@@ -284,7 +284,6 @@ def errors2(i_gal=None, bin=None):
     galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
     galaxy_noise = np.delete(galaxy_noise, rows_to_remove, axis=1)
     galaxy_noise = np.delete(galaxy_noise, cols_to_remove, axis=2)
-
 
     n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
 
@@ -306,7 +305,6 @@ def errors2(i_gal=None, bin=None):
     
 #    fl = np.sum(galaxy_data, axis=0)
 #    plt.contour(fl)
-
 #    plt.scatter(x[spaxels_in_bin], y[spaxels_in_bin])
 #    plt.show()
 
@@ -392,6 +390,7 @@ def errors2(i_gal=None, bin=None):
     bin_log /= med_bin
     bin_log_noise /= med_bin
     noise = bin_log_noise+0.0000000000001
+
 
 
     dv = (logLam_template[0]-logLam_bin[0])*c # km/s
@@ -480,6 +479,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------=========== The bestfit part =================---------
 ## ----------===============================================---------
+    noise = np.abs(noise)
     bin_log_sav = bin_log
     noise_sav = noise
     saveTo="%sanalysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
@@ -595,7 +595,7 @@ def errors2(i_gal=None, bin=None):
    
     b = open(bestfit_file, 'w')
     if gas:
-        for i in range(gas+1):
+        for i in range(np.shape(pp.sol)[0]):
             b.write(str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
                 str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
     else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \

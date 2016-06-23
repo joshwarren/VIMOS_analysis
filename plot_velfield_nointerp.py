@@ -25,12 +25,18 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-    **kwargs):
+    ax = None, **kwargs):
 
     kwg = {}
     kwg.update(kwargs)
 
-    fig, ax = plt.subplots(nrows=1,ncols=1)
+    
+    if len(vel) != max(bin_num)+1:
+        print "Not enough bins provided to vel keyword"
+        return
+
+    if ax is None:
+        fig, ax = plt.subplots(nrows=1,ncols=1)
     
     if title is not None:
         plt.title(title, y=1.1)
@@ -58,6 +64,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     im_xBar = np.copy(xBar)
     im_yBar = np.copy(yBar)
     bin_num = bin_num.astype(int)
+
     v = vel[bin_num].clip(vmin,vmax)
     pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
 
@@ -77,10 +84,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         if isinstance(cmap, str):
             cmap = plt.get_cmap(cmap)
 
-    cs = plt.imshow(img[:][::-1], interpolation='none', 
+    cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 
-        xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
-    plt.clim(vmin,vmax)
+        xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
+        clim = (vmin,vmax))
+#    ax.clim(vmin,vmax)
+    ax.invert_xaxis()
 
 #    plt.gca().invert_yaxis()
 
@@ -194,6 +203,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 #        plt.clim(vmin,vmax)  # make color axis symmetrical
         if label:
             cbar.set_label(label, rotation=270)
+
+
 
 
     if save is not None:

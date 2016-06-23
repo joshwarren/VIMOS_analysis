@@ -5,8 +5,8 @@ code = "python"
 ;code = "IDL"
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-gals=[0,1,2,3,4,5,6,7,8,9]
-;gals=[6]
+gals=[0,1,2,3,4,5,6,7,8]
+gals=[6]
 ;gals = where(galaxies eq gal)
 
 
@@ -20,7 +20,7 @@ galaxy = galaxies[gals[i_gal]]
 
 
 ;tessellation_File = '/Data/vimosindi/analysis_sav_2016-02-09/' + galaxy + $
-tessellation_File = '/Data/vimosindi/analysis/' + galaxy + $
+tessellation_File = '/Data/vimos/analysis/' + galaxy + $
 	'/voronoi_2d_binning_output.txt'
 
 RDFLOAT, tessellation_File, bin_num, COLUMNS = [3], $

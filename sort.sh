@@ -57,11 +57,17 @@ for d in $( ls -d */standard[1-3]); do
         t=$( imhead $f | grep "DATE-OBS" | cut -d"T" -f3 | cut -d"'" -f1 )
         x=$( echo $t | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }' )
         
-        obs=$( ls ../../*/[1-3]/VIMOS_IFU_OBS$n* )
-        tobs=$( imhead $obs |grep "DATE-OBS" | cut -d"T" -f3 | cut -d"'" -f1 )
-        tobs=($tobs)
-        xobs=$( echo $tobs | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }' )
-                        
+        obs=($( ls ../../*/[1-3]/VIMOS_IFU_OBS$n* ))
+        tobs=()
+        xobs=()
+        for obs_i in $obs; do
+            tobs_i=($( imhead $obs_i |grep "DATE-OBS" | cut -d"T" -f3 | cut -d"'" -f1 ))
+            tobs+=($tobs_i)
+            xobs_i=($( echo $tobs_i | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }' ))
+            xobs+=($xobs_i)
+        done
+
+                    
         
         
     done
