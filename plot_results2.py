@@ -49,7 +49,8 @@ from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for array handling
 import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
-
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp2 import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
@@ -169,14 +170,16 @@ def add_CO(ax, galaxy, header):
 
 #        x += max(ax.get_xlim())
 #        y -= max(ax.get_ylim())
+        c = SkyCoord(header.comments['CRVAL1'].split(",")[0] +
+                     ' ' + header.comments['CRVAL2'].split(",")[0],
+                     unit=(u.hourangle, u.deg))
 
-        CO_x -= ((header['HIERARCH CCD1 ESO INS IFU RA'] -
-                  header['CRPIX1']*header['CDELT1']/(60*60)) -
+
+        CO_x -= ((c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
                  (CO_header['CRVAL1'] +
                   CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
                 
-        CO_y += ((header['HIERARCH CCD1 ESO INS IFU DEC'] -
-                  header['CRPIX2']*header['CDELT2']/(60*60)) -
+        CO_y += ((c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
                  (CO_header['CRVAL2'] +
                   CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
             
