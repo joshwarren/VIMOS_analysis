@@ -8,7 +8,7 @@
 
 import numpy as np # for reading files
 import glob # for searching for files
-import pyfits # reads fits files (is from astropy)
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 from scipy.stats import gaussian_kde # for calc plot density
 #-----------------------------------------------------------------------------
