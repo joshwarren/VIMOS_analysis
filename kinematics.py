@@ -7,7 +7,7 @@
 
 import numpy as np # for reading files
 import glob # for searching for files
-import pyfits # reads fits files (is from astropy)
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
 from find_galaxy import find_galaxy # part of mge package, fits photometry
 from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
 import math # for sine functions

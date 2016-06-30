@@ -113,18 +113,18 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     if redshift is not None:
         c = 299792 #km/s
 #        H = 67.8 #(km/s)/Mpc
-        H = 70.0 # value used by Bolonga group.
-        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
-        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
+#        H = 70.0 # value used by Bolonga group.
+        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c
+        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c
         xmax = xlim[1]
         ymax = ylim[1]
 #        xlim -= xmax/2
 #        ylim -= ymax/2
-        axis_label = "Distance (Mpc)"
+        axis_label = "Distance (Mpc/h)"
         if max(xlim) < 1.0:
             xlim *= 1000
             ylim *= 1000
-            axis_label = "Distance (kpc)"
+            axis_label = "Distance (kpc/h)"
  
 
     ax2.minorticks_on()
@@ -213,80 +213,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         plt.savefig(save, bbox_inches="tight")
 
     return ax
-
-
-
-
-
-
-#    if redshift is not None:
-#        c = 299792 #km/s
-#        H = 67.8 #(km/s)/Mpc
-#        xBar = np.radians(xBar/(60*60)) * redshift*c/H
-#        yBar = np.radians(yBar/(60*60)) * redshift*c/H
-#        xmax = max(xBar)
-#        ymax = max(yBar)
-#        xBar -= xmax/2
-#        yBar -= ymax/2
-#        axis_label = "Distance (Mpc)"
-#        if flux_unbinned is not None:
-#            x *= res
-#            y *= res
-#            x = np.radians(x/(60*60)) * redshift*c/H
-#            y = np.radians(y/(60*60)) * redshift*c/H
-#
-#            x -= xmax/2
-#            y -= ymax/2
-#        if max(xBar) < 1.0:
-#            xBar *= 1000
-#            yBar *= 1000
-#            axis_label = "Distance (kpc)"
-#            if flux_unbinned is not None:
-#                x *= 1000
-#                y *= 1000
-#
-# 
-# 
-#    if galaxy is not None:
-#        plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
-#            verticalalignment='top',transform=ax.transAxes)
-#        if redshift is not None:
-#            plt.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
-#               color = 'black',verticalalignment='top',
-#                transform=ax.transAxes)
-#
-#    ax.axis('image')
-#    ax.minorticks_on()
-#    ax.tick_params(length=10, which='major')
-#    ax.tick_params(length=5, which='minor')
-#    plt.xlabel(axis_label)
-#    plt.ylabel(axis_label)
-#
-#    if flux is not None and flux_unbinned is None:
-#        ax.tricontour(xBar, yBar, -2.5*np.log10(flux/np.max(flux).ravel()),
-#                      levels=np.arange(20), colors='k') # 1 mag contours
-#
-## NB: have assumed a square image!!!!
-#    if flux_unbinned is not None and flux is None:
-##        flux_unbinned[477]=0.001
-#        contours = -2.5*np.log10(flux_unbinned.ravel()/np.max(flux_unbinned))
-#        ax.tricontour(x, y, contours, 
-#            levels=np.arange(20), colors='k') # 1 mag contours
-#
-#
-#   if not nodots:
-#        ax.plot(xBar, yBar, '.k', markersize=kwargs.get("markersize", 3))
-#    
-#    if colorbar:
-#        divider = make_axes_locatable(ax)
-#        cax = divider.append_axes("right", size="5%", pad=0.1)
-#        ticks = MaxNLocator(nbins = nticks)#.tick_values(vmin, vmax)
-##        ticks = MaxNLocator.tick_values(vmin, vmax)
-#        cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
-#        if label:
-#            cbar.set_label(label, rotation=270)
-
-
 
 
 
