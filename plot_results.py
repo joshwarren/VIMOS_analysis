@@ -151,13 +151,11 @@ def add_CO(ax, galaxy, header, saveTo):
                      unit=(u.hourangle, u.deg))
 
 
-        CO_x -= ((c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
-                 (CO_header['CRVAL1'] +
-                  CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
+        CO_x -= (c.ra.degree - header['CRPIX1']*header['CDELT1']) - /
+            (CO_header['CRVAL1'] + CO_header['CRPIX1']*CO_header['CDELT1'])
                 
-        CO_y += ((c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
-                 (CO_header['CRVAL2'] +
-                  CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
+        CO_y += (c.dec.degree - header['CRPIX2']*header['CDELT2']) - /
+            (CO_header['CRVAL2'] + CO_header['CRPIX2']*CO_header['CDELT2'])
             
         ax.contour(CO_x,CO_y,CO_image, colors='k')
 
