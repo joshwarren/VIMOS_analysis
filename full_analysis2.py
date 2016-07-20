@@ -4,7 +4,7 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
-from plot_results import plot_results
+from plot_results2 import plot_results
 from kinematics import kinematics
 #from plot_results_CO import plot_results
 from GH_plots import GH_plots
@@ -12,14 +12,23 @@ from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
-galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc3100', 'ngc7075', 'pks0718-34', 'ngc1399']#'eso443-g024',
+galaxies = ['ic1459',
+            'ic1531',
+            'ic4296',
+            'ngc0612',
+            'ngc3100',
+            'ngc7075',
+            'pks0718-34',
+            'ngc1399',
+            'ngc3557']
+#           'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 #galaxies = ['ic4296']
 #galaxies = ['ngc7075']
 #galaxies = ['eso443-g024']
 #galaxies = ['pks0718-34']
 #galaxies = ['ic1459']
-galaxies = ['ngc3100']
+#galaxies = ['ngc3100']
 #galaxies = ['ngc3557']
 
 discard = 2
@@ -27,7 +36,7 @@ wav_range = '4200-'
 vLimit = 2
 for galaxy in galaxies:
 
-    path = "/Data/vimosindi/analysis/%s/results/%s/plots" % (galaxy, wav_range)
+    path = "/Data/vimos/analysis/%s/results/%s/plots" % (galaxy, wav_range)
     if not os.path.exists(path+"/notinterpolated"):
         os.makedirs(path+"/notinterpolated")
 

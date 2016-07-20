@@ -114,8 +114,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         c = 299792 #km/s
 #        H = 67.8 #(km/s)/Mpc
 #        H = 70.0 # value used by Bolonga group.
-        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c
-        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c
+        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/100
+        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/100
         xmax = xlim[1]
         ymax = ylim[1]
 #        xlim -= xmax/2
