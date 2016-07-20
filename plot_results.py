@@ -151,10 +151,10 @@ def add_CO(ax, galaxy, header, saveTo):
                      unit=(u.hourangle, u.deg))
 
 
-        CO_x -= (c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) - \
+        CO_x -= (c.ra.degree - header['CRPIX1']*header['CDELT1']) - \
             (CO_header['CRVAL1'] + CO_header['CRPIX1']*CO_header['CDELT1'])
                 
-        CO_y += (c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) - \
+        CO_y += (c.dec.degree - header['CRPIX2']*header['CDELT2']) - \
             (CO_header['CRVAL2'] + CO_header['CRPIX2']*CO_header['CDELT2'])
             
         ax.contour(CO_x,CO_y,CO_image, colors='k')
@@ -283,6 +283,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 lwv = v_unbinned*galaxy_data_unbinned
                 v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(
                     galaxy_data_unbinned)
+                print np.nanmean(lwv)*n_spaxels/np.nansum(
+                    galaxy_data_unbinned)
             if norm == "sig":
                 sig_file = glob.glob(output+'gal_stellar_sigma*.dat')
                 s_binned, s_uncert_binned = np.loadtxt(sig_file[0], unpack=True)
@@ -294,7 +296,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
                 
-#            v_binned -=5
 
 # Limits on field
         vmax = max(v_binned)
@@ -337,25 +338,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             title = 'Velocity'
             CBLabel = "V (km s$^{-1}$)"
             cmap = sauron
-#            vmin=-130
-#            vmax=-vmin
-#        v_binned += 90
-#        v_uncert_max = 100
         else:
             cmap = sauron#cm.blue
         if "sigma" in plot_title:
             title = 'Velocity Dispersion'
             CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
-#            vmin=60
-#            vmax=360
         if "h3" in plot_title:
             title = 'h3'
-#            vmax = 0.07
-#            vmin = -0.15
         if "h4" in plot_title:
             title = 'h4'
-#            vmax=0.2
-#            vmin=-0.08
         
 
 

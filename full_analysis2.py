@@ -4,7 +4,7 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
-from plot_results2 import plot_results
+from plot_results import plot_results
 from kinematics import kinematics
 #from plot_results_CO import plot_results
 from GH_plots import GH_plots
@@ -23,7 +23,7 @@ galaxies = ['ic1459',
             'ngc3557']
 #           'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-#galaxies = ['ic4296']
+galaxies = ['ic1531']
 #galaxies = ['ngc7075']
 #galaxies = ['eso443-g024']
 #galaxies = ['pks0718-34']
