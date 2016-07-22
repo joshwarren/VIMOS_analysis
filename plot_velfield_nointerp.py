@@ -18,6 +18,49 @@ from sauron_colormap import sauron
 import math
 import matplotlib.pyplot as plt # used for plotting
 import os
+from astropy.io import fits as pyfits # reads fits files (is from astropy)
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
+
+#-----------------------------------------------------------------------------
+def add_CO(ax, galaxy, header, save):
+    CO_image_dir="/Data/alma/%s-mom0.fits" %(galaxy)
+    if os.path.exists(CO_image_dir):
+        CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
+
+#remove random extra dimenisons.
+        CO_image = np.sum(np.sum(CO_image,axis=0), axis=0)
+
+        CO_x = np.arange(CO_header['NAXIS1'])*CO_header['CDELT1']*60*60
+        CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']*60*60
+
+#        x += max(ax.get_xlim())
+#        y -= max(ax.get_ylim())
+        c = SkyCoord(header.comments['CRVAL1'].split(",")[0] +
+                     ' ' + header.comments['CRVAL2'].split(",")[0],
+                     unit=(u.hourangle, u.deg))
+
+
+        CO_x -= ((c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
+                 (CO_header['CRVAL1'] +
+                  CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
+                
+        CO_y += ((c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
+                 (CO_header['CRVAL2'] +
+                  CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
+            
+        ax.contour(CO_x,CO_y,CO_image, colors='k')
+
+        saveCO = os.path.dirname(save)+"/withCO/"+os.path.basename(save)
+
+        if not os.path.exists(os.path.dirname(saveCO)):
+            os.makedirs(os.path.dirname(saveCO))
+        plt.savefig(saveCO, bbox_inches="tight")
+
+#        return ax
+
+#-----------------------------------------------------------------------------
 
 
 
@@ -25,7 +68,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=7, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-    ax = None, **kwargs):
+    CO=False, header=None, **kwargs):
 
     kwg = {}
     kwg.update(kwargs)
@@ -33,10 +76,17 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     
     if len(vel) != max(bin_num)+1:
         print "Not enough bins provided to vel keyword"
-        return
+        quit
 
-    if ax is None:
-        fig, ax = plt.subplots(nrows=1,ncols=1)
+    if CO:
+        if header is None:
+            print "Header is required for CO alignment"
+            quit
+        if galaxy is None:
+            print "Galaxy keyword is required for CO"
+            quit
+
+    fig, ax = plt.subplots(nrows=1,ncols=1)
     
     if title is not None:
         plt.title(title, y=1.1)
@@ -96,6 +146,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     ax.set_ylabel(axis_label)
     ax.set_xlabel(axis_label)
     ax.axis('tight')  # Equal axes and no rescaling
+    ax.axis('equal')
     ax.minorticks_on()
     ax.tick_params(length=10, which='major')
     ax.tick_params(length=5, which='minor')
@@ -148,10 +199,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         
 
     if galaxy is not None:
-        plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
+        ax.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
             verticalalignment='top',transform=ax.transAxes)
         if redshift is not None:
-            plt.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
+            ax.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
                 color = 'black',verticalalignment='top',
                 transform=ax.transAxes)
 
@@ -192,18 +243,26 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
                     fontsize=5)
 
         
-    if colorbar:
-#        divider = make_axes_locatable(ax)
-#        cax = divider.append_axes("right", size="5%", pad=0.7)
-        fig.subplots_adjust(right=0.66, top=0.84)
-        cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
-## symmetric should make VD plots odd... ******************************
-        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
-        cbar = fig.colorbar(cs, cax=cax, ticks=ticks)
-#        plt.clim(vmin,vmax)  # make color axis symmetrical
-        if label:
-            cbar.set_label(label, rotation=270)
+#    if colorbar:
+##        divider = make_axes_locatable(ax)
+##        cax = divider.append_axes("right", size="5%", pad=0.7)
+#        fig.subplots_adjust(right=0.66, top=0.84)
+#        cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
+### symmetric should make VD plots odd... ******************************
+#        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
+#        cbar = fig.colorbar(cs, cax=cax, ticks=ticks)
+##        plt.clim(vmin,vmax)  # make color axis symmetrical
+#        if label:
+#            cbar.set_label(label, rotation=270)
 
+    if colorbar:
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
+        cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
+        cbar.ax.tick_params(labelsize=8) 
+        if label:
+            cbar.set_label(label, rotation=270, fontsize='small')
 
 
 
@@ -212,7 +271,17 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
             os.makedirs(os.path.dirname(save))
         plt.savefig(save, bbox_inches="tight")
 
-    return ax
+    if CO:
+        add_CO(ax, galaxy, header, save)
 
+
+    for txt in ax.texts:
+        txt.set_visible(False)
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax3.xaxis.set_visible(False)
+    ax2.yaxis.set_visible(False)     
+        
+    return ax
 
 
