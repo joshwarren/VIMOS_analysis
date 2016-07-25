@@ -52,13 +52,24 @@ from astropy.io import fits as pyfits # reads fits files (is from astropy)
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt # used for plotting
-from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
+from plot_velfield_nointerp2 import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
 import ppxf_util as util
 from numpy.polynomial import legendre
 import os
 import colormaps as cm
 from sauron_colormap import sauron
+
+# Give axes a saveTo property
+plt.axes.saveTo = property(lambda self:str())
+# Give axes an x and y on figure grid property
+plt.axes.figx = property(lambda self:int())
+plt.axes.figy = property(lambda self:int())
+# give axes a property to hold a colorbar axes
+plt.axes.cax = property(lambda self:plt.axes())
+
+
+
 
 #-----------------------------------------------------------------------------
 def set_lims(galaxy, vmin, vmax, plot_species, plot_type):
@@ -157,6 +168,45 @@ def set_ax_y(plt_title):
 
 
 #-----------------------------------------------------------------------------
+def add_CO(ax, galaxy, header):
+    CO_image_dir="/Data/alma/%s-mom0.fits" %(galaxy)
+    if os.path.exists(CO_image_dir):
+        CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
+
+#remove random extra dimenisons.
+        CO_image = np.sum(np.sum(CO_image,axis=0), axis=0)
+
+        CO_x = np.arange(CO_header['NAXIS1'])*CO_header['CDELT1']*60*60
+        CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']*60*60
+
+#        x += max(ax.get_xlim())
+#        y -= max(ax.get_ylim())
+        c = SkyCoord(header.comments['CRVAL1'].split(",")[0] +
+                     ' ' + header.comments['CRVAL2'].split(",")[0],
+                     unit=(u.hourangle, u.deg))
+
+
+        CO_x -= ((c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
+                 (CO_header['CRVAL1'] +
+                  CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
+                
+        CO_y += ((c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
+                 (CO_header['CRVAL2'] +
+                  CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
+            
+        ax.contour(CO_x,CO_y,CO_image, colors='k')
+
+        saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
+            os.path.basename(ax.saveTo)
+        if not os.path.exists(os.path.dirname(saveTo)):
+            os.makedirs(os.path.dirname(saveTo))
+        plt.savefig(saveTo, bbox_inches="tight")
+
+#-----------------------------------------------------------------------------
+
+
+
+#-----------------------------------------------------------------------------
 
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
     plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
@@ -190,13 +240,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         n_rows = len(outputs)/2 +1
     else:
         n_rows = len(outputs)/2
-    f, ax_array = plt.subplots(n_rows, 3, sharex='col', sharey='row')
-    f.set_size_inches(8,n_rows*1.8)
-    f.tight_layout(h_pad=2.0)#pad=0.4, w_pad=0.5, h_pad=1.0)
-    ax_array[1,0].axis('off')
-    ax_array[0,0].invert_xaxis()
-    f.subplots_adjust(top=0.94)
-    f.suptitle(galaxy.upper())
+#    f, ax_array = plt.subplots(n_rows, 3)#, sharex='col', sharey='row')
+#    for a in ax_array.flatten():
+#        f.delaxes(a)
+#
+#    ax_array[1,0].axis('off')
+#    setattr(ax_array[1,0],'saveTo',"/Data/vimos/analysis/%s/results/blank.png" % (galaxy))
+#    ax_array[0,0].invert_xaxis() #needs to be all of them???
+    f = plt.figure(frameon=False)
+    ax_array = []
+
+    
 
 
 # Read tessellation file
@@ -404,22 +458,21 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
 # Field plot
+            ax = f.add_subplot(111, aspect='equal')
             saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title, wav_range)
-#            ax_array[ax_y,ax_x] = plot_velfield_nointerp(x, y, bin_num, xBar,
-#                yBar, v_binned, vmin=vmin, vmax=vmax, #flux_type='notmag',
-#                nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-#                label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-#                title=title, cmap=cmap, save=saveTo,
-#                CO=CO, galaxy=galaxy.upper(), redshift=z, header=header)
-            plot_velfield_nointerp(x, y, bin_num, xBar,
+            ax.saveTo = saveTo
+            ax.figx, ax.figy = ax_x, ax_y
+           
+            ax = plot_velfield_nointerp(x, y, bin_num, xBar,
                 yBar, v_binned, vmin=vmin, vmax=vmax, #flux_type='notmag',
                 nodots=True, show_bin_num=show_bin_num, colorbar=True, 
                 label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
-                title=title, cmap=cmap, save=saveTo,
-                CO=CO, galaxy=galaxy.upper(), redshift=z, header=header).set_figure(f)
-
+                title=title, cmap=cmap, ax=ax)
+            ax_array.append(ax)
+            f.delaxes(ax)
+            f.delaxes(ax.cax)
 
 # Uncertainty plot
             saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
@@ -429,8 +482,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_uncert_binned, vmin=v_uncert_min, vmax=v_uncert_max,
                 flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
                 colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-                redshift = z, title=utitle, save=saveTo, CO=CO, header=header)
-              #, cmap=cm.blue)
+                redshift = z, title=utitle, save=saveTo)#, cmap=cm.blue)
+            if CO:
+                ax1.saveTo = saveTo
+                add_CO(ax1, galaxy, header)
 
                 
                 
@@ -454,19 +509,28 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     
     title = "Total Flux"
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
+
+    ax = f.add_subplot(111, aspect='equal')
     saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/total_image_%s.png" % (wav_range_dir,
         wav_range)
+    ax.saveTo = saveTo
+    ax.figx, ax.figy = 0, 0
 
     fmin, fmax = set_lims(galaxy, fmin, fmax, 'stellar', title)
         
-    ax_array[0,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+    ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
         flux_bar_binned, vmin=fmin, vmax=fmax, nodots=True,
         show_bin_num=show_bin_num, colorbar=True, label=CBLabel,
-        title=title, cmap="gist_yarg", save=saveTo, CO=CO, redshift=z,
-        galaxy=galaxy.upper(), header=header)
+        title=title, cmap="gist_yarg", ax=ax)
+    ax_array.append(ax)
+    f.delaxes(ax)
+    f.delaxes(ax.cax)
+    
     if plots:
         plt.show()
+
+
 
 
 # ------------================= Plot residuals ===============----------
@@ -517,9 +581,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             nodots=True, show_bin_num=show_bin_num, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
-            save=saveTo, CO=CO, header=header)#, cmap = cm.blue)
+            save=saveTo)#, cmap = cm.blue)
         if plots:
             plt.show()
+        if CO:
+            ax1.saveTo = saveTo
+            add_CO(ax1, galaxy, header)
   
 # ------------================= Plot Chi2/DOF ===============----------
     print "        chi2"
@@ -542,9 +609,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         nodots=True, show_bin_num=show_bin_num, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo, CO=CO, header=header)#, cmap=cm.blue)
+        save=saveTo)#, cmap=cm.blue)
     if plots:
         plt.show()
+    if CO:
+        ax1.saveTo = saveTo
+        add_CO(ax1, galaxy, header)
         
 # ------------============ Plot intensity (& EW) ===============----------
     print "        gas map(s) and equivalent widths"
@@ -631,28 +701,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         f_max = f_sorted[-vLimit-1]
 
 
-#        if 'OIII' in c:
-#            f_min = 1
-#            f_max = 10
-#
-#            eq_min = 0.6
-#            eq_max = 3.7
-#            
-#        if 'Hbeta' in c:
-#            f_min = 0.5
-#            f_max = 3.7
-#
-#            eq_min = 0.3
-#            eq_max = 2.1
-#
-#        if 'Hgamma' in c:
-#            f_min = 0.1
-#            f_max = 1.8
-#
-#            eq_min = 0.1
-#            eq_max = 1.9
-
-
  
 
         if 'OIII' in c:
@@ -670,16 +718,25 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         f_min, f_max = set_lims(galaxy, f_min, f_max, c, f_title)
     
         ax_y = set_ax_y(c)
+
+        ax = f.add_subplot(111, aspect='equal')
         saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
+        ax.saveTo = saveTo
+        ax.figx, ax.figy = 0, ax_y
         
-        ax_array[ax_y,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+        
+        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
             flux, vmin=f_min, vmax=f_max, colorbar=True, nodots=True,
-            label=fCBtitle, title=f_title, cmap = 'gist_yarg', save=saveTo,
-            CO=CO, galaxy=galaxy.upper(), redshift=z, header=header)
+            label=fCBtitle, title=f_title, cmap = 'gist_yarg', ax=ax)
+        ax_array.append(ax)
+        f.delaxes(ax)
+        f.delaxes(ax.cax)
 
         if plots: plt.show()
 
+
+        
 #        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
         continuum = np.zeros(number_of_bins)
         for k in range(number_of_bins):
@@ -696,15 +753,21 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         eq_title = "%s Equivalent Width" % (c_title)
         eqCBtitle = r"Equivalent Width ($\AA$)"
         eq_min, eq_max = set_lims(galaxy, eq_min, eq_max, c, eq_title)
-    
+
+        ax = f.add_subplot(111, aspect='equal')
         saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
             c, wav_range)
+        ax.saveTo = saveTo
+        ax.figx, ax.figy = 0, ax_y+1
 
-        ax_array[ax_y+1,0] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+
+        ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
             equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
-            label=eqCBtitle, title=eq_title, save=saveTo, CO=CO, redshift=z,
-            galaxy=galaxy.upper(), header=header)
+            label=eqCBtitle, title=eq_title, ax=ax)
+        ax_array.append(ax)
+        f.delaxes(ax)
+        f.delaxes(ax.cax)
 
   
 # ------------============== Line ratio maps ==================----------
@@ -784,22 +847,60 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #            if 'Hbeta' in cB and 'Hgamma' in cA:
 #                lr_min = -0.5
 #                lr_max = 1
+            ax = f.add_subplot(111, aspect='equal')
             saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
                 "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
                 "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
+            ax.saveTo = saveTo
+            ax.figx, ax.figy = n, n_rows-1
 
-            ax_array[-1,n] = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+            ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
                 line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
-                nodots=True, title=lr_title, label=lrCBtitle, save=saveTo,
-                CO=CO, galaxy=galaxy.upper(), redshift=z, header=header)
+                nodots=True, title=lr_title, label=lrCBtitle, ax=ax)
+
+            ax_array.append(ax)
+            f.delaxes(ax)
+            f.delaxes(ax.cax)
+
+    
+# ------------============= Plot and save ==================----------
+
+    print "        Plotting and saving"
+
+    for i, a in enumerate(ax_array):
+        f.add_axes(a)
+        f.add_axes(a.cax)
+#        a.change_geometry(1,1,1)
+        f.savefig(a.saveTo)
+
+        if CO:
+            add_CO(a, galaxy, header)
+
+        f.delaxes(a)
+        f.delaxes(a.cax)
+        a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
+
+
+
+
+    for a in ax_array:
+        f.add_axes(a)
+        f.add_axes(a.cax)
+        a.xaxis.set_visible(False)
+        a.yaxis.set_visible(False)
+        a.axis('off')
+        a.autoscale(False)
+
+    f.set_size_inches(8.5,n_rows*1.8)
+#    f.tight_layout(h_pad=2.0)#pad=0.4, w_pad=0.5, h_pad=1.0)
+    f.subplots_adjust(top=0.94)
+    f.suptitle(galaxy.upper())
 
     saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
             "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
-
     f.savefig(saveTo, bbox_inches="tight",format='pdf')
-    
 
-    
+        
 ##############################################################################
 
 # Use of plot_results.py

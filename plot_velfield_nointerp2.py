@@ -19,6 +19,7 @@ from matplotlib.ticker import MaxNLocator
 from sauron_colormap import sauron
 import math
 import matplotlib.pyplot as plt # used for plotting
+import matplotlib as mpl
 import os
 
 
@@ -90,11 +91,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
-        clim = (vmin,vmax))
+        clim = (vmin,vmax),aspect='auto')
+
 #    ax.clim(vmin,vmax)
 #    ax.invert_xaxis()
 
 #    plt.gca().invert_yaxis()
+    ax2 = ax.twinx()
+    ax3 = ax.twiny()
     
     if colorbar:
         divider = make_axes_locatable(ax)
@@ -104,10 +108,26 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 ## symmetric should make VD plots odd... ******************************
         ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
         cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
-        cbar.ax.tick_params(labelsize=8) 
-#        plt.clim(vmin,vmax)  # make color axis symmetrical
+        cbar.ax.tick_params(labelsize=6)
+
+
+
+
+
+        
+#        cax = mpl.colorbar.make_axes(ax, location='right', fraction=0.05, pad=0.05, shrink=0.95)
+#        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+#        cbar = mpl.colorbar.ColorbarBase(cax[0], cmap=cmap, norm=norm, orientation='vertical', ticks=ticks)
+#        cbar.ax.tick_params(labelsize=8)         
+
+
+        
         if label:
-            cbar.set_label(label, rotation=270, fontsize='small')
+#            cbar.set_label(label, rotation=270, fontsize='small')
+            cbar.ax.text(4.0,0.5, label, rotation=270, fontsize=6,
+                verticalalignment='center')
+            
+        ax.cax = cax
 
 
     ax.set_ylabel(axis_label)
@@ -117,8 +137,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     ax.tick_params(length=10, which='major')
     ax.tick_params(length=5, which='minor')
 
-    ax2 = ax.twinx()
-    ax3 = ax.twiny()
+
 
     xmin_sav, xmax_sav = ax.get_xlim()
     ymin_sav, ymax_sav = ax.get_ylim()
@@ -216,16 +235,17 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):
             os.makedirs(os.path.dirname(save))
-        ax.xaxis.set_visible(True)
-        ax.yaxis.set_visible(True)
-        ax3.xaxis.set_visible(True)
-        ax2.yaxis.set_visible(True)    
+#        ax.xaxis.set_visible(True)
+#        ax.yaxis.set_visible(True)
+#        ax3.xaxis.set_visible(True)
+#        ax2.yaxis.set_visible(True)    
 
         plt.savefig(save, bbox_inches="tight")
+        plt.close()
         
         
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
+#    ax.xaxis.set_visible(False)
+#    ax.yaxis.set_visible(False)
     ax3.xaxis.set_visible(False)
     ax2.yaxis.set_visible(False)    
 
