@@ -45,7 +45,7 @@
 
 #import matplotlib # 20160202 JP to stop lack-of X-windows error
 #matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
-from cap_plot_velfield import plot_velfield #as plot_velfield
+#from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for array handling
 import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
@@ -59,6 +59,7 @@ from numpy.polynomial import legendre
 import os
 import colormaps as cm
 from sauron_colormap import sauron
+from checkcomp import checkcomp as cc
 
 # Give axes a saveTo property
 plt.axes.saveTo = property(lambda self:str())
@@ -99,7 +100,7 @@ def set_lims(galaxy, vmin, vmax, plot_species, plot_type):
     elif 'line ratio' in plot_type and 'Hbeta' in plot_type:
         plot_type = 'lrHbeta'
 
-    f = '/Data/vimos/analysis/' + galaxy + '/limits.dat'
+    f = '%s/Data/vimos/analysis/%s/limits.dat' % (cc.base_dir, galaxy)
     species, types = np.loadtxt(f, unpack=True, dtype=str, usecols=(0,1),
                                 skiprows=1)
     mins, maxs = np.loadtxt(f, unpack=True, usecols=(2,3), skiprows=1)
@@ -136,8 +137,8 @@ def use_templates(galaxy, glamdring=False):
         template_weighting = '/users/warrenj/analysis/' + galaxy + \
 	    '/templates.txt' 
     else:
-        template_weighting = '/Data/vimos/analysis/' + galaxy + \
-	    '/templates.txt' 
+        template_weighting = '%s/Data/vimos/analysis/%s/templates.txt' % (
+        	cc.base_dir, galaxy)
 
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
     return templatesToUse
@@ -210,9 +211,9 @@ def add_CO(ax, galaxy, header):
 
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
     plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
-    **kwargs):
+    **kwargs):    
 
-    data_file =  "/Data/vimos/analysis/galaxies.txt"
+    data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
     # different data types need to be read separetly
     z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,4,5))
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
@@ -226,12 +227,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     else:
         wav_range_dir = ""
 
-    tessellation_File = "/Data/vimos/analysis/%s/" %(galaxy) +\
+    tessellation_File = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "/Data/vimos/analysis/%s/" %(galaxy) +\
+    tessellation_File2 = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output2.txt"
 
-    output = "/Data/vimos/analysis/%s/results/%s" % (galaxy,wav_range_dir)
+    output = "%s/Data/vimos/analysis/%s/results/%s" % (cc.base_dir, galaxy,
+    	wav_range_dir)
 
     outputs = glob.glob(output+'gal_*.dat')
 
@@ -268,8 +270,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 # FILE_SEARH returns an array even in cases where it only returns
 # one result. This is NOT equivalent to a scalar. 
-    dataCubeDirectory = glob.glob("/Data/vimos/cubes/%s.cube.combined.fits" \
-        % (galaxy)) 
+    dataCubeDirectory = glob.glob("%s/Data/vimos/cubes/%s.cube.combined.fits" \
+        % (cc.base_dir, galaxy)) 
 
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
@@ -475,7 +477,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             f.delaxes(ax.cax)
 
 # Uncertainty plot
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
                 "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
                 plot_title+'_uncert', wav_range)
             ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
@@ -511,7 +513,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
 
     ax = f.add_subplot(111, aspect='equal')
-    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
         "%splots/notinterpolated/total_image_%s.png" % (wav_range_dir,
         wav_range)
     ax.saveTo = saveTo
@@ -537,9 +539,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     if residual:
         print "        " + residual + " residuals"
-        bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
+        bestfit_dir = "%s/Data/vimos/analysis/%s/gas_MC/" % (cc.base_dir, galaxy) +\
             "bestfit/"
-        data_dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy) +\
+        data_dir = "%s/Data/vimos/analysis/%s/gas_MC/" % (cc.base_dir, galaxy) +\
             "input/"
 
         average_residuals = np.zeros(number_of_bins)
@@ -572,7 +574,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         CBLabel = "Residuals"
         title = str.capitalize(residual) + \
 	    " Residuals of Bestfit to Normalised Spectrum"
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
             "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
             residual, wav_range)
 
@@ -590,7 +592,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
   
 # ------------================= Plot Chi2/DOF ===============----------
     print "        chi2"
-    chi2_dir = "/Data/vimos/analysis/%s/gas_MC/chi2/" % (galaxy)
+    chi2_dir = "%s/Data/vimos/analysis/%s/gas_MC/chi2/" % (cc.base_dir, galaxy)
     chi2 = np.zeros(number_of_bins)
     for i in range(number_of_bins):
         chi2[i] = np.loadtxt("%s%d.dat" % (chi2_dir, i))
@@ -601,7 +603,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     
     CBLabel = "Chi2/DOF"
     title = "Chi2/DOF of the bestfit"
-    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
         "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
 
     ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
@@ -633,8 +635,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     lam = []
     emission_lines = []
     for i in range(number_of_bins):
-        lam_dir = "/Data/vimos/analysis/%s/gas_MC/lambda/%s.dat" % (
-            galaxy,str(i))
+        lam_dir = "%s/Data/vimos/analysis/%s/gas_MC/lambda/%s.dat" % (
+            cc.base_dir, galaxy,str(i))
         lam_bin = np.loadtxt(lam_dir, unpack=True)
         lam.append(lam_bin)
 ## Getting the contiuum model used in ppxf
@@ -646,8 +648,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             loglam_bin, [lam_bin[0],lam_bin[-1]], FWHM_gal, quiet=True)
         emission_lines.append(emission_lines_bin)
         
-        weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat"\
-            % (galaxy,str(i))
+        weights_dir = "%s/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat"\
+            % (cc.base_dir, galaxy,str(i))
         temp_weights_temp = np.loadtxt(weights_dir, unpack=True, usecols=(1,))
         temp_name_temp=np.loadtxt(weights_dir, unpack=True, usecols=(0,), dtype=str)
         if '[OIII]5007d' not in temp_name_temp: np.concatenate((temp_name_temp, [0]))
@@ -660,8 +662,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         
 
-        bestfit_dir = "/Data/vimos/analysis/%s/gas_MC/bestfit/%s.dat" % (
-            galaxy,str(i))
+        bestfit_dir = "%s/Data/vimos/analysis/%s/gas_MC/bestfit/%s.dat" % (
+            cc.base_dir, galaxy,str(i))
         bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
         bestfit.append(bestfit_bin)
 
@@ -720,7 +722,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax_y = set_ax_y(c)
 
         ax = f.add_subplot(111, aspect='equal')
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
         "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
         ax.saveTo = saveTo
         ax.figx, ax.figy = 0, ax_y
@@ -755,7 +757,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         eq_min, eq_max = set_lims(galaxy, eq_min, eq_max, c, eq_title)
 
         ax = f.add_subplot(111, aspect='equal')
-        saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
             "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
             c, wav_range)
         ax.saveTo = saveTo
@@ -848,7 +850,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #                lr_min = -0.5
 #                lr_max = 1
             ax = f.add_subplot(111, aspect='equal')
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
                 "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
                 "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
             ax.saveTo = saveTo
@@ -896,7 +898,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     f.subplots_adjust(top=0.94)
     f.suptitle(galaxy.upper())
 
-    saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
+    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
             "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
     f.savefig(saveTo, bbox_inches="tight",format='pdf')
 
