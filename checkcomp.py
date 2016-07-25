@@ -3,41 +3,46 @@
 ## ==================================================================
 ## warrenj 20160725 A routine to check which computer a given program 
 ## is currently being run on.
+##
+## Attributes:
+## uname			device 			base_dir
+## Hal				home			/cygdrive/x
+## glamdring 		glamdring 		~
+## asosx146 		uni 			
+
 import platform
 
-class checkcomp(oject):
+class checkcomp(object):
+
 	def __init__(self):
-		self.device = getDevice()
-		self.base_dir = getBase(self)
+		self.device = self.getDevice()
+		self.base_dir = self.getBase_dir()
 
-	def getDevice():
-	    uname = platform.uname()
-    	if uname contains 'Hal': 
-	    	device = 'home'
-    	elif uname contain 'glamring':
-	    	device = 'glamdring'
-	    else:
-	    	device = -1
-
-        return device
-
-    def getBase(self):
-    	if comp == 'home':
-    		base_dir = '/cygdrive/x'
-	    elif comp == 'glamdring':
-    		raise ValueError('This may not setup to run on Glamdring')
-    		base_dir = '~'
-    	elif comp == 'uni':
-	    	base_dir = ''
-	    return base_dir
+		
+	def getDevice(self):
+		uname = platform.uname()
+		if 'Hal' in uname: 
+			d = 'home'
+		elif 'glamring' in uname:
+			d = 'glamdring'
+		elif 'asosx146' in uname:
+			d = 'uni'
+		else:
+			d = -1 
+		
+		return d
 
 
+	def getBase_dir(self):
+		comp = self.device
+		if comp == 'home':
+			b_dir = '/cygdrive/x'
+		elif comp == 'glamdring':
+			raise ValueError('This may not setup to run on Glamdring')
+			b_dir = '~'
+		elif comp == 'uni':
+			b_dir = ''
+		else:
+			b_dir = ''
 
-
-
-##############################################################################
-
-# Use of plot_results.py
-
-if __name__ == '__main__':
-	checkcomp()
+		return b_dir

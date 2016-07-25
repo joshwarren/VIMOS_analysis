@@ -59,7 +59,8 @@ from numpy.polynomial import legendre
 import os
 import colormaps as cm
 from sauron_colormap import sauron
-from checkcomp import checkcomp as cc
+from checkcomp import checkcomp
+cc = checkcomp()
 
 # Give axes a saveTo property
 plt.axes.saveTo = property(lambda self:str())
