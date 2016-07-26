@@ -4,7 +4,7 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
-from plot_results2 import plot_results
+from plot_results import plot_results
 from kinematics import kinematics
 from GH_plots import GH_plots
 from man_errors2 import man_errors
@@ -28,7 +28,7 @@ galaxies = ['ic1531']
 #galaxies = ['pks0718-34']
 #galaxies = ['ic1459']
 #galaxies = ['ngc3100']
-#galaxies = ['ngc3557']
+galaxies = ['ngc3557']
 
 discard = 2
 wav_range = '4200-'
@@ -40,8 +40,8 @@ for galaxy in galaxies:
         os.makedirs(path+"/notinterpolated")
 
     print galaxy
-#    man_errors(galaxy, wav_range=wav_range)
-#    plt.close("all")
+    man_errors(galaxy, wav_range=wav_range)
+    plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=True, CO = True, residual="median")#, norm='sig')
     plt.close("all")

@@ -9,6 +9,8 @@
 ## warrenj 20160111 Add section to plot histgrams of the fields.
 ## warrenj 20160405 Added keyword CO to overlay CO maps from ALMA if avaible.
 ## This supersedes plot_results_CO.py
+## warrenj 20160726 Now plots in a more object orientated way and creates a
+## grid of plots too. This supersedes plot_results2.py
 
 ## *************************** KEYWORDS ************************* ##
 # galaxy 		Name of the galaxy being plotted: used to find 
@@ -52,7 +54,7 @@ from astropy.io import fits as pyfits # reads fits files (is from astropy)
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt # used for plotting
-from plot_velfield_nointerp2 import plot_velfield_nointerp # for plotting with no interpolations. 
+from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
 import ppxf_util as util
 from numpy.polynomial import legendre
