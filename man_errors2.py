@@ -19,11 +19,14 @@ import numpy as np # for reading files
 import array
 import sys # for early exit of python
 import os
+from checkcomp import checkcomp
+cc = checkcomp()
 
 def man_errors(galaxy, wav_range=""):
-    dir = "/Data/vimos/analysis/%s/gas_MC/" % (galaxy)
-    output_dir = "/Data/vimos/analysis/%s/results/%s/" % (galaxy, wav_range)
-    tessellation_File = "/Data/vimos/analysis/%s/" %(galaxy) +\
+    dir = "%s/Data/vimos/analysis/%s/gas_MC/" % (cc.base_dir, galaxy)
+    output_dir = "%s/Data/vimos/analysis/%s/results/%s/" % (cc.base_dir, 
+        galaxy, wav_range)
+    tessellation_File = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1) 

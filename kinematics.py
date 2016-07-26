@@ -14,6 +14,9 @@ import math # for sine functions
 import matplotlib.pyplot as plt # used for plotting
 import matplotlib.axes as ax # for adding text onto images
 from scipy.optimize import curve_fit # for fitting a gaussian
+from checkcomp import checkcomp
+cc = checkcomp()
+
 #---------------------------------------------------------------------------
 def spxToKpc(x, z):
     H0 = 70.4 # Mpc / kms^-1
@@ -23,8 +26,8 @@ def spxToKpc(x, z):
 def kinematics(galaxy, discard=0, wav_range="", 
     corrections=0, plots=False):
 
-    data_file =  "/Data/vimosindi/analysis/galaxies.txt"
-    data_file2 =  "/Data/vimosindi/analysis/galaxies2.txt"
+    data_file =  "%s/Data/vimosindi/analysis/galaxies.txt" % (cc.base_dir)
+    data_file2 =  "%s/Data/vimosindi/analysis/galaxies2.txt" % (cc.base_dir)
     # different data types need to be read separetly
     z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(data_file, 
         unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
@@ -56,20 +59,20 @@ def kinematics(galaxy, discard=0, wav_range="",
         wav_range_dir = ""
         wav_range = ""
 
-    dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
-        "*_cube.fits" % (galaxy)) 
+    dataCubeDirectory = glob.glob("%s/Data/vimosindi/reduced/%s/cube/" \
+        "*_cube.fits" % (cc.base_dir, galaxy)) 
 
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File2 = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output2.txt"
 
-    output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+    output_v = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_vel.dat" % (wav_range_dir)
-    output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_stellar_sigma.dat" % (wav_range_dir)
-    output_gas_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
-        "%sgal_gas_vel.dat" % (wav_range_dir)
+    output_sigma = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%sgal_stellar_sigma.dat" % (wav_range_dir)
+    output_gas_v = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%sgal_gas_vel.dat" % (wav_range_dir)
 
 # ------------=============== Photometry =================----------
 # ------------========== Reading the data cube ===========----------
@@ -108,8 +111,8 @@ def kinematics(galaxy, discard=0, wav_range="",
                 np.median(galaxy_data_error)
 
 # ------------============= Fit photometry ===============----------
-    save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
+    save_to = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
     f = find_galaxy(galaxy_data, quiet=True, plot=plots, 
         galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
     #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
@@ -142,8 +145,9 @@ def kinematics(galaxy, discard=0, wav_range="",
 
 
 # ------------============== Fit kinemetry ===============----------
-    save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, wav_range)
+    save_to = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, 
+        wav_range)
 
     k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots, \
         sav_fig=save_to)
@@ -166,8 +170,8 @@ def kinematics(galaxy, discard=0, wav_range="",
     gas_vel = np.loadtxt(output_gas_v, usecols=(0,), unpack=True)
     gas_vel -= np.median(gas_vel)
 
-    save_to = "/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%s/plots/gas_kinematics_%s.png" % (wav_range_dir, wav_range)
+    save_to = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%s/plots/gas_kinematics_%s.png" % (wav_range_dir, wav_range)
     gas_k = fit_kinematic_pa(xBar, yBar, gas_vel, quiet=True, 
         plot=plots, sav_fig=save_to)
 
@@ -222,8 +226,8 @@ def kinematics(galaxy, discard=0, wav_range="",
     ax =plt.gca()
     plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
         transform=ax.transAxes)
-    plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-        "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
+    plt.savefig("%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+        galaxy) + "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
         bbox_inches="tight")
     if plots: 
         plt.show()
@@ -278,9 +282,9 @@ def kinematics(galaxy, discard=0, wav_range="",
         plt.plot(spxToKpc(xm,z), gaussian(xm, popt[0], popt[1]), 'r')
         plt.axvline(Re_kpc)
         plt.axvline(-Re_kpc)
-        plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-            "%s/plots/radial_light_profile_%s" % (wav_range_dir, wav_range) + \
-            ".png", bbox_inches="tight")
+        plt.savefig("%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+            galaxy) + "%s/plots/radial_light_profile_%s" % (wav_range_dir, 
+            wav_range) + ".png", bbox_inches="tight")
         if plots:
             plt.show()
 

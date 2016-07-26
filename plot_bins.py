@@ -6,6 +6,8 @@
 
 from plot_histogram import plot_histogram
 import numpy as np # for reading files
+from checkcomp import checkcomp
+cc = checkcomp()
 
 def plot_bins():
     
@@ -14,10 +16,10 @@ def plot_bins():
     galaxy = galaxies[8]
     wav_range = "4200-/"
 
-    glamdring_dir = "/Data/vimosindi/analysis/%s/errors_results/" % (
-        galaxy)
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
-        "voronoi_2d_binning_output.txt"
+    glamdring_dir = "%s/Data/vimosindi/analysis/%s/errors_results/" % (
+        cc.base_dir, galaxy)
+    tessellation_File = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, 
+        galaxy) + "voronoi_2d_binning_output.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1) 
     n_bins = int(max(bin_num)+1)
@@ -31,12 +33,14 @@ def plot_bins():
         vel, sig, h3s, h4s  =np.loadtxt(glamdring_file, unpack=True)
         vel_e, sig_e, h3s_e, h4s_e  =np.loadtxt(glamdring_file2, unpack=True)
 
-        saveTo = "/Data/vimosindi/analysis/%s/errors_results/errors/histograms/vel_%s.png" % (galaxy, str(bin))
+        saveTo = "%s/Data/vimosindi/analysis/%s/" % (base_dir, galaxy) + \
+            "errors_results/errors/histograms/vel_%s.png" % (str(bin))
 
         h = vel_e
         limit = 1
         v_sorted = np.argsort(h)
-	plot_histogram(h, galaxy=galaxy.upper(), title='Error' + str(bin), save=saveTo, vmin=h[v_sorted[limit]], vmax=h[v_sorted[-limit-1]])
+	plot_histogram(h, galaxy=galaxy.upper(), title='Error' + str(bin), 
+        save=saveTo, vmin=h[v_sorted[limit]], vmax=h[v_sorted[-limit-1]])
 
 
 

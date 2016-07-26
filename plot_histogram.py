@@ -10,7 +10,8 @@ import os
 
 
 
-def plot_histogram(v_binned, galaxy=None, redshift=None, vmin=None, vmax=None, weights=None, title=None, xaxis=None, save=None):
+def plot_histogram(v_binned, galaxy=None, redshift=None, vmin=None, 
+    vmax=None, weights=None, title=None, xaxis=None, save=None):
 
     if vmin is None:
 	vmin = np.min(v_binned)

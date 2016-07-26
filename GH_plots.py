@@ -11,6 +11,8 @@ import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 import matplotlib.pyplot as plt # used for plotting
 from scipy.stats import gaussian_kde # for calc plot density
+from checkcomp import checkcomp
+cc = checkcomp()
 #-----------------------------------------------------------------------------
 
 
@@ -25,20 +27,20 @@ def GH_plots(galaxy, wav_range="", plots=False):
     scale=1 #scale the errors
 
 
-    tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
+    tessellation_File2 = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
         "voronoi_2d_binning_output2.txt"
-    output_v = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+    output_v = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_vel.dat" % (wav_range_dir)
     output_v_uncert = output_v
-    output_sigma = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+    output_sigma = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_sigma.dat" % (wav_range_dir)
     output_sigma_uncert = output_sigma
-    output_h3 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+    output_h3 = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_h3.dat" % (wav_range_dir)
     output_h3_uncert =  output_h3
-    output_h4 = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\
+    output_h4 = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_h4.dat" % (wav_range_dir)
     output_h4_uncert = output_h4
 
@@ -100,9 +102,9 @@ def GH_plots(galaxy, wav_range="", plots=False):
             transform=ax.transAxes)
     #plt.savefig("/home/warrenj/Desktop/" + plot + "-(v-sigma)_" + wav_range + \
     #".png", bbox_inches="tight")
-        plt.savefig("/Data/vimosindi/analysis/%s/results/" % (galaxy) + \
-            "%s/plots/%s-(v-sigma)_%s.png" % (wav_range_dir, plot, wav_range), \
-            bbox_inches="tight")
+        plt.savefig("%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, 
+            galaxy) + "%s/plots/%s-(v-sigma)_%s.png" % (wav_range_dir, 
+            plot, wav_range), bbox_inches="tight")
         if plots:
             plt.show()
     
