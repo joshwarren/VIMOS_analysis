@@ -69,6 +69,9 @@ plt.axes.figx = property(lambda self:int())
 plt.axes.figy = property(lambda self:int())
 # give axes a property to hold a colorbar axes
 plt.axes.cax = property(lambda self:plt.axes())
+# give axes a property to hold 2 additional axes for showing other axis
+plt.axes.ax2 = property(lambda self:plt.axes())
+plt.axes.ax3 = property(lambda self:plt.axes())
 
 
 
@@ -251,6 +254,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 #    setattr(ax_array[1,0],'saveTo',"/Data/vimos/analysis/%s/results/blank.png" % (galaxy))
 #    ax_array[0,0].invert_xaxis() #needs to be all of them???
     f = plt.figure(frameon=False)
+#    f.patch.set_visible(False)
     ax_array = []
 
     
@@ -456,15 +460,32 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         vmin, vmax = set_lims(galaxy, vmin, vmax, plot_title, plot_title)
 
-            
+
+# ------------================= Plot Histogram ===============----------
+# Field histogram
+
+        saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
+            % (cc.base_dir, galaxy, wav_range_dir, plot_title, wav_range)
+        plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
+            vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
+            xaxis=CBLabel, save=saveTo)
+# Uncertainty histogram
+        saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
+            % (cc.base_dir, galaxy, wav_range_dir, plot_title+'_uncert',
+            wav_range)
+        plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
+            vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin,
+            title=uhtitle, xaxis=CBLabel, save=saveTo)
+
+        if plots:
+            plt.show()            
   
 # ------------===== Plot velfield - no interperlation ======----------
         if nointerp:
 # Field plot
             ax = f.add_subplot(111, aspect='equal')
-            saveTo = "/Data/vimos/analysis/%s/results/" % (galaxy) + \
-                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot_title, wav_range)
+            saveTo = ("%s/Data/vimos/analysis/%s/results/%splots/notinterpolated/%s_field_%s.png" % (cc.base_dir, galaxy,
+                wav_range_dir, plot_title, wav_range))
             ax.saveTo = saveTo
             ax.figx, ax.figy = ax_x, ax_y
            
@@ -476,11 +497,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             ax_array.append(ax)
             f.delaxes(ax)
             f.delaxes(ax.cax)
+            if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+            if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 
 # Uncertainty plot
-            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-                "%splots/notinterpolated/%s_field_%s.png" % (wav_range_dir, 
-                plot_title+'_uncert', wav_range)
+            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir,
+                galaxy) + "%splots/notinterpolated/%s_field_%s.png" % (
+                wav_range_dir, plot_title+'_uncert', wav_range)
             ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
                 v_uncert_binned, vmin=v_uncert_min, vmax=v_uncert_max,
                 flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
@@ -529,6 +552,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     ax_array.append(ax)
     f.delaxes(ax)
     f.delaxes(ax.cax)
+    if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+    if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
     
     if plots:
         plt.show()
@@ -735,7 +760,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax_array.append(ax)
         f.delaxes(ax)
         f.delaxes(ax.cax)
-
+        if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+        if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
+            
         if plots: plt.show()
 
 
@@ -771,7 +798,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax_array.append(ax)
         f.delaxes(ax)
         f.delaxes(ax.cax)
-
+        if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+        if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
   
 # ------------============== Line ratio maps ==================----------
     if any('OIII' in o for o in outputs):
@@ -841,15 +869,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
             lr_min, lr_max = set_lims(galaxy, lr_min, lr_max, cA, lr_title)
 
-#            if 'OIII' in cB and 'Hbeta' in cA:
-#                lr_min = -0.5
-#                lr_max = 0.75
-#            if 'OIII' in cB and 'Hgamma' in cA:
-#                lr_min = -0.5
-#                lr_max = 2.1
-#            if 'Hbeta' in cB and 'Hgamma' in cA:
-#                lr_min = -0.5
-#                lr_max = 1
+
             ax = f.add_subplot(111, aspect='equal')
             saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
                 "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
@@ -864,7 +884,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             ax_array.append(ax)
             f.delaxes(ax)
             f.delaxes(ax.cax)
-
+            if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+            if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
     
 # ------------============= Plot and save ==================----------
 
@@ -872,9 +893,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     for i, a in enumerate(ax_array):
         f.add_axes(a)
+#        a.axis('tight')
         f.add_axes(a.cax)
-#        a.change_geometry(1,1,1)
-        f.savefig(a.saveTo)
+        if hasattr(a,'ax2'): f.add_axes(a.ax2)
+        if hasattr(a,'ax2'): f.add_axes(a.ax3)
+        f.savefig(a.saveTo, bbox_inches="tight", transparent=True)
 
         if CO:
             add_CO(a, galaxy, header)
@@ -882,7 +905,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         f.delaxes(a)
         f.delaxes(a.cax)
         a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
-
+        if hasattr(a,'ax2'): f.delaxes(a.ax2)        
+        if hasattr(a,'ax2'): f.delaxes(a.ax3)
 
 
 
@@ -895,13 +919,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         a.autoscale(False)
 
     f.set_size_inches(8.5,n_rows*1.8)
-#    f.tight_layout(h_pad=2.0)#pad=0.4, w_pad=0.5, h_pad=1.0)
+    f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
     f.subplots_adjust(top=0.94)
     f.suptitle(galaxy.upper())
 
     saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
             "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
-    f.savefig(saveTo, bbox_inches="tight",format='pdf')
+    f.savefig(saveTo, bbox_inches="tight",format='pdf', transparent=True)
 
         
 ##############################################################################

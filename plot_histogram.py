@@ -42,4 +42,7 @@ def plot_histogram(v_binned, galaxy=None, redshift=None, vmin=None,
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):
             os.makedirs(os.path.dirname(save))
-        plt.savefig(save, bbox_inches="tight")
+        fig.savefig(save, bbox_inches="tight")
+
+
+    plt.close()

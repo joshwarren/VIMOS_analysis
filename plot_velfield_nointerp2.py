@@ -91,14 +91,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
-        clim = (vmin,vmax),aspect='auto')
+        clim = (vmin,vmax))
 
-#    ax.clim(vmin,vmax)
-#    ax.invert_xaxis()
 
-#    plt.gca().invert_yaxis()
-    ax2 = ax.twinx()
-    ax3 = ax.twiny()
+
+
+
     
     if colorbar:
         divider = make_axes_locatable(ax)
@@ -132,7 +130,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     ax.set_ylabel(axis_label)
     ax.set_xlabel(axis_label)
-    ax.axis('tight')  # Equal axes and no rescaling
+    ax.set_aspect('equal')
+    ax.autoscale(tight=True)
     ax.minorticks_on()
     ax.tick_params(length=10, which='major')
     ax.tick_params(length=5, which='minor')
@@ -146,34 +145,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 
-    if redshift is not None:
-        c = 299792 #km/s
-#        H = 67.8 #(km/s)/Mpc
-        H = 70.0 # value used by Bolonga group.
-        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
-        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
-        xmax = xlim[1]
-        ymax = ylim[1]
-#        xlim -= xmax/2
-#        ylim -= ymax/2
-        axis_label = "Distance (Mpc)"
-        if max(xlim) < 1.0:
-            xlim *= 1000
-            ylim *= 1000
-            axis_label = "Distance (kpc)"
- 
 
-    ax2.minorticks_on()
-    ax2.tick_params(length=10, which='major')
-    ax2.tick_params(length=5, which='minor')
-    ax2.set_ylim(ylim[0],ylim[1])
-    ax2.set_ylabel(axis_label, rotation=270)
-
-    ax3.minorticks_on()
-    ax3.tick_params(length=10, which='major')
-    ax3.tick_params(length=5, which='minor')
-    ax3.set_xlim(xlim[0],xlim[1])
-    ax3.set_xlabel(axis_label)
 
 
 
@@ -229,24 +201,49 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
         
 
-    ax.axis('equal')
+#    ax.axis('equal')
+
+#    ax2 = ax.twinx()
+#    ax3 = ax.twiny()
+    if redshift is not None:
+        c = 299792 #km/s
+#        H = 67.8 #(km/s)/Mpc
+        H = 70.0 # value used by Bolonga group.
+        xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
+        ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
+        xmax = xlim[1]
+        ymax = ylim[1]
+#        xlim -= xmax/2
+#        ylim -= ymax/2
+        axis_label = "Distance (Mpc)"
+        if max(xlim) < 1.0:
+            xlim *= 1000
+            ylim *= 1000
+            axis_label = "Distance (kpc)"
 
 
+
+#        ax2.minorticks_on()
+#        ax2.tick_params(length=10, which='major')
+#        ax2.tick_params(length=5, which='minor')
+#        ax2.set_ylim(ylim[0],ylim[1])
+#        ax2.set_ylabel(axis_label, rotation=270)
+#
+#        ax3.minorticks_on()
+#        ax3.tick_params(length=10, which='major')
+#        ax3.tick_params(length=5, which='minor')
+#        ax3.set_xlim(xlim[0],xlim[1])
+#        ax3.set_xlabel(axis_label)
+    
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):
-            os.makedirs(os.path.dirname(save))
-#        ax.xaxis.set_visible(True)
-#        ax.yaxis.set_visible(True)
-#        ax3.xaxis.set_visible(True)
-#        ax2.yaxis.set_visible(True)    
+            os.makedirs(os.path.dirname(save))  
 
         plt.savefig(save, bbox_inches="tight")
         plt.close()
-        
-        
-#    ax.xaxis.set_visible(False)
-#    ax.yaxis.set_visible(False)
-    ax3.xaxis.set_visible(False)
-    ax2.yaxis.set_visible(False)    
+
+
+#    ax.ax2 = ax2
+#    ax.ax3 = ax3
 
     return ax
