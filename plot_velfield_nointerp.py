@@ -9,6 +9,32 @@
 # warrenj 20160413 Added flux_type keyword
 # warrenj 20160615 New routine to handle plot as just ax item so that it
 #                  can be used in subplots.
+## *************************** KEYWORDS ************************* ##
+# x_pix
+# y_pix
+# bin_num
+# xBar_pix
+# yBar_pix
+# vel
+# vmin          None
+# vmax          None
+# nodots        False
+# ColorbarBase  False
+# label         None
+# flux          None
+# flux_unbinned None
+# galaxy        None
+# redshift      None
+# nticks        4
+# ncolors       64
+# title         None
+# save          None
+# show_bin_number False
+# flux_type     'mag'
+# ax            None
+# close         False
+## ************************************************************** ##
+
 
 
 
@@ -28,7 +54,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-    ax = None, **kwargs):
+    ax = None, close=False, **kwargs):
 
     kwg = {}
     kwg.update(kwargs)
@@ -40,6 +66,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     if ax is None:
         fig, ax = plt.subplots(nrows=1,ncols=1)
+
 
     
     if title is not None:
@@ -93,35 +120,29 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
         clim = (vmin,vmax))
 
+    # RA increases right to left
+    ax.invert_xaxis()
 
 
-
-
-    
     if colorbar:
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
-#        fig.subplots_adjust(right=0.66, top=0.84)
-#        cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
-## symmetric should make VD plots odd... ******************************
-        ticks = MaxNLocator(nbins=nticks)#, symmetric=True)
+        #fig.subplots_adjust(right=0.66, top=0.84)
+        #cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
+        ticks = MaxNLocator(nbins=nticks)
         cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
         cbar.ax.tick_params(labelsize=6)
 
 
-
-
-
-        
-#        cax = mpl.colorbar.make_axes(ax, location='right', fraction=0.05, pad=0.05, shrink=0.95)
-#        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-#        cbar = mpl.colorbar.ColorbarBase(cax[0], cmap=cmap, norm=norm, orientation='vertical', ticks=ticks)
-#        cbar.ax.tick_params(labelsize=8)         
+        #cax = mpl.colorbar.make_axes(ax, location='right', fraction=0.05, pad=0.05, shrink=0.95)
+        #norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        #cbar = mpl.colorbar.ColorbarBase(cax[0], cmap=cmap, norm=norm, orientation='vertical', ticks=ticks)
+        #cbar.ax.tick_params(labelsize=8)         
 
 
         
         if label:
-#            cbar.set_label(label, rotation=270, fontsize='small')
+            #cbar.set_label(label, rotation=270, fontsize='small')
             cbar.ax.text(4.0,0.5, label, rotation=270, fontsize=6,
                 verticalalignment='center')
             
@@ -144,16 +165,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     ylim=np.array([ymin_sav, ymax_sav])
 
 
-
-
-
-
-
-
-
-#    y1, y2 = ax.get_ylim()
-
-        
+   #y1, y2 = ax.get_ylim()   
 
     if galaxy is not None:
         plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
@@ -170,13 +182,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
                       -2.5*np.log10(flux.ravel()/np.max(flux)),
                       levels=np.arange(20), colors='k') # 1 mag contours
 
-# NB: have assumed a square image!!!!
+    # NB: have assumed a square image!!!!
     if flux_unbinned is not None:
-#        flux_unbinned[477]=0.001
+        #flux_unbinned[477]=0.001
         if flux_type == 'mag':
             contours = -2.5*np.log10(flux_unbinned.ravel()/
                                      np.max(flux_unbinned))
-# 1 mag contours
+            # 1 mag contours
             ax.tricontour(x[::-1], y[::-1], contours, levels=np.arange(20),
                       colors='k')
         else:
@@ -185,10 +197,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
                        flux_unbinned, colors='k')
 
     if not nodots and not show_bin_num:
-#**********************************################
-#        xBar /= res # no idea why this needs removing...
-#        yBar /= res
-#**********************************################
+        #**********************************################
+        #xBar /= res # no idea why this needs removing...
+        #yBar /= res
+        #**********************************################
         ax.plot(ax.get_xlim()[1]-xBar, ax.get_ylim()[1]-yBar, '.k',
                 markersize=kwargs.get("markersize", 3))
 
@@ -196,25 +208,23 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         for i in range(len(xBar)):
             ax.text(ax.get_ylim()[0]+yBar[i],
                     ax.get_xlim()[0]+xBar[i], str(i), color='grey',
-#                    fontsize='xx-small')
                     fontsize=5)
-
         
 
-#    ax.axis('equal')
+    #ax.axis('equal')
 
-#    ax2 = ax.twinx()
-#    ax3 = ax.twiny()
+    #ax2 = ax.twinx()
+    #ax3 = ax.twiny()
     if redshift is not None:
         c = 299792 #km/s
-#        H = 67.8 #(km/s)/Mpc
+        #H = 67.8 #(km/s)/Mpc # From Planck
         H = 70.0 # value used by Bolonga group.
         xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
         ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
         xmax = xlim[1]
         ymax = ylim[1]
-#        xlim -= xmax/2
-#        ylim -= ymax/2
+        #xlim -= xmax/2
+        #ylim -= ymax/2
         axis_label = "Distance (Mpc)"
         if max(xlim) < 1.0:
             xlim *= 1000
@@ -223,27 +233,28 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 
-#        ax2.minorticks_on()
-#        ax2.tick_params(length=10, which='major')
-#        ax2.tick_params(length=5, which='minor')
-#        ax2.set_ylim(ylim[0],ylim[1])
-#        ax2.set_ylabel(axis_label, rotation=270)
-#
-#        ax3.minorticks_on()
-#        ax3.tick_params(length=10, which='major')
-#        ax3.tick_params(length=5, which='minor')
-#        ax3.set_xlim(xlim[0],xlim[1])
-#        ax3.set_xlabel(axis_label)
+        #ax2.minorticks_on()
+        #ax2.tick_params(length=10, which='major')
+        #ax2.tick_params(length=5, which='minor')
+        #ax2.set_ylim(ylim[0],ylim[1])
+        #ax2.set_ylabel(axis_label, rotation=270)
+
+        #ax3.minorticks_on()
+        #ax3.tick_params(length=10, which='major')
+        #ax3.tick_params(length=5, which='minor')
+        #ax3.set_xlim(xlim[0],xlim[1])
+        #ax3.set_xlabel(axis_label)
     
     if save is not None:
         if not os.path.exists(os.path.dirname(save)):
             os.makedirs(os.path.dirname(save))  
 
         plt.savefig(save, bbox_inches="tight")
+
+    if close:
         plt.close()
 
-
-#    ax.ax2 = ax2
-#    ax.ax3 = ax3
+    #ax.ax2 = ax2
+    #ax.ax3 = ax3
 
     return ax

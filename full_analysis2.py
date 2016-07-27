@@ -22,13 +22,16 @@ galaxies = ['ic1459',
             'ngc3557']
 #           'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-galaxies = ['ic1531']
-#galaxies = ['ngc7075']
-#galaxies = ['eso443-g024']
-#galaxies = ['pks0718-34']
-#galaxies = ['ic1459']
-#galaxies = ['ngc3100']
 galaxies = ['ngc3557']
+#galaxies = ['ic1459']
+#galaxies = ['ic1531']
+galaxies = ['ngc3100']
+#galaxies = ['ngc7075']
+#galaxies = ['pks0718-34']
+#galaxies = ['eso443-g024']
+
+
+
 
 discard = 2
 wav_range = '4200-'
@@ -40,8 +43,8 @@ for galaxy in galaxies:
         os.makedirs(path+"/notinterpolated")
 
     print galaxy
-    man_errors(galaxy, wav_range=wav_range)
-    plt.close("all")
+    #man_errors(galaxy, wav_range=wav_range)
+    #plt.close("all")
     plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
         nointerp=True, CO = True, residual="median")#, norm='sig')
     plt.close("all")

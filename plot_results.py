@@ -53,6 +53,7 @@ import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
@@ -129,12 +130,7 @@ def set_lims(galaxy, vmin, vmax, plot_species, plot_type):
             return mins[n], maxs[n]
         else:
             print "min must be less than max limit."
-
-
-    
-
 #-----------------------------------------------------------------------------
-
 
 
 #-----------------------------------------------------------------------------
@@ -149,7 +145,6 @@ def use_templates(galaxy, glamdring=False):
     templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
     return templatesToUse
 #-----------------------------------------------------------------------------
-
 
 
 #-----------------------------------------------------------------------------
@@ -173,35 +168,40 @@ def set_ax_y(plt_title):
 #-----------------------------------------------------------------------------
 
 
-
 #-----------------------------------------------------------------------------
-def add_CO(ax, galaxy, header):
-    CO_image_dir="/Data/alma/%s-mom0.fits" %(galaxy)
+def add_CO(ax, galaxy, header, close=False):
+    CO_image_dir="%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy)
     if os.path.exists(CO_image_dir):
         CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
 
-#remove random extra dimenisons.
+        #remove random extra dimenisons.
         CO_image = np.sum(np.sum(CO_image,axis=0), axis=0)
 
         CO_x = np.arange(CO_header['NAXIS1'])*CO_header['CDELT1']*60*60
         CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']*60*60
 
-#        x += max(ax.get_xlim())
-#        y -= max(ax.get_ylim())
-        c = SkyCoord(header.comments['CRVAL1'].split(",")[0] +
-                     ' ' + header.comments['CRVAL2'].split(",")[0],
-                     unit=(u.hourangle, u.deg))
+        #x += max(ax.get_xlim())
+        #y -= max(ax.get_ylim())
 
+        # Coordinates of VIMOS pointing
+        vc = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
+            header['HIERARCH CCD1 ESO INS IFU DEC'], 
+            unit=(u.deg, u.deg))
 
-        CO_x -= ((c.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
-                 (CO_header['CRVAL1'] +
-                  CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
+        # Coordinates of ALMA pointing
+        ac = SkyCoord(CO_header['CRVAL1'], CO_header['CRVAL2'],
+            unit=(u.deg, u.deg))
+
+        # Offset between the two pointings
+        CO_x -= ((vc.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
+            (ac.ra.degree +
+            CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
                 
-        CO_y += ((c.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
-                 (CO_header['CRVAL2'] +
-                  CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
+        CO_y += ((vc.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
+            (ac.dec.degree +
+            CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
             
-        ax.contour(CO_x,CO_y,CO_image, colors='k')
+        cs = ax.contour(CO_x,CO_y,CO_image, colors='k')
 
         saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
             os.path.basename(ax.saveTo)
@@ -209,19 +209,26 @@ def add_CO(ax, galaxy, header):
             os.makedirs(os.path.dirname(saveTo))
         plt.savefig(saveTo, bbox_inches="tight")
 
+        if close:
+            plt.close()
+        else:
+            # Make lines thinner for pdf by finding the line objects
+            for o in ax.get_children():
+                if type(o) is LineCollection:
+                    o.set_linewidth(0.3)
 #-----------------------------------------------------------------------------
 
 
-
 #-----------------------------------------------------------------------------
-
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
     plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
     **kwargs):    
 
     data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
     # different data types need to be read separetly
-    z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,4,5))
+    z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+        usecols=(1,4,5))
+    x_gals, y_gals = x_gals.astype(int), y_gals.astype(int)
     galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
     i_gal = np.where(galaxy_gals==galaxy)[0][0]
     z = z_gals[i_gal]
@@ -243,46 +250,34 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     outputs = glob.glob(output+'gal_*.dat')
 
-# Create figure and array of axes
+    # Create figure and array for axes
     if any('OIII' in o for o in outputs):
         n_rows = len(outputs)/2 +1
     else:
         n_rows = len(outputs)/2
-#    f, ax_array = plt.subplots(n_rows, 3)#, sharex='col', sharey='row')
-#    for a in ax_array.flatten():
-#        f.delaxes(a)
-#
-#    ax_array[1,0].axis('off')
-#    setattr(ax_array[1,0],'saveTo',"/Data/vimos/analysis/%s/results/blank.png" % (galaxy))
-#    ax_array[0,0].invert_xaxis() #needs to be all of them???
     f = plt.figure(frameon=False)
-#    f.patch.set_visible(False)
     ax_array = []
 
     
 
 
-# Read tessellation file
+    # Read tessellation file
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
-        skiprows = 1)
+        skiprows = 1 )
+    x, y, bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
     n_spaxels = len(bin_num)
     number_of_bins = int(max(bin_num)+1)
     order = bin_num.argsort()
 
 
     center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
-
-# ------------========== Total flux per bin ===========----------
-# ----------========= Reading the spectrum  =============---------
-
-# FILE_SEARH returns an array even in cases where it only returns
-# one result. This is NOT equivalent to a scalar. 
+# ----------========= Reading the spectrum  =============--------- 
     dataCubeDirectory = glob.glob("%s/Data/vimos/cubes/%s.cube.combined.fits" \
         % (cc.base_dir, galaxy)) 
 
     galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
 
-#    galaxy_data = np.rot90(galaxy_data,2)
+    #galaxy_data = np.rot90(galaxy_data,2)
     s = galaxy_data.shape
     rows_to_remove = range(discard)
     rows_to_remove.extend([s[1]-1-i for i in range(discard)])
@@ -295,9 +290,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
     galaxy_data_unbinned = np.sum(galaxy_data, axis=0)
-#    galaxy_data_unbinned = galaxy_data_unbinned.flatten()
+    #galaxy_data_unbinned = galaxy_data_unbinned.flatten()
 
-# ------------========== Spatially binning ===========----------
+# ----------============ Spatially binning ==============----------
     xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
         skiprows = 1)
     flux_bar_binned = np.zeros((number_of_bins))
@@ -315,26 +310,26 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     for bin in range(number_of_bins):
         flux_bar_binned[bin] = flux_bar_binned[bin]/n_spaxels_in_bin[bin]
 
-#    flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
+    #flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 
-
-# ------------============= Read fields =============----------
-# Read results files - each entry in array corresponds to a bin (not
-# a spaxel)
+# ------------============== Read fields ================----------
+    # Read results files - each entry in array corresponds to a bin (not
+    # a spaxel)
     for plot in outputs:
         plot_title = plot.split('gal_')[-1].split('.')[0]
         print "       ", plot_title
         v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
 
 
-# Asign v to every spaxel in bin
+    # Asign v to every spaxel in bin
         v_unbinned = np.zeros(galaxy_data_unbinned.shape)
         v_uncert_unbinned = np.zeros(galaxy_data_unbinned.shape)
         for spaxel in range(n_spaxels):
             v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
             v_uncert_unbinned[x[spaxel],y[spaxel]] = \
                 v_uncert_binned[bin_num[spaxel]]
-# ------------============ Setting v range =============----------
+
+# ------------============ Setting v range ==============----------
         if "vel" in plot_title:
             norm='lwv'
             if norm == "lum":
@@ -351,12 +346,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_binned -= np.mean(v_binned[c[0]])
 
 
-
-
-                
-#            v_binned -=5
-
-# Limits on field
+        # Limits on field
         vmax = max(v_binned)
         vmin = min(v_binned)
         v_sorted = sorted(np.unique(v_binned))
@@ -365,7 +355,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         vmin = v_sorted[vLimit]
         vmax = v_sorted[-vLimit-1]       
 
-# Make velocity fields symmetric
+        # Make velocity fields symmetric
         if "vel" in plot_title:
             if abs(vmin)>vmax:
                 if vmin*vmax>0:
@@ -376,7 +366,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 vmax=abs(vmin)
 
                 
-# Limits on uncertainty field
+        # Limits on uncertainty field
         v_uncert_max = max(v_uncert_binned)
         v_uncert_min = min(v_uncert_binned)
         v_uncert_sorted = sorted(np.unique(v_uncert_binned))
@@ -390,7 +380,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if v_uncert_min < 0:
             v_uncert_min=0
            
-# ------------============= Plot velfield ==============----------
+# ------------=========== Setting titles etc ============----------
         im_type = plot_title.split('_')[0]
         if im_type == "gas":
             im_type=""
@@ -440,9 +430,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             title = 'h4'        
 
 
- 
-
-
 
         if "stellar" in plot_title:
             utitle = "Stellar Uncertainty " + title + " Map"
@@ -462,16 +449,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         vmin, vmax = set_lims(galaxy, vmin, vmax, plot_title, plot_title)
 
-
-# ------------================= Plot Histogram ===============----------
-# Field histogram
+# ------------============== Plot Histogram =============----------
+        # Field histogram
 
         saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
             % (cc.base_dir, galaxy, wav_range_dir, plot_title, wav_range)
         plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
             vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
             xaxis=CBLabel, save=saveTo)
-# Uncertainty histogram
+        # Uncertainty histogram
         saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
             % (cc.base_dir, galaxy, wav_range_dir, plot_title+'_uncert',
             wav_range)
@@ -482,9 +468,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if plots:
             plt.show()            
   
-# ------------===== Plot velfield - no interperlation ======----------
+# ------------==== Plot velfield - no interperlation ====----------
         if nointerp:
-# Field plot
+            # Field plot
             ax = f.add_subplot(111, aspect='equal')
             saveTo = ("%s/Data/vimos/analysis/%s/results/%splots/notinterpolated/%s_field_%s.png" % (cc.base_dir, galaxy,
                 wav_range_dir, plot_title, wav_range))
@@ -502,7 +488,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
             if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 
-# Uncertainty plot
+            # Uncertainty plot
             saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir,
                 galaxy) + "%splots/notinterpolated/%s_field_%s.png" % (
                 wav_range_dir, plot_title+'_uncert', wav_range)
@@ -510,21 +496,20 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
                 v_uncert_binned, vmin=v_uncert_min, vmax=v_uncert_max,
                 flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
                 colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-                redshift = z, title=utitle, save=saveTo)#, cmap=cm.blue)
+                redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
             if CO:
                 ax1.saveTo = saveTo
-                add_CO(ax1, galaxy, header)
+                add_CO(ax1, galaxy, header, close=True)
+            
 
-                
-                
-# ------------=========== Save and display plot =============----------
         if plots:
             plt.show()
         if CO:
             galaxy_data_unbinned = galaxy_data_unbinned_sav
+
+# ------------=============== Plot image ================----------
     if CO:
         galaxy_data_unbinned = None
-# ------------================== Plot image ==================----------
 
     print "        Image"
     fmax = max(flux_bar_binned)
@@ -560,10 +545,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     if plots:
         plt.show()
 
-
-
-
-# ------------================= Plot residuals ===============----------
+# ------------============= Plot residuals ==============----------
 
     if residual:
         print "        " + residual + " residuals"
@@ -578,7 +560,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i))
             spectrum = np.loadtxt(data_dir +'%d.dat' % (i))
             residuals = np.abs(spectrum - bestfit)
-# remove edge pixels
+            # remove edge pixels
             residuals = np.delete(residuals, [np.arange(5), 
 	        len(residuals)+np.arange(-5,0)], axis=0)
 
@@ -591,7 +573,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
         res_sorted = sorted(np.unique(average_residuals))
         maxres = res_sorted[-vLimit-1]
-#        minres = res_sorted[vLimit]
+        #minres = res_sorted[vLimit]
 
         mean_w = np.mean(average_residuals)
         d = maxres-mean_w
@@ -611,14 +593,15 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             nodots=True, show_bin_num=show_bin_num, colorbar=True, 
             label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
             galaxy = galaxy.upper(), redshift = z, title=title, 
-            save=saveTo)#, cmap = cm.blue)
+            save=saveTo, close=not CO)#, cmap = cm.blue)
         if plots:
             plt.show()
         if CO:
             ax1.saveTo = saveTo
-            add_CO(ax1, galaxy, header)
+            add_CO(ax1, galaxy, header, close=True)
+        
   
-# ------------================= Plot Chi2/DOF ===============----------
+# ------------=============== Plot Chi2/DOF =============----------
     print "        chi2"
     chi2_dir = "%s/Data/vimos/analysis/%s/gas_MC/chi2/" % (cc.base_dir, galaxy)
     chi2 = np.zeros(number_of_bins)
@@ -639,18 +622,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         nodots=True, show_bin_num=show_bin_num, colorbar=True, 
         label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
         galaxy = galaxy.upper(), redshift = z, title=title, 
-        save=saveTo)#, cmap=cm.blue)
+        save=saveTo, close=not CO)#, cmap=cm.blue)
     if plots:
         plt.show()
     if CO:
         ax1.saveTo = saveTo
-        add_CO(ax1, galaxy, header)
-        
-# ------------============ Plot intensity (& EW) ===============----------
+        add_CO(ax1, galaxy, header, close=True)
+            
+# ------------========= Plot intensity (& EW) ===========----------
     print "        gas map(s) and equivalent widths"
 
 
-## Getting the gas templates used.
+    # Getting the gas templates used.
     FWHM_gal = 4*0.71
 
     degree = 4 # in all our analysis.
@@ -667,7 +650,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             cc.base_dir, galaxy,str(i))
         lam_bin = np.loadtxt(lam_dir, unpack=True)
         lam.append(lam_bin)
-## Getting the contiuum model used in ppxf
+        # Getting the contiuum model used in ppxf
         l = np.linspace(-1, 1, len(lam))
 
 
@@ -700,20 +683,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     bestfit = np.array(bestfit)
     lam = np.array(lam)
     emission_lines = np.array(emission_lines)
-
-    
-
     
     components = []
     temp_name_temp = [item for sublist in temp_name for item in sublist]
     temp_name_lines = [i for i in list(set(temp_name_temp)) if not i.isdigit()]
     check_bins = {i:temp_name_temp.count(i) for i in temp_name_lines}
-    
+
     components = [i for i in temp_name_lines if check_bins[i]==number_of_bins]
-    
-#    weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat" % (
-#        galaxy,str(0))
-#    temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
+
+    #weights_dir = "/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat" % (
+    #    galaxy,str(0))
+    #temp_name = np.loadtxt(weights_dir, unpack=True, usecols=(0,),dtype=str)
     
     for c in components:
         i = np.where(line_name == c)[0][0]
@@ -743,7 +723,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             c_title = c
 
         f_title = "%s Flux" % (c_title)
-## from header
+        # from header
         fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
         f_min, f_max = set_lims(galaxy, f_min, f_max, c, f_title)
     
@@ -769,7 +749,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
         
-#        equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
+        #equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
         continuum = np.zeros(number_of_bins)
         for k in range(number_of_bins):
             continuum[k] = bestfit[k][np.argmin(np.abs(lam[k]-wav))] - \
@@ -803,7 +783,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
         if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
   
-# ------------============== Line ratio maps ==================----------
+# ------------============ Line ratio maps ==============----------
     if any('OIII' in o for o in outputs):
         print "        line ratios"
 
@@ -838,8 +818,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             fluxB=np.array(fluxB)+0.00001
 
 
-## Plotting the inverse of the above
-#            vLimit = 3 
+            # Plotting the inverse of the above
             line_ratio = np.log10(fluxB/fluxA)
 
             if 'OIII' in cA:
@@ -889,16 +868,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
             if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
     
-# ------------============= Plot and save ==================----------
+# ------------============= Plot and save ===============----------
 
     print "        Plotting and saving"
 
     for i, a in enumerate(ax_array):
         f.add_axes(a)
-#        a.axis('tight')
+        #a.axis('tight')
         f.add_axes(a.cax)
         if hasattr(a,'ax2'): f.add_axes(a.ax2)
         if hasattr(a,'ax2'): f.add_axes(a.ax3)
+        if not os.path.exists(os.path.dirname(a.saveTo)):
+            os.makedirs(os.path.dirname(a.saveTo))  
         f.savefig(a.saveTo, bbox_inches="tight", transparent=True)
 
         if CO:
@@ -928,7 +909,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
             "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
     f.savefig(saveTo, bbox_inches="tight",format='pdf', transparent=True)
-
         
 ##############################################################################
 
@@ -947,7 +927,6 @@ if __name__ == '__main__':
 
     plot_results(galaxy, discard=discard, vLimit=vLimit, 
         wav_range=wav_range, plots=False, nointerp = True, residual = "median")
-
 
 
 
