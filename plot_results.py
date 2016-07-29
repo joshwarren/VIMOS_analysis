@@ -76,11 +76,17 @@ plt.axes.cax = property(lambda self:plt.axes())
 plt.axes.ax2 = property(lambda self:plt.axes())
 plt.axes.ax3 = property(lambda self:plt.axes())
 
-
+vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+vin_dir_cube = '%s/Data/vimos/cubes' % (cc.base_dir)
+ain_dir = '%s/Data/alma' % (cc.base_dir)
+out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 
 #-----------------------------------------------------------------------------
-def set_lims(galaxy, vmin, vmax, plot_species, plot_type):
+def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False):
+    if 'uncert' in plot_type:
+        uncert = True
+
     if 'stellar' in plot_species:
         plot_species = 'stellar'
     if 'Hbeta' in plot_species:
@@ -107,43 +113,64 @@ def set_lims(galaxy, vmin, vmax, plot_species, plot_type):
     elif 'line ratio' in plot_type and 'Hbeta' in plot_type:
         plot_type = 'lrHbeta'
 
-    f = '%s/Data/vimos/analysis/%s/limits.dat' % (cc.base_dir, galaxy)
+    # Read Limits file
+    f = '%s/%s/limits.dat' % (vin_dir, galaxy)
     species, types = np.loadtxt(f, unpack=True, dtype=str, usecols=(0,1),
                                 skiprows=1)
-    mins, maxs = np.loadtxt(f, unpack=True, usecols=(2,3), skiprows=1)
+    if uncert:
+        c = (4,5)
+    else:
+        c = (2,3)
+    mins, maxs = np.loadtxt(f, unpack=True, usecols=c, skiprows=1)
 
+    s = np.where(species == plot_species)
+    n = s[np.where(types[s] == plot_type)] ## needs testing ##******************
 
-    s = np.where(species == plot_species) ### needs more than this to search plot_type too.
-    n = np.where(types[s] == plot_type)
+    #mins = mins[s]
+    #maxs = maxs[s]
 
-    mins = mins[s]
-    maxs = maxs[s]
+    v_sorted = sorted(np.unique(v))
+    if len(v_sorted) < 2*vLimit:
+        v_sorted = sorted(v)
 
-    if np.isnan(mins[n]): mins[n] = vmin
-    if np.isnan(maxs[n]): maxs[n] = vmax
-
+    # If limits nan in limits file.
+    if np.isnan(mins[n]): mins[n] = v_sorted[vLimit]
+    if np.isnan(maxs[n]): maxs[n] = v_sorted[-vLimit-1]
     
-    if len(n) == 0 or len(mins[n]) == 0:
-        return vmin, vmax
+    # If plot limits not in limits file
+    if len(n) == 0: # or len(mins[n]) == 0:
+        vmin, vmax = v_sorted[vLimit], v_sorted[-vLimit-1]
     else:
+        # min must be less than max!
         if mins[n] < maxs[n]:
-            return mins[n], maxs[n]
+            vmin, vmax = mins[n], maxs[n]
         else:
-            print "min must be less than max limit."
+            raise ValueError("min must be less than max limit.")
+
+    # center the range on the mean.
+    if mean_centered:
+        mean = np.mean(v)
+        d = 2*mean - vmax
+        vmin = mean-d
+
+    # Uncertinty should always positive.
+    if uncert and vmin < 0:
+        vmin = 0
+
+    return vmin, vmax
 #-----------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------
-def use_templates(galaxy, glamdring=False):
-    if glamdring:
-        template_weighting = '/users/warrenj/analysis/' + galaxy + \
-	    '/templates.txt' 
-    else:
-        template_weighting = '%s/Data/vimos/analysis/%s/templates.txt' % (
-        	cc.base_dir, galaxy)
-
-    templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
-    return templatesToUse
+#def use_templates(galaxy, glamdring=False):
+#    if cc.device == 'glamdring':
+#        template_weighting = '/users/warrenj/analysis/' + galaxy + \
+#	    '/templates.txt' 
+#    else:
+#        template_eighting = '%s/%s/templates.txt' % (vin_dir, galaxy)
+#
+#    templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
+#    return templatesToUse
 #-----------------------------------------------------------------------------
 
 
@@ -170,7 +197,7 @@ def set_ax_y(plt_title):
 
 #-----------------------------------------------------------------------------
 def add_CO(ax, galaxy, header, close=False):
-    CO_image_dir="%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy)
+    CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
     if os.path.exists(CO_image_dir):
         CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
 
@@ -224,7 +251,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
     **kwargs):    
 
-    data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+    data_file =  "%s/galaxies.txt" % (vin_dir)
     # different data types need to be read separetly
     z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
         usecols=(1,4,5))
@@ -234,20 +261,20 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     z = z_gals[i_gal]
 
 
-
     if wav_range:
         wav_range_dir = wav_range + "/"
     else:
         wav_range_dir = ""
 
-    tessellation_File = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output2.txt"
+    tessellation_File = "%s/%s/voronoi_2d_binning_output.txt" % (vin_dir, galaxy)
+    tessellation_File2 = "%s/%s/voronoi_2d_binning_output2.txt" %(vin_dir, galaxy)
+    dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
+    output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
+    out_plots = "%splots" % (output)
+    out_nointerp = "%s/notinterpolated" % (out_plots)
+    vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
 
-    output = "%s/Data/vimos/analysis/%s/results/%s" % (cc.base_dir, galaxy,
-    	wav_range_dir)
-
+    # lists the files produced by man_errors[2].py
     outputs = glob.glob(output+'gal_*.dat')
 
     # Create figure and array for axes
@@ -272,10 +299,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 # ----------========= Reading the spectrum  =============--------- 
-    dataCubeDirectory = glob.glob("%s/Data/vimos/cubes/%s.cube.combined.fits" \
-        % (cc.base_dir, galaxy)) 
-
-    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
+    galaxy_data, header = pyfits.getdata(dataCubeDirectory, 0, header=True)
 
     #galaxy_data = np.rot90(galaxy_data,2)
     s = galaxy_data.shape
@@ -329,57 +353,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             v_uncert_unbinned[x[spaxel],y[spaxel]] = \
                 v_uncert_binned[bin_num[spaxel]]
 
-# ------------============ Setting v range ==============----------
-        if "vel" in plot_title:
-            norm='lwv'
-            if norm == "lum":
-                v_binned -= v_binned[center_bin]
-            if norm == "lwv":
-                lwv = v_unbinned*galaxy_data_unbinned
-                v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(
-                    galaxy_data_unbinned)
-            if norm == "sig":
-                sig_file = glob.glob(output+'gal_stellar_sigma*.dat')
-                s_binned, s_uncert_binned = np.loadtxt(sig_file[0], unpack=True)
-                s_sort = sorted(np.unique(s_binned))
-                c = np.where(s_binned > s_sort[-6])
-                v_binned -= np.mean(v_binned[c[0]])
-
-
-        # Limits on field
-        vmax = max(v_binned)
-        vmin = min(v_binned)
-        v_sorted = sorted(np.unique(v_binned))
-        if len(v_sorted) < 2*vLimit:
-            v_sorted = sorted(v_binned)
-        vmin = v_sorted[vLimit]
-        vmax = v_sorted[-vLimit-1]       
-
-        # Make velocity fields symmetric
-        if "vel" in plot_title:
-            if abs(vmin)>vmax:
-                if vmin*vmax>0:
-                    vmin, vmax = vmax, vmin
-                else:
-                    vmin=-abs(vmax)
-            else:
-                vmax=abs(vmin)
-
-                
-        # Limits on uncertainty field
-        v_uncert_max = max(v_uncert_binned)
-        v_uncert_min = min(v_uncert_binned)
-        v_uncert_sorted = sorted(np.unique(v_uncert_binned))
-        if len(v_uncert_sorted) < 2*vLimit:
-            v_uncert_sorted = sorted(v_uncert_binned)
-        v_uncert_min = v_uncert_sorted[vLimit]
-        v_uncert_max = v_uncert_sorted[-vLimit-1]
-        mean_w_uncert = np.mean(v_uncert_binned)
-        d_uncert = v_uncert_max-mean_w_uncert
-        v_uncert_min = mean_w_uncert-d_uncert
-        if v_uncert_min < 0:
-            v_uncert_min=0
-           
 # ------------=========== Setting titles etc ============----------
         im_type = plot_title.split('_')[0]
         if im_type == "gas":
@@ -447,20 +420,53 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             galaxy_data_unbinned_sav = galaxy_data_unbinned
             galaxy_data_unbinned = None
 
-        vmin, vmax = set_lims(galaxy, vmin, vmax, plot_title, plot_title)
+# ------------============ Setting v range ==============----------
+        if "vel" in plot_title:
+            norm='lwv'
+            if norm == "lum":
+                v_binned -= v_binned[center_bin]
+            if norm == "lwv":
+                lwv = v_unbinned*galaxy_data_unbinned
+                v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(
+                    galaxy_data_unbinned)
+            if norm == "sig":
+                sig_file = output+'gal_stellar_sigma.dat'
+                s_binned, s_uncert_binned = np.loadtxt(sig_file, unpack=True)
+                s_sort = sorted(np.unique(s_binned))
+                c = np.where(s_binned > s_sort[-6])
+                v_binned -= np.mean(v_binned[c[0]])
 
+
+        
+
+        vmin, vmax = set_lims(galaxy, v_binned, vLimit, plot_title, plot_title)
+
+        v_uncert_min, v_uncert_max = set_lims(galaxy, v_uncert_binned, vLimit, 
+            plot_title, utitle)
+                
+        # Limits on uncertainty field
+        #v_uncert_max = max(v_uncert_binned)
+        #v_uncert_min = min(v_uncert_binned)
+        #v_uncert_sorted = sorted(np.unique(v_uncert_binned))
+        #if len(v_uncert_sorted) < 2*vLimit:
+        #    v_uncert_sorted = sorted(v_uncert_binned)
+        #v_uncert_min = v_uncert_sorted[vLimit]
+        #v_uncert_max = v_uncert_sorted[-vLimit-1]
+        #mean_w_uncert = np.mean(v_uncert_binned)
+        #d_uncert = v_uncert_max-mean_w_uncert
+        #v_uncert_min = mean_w_uncert-d_uncert
+        #if v_uncert_min < 0:
+        #    v_uncert_min=0
+           
 # ------------============== Plot Histogram =============----------
         # Field histogram
 
-        saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
-            % (cc.base_dir, galaxy, wav_range_dir, plot_title, wav_range)
+        saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
         plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
             vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
             xaxis=CBLabel, save=saveTo)
         # Uncertainty histogram
-        saveTo = "%s/Data/vimos/analysis/%s/results/%splots/%s_hist_%s.png" \
-            % (cc.base_dir, galaxy, wav_range_dir, plot_title+'_uncert',
-            wav_range)
+        saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
         plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
             vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin,
             title=uhtitle, xaxis=CBLabel, save=saveTo)
@@ -472,8 +478,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if nointerp:
             # Field plot
             ax = f.add_subplot(111, aspect='equal')
-            saveTo = ("%s/Data/vimos/analysis/%s/results/%splots/notinterpolated/%s_field_%s.png" % (cc.base_dir, galaxy,
-                wav_range_dir, plot_title, wav_range))
+            saveTo = ("%s/%s_field_%s.png" % (out_nointerp, plot_title, wav_range))
             ax.saveTo = saveTo
             ax.figx, ax.figy = ax_x, ax_y
            
@@ -489,9 +494,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 
             # Uncertainty plot
-            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir,
-                galaxy) + "%splots/notinterpolated/%s_field_%s.png" % (
-                wav_range_dir, plot_title+'_uncert', wav_range)
+            saveTo = "%s/%s_field_%s.png" % (out_nointerp,plot_title+'_uncert', 
+                wav_range)
             ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
                 v_uncert_binned, vmin=v_uncert_min, vmax=v_uncert_max,
                 flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
@@ -512,25 +516,23 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         galaxy_data_unbinned = None
 
     print "        Image"
-    fmax = max(flux_bar_binned)
-    fmin = min(flux_bar_binned)
-    f_sorted = sorted(np.unique(flux_bar_binned))
-    if len(f_sorted) < 2*vLimit:
-        v_sorted = sorted(f_bar_binned)
-    fmin = f_sorted[vLimit]
-    fmax = f_sorted[-vLimit-1]
+    #fmax = max(flux_bar_binned)
+    #fmin = min(flux_bar_binned)
+    #f_sorted = sorted(np.unique(flux_bar_binned))
+    #if len(f_sorted) < 2*vLimit:
+    #    v_sorted = sorted(f_bar_binned)
+    #fmin = f_sorted[vLimit]
+    #fmax = f_sorted[-vLimit-1]
     
     title = "Total Flux"
     CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
 
     ax = f.add_subplot(111, aspect='equal')
-    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-        "%splots/notinterpolated/total_image_%s.png" % (wav_range_dir,
-        wav_range)
+    saveTo = "%s/total_image_%s.png" % (out_nointerp, wav_range)
     ax.saveTo = saveTo
     ax.figx, ax.figy = 0, 0
 
-    fmin, fmax = set_lims(galaxy, fmin, fmax, 'stellar', title)
+    fmin, fmax = set_lims(galaxy, flux_bar_binned, vLimit, 'stellar', title)
         
     ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
         flux_bar_binned, vmin=fmin, vmax=fmax, nodots=True,
@@ -546,19 +548,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         plt.show()
 
 # ------------============= Plot residuals ==============----------
-
     if residual:
         print "        " + residual + " residuals"
-        bestfit_dir = "%s/Data/vimos/analysis/%s/gas_MC/" % (cc.base_dir, galaxy) +\
-            "bestfit/"
-        data_dir = "%s/Data/vimos/analysis/%s/gas_MC/" % (cc.base_dir, galaxy) +\
-            "input/"
 
         average_residuals = np.zeros(number_of_bins)
-
         for i in range(number_of_bins):
-            bestfit = np.loadtxt(bestfit_dir +'%d.dat' % (i))
-            spectrum = np.loadtxt(data_dir +'%d.dat' % (i))
+            bestfit = np.loadtxt('%s/bestfit/%d.dat' % (vin_dir_gasMC, i))
+            spectrum = np.loadtxt('%s/input/%d.dat' % (vin_dir_gasMC, i))
             residuals = np.abs(spectrum - bestfit)
             # remove edge pixels
             residuals = np.delete(residuals, [np.arange(5), 
@@ -571,22 +567,22 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
             elif residual=="max":
                 average_residuals[i] = np.max(np.abs(residuals))
 
-        res_sorted = sorted(np.unique(average_residuals))
-        maxres = res_sorted[-vLimit-1]
-        #minres = res_sorted[vLimit]
-
-        mean_w = np.mean(average_residuals)
-        d = maxres-mean_w
-        minres = mean_w-d
-        if minres < 0:
-            minres=0
+        #res_sorted = sorted(np.unique(average_residuals))
+        #maxres = res_sorted[-vLimit-1]
+        ##minres = res_sorted[vLimit]
+        #
+        #mean_w = np.mean(average_residuals)
+        #d = maxres-mean_w
+        #minres = mean_w-d
+        #if minres < 0:
+        #    minres=0
+        minres, maxres = set_lims(galaxy, average_residuals, vLimit, 'stellar', 
+            'flux', mean_centered=True)
 
         CBLabel = "Residuals"
         title = str.capitalize(residual) + \
 	    " Residuals of Bestfit to Normalised Spectrum"
-        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-            "%splots/notinterpolated/%s_residual_%s.png" % (wav_range_dir, 
-            residual, wav_range)
+        saveTo = "%s/%s_residual_%s.png" % (out_nointerp, residual, wav_range)
 
         ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
             average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
@@ -599,14 +595,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         if CO:
             ax1.saveTo = saveTo
             add_CO(ax1, galaxy, header, close=True)
-        
-  
+
 # ------------=============== Plot Chi2/DOF =============----------
     print "        chi2"
-    chi2_dir = "%s/Data/vimos/analysis/%s/gas_MC/chi2/" % (cc.base_dir, galaxy)
+
     chi2 = np.zeros(number_of_bins)
     for i in range(number_of_bins):
-        chi2[i] = np.loadtxt("%s%d.dat" % (chi2_dir, i))
+        chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
 
     chi2_sorted = sorted(np.unique(chi2))
     maxchi2 = chi2_sorted[-vLimit-1]
@@ -614,8 +609,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     
     CBLabel = "Chi2/DOF"
     title = "Chi2/DOF of the bestfit"
-    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-        "%splots/notinterpolated/chi2_%s.png" % (wav_range_dir, wav_range)
+    saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
 
     ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
         vmin=minchi2, vmax=maxchi2, flux_type='notmag',
@@ -635,10 +629,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
     # Getting the gas templates used.
     FWHM_gal = 4*0.71
-
     degree = 4 # in all our analysis.
-    
-
 
     temp_weights = []
     temp_name = []
@@ -646,21 +637,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     lam = []
     emission_lines = []
     for i in range(number_of_bins):
-        lam_dir = "%s/Data/vimos/analysis/%s/gas_MC/lambda/%s.dat" % (
-            cc.base_dir, galaxy,str(i))
-        lam_bin = np.loadtxt(lam_dir, unpack=True)
+        lam_bin = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i), unpack=True)
         lam.append(lam_bin)
         # Getting the contiuum model used in ppxf
         l = np.linspace(-1, 1, len(lam))
-
 
         loglam_bin = np.log(lam_bin)
         emission_lines_bin, line_name, line_wav = util.emission_lines(
             loglam_bin, [lam_bin[0],lam_bin[-1]], FWHM_gal, quiet=True)
         emission_lines.append(emission_lines_bin)
         
-        weights_dir = "%s/Data/vimos/analysis/%s/gas_MC/temp_weights/%s.dat"\
-            % (cc.base_dir, galaxy,str(i))
+        weights_dir = "%s/temp_weights/%d.dat" % (vin_dir_gasMC, i)
         temp_weights_temp = np.loadtxt(weights_dir, unpack=True, usecols=(1,))
         temp_name_temp=np.loadtxt(weights_dir, unpack=True, usecols=(0,), dtype=str)
         if '[OIII]5007d' not in temp_name_temp: np.concatenate((temp_name_temp, [0]))
@@ -668,14 +655,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         temp_name.append(temp_name_temp)
 
 
-
-
-
-        
-
-        bestfit_dir = "%s/Data/vimos/analysis/%s/gas_MC/bestfit/%s.dat" % (
-            cc.base_dir, galaxy,str(i))
-        bestfit_bin = np.loadtxt(bestfit_dir, unpack=True)
+        bestfit_bin = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), unpack=True)
         bestfit.append(bestfit_bin)
 
         
@@ -730,8 +710,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         ax_y = set_ax_y(c)
 
         ax = f.add_subplot(111, aspect='equal')
-        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-        "%splots/notinterpolated/%s_img_%s.png" % (wav_range_dir, c, wav_range)
+        saveTo = "%s/%s_img_%s.png" % (out_nointerp, c, wav_range)
         ax.saveTo = saveTo
         ax.figx, ax.figy = 0, ax_y
         
@@ -767,9 +746,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
         eq_min, eq_max = set_lims(galaxy, eq_min, eq_max, c, eq_title)
 
         ax = f.add_subplot(111, aspect='equal')
-        saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-            "%splots/notinterpolated/%s_equiv_width_%s.png" % (wav_range_dir,
-            c, wav_range)
+        saveTo = "%s/%s_equiv_width_%s.png" % (out_nointerp, c, wav_range)
         ax.saveTo = saveTo
         ax.figx, ax.figy = 0, ax_y+1
 
@@ -852,9 +829,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
             ax = f.add_subplot(111, aspect='equal')
-            saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-                "%splots/notinterpolated/lineratio/" % (wav_range_dir) + \
-                "%s_%s_line_ratio_%s.png" % (cB, cA, wav_range)
+            saveTo = "%s/lineratio/%s_%s_line_ratio_%s.png" % (out_nointerp, cB, cA, 
+                wav_range)
             ax.saveTo = saveTo
             ax.figx, ax.figy = n, n_rows-1
 
@@ -906,9 +882,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
     f.subplots_adjust(top=0.94)
     f.suptitle(galaxy.upper())
 
-    saveTo = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) + \
-            "%splots/grid_%s.pdf" % (wav_range_dir, wav_range)
-    f.savefig(saveTo, bbox_inches="tight",format='pdf', transparent=True)
+    saveTo = "%s/grid_%s.pdf" % (out_plots, wav_range)
+    f.savefig(saveTo, bbox_inches="tight",format='pdf')
         
 ##############################################################################
 
