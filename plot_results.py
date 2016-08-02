@@ -62,7 +62,7 @@ from numpy.polynomial import legendre
 import os
 import colormaps as cm
 from sauron_colormap import sauron
-from Bin import Bins_list
+from Bin import Data
 from checkcomp import checkcomp
 cc = checkcomp()
 
@@ -338,16 +338,20 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		
 
+	D = Data(number_of_bins)
+	for i in range(number_of_bins):
+		D.bin[i].spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC,i), 
+			unpack=True)
+		D.bin[i].noise = np.loadtxt("%s/noise_input/%d.dat" % 
+			(vin_dir_gasMC,i), unpack=True)
 
-	for bin in range(number_of_bins):
-		flux_bar_binned[bin] = flux_bar_binned[bin]/n_spaxels_in_bin[bin]
 
 	#flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
 # ------------=============== Plot image ================----------
-	if CO:
-		galaxy_data_unbinned = None
+	#if CO:
+	#	galaxy_data_unbinned = None
 
-	print "		Image"
+	print "    Image"
 	
 	title = "Total Flux"
 	CBLabel = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
@@ -357,12 +361,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	ax.saveTo = saveTo
 	ax.figx, ax.figy = 0, 0
 
-	fmin, fmax = set_lims(galaxy, flux_bar_binned, vLimit, 'stellar', title)
+	fmin, fmax = set_lims(galaxy, D.flux, vLimit, 'stellar', title)
 		
-	ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
-		flux_bar_binned, vmin=fmin, vmax=fmax, nodots=True,
-		show_bin_num=show_bin_num, colorbar=True, label=CBLabel,
-		title=title, cmap="gist_yarg", ax=ax)
+	ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, D.flux, vmin=fmin, 
+		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+		label=CBLabel, title=title, cmap="gist_yarg", ax=ax)
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)
@@ -372,35 +375,26 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	if plots:
 		plt.show()
 # ------------========= Plot intensity (& EW) ===========----------
-	print "		gas map(s) and equivalent widths"
+	print "    gas map(s) and equivalent widths"
 
 
 	# Getting the gas templates used.
 	FWHM_gal = 4*0.71
 
-	Bins = Bins_list(number_of_bins)
 	for i in range(number_of_bins):
-		Bins.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
-		Bins.bin[i].set_emission_lines(FWHM_gal)
+		D.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
+		D.bin[i].set_emission_lines(FWHM_gal)
 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
 			vin_dir_gasMC, i), unpack=True, dtype=str)
-		Bins.bin[i].set_templates(temp_name, temp_weight)
+		D.bin[i].set_templates(temp_name, temp_weight)
 
-		Bins.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
+		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
 			unpack=True)
 
-#	components = np.unique([c for c in components if not c.isdigit()])
-
-	print Bins.e_lines('Hbeta').flux
-
-	print Bins.components
-
-	raise ValueError('STOP!')
-
-
 	
-	for c in components:
+	for c in D.components:
+		print "        " + c
 
 		if 'OIII' in c:
 			c_title = '[OIII]'
@@ -415,10 +409,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		fh_title = "%s Flux Histogram" % (c_title)
 		# from header
 		fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
-		f_min, f_max = set_lims(galaxy, flux, vLimit, c, f_title)
+		f_min, f_max = set_lims(galaxy, D.e_line[c].flux, vLimit, c, f_title)
 
 		saveTo = "%s/%s_flux_hist_%s.png" % (out_plots, c, wav_range)
-		plot_histogram(flux, galaxy=galaxy.upper(), redshift=z,
+		plot_histogram(D.e_line[c].flux, galaxy=galaxy.upper(), redshift=z,
 			vmin=f_min,vmax=f_max, weights=n_spaxels_in_bin, title=fh_title,
 			xaxis=fCBtitle, save=saveTo)
 		
@@ -430,9 +424,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.figx, ax.figy = 0, ax_y
 		
 		
-		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
-			flux, vmin=f_min, vmax=f_max, colorbar=True, nodots=True,
-			label=fCBtitle, title=f_title, cmap = 'gist_yarg', ax=ax)
+		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, D.e_line[c].flux, 
+			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
+			  title=f_title, cmap = 'gist_yarg', ax=ax)
 		ax_array.append(ax)
 		f.delaxes(ax)
 		f.delaxes(ax.cax)
@@ -440,24 +434,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 			
 		if plots: plt.show()
-
-
 		
-		#equiv_width = flux/continuum[:,np.argmin(np.abs(lam-wav))]
-		continuum = np.zeros(number_of_bins)
-		for k in range(number_of_bins):
-			continuum[k] = bestfit[k][np.argmin(np.abs(lam[k]-wav))] - \
-				np.max(emission_lines[k][i])*temp_weights[k][j]
-		equiv_width = flux/continuum#(bestfit[0][np.argmin(np.abs(lam[0]-wav))])#-np.max(emission_lines[:,i])*temp_weights[:,j])
-		
+
 		eq_title = "%s Equivalent Width" % (c_title)
 		eqh_title = "%s Equivalent Width Histogram" % (c_title)
 		eqCBtitle = r"Equivalent Width ($\AA$)"
 
-		eq_min, eq_max = set_lims(galaxy, equiv_width, vLimit, c, eq_title)
+		eq_min, eq_max = set_lims(galaxy, D.e_line[c].equiv_width, vLimit, c, 
+			eq_title)
 
 		saveTo = "%s/%s_eqWidth_hist_%s.png" % (out_plots, c, wav_range)
-		plot_histogram(equiv_width, galaxy=galaxy.upper(), redshift=z,
+		plot_histogram(D.e_line[c].equiv_width, galaxy=galaxy.upper(), redshift=z,
 			vmin=eq_min,vmax=eq_max, weights=n_spaxels_in_bin, title=eqh_title,
 			xaxis=eqCBtitle, save=saveTo)
 		
@@ -467,29 +454,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.figx, ax.figy = 0, ax_y+1
 
 
-		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
-			equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, nodots=True,
-			label=eqCBtitle, title=eq_title, ax=ax)
+		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, 
+			D.e_line[c].equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, 
+			nodots=True, label=eqCBtitle, title=eq_title, ax=ax)
 		ax_array.append(ax)
 		f.delaxes(ax)
 		f.delaxes(ax.cax)
 		if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-
-# ------------============ Find gas masks! ==============----------
-		amp = np.zeros((len(components), number_of_bins))
-		print len(components), number_of_bins
-		print np.shape(emission_lines[0])
-
-		for k in range(number_of_bins):
-			i = np.where(line_name == c)[0][0]
-			amp[k] = max(emission_lines[0][:,i], x=lam[0])
-
-			raise ValueError('STOP!!')
-
-
-
-
 
 
 
@@ -661,7 +633,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 # ------------============= Plot residuals ==============----------
 	if residual:
-		print "		" + residual + " residuals"
+		print "    " + residual + " residuals"
 
 		average_residuals = np.zeros(number_of_bins)
 		for i in range(number_of_bins):
@@ -700,7 +672,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			add_CO(ax1, galaxy, header, close=True)
 
 # ------------=============== Plot Chi2/DOF =============----------
-	print "		chi2"
+	print "    chi2"
 
 	chi2 = np.zeros(number_of_bins)
 	for i in range(number_of_bins):
@@ -727,9 +699,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 # ------------============ Line ratio maps ==============----------
 	if any('OIII' in o for o in outputs):
-		print "		line ratios"
+		print "    line ratios"
 
-		t_num = (len(components)-1)*len(components)/2
+		t_num = (len(D.components)-1)*len(D.components)/2
 		for n in range(t_num):
 			i = 0
 			m = t_num
@@ -737,32 +709,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				i += 1
 				m -= i
 
-			plotA = len(components)-i-1
-			plotB = len(components)-i+n-m
+			cA = D.components[len(D.components)-i-1]
+			cB = D.components[len(D.components)-i+n-m]
 
-			cA = line_name[plotA]
-			cB = line_name[plotB]
-		
-			iA = np.where(line_name == cA)[0][0]
-			temp_fluxA = np.trapz(emission_lines[0][:,iA], x=lam[0])
-			iB = np.where(line_name == cB)[0][0]
-			temp_fluxB = np.trapz(emission_lines[0][:,iB], x=lam[0])
-
-			fluxA = []
-			fluxB = []
-			for i in range(len(temp_weights)):
-				iA = np.where(temp_name[i] == cA)[0][0]
-				fluxA.append(temp_weights[i][iA]*temp_fluxA)
-				iB = np.where(temp_name[i] == cB)[0][0]
-				fluxB.append(temp_weights[i][iB]*temp_fluxB)
-
-			fluxA=np.array(fluxA)+0.00001
-			fluxB=np.array(fluxB)+0.00001
-
-
-			# Plotting the inverse of the above
-			line_ratio = np.log10(fluxB/fluxA)
-
+			line_ratio = np.log10(D.e_line[cB].flux/D.e_line[cA].flux)
 			if 'OIII' in cA:
 				cA_title = '[OIII]'
 			elif 'Hbeta' in cA:
@@ -805,7 +755,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	
 # ------------============= Plot and save ===============----------
 
-	print "		Plotting and saving"
+	print "    Plotting and saving"
 
 	for i, a in enumerate(ax_array):
 		f.add_axes(a)
