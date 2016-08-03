@@ -114,7 +114,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         cmap = kwg['cmap']
         if isinstance(cmap, str):
             cmap = plt.get_cmap(cmap)
-    cmap.set_bad('darkslategray',1.0)
+    #cmap.set_bad('darkslategray',1.0)
+    cmap.set_bad('brown',1.0)
 
     cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 

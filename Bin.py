@@ -24,9 +24,9 @@ class Data(object):
 		self.bin = bins
 
 
-	def add_e_line(self, line):
+	def add_e_line(self, line, wav):
 		if line not in self.components:
-			self.e_line[line] = emission_data(self, line)
+			self.e_line[line] = emission_data(self, line, wav)
 
 	@property
 	def components(self):
@@ -35,40 +35,62 @@ class Data(object):
 	@property
 	def flux(self):
 		return [bin.flux for bin in self.bin]
-	
-	
 
 	
 class emission_data(Data):
-	def __init__(self, parent, name):
+# Attributes:
+# flux: array of integrated fitted spectrum
+# name: emission line name (will also be directory key in Data object)
+# wav: emission line quoted wavelength
+# equiv_width: array of equivelent width for each bin
+# mask: boolean array of if the emission line is masked in bin
+	def __init__(self, parent, name, wav):
 		self.__parent__ = parent
 		self._name = name
+		self._wav = wav
 
 	@property	
 	def flux(self):
-		return np.array([bin.e_line[self._name].flux for bin in self.__parent__.bin])
+		p = []
+		for bin in self.__parent__.bin:
+			try:
+				p.append(bin.e_line[self._name].flux)
+			except KeyError:
+				p.append(np.nan)
+		return np.array(p)
+
+	@property
+	def name(self):
+		return self._name
 
 	@property
 	def wav(self):
-		return self.__parent__.bin[0].e_line[self._name].wav
-	
+		return self._wav
 
 	@property
 	def equiv_width(self):
-		return np.array(self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-
-			self.wav))] for bin in self.__parent__.bin])
+		#if self._name == 'Hdelta':
+			#print [bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] for bin in self.__parent__.bin]
+			#print ''
+			#print np.where(self.flux < 0)[0]
+			#print ''
+			#print np.where (self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] for bin in self.__parent__.bin] <0)[0]
+			#print ''
+			#print ''
+			#print ''
+		return np.array(self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] for bin in self.__parent__.bin])
 
 	@property
 	def mask(self):
-		return [bin.e_line[c].mask for bin in self.__parent__.bin]
-	
-	
+		p = []
+		for bin in self.__parent__.bin:
+			try:
+				p.append(bin.e_line[self._name].mask)
+			except KeyError:
+				p.append(True)
+		return np.array(p)
 
-		
 
-
-
-		
 class Bin(Data):
 # Attributes:
 # bin_number: int
@@ -88,9 +110,9 @@ class Bin(Data):
 		# temp_weight set when set_templates called
 		self.temp_weight = {}
 		self._lam = np.array([])
-		self.bestfit = np.array([])
-		self.spectrum = np.array([])
-		self.noise = np.array([])
+		self.bestfit = np.array([])		# ppxf bestfit
+		self.spectrum = np.array([]) 	# VIMOS Data
+		self.noise = np.array([])		# VIMOS noise
 
 	@property
 	def lam(self):
@@ -112,15 +134,15 @@ class Bin(Data):
 
 	@property
 	def continuum(self):
-		c = self.bestfit
+	# NB: Masks not used as emission lines still used in bestfit.
+		c = np.array(self.bestfit)
 		for key,line in self.e_line.iteritems():
-			if not line.mask:
-				c -= line.spectrum
+			c -= line.spectrum
 		return c
 
 	@property
 	def flux(self):
-		return np.sum(self.spectrum)
+		return np.trapz(self.spectrum, x=self.lam)
 	
 	def set_emission_lines(self, FWHM_gal):
 	# Sets emission lines
@@ -134,7 +156,7 @@ class Bin(Data):
 				line_spectrums[:,i].flatten())
 			self.e_line[line_names[i]] = line
 			if line_names[i] not in self.__parent__.components:
-				self.__parent__.add_e_line(line_names[i])
+				self.__parent__.add_e_line(line_names[i], line_wavs[i])
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
@@ -143,20 +165,22 @@ class Bin(Data):
 			if not name[i].isdigit():
 				self.e_line[name[i]].weight = weight[i]
 				if name[i] not in self.__parent__.components:
-					self.__parent__.add_e_line(name[i])
+					self.__parent__.add_e_line(name[i], self.e_line[name[i]].wav)
 
-
-
-	
 
 class emission_line(Bin):
+# Attributes:
+# flux: float, integrated fitted spectrum
+# spectrum: array if not masked of fitted spectrum
+# AmpNoi: float, amplitude of fitted spectrum vs noise from Bin object
+# maks: boolean: True if emission line is masked in this bin
 	def __init__(self, parent, name, wav, spectrum):
 		self.__parent__ = parent
 		self.name = name
 		self.weight = 0.0
 		self._spectrum = np.array(spectrum)
 		self.wav = wav
-		self.__threshold__ = 3.0
+		self.__threshold__ = 4.0
 		
 	@property
 	def flux(self):
@@ -184,10 +208,4 @@ class emission_line(Bin):
 	@property
 	def mask(self):
 		return self.AmpNoi < self.__threshold__
-	
-	
-
-
-	
-	
 

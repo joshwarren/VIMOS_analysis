@@ -45,7 +45,8 @@ def man_errors(galaxy, wav_range=""):
     componants = ["stellar"]
 
     componants.extend([d for d in os.listdir(dir + "gas/") if \
-               os.path.isdir(os.path.join(dir + "gas/", d))])    
+               os.path.isdir(os.path.join(dir + "gas/", d))])  
+    componants=np.array(componants)
 
     dynamics = [v, s, h3, h4]
     dynamics_uncert = [v_s, s_s, h3_s, h4_s]
@@ -56,6 +57,14 @@ def man_errors(galaxy, wav_range=""):
 # Bestfit values
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
+
+            try:
+                vel[len(componants)-1]
+            except:
+                vel=np.insert(vel,np.where(componants=='Hdelta')[0][0],np.nan)
+                sig=np.insert(sig,np.where(componants=='Hdelta')[0][0],np.nan)
+                h3s=np.insert(h3s,np.where(componants=='Hdelta')[0][0],np.nan)
+                h4s=np.insert(h4s,np.where(componants=='Hdelta')[0][0],np.nan)
 
             v[bin] = vel[i]
             s[bin] = sig[i]
