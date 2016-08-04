@@ -288,6 +288,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	# lists the files produced by man_errors[2].py
 	outputs = glob.glob(output+'gal_*.dat')
+	outputs = glob.glob(output+'gal_stellar*.dat')
 	#outputs = []
 
 	# Create figure and array for axes
@@ -300,49 +301,35 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 
 	# Read tessellation file
-	x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
-		skiprows = 1 )
-	x, y, bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
-	n_spaxels = len(bin_num)
-	number_of_bins = int(max(bin_num)+1)
-	order = bin_num.argsort()
+	#x, D.y, D.bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
+	#	skiprows = 1 )
+	#x, D.y, bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
+	#order = bin_num.argsort()
 
-
-	center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
+	# Bin containing central spaxel as set by find_galaxy.py (brightest spaxel?)
+	#center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
 # ----------========= Reading the spectrum  =============--------- 
-	galaxy_data, header = pyfits.getdata(dataCubeDirectory, 0, header=True)
+	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
+			usecols=(0,1,2)))
 
+	galaxy_data, header = pyfits.getdata(dataCubeDirectory, 0, header=True)
+	
 	#galaxy_data = np.rot90(galaxy_data,2)
 	s = galaxy_data.shape
 	rows_to_remove = range(discard)
 	rows_to_remove.extend([s[1]-1-i for i in range(discard)])
 	cols_to_remove = range(discard)
 	cols_to_remove.extend([s[2]-1-i for i in range(discard)])
-
+	
 	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
+	
+	D.unbinned_flux = np.sum(galaxy_data, axis=0)
+	#D.unbinned_flux = D.unbinned_flux.flatten()
 
-
-
-	galaxy_data_unbinned = np.sum(galaxy_data, axis=0)
-	#galaxy_data_unbinned = galaxy_data_unbinned.flatten()
-# ----------============ Spatially binning ==============----------
-	xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
-		skiprows = 1)
-	flux_bar_binned = np.zeros((number_of_bins))
-	n_spaxels_in_bin = np.zeros((number_of_bins))
-
-
-	for spaxel in range(n_spaxels):
-		flux_bar_binned[int(bin_num[spaxel])] += np.sum(
-			galaxy_data[:,y[spaxel],x[spaxel]])
-		n_spaxels_in_bin[int(bin_num[spaxel])] += 1
-
-		
-
-	D = Data(number_of_bins)
+	
 	FWHM_gal = 4*0.71
-	for i in range(number_of_bins):
+	for i in range(D.number_of_bins):
 		D.bin[i].spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC,i), 
 			unpack=True)
 		D.bin[i].noise = np.loadtxt("%s/noise_input/%d.dat" % 
@@ -359,13 +346,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
 			unpack=True)
-
-
-	#flux_bar_binned = flux_bar_binned/np.median(flux_bar_binned)
+# ------------========== Spatially binning ==============----------
+	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
+	#flux_bar_binned = np.zeros((D.number_of_bins))
+	#n_spaxels_in_bin = np.zeros((D.number_of_bins))
+	#
+	#for spaxel in range(n_spaxels):
+	#	flux_bar_binned[int(bin_num[spaxel])] += np.sum(
+	#		galaxy_data[:,y[spaxel],x[spaxel]])
+	#	n_spaxels_in_bin[int(bin_num[spaxel])] += 1
 # ------------=============== Plot image ================----------
-	#if CO:
-	#	galaxy_data_unbinned = None
-
+	
 	print "    Image"
 	
 	title = "Total Flux"
@@ -378,7 +369,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	fmin, fmax = set_lims(galaxy, D.flux, vLimit, 'stellar', title)
 
-	ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, D.flux, vmin=fmin, 
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 		label=CBLabel, title=title, cmap=sauron, ax=ax)#"gist_yarg", ax=ax)
 	ax_array.append(ax)
@@ -392,7 +383,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------========= Plot intensity (& EW) ===========----------
 	print "    gas map(s) and equivalent widths"
 	
-	for c in D.components:
+	for c in D.e_components:
 		print "        " + c
 
 		if 'OIII' in c:
@@ -412,7 +403,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		saveTo = "%s/%s_flux_hist_%s.png" % (out_plots, c, wav_range)
 		plot_histogram(D.e_line[c].flux, galaxy=galaxy.upper(), redshift=z,
-			vmin=f_min,vmax=f_max, weights=n_spaxels_in_bin, title=fh_title,
+			vmin=f_min,vmax=f_max, weights=D.n_spaxels_in_bin, title=fh_title,
 			xaxis=fCBtitle, save=saveTo)
 		
 		ax_y = set_ax_y(c)
@@ -423,7 +414,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.figx, ax.figy = 0, ax_y
 		
 		
-		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, D.e_line[c].flux, 
+		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.e_line[c].flux, 
 			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
 			  title=f_title, cmap = 'gist_yarg', ax=ax)
 		ax_array.append(ax)
@@ -439,18 +430,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		eqh_title = "%s Equivalent Width Histogram" % (c_title)
 		eqCBtitle = r"Equivalent Width ($\AA$)"
 
-		#if 'Hdelta' in c: 
-		#	print np.where(np.nan_to_num(D.e_line[c].equiv_width) < 0)
-		#	print np.where(D.bin[39].continuum == D.bin[39].continuum[np.argmin(np.abs(D.bin[39].lam-D.e_line[c].wav))])[0]
-		#	print D.bin[39].spectrum[6], D.bin[39].bestfit[6]
-		#	print D.bin[39].e_line[c].spectrum[6]
-		#	raise ValueError('STOP!')
 		eq_min, eq_max = set_lims(galaxy, D.e_line[c].equiv_width, vLimit, c, 
 			eq_title)
 
 		saveTo = "%s/%s_eqWidth_hist_%s.png" % (out_plots, c, wav_range)
 		plot_histogram(D.e_line[c].equiv_width, galaxy=galaxy.upper(), redshift=z,
-			vmin=eq_min,vmax=eq_max, weights=n_spaxels_in_bin, title=eqh_title,
+			vmin=eq_min,vmax=eq_max, weights=D.n_spaxels_in_bin, title=eqh_title,
 			xaxis=eqCBtitle, save=saveTo)
 		
 		ax = f.add_subplot(111, aspect='equal')
@@ -459,7 +444,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.figx, ax.figy = 0, ax_y+1
 
 
-		ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, 
+		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 			D.e_line[c].equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, 
 			nodots=True, label=eqCBtitle, title=eq_title, ax=ax)
 		ax_array.append(ax)
@@ -473,16 +458,17 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	for plot in outputs:
 		plot_title = plot.split('gal_')[-1].split('.')[0]
 		print "    " + plot_title
-		v_binned, v_uncert_binned = np.loadtxt(plot, unpack=True)
-
+		[c, k] = plot_title.split('_')
+		D.components[c].plot[k], D.components[c].plot[k+'_uncert'] = np.loadtxt(plot, unpack=True)
 
 	# Asign v to every spaxel in bin
-		v_unbinned = np.zeros(galaxy_data_unbinned.shape)
-		v_uncert_unbinned = np.zeros(galaxy_data_unbinned.shape)
+		v_unbinned = np.zeros(D.unbinned_flux.shape)
+		v_uncert_unbinned = np.zeros(D.unbinned_flux.shape)
+		n_spaxels = len(D.x)
 		for spaxel in range(n_spaxels):
-			v_unbinned[x[spaxel],y[spaxel]] = v_binned[bin_num[spaxel]]
-			v_uncert_unbinned[x[spaxel],y[spaxel]] = \
-				v_uncert_binned[bin_num[spaxel]]
+			v_unbinned[D.x[spaxel],D.y[spaxel]] = D.components[c].plot[k][D.bin_num[spaxel]]
+			v_uncert_unbinned[D.x[spaxel],D.y[spaxel]] = \
+				D.components[c].plot[k+'_uncert'][D.bin_num[spaxel]]
 # ------------=========== Setting titles etc ============----------
 		im_type = plot_title.split('_')[0]
 		if im_type == "gas":
@@ -547,48 +533,48 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
 		if 'Hdelta' in plot_title:
-			print np.sort(v_binned)
+			print np.sort(D.components[c].plot[k])
 			print ''
 
 		if "vel" in plot_title:
 			if norm == "lum":
-				v_binned -= v_binned[center_bin]
+				D.components[c].plot[k] -= D.components[c].plot[k][center_bin]
 			if norm == "lwv":
-				lwv = v_unbinned*galaxy_data_unbinned
-				v_binned -= np.nanmean(lwv)*n_spaxels/np.nansum(
-					galaxy_data_unbinned)
+				lwv = v_unbinned*D.unbinned_flux
+				D.components[c].plot[k] -= np.nanmean(lwv)*n_spaxels/np.nansum(
+					D.unbinned_flux)
 			if norm == "sig":
 				sig_file = output+'gal_stellar_sigma.dat'
 				s_binned, s_uncert_binned = np.loadtxt(sig_file, unpack=True)
 				s_sort = sorted(np.unique(s_binned))
 				c = np.where(s_binned > s_sort[-6])
-				v_binned -= np.mean(v_binned[c[0]])
+				D.components[c].plot[k] -= np.mean(D.components[c].plot[k][c[0]])
 
-		vmin, vmax = set_lims(galaxy, v_binned, vLimit, plot_title, plot_title)
+		vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, plot_title, plot_title)
 		if 'Hdelta' in plot_title:
 			print vmin, vmax
-			print np.sort(v_binned)
-		v_uncert_min, v_uncert_max = set_lims(galaxy, v_uncert_binned, vLimit, 
+			print np.sort(D.components[c].plot[k])
+		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k+'_uncert'], vLimit, 
 			plot_title, utitle)
 # ------------============== Plot Histogram =============----------
 		# Field histogram
 
 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
-		plot_histogram(v_binned, galaxy=galaxy.upper(), redshift=z,
-			vmin=vmin,vmax=vmax, weights=n_spaxels_in_bin, title=htitle,
+		plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
+			vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
 			xaxis=CBLabel, save=saveTo)
 		# Uncertainty histogram
 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
-		plot_histogram(v_uncert_binned, galaxy=galaxy.upper(), redshift=z,
-			vmin=v_uncert_min,vmax=v_uncert_max, weights=n_spaxels_in_bin,
+		plot_histogram(D.components[c].plot[k+'_uncert'], galaxy=galaxy.upper(), redshift=z,
+			vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
 			title=uhtitle, xaxis=CBLabel, save=saveTo)
 
 		if plots:
 			plt.show()			  
 # ------------==== Plot velfield - no interperlation ====----------
 		if CO:
-			galaxy_data_unbinned_sav = galaxy_data_unbinned
-			galaxy_data_unbinned = None
+			D.unbinned_flux_sav = D.unbinned_flux
+			D.unbinned_flux = None
 		if nointerp:
 			# Field plot
 			ax = f.add_subplot(111, aspect='equal')
@@ -596,10 +582,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax.saveTo = saveTo
 			ax.figx, ax.figy = ax_x, ax_y
 		   
-			ax = plot_velfield_nointerp(x, y, bin_num, xBar,
-				yBar, v_binned, vmin=vmin, vmax=vmax, #flux_type='notmag',
+			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
+				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-				label=CBLabel, #flux_unbinned=galaxy_data_unbinned, 
+				label=CBLabel, #flux_unbinned=D.unbinned_flux, 
 				title=title, cmap=cmap, ax=ax)
 			ax_array.append(ax)
 			f.delaxes(ax)
@@ -610,8 +596,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			# Uncertainty plot
 			saveTo = "%s/%s_field_%s.png" % (out_nointerp,plot_title+'_uncert', 
 				wav_range)
-			ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
-				v_uncert_binned, vmin=v_uncert_min, vmax=v_uncert_max,
+			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
+				D.components[c].plot[k+'_uncert'], vmin=v_uncert_min, vmax=v_uncert_max,
 				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
 				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
 				redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
@@ -623,13 +609,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if plots:
 			plt.show()
 		if CO:
-			galaxy_data_unbinned = galaxy_data_unbinned_sav
+			D.unbinned_flux = D.unbinned_flux_sav
 # ------------============= Plot residuals ==============----------
 	if residual:
 		print "    " + residual + " residuals"
 
-		average_residuals = np.zeros(number_of_bins)
-		for i in range(number_of_bins):
+		average_residuals = np.zeros(D.number_of_bins)
+		for i in range(D.number_of_bins):
 			bestfit = np.loadtxt('%s/bestfit/%d.dat' % (vin_dir_gasMC, i))
 			spectrum = np.loadtxt('%s/input/%d.dat' % (vin_dir_gasMC, i))
 			residuals = np.abs(spectrum - bestfit)
@@ -652,10 +638,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		" Residuals of Bestfit to Normalised Spectrum"
 		saveTo = "%s/%s_residual_%s.png" % (out_nointerp, residual, wav_range)
 
-		ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 			average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
 			nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-			label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+			label=CBLabel, flux_unbinned=D.unbinned_flux, 
 			galaxy = galaxy.upper(), redshift = z, title=title, 
 			save=saveTo, close=not CO)#, cmap = cm.blue)
 		if plots:
@@ -666,8 +652,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------=============== Plot Chi2/DOF =============----------
 	print "    chi2"
 
-	chi2 = np.zeros(number_of_bins)
-	for i in range(number_of_bins):
+	chi2 = np.zeros(D.number_of_bins)
+	for i in range(D.number_of_bins):
 		chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
 
 	minchi2, maxchi2 = set_lims(galaxy, chi2, vLimit, 'stellar', 'chi2',
@@ -677,10 +663,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	title = "Chi2/DOF of the bestfit"
 	saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
 
-	ax1 = plot_velfield_nointerp(x, y, bin_num, xBar, yBar, chi2, 
+	ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, chi2, 
 		vmin=minchi2, vmax=maxchi2, flux_type='notmag',
 		nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, flux_unbinned=galaxy_data_unbinned, 
+		label=CBLabel, flux_unbinned=D.unbinned_flux, 
 		galaxy = galaxy.upper(), redshift = z, title=title, 
 		save=saveTo, close=not CO)#, cmap=cm.blue)
 	if plots:
@@ -692,7 +678,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	if any('OIII' in o for o in outputs):
 		print "    line ratios"
 
-		t_num = (len(D.components)-1)*len(D.components)/2
+		t_num = (len(D.e_components)-1)*len(D.e_components)/2
 		for n in range(t_num):
 			i = 0
 			m = t_num
@@ -700,8 +686,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				i += 1
 				m -= i
 
-			cA = D.components[len(D.components)-i-1]
-			cB = D.components[len(D.components)-i+n-m]
+			cA = D.e_components[len(D.e_components)-i-1]
+			cB = D.e_components[len(D.e_components)-i+n-m]
 
 			line_ratio = np.log10(D.e_line[cB].flux/D.e_line[cA].flux)
 			if 'OIII' in cA:
@@ -739,7 +725,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax.figx, ax.figy = n, n_rows-int(np.ceil(t_num/3))
 
 
-			ax = plot_velfield_nointerp(x, y, bin_num, xBar, yBar,
+			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 				line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
 				nodots=True, title=lr_title, label=lrCBtitle, ax=ax)
 

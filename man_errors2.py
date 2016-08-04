@@ -16,8 +16,6 @@
 ## ************************************************************** ##
 
 import numpy as np # for reading files
-import array
-import sys # for early exit of python
 import os
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -54,10 +52,11 @@ def man_errors(galaxy, wav_range=""):
 # ------------====== Reading Files and calc std_devs ==========----------
     for i in range(len(componants)):
         for bin in range(n_bins):
-# Bestfit values
+            # Bestfit values
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
 
+            # Check if Hdelta is included in this bin
             try:
                 vel[len(componants)-1]
             except:
@@ -71,13 +70,11 @@ def man_errors(galaxy, wav_range=""):
             h3[bin] = h3s[i]
             h4[bin] = h4s[i]
 
-
+        # Set errors as same as values. 
         v_s =v
         s_s=s
         h3_s=h3
         h4_s=h4
-
-
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir) 
@@ -86,9 +83,6 @@ def man_errors(galaxy, wav_range=""):
         s_file = output_dir + "gal_" + componants[i] + "_sigma.dat"
         h3_file = output_dir + "gal_" + componants[i] + "_h3.dat"
         h4_file = output_dir + "gal_" + componants[i] + "_h4.dat"
-            
-
-
 
         f_v = open(v_file, 'w')
         f_s = open(s_file, 'w')
