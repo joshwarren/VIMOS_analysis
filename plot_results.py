@@ -326,7 +326,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	
 	D.unbinned_flux = np.sum(galaxy_data, axis=0)
 	#D.unbinned_flux = D.unbinned_flux.flatten()
-
 	
 	FWHM_gal = 4*0.71
 	for i in range(D.number_of_bins):
@@ -459,16 +458,21 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		plot_title = plot.split('gal_')[-1].split('.')[0]
 		print "    " + plot_title
 		[c, k] = plot_title.split('_')
-		D.components[c].plot[k], D.components[c].plot[k+'_uncert'] = np.loadtxt(plot, unpack=True)
+		D.components[c].setkin(k, np.loadtxt(plot, usecols=(0,), unpack=True))
+		D.components[c].setkin_uncert(k,np.loadtxt(plot, usecols=(1,), unpack=True))
 
 	# Asign v to every spaxel in bin
-		v_unbinned = np.zeros(D.unbinned_flux.shape)
-		v_uncert_unbinned = np.zeros(D.unbinned_flux.shape)
-		n_spaxels = len(D.x)
-		for spaxel in range(n_spaxels):
-			v_unbinned[D.x[spaxel],D.y[spaxel]] = D.components[c].plot[k][D.bin_num[spaxel]]
-			v_uncert_unbinned[D.x[spaxel],D.y[spaxel]] = \
-				D.components[c].plot[k+'_uncert'][D.bin_num[spaxel]]
+		# print D.unbinned_flux.shape
+		# v_unbinned = np.zeros(D.unbinned_flux.shape)
+		# v_uncert_unbinned = np.zeros(D.unbinned_flux.shape)
+		# n_spaxels = len(D.x)
+		# for spaxel in range(n_spaxels):
+		# 	v_unbinned[D.x[spaxel],D.y[spaxel]] = D.components[c].plot[k][D.bin_num[spaxel]]
+		# 	v_uncert_unbinned[D.x[spaxel],D.y[spaxel]] = \
+		# 		D.components[c].plot[k].uncert[D.bin_num[spaxel]]
+#############################################
+#		print v_unbinned == D.components['stellar'].plot[k].unbinned
+############################################		
 # ------------=========== Setting titles etc ============----------
 		im_type = plot_title.split('_')[0]
 		if im_type == "gas":
@@ -540,7 +544,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			if norm == "lum":
 				D.components[c].plot[k] -= D.components[c].plot[k][center_bin]
 			if norm == "lwv":
-				lwv = v_unbinned*D.unbinned_flux
+				lwv = D.components[c].plot[k].unbinned*D.unbinned_flux
 				D.components[c].plot[k] -= np.nanmean(lwv)*n_spaxels/np.nansum(
 					D.unbinned_flux)
 			if norm == "sig":
@@ -554,7 +558,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if 'Hdelta' in plot_title:
 			print vmin, vmax
 			print np.sort(D.components[c].plot[k])
-		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k+'_uncert'], vLimit, 
+		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, vLimit, 
 			plot_title, utitle)
 # ------------============== Plot Histogram =============----------
 		# Field histogram
@@ -565,16 +569,16 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			xaxis=CBLabel, save=saveTo)
 		# Uncertainty histogram
 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
-		plot_histogram(D.components[c].plot[k+'_uncert'], galaxy=galaxy.upper(), redshift=z,
+		plot_histogram(D.components[c].plot[k].uncert, galaxy=galaxy.upper(), redshift=z,
 			vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
 			title=uhtitle, xaxis=CBLabel, save=saveTo)
 
 		if plots:
 			plt.show()			  
 # ------------==== Plot velfield - no interperlation ====----------
-		if CO:
-			D.unbinned_flux_sav = D.unbinned_flux
-			D.unbinned_flux = None
+		#if CO:
+		#	D.unbinned_flux_sav = D.unbinned_flux
+		#	D.unbinned_flux = None
 		if nointerp:
 			# Field plot
 			ax = f.add_subplot(111, aspect='equal')
@@ -597,7 +601,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			saveTo = "%s/%s_field_%s.png" % (out_nointerp,plot_title+'_uncert', 
 				wav_range)
 			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
-				D.components[c].plot[k+'_uncert'], vmin=v_uncert_min, vmax=v_uncert_max,
+				D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
 				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
 				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
 				redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
@@ -608,8 +612,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		if plots:
 			plt.show()
-		if CO:
-			D.unbinned_flux = D.unbinned_flux_sav
+		#if CO:
+		#	D.unbinned_flux = D.unbinned_flux_sav
 # ------------============= Plot residuals ==============----------
 	if residual:
 		print "    " + residual + " residuals"

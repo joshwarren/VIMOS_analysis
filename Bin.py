@@ -27,9 +27,9 @@ class Data(object):
 
 	def __init__(self, xyb_turple):
 		x,y,bin_num = xyb_turple
-		self.x,self.y,self.bin_num=x,y,bin_num
+		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
 		self.set_spaxels_in_bins(x, y, bin_num)
-		self.unbinned_flux = [[] for i in range(2)] # 2D blank array
+		self.unbinned_flux = np.zeros((max(x)+1,max(y)+1)) # 2D blank array
 		self.components = {'stellar':stellar_data(self)}
 
 
@@ -84,8 +84,17 @@ class Data(object):
 		return [bin.n_spaxels_in_bin for bin in self.bin]
 
 
+class myArray(list):
+	pass
+	#uncert = []
+	#
+	#def __setattr__(kinematics, attr, value):
+	#	if 'uncert' in attr:
+	#		print 'attr'
 
 class _data(object):
+# To be used with __init__ method within other classes (stellar_data and 
+#	emission_data). NB: these are all 'getter' functions.
 # Attributes:
 # plot: (dictionary) listing attributes below
 # vel (_uncert): (array)
@@ -93,109 +102,91 @@ class _data(object):
 # h3 (_uncert): (array)
 # h4 (_uncert): (array)
 	
-	def __init__(self, parent, species):
-		self.__parent__ = parent
-		self.species = species
-		self.plot = {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 
-			'h4':self.h4, 'vel_uncert':self.vel_uncert, 
-			'sigma_uncert':self.sigma_uncert, 'h3_uncert':self.h3_uncert, 
-			'h4_uncert':self.h4_uncert}	
-
+	def __init__(self):
+		
+		pass
 
 	@property
-	def vel(self):
-		return [bin.components[self.species].vel if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@vel.setter
-	def vel(self, vel):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].vel = vel[i]
+	def plot(self):
+		return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 'h4':self.h4}
+			#, 'vel_uncert':self.vel_uncert, 
+			#'sigma_uncert':self.sigma_uncert, 'h3_uncert':self.h3_uncert, 
+			#'h4_uncert':self.h4_uncert}
 
-	@property
-	def vel_uncert(self):
-		return [bin.components[self.species].vel_uncert if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@vel_uncert.setter
-	def vel_uncert(self, vel_uncert):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].vel_uncert = vel_uncert[i]
+	# def __setattr__(self, attr, value):
+	# 	#print '*SETattr called by ' + attr
+	# 	# Ensures only acts on kinematics
+	# 	if attr in ['vel','sigma','h3','h4']:
+	# 		for i, bin in enumerate(self.__parent__.bin):
+	# 			bin.components[self.name].__dict__[attr] = myFloat(value[i])
+	# 	 # Other attributes are set by normal means.
+	# 	else:
+	# 		self.__dict__[attr] = value
 
-	@property
-	def sigma(self):
-		return [bin.components[self.species].sigma if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@sigma.setter
-	def sigma(self, sigma):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].sigma = sigma[i]
+	def setkin(self, attr, value):
+		#print '*SETattr called by ' + attr
+		# Ensures only acts on kinematics
+		if attr in ['vel','sigma','h3','h4']:
+			for i, bin in enumerate(self.__parent__.bin):
+				sav = bin.components[self.name].__dict__[attr].uncert
+				bin.components[self.name].__dict__[attr] = myFloat(value[i])
+				bin.components[self.name].__dict__[attr].uncert = sav
+	def setkin_uncert(self, attr, value):
+		#print '*SETattr called by ' + attr
+		# Ensures only acts on kinematics
+		if attr in ['vel','sigma','h3','h4']:
+			for i, bin in enumerate(self.__parent__.bin):
+				bin.components[self.name].__dict__[attr].uncert = value[i]
+		
+	# __getattr__ only called when attribute is not found by other means. 
+	def __getattribute__(self, attr):
+		#print 'getattr called by ' + attr
+		if attr in ['vel','sigma','h3','h4']:
+			kinematics = myArray([bin.components[self.name].__dict__[attr] if not 
+				self.mask[i] else np.nan 
+				for i, bin in enumerate(self.__parent__.bin)])
+			kinematics.uncert = myArray(
+				[bin.components[self.name].__dict__[attr].uncert 
+				if not self.mask[i] else np.nan 
+				for i, bin in enumerate(self.__parent__.bin)])
 
-	@property
-	def sigma_uncert(self):
-		return [bin.components[self.species].sigma_uncert if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@sigma_uncert.setter
-	def sigma_uncert(self, sigma_uncert):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].sigma_uncert = sigma_uncert[i]
+			unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
+			uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
+			for spaxel in range(len(self.__parent__.x)):
+				unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
+					kinematics[self.__parent__.bin_num[spaxel]]
+				uncert_unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
+					kinematics.uncert[self.__parent__.bin_num[spaxel]]
+			kinematics.unbinned = unbinned
+			kinematics.uncert.unbinned = uncert_unbinned
 
-	@property
-	def h3(self):
-		return [bin.components[self.species].h3 if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@h3.setter
-	def h3(self, h3):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].h3 = h3[i]
+			# def __getattr__(kinematics, attr):
+			# 	if uncert in attr:
+			# 		uncert.unbinned = property(lambda self:uncert_unbinned)
+			# 		return uncert
+			return kinematics
+		else:
+			return object.__getattribute__(self,attr)
 
-	@property
-	def h3_uncert(self):
-		return [bin.components[self.species].h3_uncert if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@h3_uncert.setter
-	def h3_uncert(self, h3_uncert):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].h3_uncert = h3_uncert[i]
-
-	@property
-	def h4(self):
-		return [bin.components[self.species].h4 if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@h4.setter
-	def h4(self, h4):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].h4 = h4[i]
-
-	@property
-	def h4_uncert(self):
-		return [bin.components[self.species].h4_uncert if not 
-			self.__parent__.mask[i] else np.nan 
-			for i, bin in enumerate(self.__parent__.__parent__.bin)]
-	@h4_uncert.setter
-	def h4_uncert(self, h4_uncert):
-		for i, bin in enumerate(self.__parent__.__parent__.bin):
-			bin.components[self.species].h4_uncert = h4_uncert[i]
 
 	
 
 
 class stellar_data(Data, _data):
+# Attributes:
+# name: (str) 'stellar'
+# mask: (boolean array) all set to False
+# Inherited attributes from _data object for reading ppxf fitted stellar kinematics
 	def __init__(self, parent):
 		self.__parent__ = parent
-		self.species = 'stellar'
-		_data.__init__(self, self, self.species)
+		self.name = 'stellar'
+		_data.__init__(self)
 	@property
 	def mask(self):
 		return [False]*self.__parent__.number_of_bins
 
 
-	
+
 class emission_data(Data, _data):
 # Attributes:
 # flux: array of integrated fitted spectrum
@@ -203,15 +194,12 @@ class emission_data(Data, _data):
 # wav: emission line quoted wavelength
 # equiv_width: array of equivelent width for each bin
 # mask: boolean array of if the emission line is masked in bin
-# vel: (array)
-# sigma: (array)
-# h3: (array)
-# h4: (array)
+# Inherited attributes from _data object for reading ppxf fitted kinematics
 	def __init__(self, parent, name, wav):
 		self.__parent__ = parent
 		self._name = name
 		self._wav = wav
-		_data.__init__(self, self.__parent__, self._name)
+		_data.__init__(self)
 
 	@property	
 	def flux(self):
@@ -245,38 +233,6 @@ class emission_data(Data, _data):
 				p.append(True)
 		return np.array(p)
 
-	# @property
-	# def vel(self):
-	# 	return [bin.e_line[self._name].vel for bin in self.__parent__.bin]
-	# @vel.setter
-	# def vel(self, vel):
-	# 	for i, bin in enumerate(self.__parent__.bin):
-	# 		bin.e_line[self._name].vel = vel[i]
-	# @property
-	# def sigma(self):
-	# 	return [bin.e_line[self._name].sigma for bin in self.__parent__.bin]
-	# @sigma.setter
-	# def sigma(self, sigma):
-	# 	for i, bin in enumerate(self.__parent__.bin):
-	# 		bin.e_line[self._name].sigma = sigma[i]
-	# @property
-	# def h3(self):
-	# 	return [bin.e_line[self._name].h3 for bin in self.__parent__.bin]
-	# @h3.setter
-	# def h3(self, h3):
-	# 	for i, bin in enumerate(self.__parent__.bin):
-	# 		bin.e_line[self._name].h3 = h3[i]
-	# @property
-	# def h4(self):
-	# 	return [bin.e_line[self._name].h4 for bin in self.__parent__.bin]
-	# @h4.setter
-	# def h4(self, h4):
-	# 	for i, bin in enumerate(self.__parent__.bin):
-	# 		bin.e_line[self._name].h4 = h4[i]
-
-
-
-
 
 
 class Bin(Data):
@@ -296,7 +252,7 @@ class Bin(Data):
 # xBar: (float) x-coord of center of bin
 # yBar: as xBar
 # n_spaxels_in_bin: (int) number of spaxels in this bin
-# stellar: (stellar) object
+# stellar: (_bin_data) object for storing ppxf fitted stellar kinematics
 #
 # Methods:
 # set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
@@ -309,7 +265,7 @@ class Bin(Data):
 		self.bin_number = int(bin_number)
 		# e_line set when set_emission_lines is called
 		#self._e_line = {}
-		self._components = {'stellar':_bin_data(self)}
+		self.components = {'stellar':_bin_data(self)}
 		# temp_weight set when set_templates called
 		self.temp_weight = {}
 		self._lam = np.array([])
@@ -321,10 +277,6 @@ class Bin(Data):
 		self._xBar = np.nan
 		self._yBar = np.nan
 
-	@property
-	def components(self):
-		return self._components
-	
 
 	@property
 	def e_line(self):
@@ -407,6 +359,13 @@ class Bin(Data):
 				if name[i] not in self.__parent__.e_components:
 					self.__parent__.add_e_line(name[i], self.e_line[name[i]].wav)
 
+class myFloat(float):
+# Required to add attributes to float object
+
+	#pass
+	def __init__(self, value):
+		float.__init__(self)
+		self._uncert = np.nan
 
 class _bin_data(object):
 # Attributes:
@@ -416,14 +375,39 @@ class _bin_data(object):
 # h4 (_uncert): float
 	def __init__(self, parent):
 		self.__parent__=parent
-		self.vel = np.nan
-		self.sigma = np.nan
-		self.h3 = np.nan
-		self.h4 = np.nan
-		self.vel_uncert = np.nan
-		self.sigma_uncert = np.nan
-		self.h3_uncert = np.nan
-		self.h4_uncert = np.nan
+		self.vel = myFloat(np.nan)
+		self.sigma = myFloat(np.nan)
+		self.h3 = myFloat(np.nan)
+		self.h4 = myFloat(np.nan)
+		self.vel.uncert = np.nan
+		self.sigma.uncert = np.nan
+		self.h3.uncert = np.nan
+		self.h4.uncert = np.nan
+	# @property
+	# def vel(self):
+	# 	return self._vel
+	# @property
+	# def sigma(self):
+	# 	return self._sigma
+	# @property
+	# def h3(self):
+	# 	return self._h3
+	# @property
+	# def h4(self):
+	# 	return self._h4
+	# @vel.setter
+	# def vel(self, value):
+	# 	self._vel = value
+	# @sigma.setter
+	# def sigma(self, value):
+	# 	self._sigma = value
+	# @h3.setter
+	# def h3(self, value):
+	# 	self._h3 = value
+	# @h4.setter
+	# def h4(self, value):
+	# 	self._h4 = value
+
 
 
 class emission_line(Bin, _bin_data):
@@ -435,10 +419,7 @@ class emission_line(Bin, _bin_data):
 # spectrum: array if not masked of fitted spectrum
 # AmpNoi: float, amplitude of fitted spectrum vs noise from Bin object
 # mask: boolean: True if emission line is masked in this bin
-# vel: float
-# sigma: float
-# h3: float
-# h4: float
+# Inherited attributes from _bin_data object for storing ppxf fitted kinematics
 	def __init__(self, parent, name, wav, spectrum):
 		self.__parent__ = parent
 		self.name = str(name)
