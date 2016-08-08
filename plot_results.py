@@ -65,6 +65,7 @@ from sauron_colormap import sauron
 from Bin import Data
 from checkcomp import checkcomp
 cc = checkcomp()
+from find_galaxy import find_galaxy
 
 # Give axes a saveTo property
 plt.axes.saveTo = property(lambda self:str())
@@ -287,6 +288,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	out_plots = "%splots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
 	vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
+	out_pickle = '%s/pickled'
 
 	# lists the files produced by man_errors[2].py
 	outputs = glob.glob(output+'gal_*.dat')
@@ -707,6 +709,13 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			f.delaxes(ax.cax)
 			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)	
+# ------------============== Pickle Data ================----------
+
+	print "    Pickling D"
+	import cPickle as pickle
+	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
+	pickle.dump(D,pickleFile)
+	pickleFile.close()
 # ------------============= Plot and save ===============----------
 
 	print "    Plotting and saving"
@@ -748,6 +757,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	saveTo = "%s/grid_%s.pdf" % (out_plots, wav_range)
 	f.savefig(saveTo, bbox_inches="tight",format='pdf')
+
+
+
 ##############################################################################
 
 # Use of plot_results.py

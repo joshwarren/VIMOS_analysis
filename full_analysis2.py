@@ -48,8 +48,8 @@ for galaxy in galaxies:
     print galaxy
     #man_errors(galaxy, wav_range=wav_range)
     #plt.close("all")
-    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-    #    nointerp=True, CO = True, residual="median", norm='lwv')
+    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+        nointerp=True, CO = True, residual="median", norm='lwv')
     #plt.close("all")
 #    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 #        nointerp=False)
@@ -57,5 +57,5 @@ for galaxy in galaxies:
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")
     kinematics(galaxy, discard=discard, wav_range=wav_range)
-    plt.close("all")
+    #plt.close("all")
 #v_vd_ellip(wav_range=wav_range)

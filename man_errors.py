@@ -1,4 +1,4 @@
-s## ==================================================================
+## ==================================================================
 ## Manage the uncertain results from glamdring
 ## ==================================================================
 ## warrenj 20151015 Routine to manipulate the output from the 
@@ -78,13 +78,14 @@ def man_errors(galaxy, wav_range="4200-"):
             # Check if file exists
             try:
                 np.loadtxt(glamdring_file, unpack=True)
-            except IndexError:
+            except IOError:
                 v_s[bin] = np.nan
                 s_s[bin] = np.nan
                 h3_s[bin] = np.nan
                 h4_s[bin] = np.nan
             else:
                 vel, sig, h3s, h4s =np.loadtxt(glamdring_file, unpack=True)
+
 
                 # Error thrown if 5000 reps not completed in this bin        
                 if len(vel) != 5000:
