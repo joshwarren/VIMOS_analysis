@@ -85,6 +85,7 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 #-----------------------------------------------------------------------------
 def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 	positive=False, symmetric=False):
+
 	if 'uncert' in plot_type:
 		uncert = True
 		positive = True
@@ -134,8 +135,9 @@ def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 		c = (4,5)
 	else:
 		c = (2,3)
-	mins, maxs = np.genfromtxt(f, unpack=True, usecols=c, skip_header=1, missing_values='nan', filling_values=np.nan)
-	
+	mins, maxs = np.genfromtxt(f, unpack=True, usecols=c, skip_header=1, 
+		missing_values='nan', filling_values=np.nan)
+
 	s = np.where(species == plot_species)[0]
 	n = s[np.where(types[s] == plot_type)[0]]
 
@@ -148,7 +150,7 @@ def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 	# If limits nan in limits file.
 	if np.isnan(mins[n]): mins[n] = v_sorted[vLimit]
 	if np.isnan(maxs[n]): maxs[n] = v_sorted[-vLimit-1]
-	
+
 	# If plot limits not in limits file
 	if len(n) == 0: # or len(mins[n]) == 0:
 		vmin, vmax = v_sorted[vLimit], v_sorted[-vLimit-1]
@@ -267,7 +269,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	# different data types need to be read separetly
 	z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
 		usecols=(1,4,5))
-	x_gals, y_gals = x_gals.astype(int), y_gals.astype(int)
+	#x_gals, y_gals = x_gals.astype(int), y_gals.astype(int)
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
@@ -288,7 +290,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	# lists the files produced by man_errors[2].py
 	outputs = glob.glob(output+'gal_*.dat')
-	outputs = glob.glob(output+'gal_stellar*.dat')
+	#outputs = glob.glob(output+'gal_stellar*.dat')
 	#outputs = []
 
 	# Create figure and array for axes
@@ -296,19 +298,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	f = plt.figure(frameon=False)
 	ax_array = []
-
-	
-
-
-	# Read tessellation file
-	#x, D.y, D.bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
-	#	skiprows = 1 )
-	#x, D.y, bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
-	#order = bin_num.argsort()
-
-	# Bin containing central spaxel as set by find_galaxy.py (brightest spaxel?)
-	#center_bin = bin_num[x_gals[i_gal]*(max(y)+1) + y_gals[i_gal]]
-# ----------========= Reading the spectrum  =============--------- 
+# ------------======== Reading the spectrum  ============----------
 	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
 			usecols=(0,1,2)))
 
@@ -345,8 +335,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
 			unpack=True)
-# ------------========== Spatially binning ==============----------
+# ------------============== Read fields ================----------
+
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
+	for plot in outputs:
+		[c,k] = plot.split('gal_')[-1].split('.')[0].split('_')
+		D.components[c].setkin(k, np.loadtxt(plot, usecols=(0,), unpack=True))
+		D.components[c].setkin_uncert(k,np.loadtxt(plot, usecols=(1,), unpack=True))
+	D.find_restFrame()
 	#flux_bar_binned = np.zeros((D.number_of_bins))
 	#n_spaxels_in_bin = np.zeros((D.number_of_bins))
 	#
@@ -451,30 +447,25 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		f.delaxes(ax.cax)
 		if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-# ------------============== Read fields ================----------
-	# Read results files - each entry in array corresponds to a bin (not
-	# a spaxel)
+# ------------============ Amplitude/Noise ==============----------
+
+		amp_title = '%s Amplitude to Noise ratio' % (c_title)
+		amp_min, amp_max = set_lims(galaxy, D.e_line[c].amp_noise, vLimit, c, 
+			amp_title)
+		saveTo = "%s/%s_amp_nosie_%s.png" % (out_nointerp, c, wav_range)
+
+		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
+			D.e_line[c].amp_noise, vmin=amp_min, vmax=amp_max, colorbar=True, 
+			nodots=True, title=amp_title, save=saveTo, close=not CO)
+		if CO:
+			ax1.saveTo = saveTo
+			add_CO(ax1, galaxy, header, close=True)
+# ------------=========== Setting titles etc ============----------
 	for plot in outputs:
 		plot_title = plot.split('gal_')[-1].split('.')[0]
 		print "    " + plot_title
 		[c, k] = plot_title.split('_')
-		D.components[c].setkin(k, np.loadtxt(plot, usecols=(0,), unpack=True))
-		D.components[c].setkin_uncert(k,np.loadtxt(plot, usecols=(1,), unpack=True))
-
-	# Asign v to every spaxel in bin
-		# print D.unbinned_flux.shape
-		# v_unbinned = np.zeros(D.unbinned_flux.shape)
-		# v_uncert_unbinned = np.zeros(D.unbinned_flux.shape)
-		# n_spaxels = len(D.x)
-		# for spaxel in range(n_spaxels):
-		# 	v_unbinned[D.x[spaxel],D.y[spaxel]] = D.components[c].plot[k][D.bin_num[spaxel]]
-		# 	v_uncert_unbinned[D.x[spaxel],D.y[spaxel]] = \
-		# 		D.components[c].plot[k].uncert[D.bin_num[spaxel]]
-#############################################
-#		print v_unbinned == D.components['stellar'].plot[k].unbinned
-############################################		
-# ------------=========== Setting titles etc ============----------
-		im_type = plot_title.split('_')[0]
+		im_type = c
 		if im_type == "gas":
 			im_type=""
 			ax_y=set_ax_y(plot_title)
@@ -536,30 +527,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				" Histogram"
 			title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
-		if 'Hdelta' in plot_title:
-			print np.sort(D.components[c].plot[k])
-			print ''
-
-		if "vel" in plot_title:
-			if norm == "lum":
-				D.components[c].plot[k] -= D.components[c].plot[k][center_bin]
-			if norm == "lwv":
-				lwv = D.components[c].plot[k].unbinned*D.unbinned_flux
-				D.components[c].plot[k] -= np.nanmean(lwv)*n_spaxels/np.nansum(
-					D.unbinned_flux)
-			if norm == "sig":
-				sig_file = output+'gal_stellar_sigma.dat'
-				s_binned, s_uncert_binned = np.loadtxt(sig_file, unpack=True)
-				s_sort = sorted(np.unique(s_binned))
-				c = np.where(s_binned > s_sort[-6])
-				D.components[c].plot[k] -= np.mean(D.components[c].plot[k][c[0]])
-
-		vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, plot_title, plot_title)
-		if 'Hdelta' in plot_title:
-			print vmin, vmax
-			print np.sort(D.components[c].plot[k])
-		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, vLimit, 
-			plot_title, utitle)
+		vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, plot_title, 
+			plot_title)
+		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, 
+			vLimit, plot_title, utitle)
 # ------------============== Plot Histogram =============----------
 		# Field histogram
 
@@ -576,9 +547,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if plots:
 			plt.show()			  
 # ------------==== Plot velfield - no interperlation ====----------
-		#if CO:
-		#	D.unbinned_flux_sav = D.unbinned_flux
-		#	D.unbinned_flux = None
+
 		if nointerp:
 			# Field plot
 			ax = f.add_subplot(111, aspect='equal')

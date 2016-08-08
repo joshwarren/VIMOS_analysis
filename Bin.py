@@ -18,6 +18,15 @@ class Data(object):
 # xBar: float array of central point's x-coord for each bin
 # yBar: as xBar
 # n_spaxels_in_bin: int array of number of spaxels in each bin
+# norm_method: str, normalisation methods for velocity fields:
+#		lwv: 	(default) luminosity weighted mean of the whole 
+#				field is set to 0.
+#		lum: 	velocity of the brightest spaxel is set 
+#				to 0.
+#		sig: 	Noralised to the mean velocity of 5 bins with the
+#				highest velocity dispersion.
+# vel_norm: float normalisation factor for finding the rest frame of the galaxy.
+# center_bin: int, bin number of the brightest bin.
 #
 # Methods:
 # add_e_line (line name, line wavelength): adds a new emission line object 
@@ -29,8 +38,10 @@ class Data(object):
 		x,y,bin_num = xyb_turple
 		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
 		self.set_spaxels_in_bins(x, y, bin_num)
-		self.unbinned_flux = np.zeros((max(x)+1,max(y)+1)) # 2D blank array
+		self.unbinned_flux = np.zeros((int(max(x)+1),int(max(y)+1))) # 2D blank array
 		self.components = {'stellar':stellar_data(self)}
+		self.norm_method = 'lwv'
+		self.vel_norm = 0.0
 
 
 	def add_e_line(self, line, wav):
@@ -47,6 +58,24 @@ class Data(object):
 			self.bin[bin].xspaxels.extend([x[i]])
 			self.bin[bin].yspaxels.extend([y[i]])
 
+	# Calculate the rest frame for velocities.
+	def find_restFrame(self):
+		if self.norm_method == "lum":
+			self.vel_norm = self.components['stellar'].\
+				plot['vel'][self.center_bin]
+		if self.norm_method == "lwv":
+			lwv = self.components['stellar'].plot['vel'].unbinned*self.unbinned_flux
+			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin)/ \
+				np.nansum(self.unbinned_flux)
+		if self.norm_method == "sig":
+			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))
+			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
+			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
+
+	@property
+	def center_bin(self):
+		return np.nanargmax(self.flux)
+	
 	@property
 	def e_components(self):
 		return list(self.e_line.keys()) 
@@ -56,8 +85,7 @@ class Data(object):
 
 	@property
 	def e_line(self):
-		return {k:v for k,v in self.components.iteritems() if k!='stellar'}
-	
+		return {k:v for k,v in self.components.iteritems() if k!='stellar'}	
 
 	@property
 	def flux(self):
@@ -85,6 +113,7 @@ class Data(object):
 
 
 class myArray(list):
+
 	pass
 	#uncert = []
 	#
@@ -108,50 +137,56 @@ class _data(object):
 
 	@property
 	def plot(self):
-		return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 'h4':self.h4}
-			#, 'vel_uncert':self.vel_uncert, 
-			#'sigma_uncert':self.sigma_uncert, 'h3_uncert':self.h3_uncert, 
-			#'h4_uncert':self.h4_uncert}
 
-	# def __setattr__(self, attr, value):
-	# 	#print '*SETattr called by ' + attr
-	# 	# Ensures only acts on kinematics
-	# 	if attr in ['vel','sigma','h3','h4']:
-	# 		for i, bin in enumerate(self.__parent__.bin):
-	# 			bin.components[self.name].__dict__[attr] = myFloat(value[i])
-	# 	 # Other attributes are set by normal means.
-	# 	else:
-	# 		self.__dict__[attr] = value
+		return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 'h4':self.h4}
+			
 
 	def setkin(self, attr, value):
 		#print '*SETattr called by ' + attr
 		# Ensures only acts on kinematics
 		if attr in ['vel','sigma','h3','h4']:
+			m = self.mask
 			for i, bin in enumerate(self.__parent__.bin):
-				sav = bin.components[self.name].__dict__[attr].uncert
-				bin.components[self.name].__dict__[attr] = myFloat(value[i])
-				bin.components[self.name].__dict__[attr].uncert = sav
+				try:
+					sav = bin.components[self.name].__dict__[attr].uncert
+					bin.components[self.name].__dict__[attr] = myFloat(value[i])
+					bin.components[self.name].__dict__[attr].uncert = sav
+				except KeyError:
+					pass
+
 	def setkin_uncert(self, attr, value):
 		#print '*SETattr called by ' + attr
 		# Ensures only acts on kinematics
 		if attr in ['vel','sigma','h3','h4']:
 			for i, bin in enumerate(self.__parent__.bin):
-				bin.components[self.name].__dict__[attr].uncert = value[i]
+				try:
+					bin.components[self.name].__dict__[attr].uncert = value[i]
+				except KeyError:
+					pass
 		
 	# __getattr__ only called when attribute is not found by other means. 
 	def __getattribute__(self, attr):
 		#print 'getattr called by ' + attr
+		import time
 		if attr in ['vel','sigma','h3','h4']:
-			kinematics = myArray([bin.components[self.name].__dict__[attr] if not 
-				self.mask[i] else np.nan 
-				for i, bin in enumerate(self.__parent__.bin)])
-			kinematics.uncert = myArray(
+			m = self.mask
+			# Normalise to rest frame of stars
+			if attr == 'vel':
+				kinematics = myArray([bin.components[self.name].__dict__[attr] 
+					- self.__parent__.vel_norm if not m[i] else np.nan 
+					for i, bin in enumerate(self.__parent__.bin)])
+			else:
+				kinematics = myArray([bin.components[self.name].__dict__[attr] 
+					if not m[i] else np.nan 
+					for i, bin in enumerate(self.__parent__.bin)])
+ 			kinematics.uncert = myArray(
 				[bin.components[self.name].__dict__[attr].uncert 
-				if not self.mask[i] else np.nan 
+				if not m[i] else np.nan 
 				for i, bin in enumerate(self.__parent__.bin)])
 
 			unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
 			uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
+
 			for spaxel in range(len(self.__parent__.x)):
 				unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
 					kinematics[self.__parent__.bin_num[spaxel]]
@@ -194,6 +229,7 @@ class emission_data(Data, _data):
 # wav: emission line quoted wavelength
 # equiv_width: array of equivelent width for each bin
 # mask: boolean array of if the emission line is masked in bin
+# amp_noise: array of Amplitude to Noise ratio for each bin
 # Inherited attributes from _data object for reading ppxf fitted kinematics
 	def __init__(self, parent, name, wav):
 		self.__parent__ = parent
@@ -221,7 +257,8 @@ class emission_data(Data, _data):
 
 	@property
 	def equiv_width(self):
-		return np.array(self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] for bin in self.__parent__.bin])
+		return np.array(self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] 
+			for bin in self.__parent__.bin])
 
 	@property
 	def mask(self):
@@ -232,6 +269,17 @@ class emission_data(Data, _data):
 			except KeyError:
 				p.append(True)
 		return np.array(p)
+
+	@property
+	def amp_noise(self):
+		p = []
+		for bin in self.__parent__.bin:
+			try:
+				p.append(bin.e_line[self._name].AmpNoi)
+			except KeyError:
+				p.append(np.nan)
+		return np.array(p)
+
 
 
 

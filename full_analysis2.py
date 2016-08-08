@@ -14,16 +14,16 @@ import os # for creating directory
 galaxies = [#'ic1459',
             #'ic1531',
             #'ic4296',
-            #'ngc0612',
+            'ngc0612']
             #'ngc3100',
             #'ngc7075',
-            'pks0718-34']
+            #'pks0718-34',
             #'ngc1399',
             #'ngc3557']
             #'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 #galaxies = ['ngc3557']
-#galaxies = ['ic1459']
+galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
@@ -48,14 +48,14 @@ for galaxy in galaxies:
     print galaxy
     #man_errors(galaxy, wav_range=wav_range)
     #plt.close("all")
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, CO = True, residual="median", norm='lwv')
-    plt.close("all")
+    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+    #    nointerp=True, CO = True, residual="median", norm='lwv')
+    #plt.close("all")
 #    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 #        nointerp=False)
-#    plt.close("all")
-#    GH_plots(galaxy, wav_range=wav_range)
-#    plt.close("all")
-#    kinematics(galaxy, discard=discard, wav_range=wav_range)
-#    plt.close("all")
+    #plt.close("all")
+    #GH_plots(galaxy, wav_range=wav_range)
+    #plt.close("all")
+    kinematics(galaxy, discard=discard, wav_range=wav_range)
+    plt.close("all")
 #v_vd_ellip(wav_range=wav_range)
