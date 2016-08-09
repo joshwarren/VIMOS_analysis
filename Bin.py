@@ -12,7 +12,7 @@ class Data(object):
 # bin: array of bin objects (see below) - holds most of the data - is a 
 #	'setter' class
 # e_line: dictionary of emission_data objects (see below) - is a 'getter' class
-# e_components: string array of emission lines
+# e_components: string list of emission lines
 # unbinned_flux: float array of unbinned flux in 2D array
 # flux: float array of total integrated flux (observed - not fitted)
 # xBar: float array of central point's x-coord for each bin
@@ -78,10 +78,10 @@ class Data(object):
 	
 	@property
 	def e_components(self):
-		return list(self.e_line.keys()) 
+		return list(self.e_line.keys())
 	@property
 	def list_components(self):
-		return list(self.components.keys()) 
+		return list(self.components.keys())
 
 	@property
 	def e_line(self):
@@ -89,11 +89,11 @@ class Data(object):
 
 	@property
 	def flux(self):
-		return [bin.flux for bin in self.bin]
+		return np.array([bin.flux for bin in self.bin])
 
 	@property
 	def xBar(self):
-		return [bin.xBar for bin in self.bin]	
+		return np.array([bin.xBar for bin in self.bin])	
 	@xBar.setter
 	def xBar(self, xBar):
 		for i, x in enumerate(xBar):
@@ -101,7 +101,7 @@ class Data(object):
 
 	@property
 	def yBar(self):	
-		return [bin.yBar for bin in self.bin]
+		return np.array([bin.yBar for bin in self.bin])
 	@yBar.setter
 	def yBar(self, yBar):
 		for i, y in enumerate(yBar):
@@ -109,17 +109,50 @@ class Data(object):
 
 	@property
 	def n_spaxels_in_bin(self):
-		return [bin.n_spaxels_in_bin for bin in self.bin]
+		return np.array([bin.n_spaxels_in_bin for bin in self.bin])
 
+# taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
+class myArray(np.ndarray):
+	def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
+          strides=None, order=None, uncert=None):
+        # Create the ndarray instance of our type, given the usual
+        # ndarray input arguments.  This will call the standard
+        # ndarray constructor, but return an object of our type.
+        # It also triggers a call to InfoArray.__array_finalize__
+        obj = np.ndarray.__new__(subtype, shape, dtype, buffer, offset, strides,
+                         order)
+        # set the new 'info' attribute to the value passed
+        obj.uncert = uncert
+        # Finally, we must return the newly created object:
+        return obj
 
-class myArray(list):
-
-	pass
-	#uncert = []
-	#
-	#def __setattr__(kinematics, attr, value):
-	#	if 'uncert' in attr:
-	#		print 'attr'
+    def __array_finalize__(self, obj):
+        # ``self`` is a new object resulting from
+        # ndarray.__new__(InfoArray, ...), therefore it only has
+        # attributes that the ndarray.__new__ constructor gave it -
+        # i.e. those of a standard ndarray.
+        #
+        # We could have got to the ndarray.__new__ call in 3 ways:
+        # From an explicit constructor - e.g. InfoArray():
+        #    obj is None
+        #    (we're in the middle of the InfoArray.__new__
+        #    constructor, and self.info will be set when we return to
+        #    InfoArray.__new__)
+        if obj is None: return
+        # From view casting - e.g arr.view(InfoArray):
+        #    obj is arr
+        #    (type(obj) can be InfoArray)
+        # From new-from-template - e.g infoarr[:3]
+        #    type(obj) is InfoArray
+        #
+        # Note that it is here, rather than in the __new__ method,
+        # that we set the default value for 'info', because this
+        # method sees all creation of default objects - with the
+        # InfoArray.__new__ constructor, but also with
+        # arr.view(InfoArray).
+        self.uncert = getattr(obj, 'uncert', None)
+        # We do not need to return anything
+	#pass
 
 class _data(object):
 # To be used with __init__ method within other classes (stellar_data and 
@@ -350,7 +383,7 @@ class Bin(Data):
 
 	@property
 	def lamLimits(self):
-		return [self._lam[0],self._lam[-1]]
+		return np.array([self._lam[0],self._lam[-1]])
 
 	@property
 	def continuum(self):

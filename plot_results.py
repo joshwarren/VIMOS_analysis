@@ -288,7 +288,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	out_plots = "%splots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
 	vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
-	out_pickle = '%s/pickled'
+	out_pickle = '%s/pickled' % (output)
 
 	# lists the files produced by man_errors[2].py
 	outputs = glob.glob(output+'gal_*.dat')
@@ -368,7 +368,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, title=title, cmap=sauron, ax=ax)#"gist_yarg", ax=ax)
+		label=CBLabel, title=title, cmap='gist_yarg', ax=ax)#"gist_yarg", ax=ax)
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)

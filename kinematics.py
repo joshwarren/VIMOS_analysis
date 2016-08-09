@@ -16,303 +16,163 @@ import matplotlib.axes as ax # for adding text onto images
 from scipy.optimize import curve_fit # for fitting a gaussian
 from checkcomp import checkcomp
 cc = checkcomp()
+import cPickle as pickle
 
 #---------------------------------------------------------------------------
 def spxToKpc(x, z):
-    H0 = 70.4 # Mpc / kms^-1
-    val =  3*10**5 * z/H0 *10**3 * x * 0.67*4.85*10**(-6)
-    return val
+	H0 = 70.4 # Mpc / kms^-1
+	val =  3*10**5 * z/H0 *10**3 * x * 0.67*4.85*10**(-6)
+	return val
 
-def kinematics(galaxy, discard=0, wav_range="", 
-    corrections=0, plots=False):
+def kinematics(galaxy, discard=0, wav_range="", plots=False):
 
-    data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
-    data_file2 =  "%s/Data/vimos/analysis/galaxies2.txt" % (cc.base_dir)
-    # different data types need to be read separetly
-    z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(data_file, 
-        unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
-    galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-    i_gal = np.where(galaxy_gals==galaxy)[0][0]
-    z = z_gals[i_gal]
-
-
-
-
-    ellip_gals, star_psi_gals, gas_psi_gals = np.loadtxt(data_file2,
-        unpack=True, skiprows=1, usecols=(1,2,3))
+	if wav_range:
+		wav_range_dir = wav_range + "/"
+	else:
+		wav_range_dir = ""
+		wav_range = ""
+	galaxiesFile =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+	galaxiesFile2 =  "%s/Data/vimos/analysis/galaxies2.txt" % (cc.base_dir)
+	output = '%s/Data/vimos/analysis/%s/results/%s' % (cc.base_dir, galaxy, 
+		wav_range_dir)
+	pickleFile = open('%s/pickled/dataObj_%s.pkl' % (output, wav_range))
+	D = pickle.load(pickleFile)
+	pickleFile.close()
 
 
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(galaxiesFile, 
+		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
+	galaxy_gals = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
+	i_gal = np.where(galaxy_gals==galaxy)[0][0]
+	z = z_gals[i_gal]
 
-    #discard = 2 # rows of pixels to discard- must have been the same 
-            #    for all routines 
-    #wav_range = "4200-"
-    #corrections = [[13,9],[35,1]]
-    find_Re = False # fits radial profile with a gaussian - VERY WRONG!
-
-
-
-
-
-    if wav_range:
-        wav_range_dir = wav_range + "/"
-    else:
-        wav_range_dir = ""
-        wav_range = ""
-
-    dataCubeDirectory = glob.glob("%s/Data/vimos/cubes/%s.cube.combined.fits" % (
-        cc.base_dir, galaxy)) 
-
-    tessellation_File = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output.txt"
-    tessellation_File2 = "%s/Data/vimos/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output2.txt"
-
-    output_v = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, galaxy) +\
-        "%sgal_stellar_vel.dat" % (wav_range_dir)
-    output_sigma = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%sgal_stellar_sigma.dat" % (wav_range_dir)
-    output_gas_v = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%sgal_Hbeta_vel.dat" % (wav_range_dir)
+	ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, Hgamma_mis = np.loadtxt(
+		galaxiesFile2, unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
+	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 'Hgamma':Hgamma_mis}
 
 # ------------=============== Photometry =================----------
-# ------------========== Reading the data cube ===========----------
-
-    galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
-
-    s = galaxy_data.shape
-    rows_to_remove = range(discard)
-    rows_to_remove.extend([s[1]-1-i for i in range(discard)])
-    cols_to_remove = range(discard)
-    cols_to_remove.extend([s[2]-1-i for i in range(discard)])
-
-    galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
-    galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
-
-
-    galaxy_data = np.sum(galaxy_data, axis=0)
-
-
-    galaxy_data_error = pyfits.getdata(dataCubeDirectory[0], 1)
-    galaxy_data_error = np.delete(galaxy_data_error, rows_to_remove, axis=1)
-    galaxy_data_error = np.delete(galaxy_data_error, cols_to_remove, axis=2)
-
-    galaxy_data_error = np.sum(galaxy_data_error, axis=0)
-    ##galaxy_data_error += galaxy_data
-
-    galaxy_data_error /= np.median(galaxy_data)
-    galaxy_data /= np.median(galaxy_data)
-
-
-    if corrections:
-        for i in range(len(corrections)):
-            galaxy_data[corrections[i][0],corrections[i][1]] = \
-                np.median(galaxy_data)
-            galaxy_data_error[corrections[i][0],corrections[i][1]] = \
-                np.median(galaxy_data_error)
-
 # ------------============= Fit photometry ===============----------
-    save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
-    f = find_galaxy(galaxy_data, quiet=True, plot=plots)#, 
-        #galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
-    #f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
-    x_gals[i_gal] = f.xpeak
-    y_gals[i_gal] = f.ypeak
-    ellip_gals[i_gal] = f.eps
-    print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
-    print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
-
-
-
-
+	save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
+		galaxy) + "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
+	f = find_galaxy(D.unbinned_flux, quiet=True, plot=plots)#, 
+		#galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
+	#f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
+	x_gals[i_gal] = f.xpeak # f.xmed?
+	y_gals[i_gal] = f.ypeak # f.ymed ?
+	ellip_gals[i_gal] = f.eps
+	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
+	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 
 
 # ------------================ Kinemetry =================----------
-# ------------======== Reading the velocity field ========----------
-# Read tessellation file
-    x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
-        skiprows = 1) 
-
-    xBar, yBar = np.loadtxt(tessellation_File2, unpack=True, 
-        skiprows = 1) 
-
-    xBar += -(40.0-2*discard)/2.0
-    yBar += -(40.0-2*discard)/2.0
-
-    v_field = np.loadtxt(output_v, usecols=(0,), unpack=True)
-    v_field -= np.median(v_field)
-
-
-
 # ------------============== Fit kinemetry ===============----------
-    save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, 
-        wav_range)
+	save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
+		galaxy) + "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, 
+		wav_range)
+ 	xBar = np.array(D.xBar)-f.xmed
+ 	yBar = np.array(D.yBar)-f.ymed
 
-    k = fit_kinematic_pa(xBar, yBar, v_field, quiet=True, plot=plots, \
-        sav_fig=save_to)
 
-    print "PA_kin: " + str(k[0]) + "+/-" + str(k[1]/3)
+	k = fit_kinematic_pa(xBar, yBar, np.array(D.components['stellar'].plot['vel']), 
+		quiet=True, plot=plots, sav_fig=save_to)
+
+	print "PA_kin: " + str(k[0]) + "+/-" + str(k[1]/3)
 
 
 # ------------============== Misalignment ================----------
-    phot = math.radians(90-f.theta)
-    kine = math.radians(k[0])
+	phot = math.radians(90-f.theta)
+	kine = math.radians(k[0])
 
 
-    mis = math.asin(abs(math.sin(phot-kine)))
-    mis = math.degrees(mis)
-    star_psi_gals[i_gal] = mis
-    print "Psi: " + str(mis)
-
-
-# ------------================= Hot gas ================----------
-    gas_vel = np.loadtxt(output_gas_v, usecols=(0,), unpack=True)
-    gas_vel -= np.median(gas_vel)
-
-    save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%s/plots/gas_kinematics_%s.png" % (wav_range_dir, wav_range)
-    gas_k = fit_kinematic_pa(xBar, yBar, gas_vel, quiet=True, 
-        plot=plots, sav_fig=save_to)
-
-    print "Gas_PA_kin: " + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
-
-# ------------============== Misalignment ================----------
-    gas_kine = math.radians(gas_k[0])
-
-    gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
-    gas_mis = math.degrees(gas_mis)
-    gas_psi_gals[i_gal] = gas_mis
-    print "Psi: " + str(gas_mis)
-
-
+	mis = math.asin(abs(math.sin(phot-kine)))
+	mis = math.degrees(mis)
+	star_mis[i_gal] = mis
+	print "Psi: " + str(mis)
 
 # ------------================= Lambda_R ================----------
-# Reload v_field and undo changes above
-    xBar += (40.0-2*discard)/2.0
-    yBar += (40.0-2*discard)/2.0
-    v_field = np.loadtxt(output_v, usecols=(0,), unpack=True)
+# R is distance from axis of rotation NOT distance from center of galaxy.	
 
-    r = np.sqrt(np.square(xBar-f.xmed)+np.square(yBar-f.ymed))
-    sigma = np.loadtxt(output_sigma, usecols=(0,), unpack=True)
+	# distance from center
+	r = np.sqrt(np.square(xBar)+np.square(yBar))
+	# Angle of r from axis of rotation
+	ang = math.acos(math.cos(math.radians(f.theta))) - np.abs(
+		np.arctan((xBar)/(yBar)))
+	R = r * np.sin(ang)
 
+	order = np.argsort(R)
 
-    order = np.argsort(r)
+	# NB: lam is ordered in terms of increasing R.
+	lam_num = D.flux[order]*R[order]*np.abs(np.array(D.components['stellar'].plot['vel'])[order]) # numerator
+	lam_den = D.flux[order]*R[order]*np.sqrt(np.square(
+		np.array(D.components['stellar'].plot['vel'])[order]) + np.square(
+		np.array(D.components['stellar'].plot['sigma'])[order])) # denominator
 
-    x=np.int_(x)
-    y=np.int_(y)
+	# cumulative summation
+	lam_num = np.cumsum(lam_num)
+	lam_den = np.cumsum(lam_den)
 
-    flux_b = np.zeros(len(v_field))
-    for i in range(len(v_field)):
-        spaxels_in_bin = (bin_num == i).nonzero()
-        flux_b[i] = np.sum(galaxy_data[x[spaxels_in_bin],y[spaxels_in_bin]])
+	lam = lam_num/lam_den
+	plt.figure()
+	plt.title(r"Radial $\lambda_R$ profile")
+	plt.xlabel("Radius (kpc)")
+	plt.ylabel(r"$\lambda_R$")
+	plt.plot(spxToKpc(R[order],z), lam)
+	ax =plt.gca()
+	plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
+		transform=ax.transAxes)
+	plt.savefig("%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
+		galaxy) + "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
+		bbox_inches="tight")
+	if plots: 
+		plt.show()
+# ------------================= Gas ================----------
+	for c in D.e_components:
+		print c
+		save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
+			galaxy) + "%s/plots/%s_kinematics_%s.png" % (wav_range_dir, c, wav_range)
+		gas_k = fit_kinematic_pa(xBar, yBar, np.array(D.components[c].plot['vel']), 
+			quiet=True, plot=plots, sav_fig=save_to)
 
+		print "%s_PA_kin: " % (c) + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
 
-# NB: lam is ordered in terms of increasing R.
-    lam_num = flux_b[order]*r[order]*abs(v_field[order]) # numerator
-    lam_den = flux_b[order]*r[order]*np.sqrt(np.square(v_field[order]) + 
-        np.square(sigma[order])) # denominator
+# ------------============== Misalignment ================----------
+		gas_kine = math.radians(gas_k[0])
 
-# cumulative summation
-    lam_num = np.cumsum(lam_num)
-    lam_den = np.cumsum(lam_den)
+		gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
+		gas_mis = math.degrees(gas_mis)
 
-    lam = lam_num/lam_den
-    plt.figure()
-    plt.title(r"Radial $\lambda_R$ profile")
-    plt.xlabel("Radius (kpc)")
-    plt.ylabel(r"$\lambda_R$")
-    plt.plot(spxToKpc(r[order],z), lam)
-    ax =plt.gca()
-    plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
-        transform=ax.transAxes)
-    plt.savefig("%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-        galaxy) + "%s/plots/lambda_R_%s.png" % (wav_range_dir, wav_range), \
-        bbox_inches="tight")
-    if plots: 
-        plt.show()
+		gas[c][i_gal] = gas_mis
 
+		#gas_psi_gals[i_gal] = gas_mis
+		print "Psi: " + str(gas_mis)
 
-# ------------============= Effective Radius =============----------
-## Fit galaxy radial flux profile with Gaussian and find half-light. 
-## How close does this correspond to half of flux in field of view?
-    if find_Re:
-        r = ((x-f.xmed)/abs(x-f.xmed)) * np.sqrt(np.square(x-f.xmed) + 
-            np.square(y-f.ymed))
-        order = np.argsort(r)
-   
-        x=np.int_(x)
-        y=np.int_(y)
-    
-        xaxis = r[order]
-        yaxis = galaxy_data[x[order],y[order]]
-        error = galaxy_data_error[x[order],y[order]]
-
-
-        def gaussian(x, a, c):
-            val = a * np.exp(-(x)**2 / c**2)
-            return val
-
-        yaxis += -min(yaxis)
-        #yaxis[612] = 15
-
-        popt,pcov = curve_fit(gaussian, xaxis, yaxis, 
-            sigma = np.sqrt(error))
-
-        p = [1.0/10.0, 0.0, -1.0/3.0, 0.0, 1.0, -math.sqrt(math.pi)/4.0]
-        roots = np.roots(p)
-        Re = popt[1] * np.real(roots[-1])
-        Re_error = np.sqrt(pcov[1, 1]) * np.real(roots[-1])
-    
-        Re_kpc = spxToKpc(Re, z)
-        Re_error_kpc = spxToKpc(Re_error, z)
-    
-
-        #print("Scale =  %.3f +/- %.3f" % (popt[0], np.sqrt(pcov[0, 0])))
-        #print("Sigma =  %.3f +/- %.3f" % (popt[1], np.sqrt(pcov[1, 1])))
-        #print "Re = %.3f +/- %.3f" % (Re, Re_error)
-        print "Re = (%.3f +/- %.3f)kpc" % (Re_kpc, Re_error_kpc)
-
-        plt.figure()
-        plt.title("Radial flux profile")
-        plt.xlabel("Radius (kpc)")
-        plt.ylabel('Flux (normalised)')
-        plt.plot(spxToKpc(xaxis,z),yaxis, 'y')
-        xm = np.linspace(-30., 30., 100)  # 100 evenly spaced points
-        plt.plot(spxToKpc(xm,z), gaussian(xm, popt[0], popt[1]), 'r')
-        plt.axvline(Re_kpc)
-        plt.axvline(-Re_kpc)
-        plt.savefig("%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
-            galaxy) + "%s/plots/radial_light_profile_%s" % (wav_range_dir, 
-            wav_range) + ".png", bbox_inches="tight")
-        if plots:
-            plt.show()
 
 # ------------============= Save outputs =============----------
-    f = open(data_file, 'w')
-    f.write('Galaxy      z     velocity     velocity dispersion      x    y     Target SN \n')
-    
-    for i in range(len(galaxy_gals)):
-        f.write(galaxy_gals[i] + '    ' + str(z_gals[i]) + '    ' + \
-            str(vel_gals[i]) + '    ' + str(sig_gals[i]) + '    ' + \
-            str(int(x_gals[i])) + '    ' + str(int(y_gals[i])) + '    ' + \
-            str(SN_gals[i]) + '\n')
+	f = open(galaxiesFile, 'wb')
+	f.write('Galaxy    z     velocity     velocity dispersion      x    y' +
+		'    Target SN \n')
+	f2 = open(galaxiesFile2, 'wb')
+	f2.write('Galaxy    Ellipticity    Misalignment: Stellar    OIII    Hbeta' +
+		'    Hdelta   Hgamma\n')
 
-    f2 = open(data_file2, 'w')
-    f2.write('Galaxy      Ellipticity     Stellar Misalignment      Gas Misalignment \n')
-    for i in range(len(galaxy_gals)):
-        f2.write(galaxy_gals[i] + '    ' + str(ellip_gals[i]) + '    ' + \
-            str(star_psi_gals[i]) + '    ' + str(gas_psi_gals[i]) + '\n')
+	for i in range(len(galaxy_gals)):
+		f.write(galaxy_gals[i] + '   ' + str(z_gals[i]) + '   ' + \
+			str(vel_gals[i]) + '   ' + str(sig_gals[i]) + '   ' + \
+			str(int(x_gals[i])) + '   ' + str(int(y_gals[i])) + '   ' + \
+			str(SN_gals[i]) + '\n')
+
+		f2.write(galaxy_gals[i] + '   ' + str(ellip_gals[i]) + '   ' + \
+			str(star_mis[i]) + '   ' + str(OIII_mis[i]) + '   ' + \
+			str(Hbeta_mis[i]) + '   ' + str(Hdelta_mis[i]) + '   ' + \
+			str(Hgamma_mis[i]) + '\n')
 
 ##############################################################################
 
 # Use of kinematics.py
 
 if __name__ == '__main__':
-    galaxy = 'ngc3557'
-    discard = 2
-    wav_range = '4200-'
-    corrections = [[13,9],[35,1]]
+	galaxy = 'ngc3557'
+	discard = 2
+	wav_range = '4200-'
 
-    kinematics(galaxy, discard=discard, wav_range=wav_range, 
-        corrections=corrections, plots=True)
+	kinematics(galaxy, discard=discard, wav_range=wav_range, plots=True)

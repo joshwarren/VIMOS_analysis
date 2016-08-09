@@ -48,11 +48,8 @@ for galaxy in galaxies:
     print galaxy
     #man_errors(galaxy, wav_range=wav_range)
     #plt.close("all")
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, CO = True, residual="median", norm='lwv')
-    #plt.close("all")
-#    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-#        nointerp=False)
+    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+    #    nointerp=True, CO = True, residual="median", norm='lwv')
     #plt.close("all")
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")
