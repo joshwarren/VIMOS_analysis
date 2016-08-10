@@ -4,6 +4,7 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
+from pickler import pickler
 from plot_results import plot_results
 from kinematics import kinematics
 from GH_plots import GH_plots
@@ -39,6 +40,7 @@ galaxies = ['ic1459']
 discard = 2
 wav_range = '4200-'
 vLimit = 2
+norm='lwv'
 for galaxy in galaxies:
 
     path = "/Data/vimos/analysis/%s/results/%s/plots" % (galaxy, wav_range)
@@ -47,9 +49,9 @@ for galaxy in galaxies:
 
     print galaxy
     #man_errors(galaxy, wav_range=wav_range)
-    #plt.close("all")
+    pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
     #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-    #    nointerp=True, CO = True, residual="median", norm='lwv')
+    #    nointerp=True, CO = True, residual="median", norm=norm)
     #plt.close("all")
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")

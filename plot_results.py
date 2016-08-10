@@ -63,9 +63,9 @@ import os
 import colormaps as cm
 from sauron_colormap import sauron
 from Bin import Data
+import cPickle as pickle
 from checkcomp import checkcomp
 cc = checkcomp()
-from find_galaxy import find_galaxy
 
 # Give axes a saveTo property
 plt.axes.saveTo = property(lambda self:str())
@@ -79,7 +79,6 @@ plt.axes.ax2 = property(lambda self:plt.axes())
 plt.axes.ax3 = property(lambda self:plt.axes())
 
 vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-vin_dir_cube = '%s/Data/vimos/cubes' % (cc.base_dir)
 ain_dir = '%s/Data/alma' % (cc.base_dir)
 out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
@@ -281,9 +280,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	else:
 		wav_range_dir = ""
 
-	tessellation_File = "%s/%s/voronoi_2d_binning_output.txt" % (vin_dir, galaxy)
-	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2.txt" %(vin_dir, galaxy)
-	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
@@ -294,64 +290,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	outputs = glob.glob(output+'gal_*.dat')
 	#outputs = glob.glob(output+'gal_stellar*.dat')
 	#outputs = []
+# ------------== Reading pcikle file and create plot  ===----------
+
+	# Load pickle file from pickler.py
+	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+	D = pickle.load(pickleFile)
+	pickleFile.close()
 
 	# Create figure and array for axes
 	n_rows = len(outputs)/2 + int(np.ceil(len(outputs)/12.0))
 
 	f = plt.figure(frameon=False)
 	ax_array = []
-# ------------======== Reading the spectrum  ============----------
-	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
-			usecols=(0,1,2)))
-
-	galaxy_data, header = pyfits.getdata(dataCubeDirectory, 0, header=True)
-	
-	#galaxy_data = np.rot90(galaxy_data,2)
-	s = galaxy_data.shape
-	rows_to_remove = range(discard)
-	rows_to_remove.extend([s[1]-1-i for i in range(discard)])
-	cols_to_remove = range(discard)
-	cols_to_remove.extend([s[2]-1-i for i in range(discard)])
-	
-	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
-	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
-	
-	D.unbinned_flux = np.sum(galaxy_data, axis=0)
-	#D.unbinned_flux = D.unbinned_flux.flatten()
-	
-	FWHM_gal = 4*0.71
-	for i in range(D.number_of_bins):
-		D.bin[i].spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC,i), 
-			unpack=True)
-		D.bin[i].noise = np.loadtxt("%s/noise_input/%d.dat" % 
-			(vin_dir_gasMC,i), unpack=True)
-		D.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
-		
-		# Getting emission templates used
-		D.bin[i].set_emission_lines(FWHM_gal)
-
-		#Setting the weighting given to the gas templates 
-		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
-			vin_dir_gasMC, i), unpack=True, dtype=str)
-		D.bin[i].set_templates(temp_name, temp_weight)
-
-		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
-			unpack=True)
-# ------------============== Read fields ================----------
-
-	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
-	for plot in outputs:
-		[c,k] = plot.split('gal_')[-1].split('.')[0].split('_')
-		D.components[c].setkin(k, np.loadtxt(plot, usecols=(0,), unpack=True))
-		D.components[c].setkin_uncert(k,np.loadtxt(plot, usecols=(1,), unpack=True))
-	D.find_restFrame()
-	#flux_bar_binned = np.zeros((D.number_of_bins))
-	#n_spaxels_in_bin = np.zeros((D.number_of_bins))
-	#
-	#for spaxel in range(n_spaxels):
-	#	flux_bar_binned[int(bin_num[spaxel])] += np.sum(
-	#		galaxy_data[:,y[spaxel],x[spaxel]])
-	#	n_spaxels_in_bin[int(bin_num[spaxel])] += 1
 # ------------=============== Plot image ================----------
 	
 	print "    Image"
@@ -712,7 +662,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------============== Pickle Data ================----------
 
 	print "    Pickling D"
-	import cPickle as pickle
 	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
