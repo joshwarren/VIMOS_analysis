@@ -79,6 +79,7 @@ plt.axes.ax2 = property(lambda self:plt.axes())
 plt.axes.ax3 = property(lambda self:plt.axes())
 
 vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+vin_dir_cube = '%s/Data/vimos/cubes' % (cc.base_dir)
 ain_dir = '%s/Data/alma' % (cc.base_dir)
 out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
@@ -280,6 +281,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	else:
 		wav_range_dir = ""
 
+	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
@@ -290,6 +292,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	outputs = glob.glob(output+'gal_*.dat')
 	#outputs = glob.glob(output+'gal_stellar*.dat')
 	#outputs = []
+	cubeFile = pyfits.open(dataCubeDirectory)
+	header = cubeFile[0].header
+	cubeFile.close()
+
+
 # ------------== Reading pcikle file and create plot  ===----------
 
 	# Load pickle file from pickler.py
@@ -659,12 +666,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			f.delaxes(ax.cax)
 			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)	
-# ------------============== Pickle Data ================----------
-
-	print "    Pickling D"
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
-	pickle.dump(D,pickleFile)
-	pickleFile.close()
 # ------------============= Plot and save ===============----------
 
 	print "    Plotting and saving"

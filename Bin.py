@@ -113,45 +113,19 @@ class Data(object):
 
 # taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 class myArray(np.ndarray):
-	def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
-          strides=None, order=None, uncert=None):
-        # Create the ndarray instance of our type, given the usual
-        # ndarray input arguments.  This will call the standard
-        # ndarray constructor, but return an object of our type.
-        # It also triggers a call to InfoArray.__array_finalize__
-        obj = np.ndarray.__new__(subtype, shape, dtype, buffer, offset, strides,
-                         order)
-        # set the new 'info' attribute to the value passed
-        obj.uncert = uncert
-        # Finally, we must return the newly created object:
-        return obj
+	def __new__(cls, input_array, uncert=None):
+		# Input array is an already formed ndarray instance
+		# We first cast to be our class type
+		obj = np.asarray(input_array).view(cls)
+		# add the new attribute to the created instance
+		obj.uncert = uncert
+		# Finally, we must return the newly created object:
+		return obj
 
-    def __array_finalize__(self, obj):
-        # ``self`` is a new object resulting from
-        # ndarray.__new__(InfoArray, ...), therefore it only has
-        # attributes that the ndarray.__new__ constructor gave it -
-        # i.e. those of a standard ndarray.
-        #
-        # We could have got to the ndarray.__new__ call in 3 ways:
-        # From an explicit constructor - e.g. InfoArray():
-        #    obj is None
-        #    (we're in the middle of the InfoArray.__new__
-        #    constructor, and self.info will be set when we return to
-        #    InfoArray.__new__)
-        if obj is None: return
-        # From view casting - e.g arr.view(InfoArray):
-        #    obj is arr
-        #    (type(obj) can be InfoArray)
-        # From new-from-template - e.g infoarr[:3]
-        #    type(obj) is InfoArray
-        #
-        # Note that it is here, rather than in the __new__ method,
-        # that we set the default value for 'info', because this
-        # method sees all creation of default objects - with the
-        # InfoArray.__new__ constructor, but also with
-        # arr.view(InfoArray).
-        self.uncert = getattr(obj, 'uncert', None)
-        # We do not need to return anything
+	def __array_finalize__(self, obj):
+		# see InfoArray.__array_finalize__ for comments
+		if obj is None: return
+		self.uncert = getattr(obj, 'uncert', None)
 	#pass
 
 class _data(object):
@@ -198,9 +172,8 @@ class _data(object):
 					pass
 		
 	# __getattr__ only called when attribute is not found by other means. 
-	def __getattribute__(self, attr):
+	def __getattr__(self, attr):
 		#print 'getattr called by ' + attr
-		import time
 		if attr in ['vel','sigma','h3','h4']:
 			m = self.mask
 			# Normalise to rest frame of stars

@@ -87,7 +87,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	mis = math.asin(abs(math.sin(phot-kine)))
 	mis = math.degrees(mis)
 	star_mis[i_gal] = mis
-	print "Psi: " + str(mis)
+	print "Stars misalignment: " + str(mis)
 
 # ------------================= Lambda_R ================----------
 # R is distance from axis of rotation NOT distance from center of galaxy.	
@@ -95,8 +95,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	# distance from center
 	r = np.sqrt(np.square(xBar)+np.square(yBar))
 	# Angle of r from axis of rotation
-	ang = math.acos(math.cos(math.radians(f.theta))) - np.abs(
-		np.arctan((xBar)/(yBar)))
+	ang = abs(math.asin(math.sin(math.radians(f.theta))) - np.abs(
+		np.arctan((xBar)/(yBar))))
 	R = r * np.sin(ang)
 
 	order = np.argsort(R)
@@ -144,7 +144,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		gas[c][i_gal] = gas_mis
 
 		#gas_psi_gals[i_gal] = gas_mis
-		print "Psi: " + str(gas_mis)
+		print "Mis-alignment: " + str(gas_mis)
 
 
 # ------------============= Save outputs =============----------
