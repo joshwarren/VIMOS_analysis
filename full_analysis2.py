@@ -12,15 +12,15 @@ from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
-galaxies = [#'ic1459',
-            #'ic1531',
-            #'ic4296',
-            'ngc0612']
-            #'ngc3100',
-            #'ngc7075',
-            #'pks0718-34',
-            #'ngc1399',
-            #'ngc3557']
+galaxies = ['ic1459',
+            'ic1531',
+            'ic4296',
+            'ngc0612',
+            'ngc3100',
+            'ngc7075',
+            'pks0718-34',
+            'ngc1399',
+            'ngc3557']
             #'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 #galaxies = ['ngc3557']
