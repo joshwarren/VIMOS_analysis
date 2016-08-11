@@ -24,6 +24,11 @@ def spxToKpc(x, z):
 	val =  3*10**5 * z/H0 *10**3 * x * 0.67*4.85*10**(-6)
 	return val
 
+def spxToRe(x, R_e):
+	val = x * 0.67 / (60.0 * 10**(R_e) * 0.1)
+	return val
+
+
 def kinematics(galaxy, discard=0, wav_range="", plots=False):
 
 	if wav_range:
@@ -40,8 +45,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	pickleFile.close()
 
 
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(galaxiesFile, 
-		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals, R_e= np.loadtxt(galaxiesFile, 
+		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6,7))
 	galaxy_gals = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
@@ -114,9 +119,14 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	lam = lam_num/lam_den
 	plt.figure()
 	plt.title(r"Radial $\lambda_R$ profile")
-	plt.xlabel("Radius (kpc)")
 	plt.ylabel(r"$\lambda_R$")
-	plt.plot(spxToKpc(R[order],z), lam)
+	if np.isnan(R_e[i_gal]):
+		plt.xlabel("Radius (kpc)")
+		x = spxToKpc(R[order],z)
+	else:
+		plt.xlabel("Radius (R_e)")
+		x = spxToRe(R[order], R_e[i_gal])
+	plt.plot(x, lam)
 	ax =plt.gca()
 	plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
 		transform=ax.transAxes)
@@ -159,7 +169,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		f.write(galaxy_gals[i] + '   ' + str(z_gals[i]) + '   ' + \
 			str(vel_gals[i]) + '   ' + str(sig_gals[i]) + '   ' + \
 			str(int(x_gals[i])) + '   ' + str(int(y_gals[i])) + '   ' + \
-			str(SN_gals[i]) + '\n')
+			str(SN_gals[i]) + '   ' + str(R_e[i]) + '\n')
 
 		f2.write(galaxy_gals[i] + '   ' + str(ellip_gals[i]) + '   ' + \
 			str(star_mis[i]) + '   ' + str(OIII_mis[i]) + '   ' + \

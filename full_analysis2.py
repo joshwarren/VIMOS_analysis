@@ -12,13 +12,13 @@ from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
-galaxies = ['ic1459',
-            'ic1531',
+galaxies = [#'ic1459',
+            #'ic1531',
             'ic4296',
             'ngc0612',
             'ngc3100',
-            'ngc7075',
-            'pks0718-34',
+            #'ngc7075',
+            #'pks0718-34',
             'ngc1399',
             'ngc3557']
             #'eso443-g024']
@@ -42,10 +42,6 @@ wav_range = '4200-'
 vLimit = 2
 norm='lwv'
 for galaxy in galaxies:
-
-    path = "/Data/vimos/analysis/%s/results/%s/plots" % (galaxy, wav_range)
-    if not os.path.exists(path+"/notinterpolated"):
-        os.makedirs(path+"/notinterpolated")
 
     print galaxy
     #man_errors(galaxy, wav_range=wav_range)
