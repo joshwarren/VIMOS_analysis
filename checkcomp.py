@@ -21,8 +21,10 @@ class checkcomp(object):
 		
 	def getDevice(self):
 		uname = platform.uname()
-		if 'Hal' in uname: 
-			d = 'home'
+		if 'Hal' in uname and 'CYGWIN' in uname: 
+			d = 'cygwin_home'
+		elif 'HAL' in uname and 'Linux' in uname:
+			d = 'bash_home'
 		elif 'glamring' in uname:
 			d = 'glamdring'
 		elif 'asosx146' in uname:
@@ -35,8 +37,10 @@ class checkcomp(object):
 
 	def getBase_dir(self):
 		comp = self.device
-		if comp == 'home':
+		if comp == 'cygwin_home':
 			b_dir = '/cygdrive/x'
+		elif comp == 'bash_home':
+			b_dir = '/mnt/x'
 		elif comp == 'glamdring':
 			raise ValueError('This may not setup to run on Glamdring')
 			b_dir = '~'
