@@ -8,16 +8,16 @@ from pickler import pickler
 from plot_results import plot_results
 from kinematics import kinematics
 from GH_plots import GH_plots
-from man_errors2 import man_errors
+from man_errors import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
-galaxies = [#'ic1459',
-            #'ic1531',
+galaxies = ['ic1459',
+            'ic1531',
             'ic4296',
             'ngc0612',
             'ngc3100',
-            #'ngc7075',
+            'ngc7075',
             #'pks0718-34',
             'ngc1399',
             'ngc3557']
@@ -44,13 +44,13 @@ norm='lwv'
 for galaxy in galaxies:
 
     print galaxy
-    #man_errors(galaxy, wav_range=wav_range)
-    #pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-    #    nointerp=True, CO = True, residual="median", norm=norm)
-    #plt.close("all")
+    man_errors(galaxy, wav_range=wav_range)
+    pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+        nointerp=True, CO = True, residual="median", norm=norm)
+    plt.close("all")
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")
     kinematics(galaxy, discard=discard, wav_range=wav_range)
-    #plt.close("all")
+    plt.close("all")
 #v_vd_ellip(wav_range=wav_range)

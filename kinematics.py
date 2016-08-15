@@ -38,6 +38,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		wav_range = ""
 	galaxiesFile =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 	galaxiesFile2 =  "%s/Data/vimos/analysis/galaxies2.txt" % (cc.base_dir)
+	galaxiesFile_Re =  "%s/Data/vimos/analysis/galaxies_R_e.txt" % (cc.base_dir)
 	output = '%s/Data/vimos/analysis/%s/results/%s' % (cc.base_dir, galaxy, 
 		wav_range_dir)
 	pickleFile = open('%s/pickled/dataObj_%s.pkl' % (output, wav_range))
@@ -45,8 +46,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	pickleFile.close()
 
 
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals, R_e= np.loadtxt(galaxiesFile, 
-		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6,7))
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(galaxiesFile, 
+		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
 	galaxy_gals = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
@@ -55,6 +56,13 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		galaxiesFile2, unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
 	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 'Hgamma':Hgamma_mis}
 
+
+	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
+		skiprows=1, usecols=(1,2))
+	R_e_RC3 = 6*10**log_R_e_RC3_gals[i_gal] # convert to arcsec
+	R_e_2MASS = R_e_2MASS_gals[i_gal]
+
+	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
 # ------------=============== Photometry =================----------
 # ------------============= Fit photometry ===============----------
 	save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
@@ -120,12 +128,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	plt.figure()
 	plt.title(r"Radial $\lambda_R$ profile")
 	plt.ylabel(r"$\lambda_R$")
-	if np.isnan(R_e[i_gal]):
-		plt.xlabel("Radius (kpc)")
-		x = spxToKpc(R[order],z)
-	else:
-		plt.xlabel("Radius (R_e)")
-		x = spxToRe(R[order], R_e[i_gal])
+	plt.xlabel("Radius (R_e)")
+	x = spxToRe(R[order], R_e)
 	plt.plot(x, lam)
 	ax =plt.gca()
 	plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
@@ -169,7 +173,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		f.write(galaxy_gals[i] + '   ' + str(z_gals[i]) + '   ' + \
 			str(vel_gals[i]) + '   ' + str(sig_gals[i]) + '   ' + \
 			str(int(x_gals[i])) + '   ' + str(int(y_gals[i])) + '   ' + \
-			str(SN_gals[i]) + '   ' + str(R_e[i]) + '\n')
+			str(SN_gals[i]) + '\n')
 
 		f2.write(galaxy_gals[i] + '   ' + str(ellip_gals[i]) + '   ' + \
 			str(star_mis[i]) + '   ' + str(OIII_mis[i]) + '   ' + \

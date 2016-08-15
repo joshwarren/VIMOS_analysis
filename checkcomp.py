@@ -21,7 +21,7 @@ class checkcomp(object):
 		
 	def getDevice(self):
 		uname = platform.uname()
-		if 'Hal' in uname and 'CYGWIN' in uname: 
+		if 'Hal' in uname and 'CYGWIN_NT-10.0' in uname: 
 			d = 'cygwin_home'
 		elif 'HAL' in uname and 'Linux' in uname:
 			d = 'bash_home'
