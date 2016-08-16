@@ -8,7 +8,7 @@ from pickler import pickler
 from plot_results import plot_results
 from kinematics import kinematics
 from GH_plots import GH_plots
-from man_errors import man_errors
+from man_errors2 import man_errors
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
@@ -18,7 +18,7 @@ galaxies = ['ic1459',
             'ngc0612',
             'ngc3100',
             'ngc7075',
-            #'pks0718-34',
+            'pks0718-34',
             'ngc1399',
             'ngc3557']
             #'eso443-g024']
@@ -32,7 +32,7 @@ galaxies = ['ic1459',
 #galaxies = ['ngc3100']
 #galaxies = ['ngc7075']
 #galaxies = ['pks0718-34']
-#galaxies = ['eso443-g024']
+galaxies = ['eso443-g024']
 
 
 

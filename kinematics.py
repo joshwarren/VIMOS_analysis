@@ -25,7 +25,7 @@ def spxToKpc(x, z):
 	return val
 
 def spxToRe(x, R_e):
-	val = x * 0.67 / (60.0 * 10**(R_e) * 0.1)
+	val = x * 0.67 / R_e
 	return val
 
 
@@ -59,7 +59,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 
 	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
 		skiprows=1, usecols=(1,2))
-	R_e_RC3 = 6*10**log_R_e_RC3_gals[i_gal] # convert to arcsec
+	R_e_RC3 = 6*10**log_R_e_RC3_gals[i_gal]/2 # convert to arcsec
 	R_e_2MASS = R_e_2MASS_gals[i_gal]
 
 	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
@@ -106,11 +106,11 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 # R is distance from axis of rotation NOT distance from center of galaxy.	
 
 	# distance from center
-	r = np.sqrt(np.square(xBar)+np.square(yBar))
+	R = np.sqrt(np.square(xBar)+np.square(yBar))
 	# Angle of r from axis of rotation
-	ang = abs(math.asin(math.sin(math.radians(f.theta))) - np.abs(
-		np.arctan((xBar)/(yBar))))
-	R = r * np.sin(ang)
+	#ang = abs(math.asin(math.sin(math.radians(f.theta))) - np.abs(
+	#	np.arctan((xBar)/(yBar))))
+	#R = r * np.sin(ang)
 
 	order = np.argsort(R)
 
