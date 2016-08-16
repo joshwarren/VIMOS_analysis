@@ -188,9 +188,11 @@ med = median(signal)
 ;print, l
 ;signal[l]=make_array(n_elements(l), value=0)
 ;noise[l]=make_array(n_elements(l), value=0)
-print, noise[where(noise gt signal)]
+signal[where(~finite(noise))] = 0.000
+noise[where(~finite(noise))] = 0.000
+;print, noise[where(noise gt signal)]
 
-print, total(signal)/sqrt(total(noise^2))
+;print, total(signal)/sqrt(total(noise^2))
 
 
 signal[where(signal le 0)]=0.00001

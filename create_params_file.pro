@@ -6,7 +6,7 @@ code = "python"
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 gals=[3,4,5,6,7,8]
-;gals=[6]
+gals=[9]
 ;gals = where(galaxies eq gal)
 
 
@@ -33,7 +33,7 @@ n_bins = max(bin_num)+1
 for i = 0, n_bins do begin
 if code eq "IDL" then PRINTF, 1, "idl -e 'errors, " + $
     strtrim(string(i_gal),2) + ", " + strtrim(string(i),2) + "'"
-if code eq "python" then PRINTF, 1, "python errors2.py " + $
+if code eq "python" then PRINTF, 1, "python errors3.py " + $
 ;     strtrim(string(i_gal),2) + " " + strtrim(string(i),2)
     strtrim(string(gals[i_gal]),2) + " " + strtrim(string(i),2)
 endfor

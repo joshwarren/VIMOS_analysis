@@ -114,6 +114,8 @@ templates /= median(templates)
 	FITS_READ, dataCubeDirectory[0], galaxy_data_temp, header
 	galaxy_noise_temp = MRDFITS(dataCubeDirectory[0], 2, /SILENT)
 
+;    galaxy_data_temp[where(~finite(galaxy_noise_temp))] = 0.000
+;    galaxy_noise_temp[where(~finite(galaxy_noise_temp))] = 0.000
 ;; write key parameters from header - can then be altered in future	
 	CRVAL_spec = sxpar(header,'CRVAL3')
 	CDELT_spec = sxpar(header,'CDELT3')
@@ -123,10 +125,11 @@ templates /= median(templates)
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
 galaxy_data = total(total(galaxy_data_temp[discard:s[1]-discard-1, $
-	discard:s[2]-discard-1,*], 1), 1)
+	discard:s[2]-discard-1,*], 1, /nan), 1, /nan)
 ;; Summed in quadrature
-galaxy_noise = SQRT(total(total(galaxy_noise_temp[discard:s[1]-discard-1, $ 
-	discard:s[2]-discard-1,*]^2, 1), 1))
+a=total(total(galaxy_noise_temp[discard:s[1]-discard-1, $ 
+    discard:s[2]-discard-1,*]^2, 1, /nan), 1, /nan)
+galaxy_noise = SQRT(a)
 
 
 ;; --------======== Finding limits of the spectrum ========--------

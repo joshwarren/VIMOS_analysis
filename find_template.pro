@@ -120,7 +120,7 @@ endfor
 ;; Change to pixel units
 IF keyword_set(range) THEN range = FIX((range - CRVAL_spec)/CDELT_spec)
 
-	gal_temp = total(total(galaxy_data_temp[discard:s[1]-discard-1, discard:s[2]-discard-1,*], 1), 1)
+	gal_temp = total(total(galaxy_data_temp[discard:s[1]-discard-1, discard:s[2]-discard-1,*], 1, /nan), 1, /nan)
 
 
 ;; --------======== Finding limits of the spectrum ========--------
