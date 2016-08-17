@@ -1,7 +1,7 @@
 #!/bin/bash
-gal=ngc0612
-bin='215' # existing bin
-bin2='216' # missing bin
+gal=eso443-g024
+bin='454' # existing bin
+bin2='455' # missing bin
 
 # if doesn't exist, copy the wavelength file first (then is exempt from setting all values to 0)
 if [ ! -f /cygdrive/x/Data/vimos/analysis/$gal/gas_MC/lambda/$bin2.dat ]
@@ -17,7 +17,7 @@ do
     then
     	echo $f2
     	cp $f $f2
-    	sed s'/[0-9]/0/' $f2 > temp 
+    	sed s'/[0-9]/0/g' $f2 > temp 
     	mv temp $f2
     	# Undo changing OIII name in templates file.
     	# NB: stellar template numbers will be set to 0, but have 0 weighting anyway
