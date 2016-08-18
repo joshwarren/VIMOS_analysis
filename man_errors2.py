@@ -57,13 +57,14 @@ def man_errors(galaxy, wav_range=""):
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
 
             # Check if Hdelta is included in this bin
-            try:
-                vel[len(componants)-1]
-            except:
-                vel=np.insert(vel,np.where(componants=='Hdelta')[0][0],np.nan)
-                sig=np.insert(sig,np.where(componants=='Hdelta')[0][0],np.nan)
-                h3s=np.insert(h3s,np.where(componants=='Hdelta')[0][0],np.nan)
-                h4s=np.insert(h4s,np.where(componants=='Hdelta')[0][0],np.nan)
+            # try:
+            #     vel[len(componants)-1]
+            # except:
+            #     vel=np.insert(vel,np.where(componants=='Hdelta')[0][0],np.nan)
+            #     sig=np.insert(sig,np.where(componants=='Hdelta')[0][0],np.nan)
+            #     h3s=np.insert(h3s,np.where(componants=='Hdelta')[0][0],np.nan)
+            #     h4s=np.insert(h4s,np.where(componants=='Hdelta')[0][0],np.nan)
+                
 
             v[bin] = vel[i]
             s[bin] = sig[i]

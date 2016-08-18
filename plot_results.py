@@ -205,7 +205,7 @@ def set_ax_y(plt_title):
 		ax_y=2
 	elif 'stellar' in plt_title:
 	   ax_y=0
-	elif 'Hdelta' in plt_title:
+	elif 'Hdelta' in plt_title or 'NI' in plt_title:
 		ax_y = 8
 	   
 	return ax_y
@@ -305,7 +305,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	pickleFile.close()
 
 	# Create figure and array for axes
-	n_rows = len(outputs)/2 + int(np.ceil(len(outputs)/12.0))
+	n_rows = len(outputs)/2 + int(np.ceil(len(outputs)*(len(outputs)-1)/6.0))
 
 	f = plt.figure(frameon=False)
 	ax_array = []
