@@ -65,7 +65,6 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 
 	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
 # ------------=============== Photometry =================----------
-# ------------============= Fit photometry ===============----------
 	save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
 		galaxy) + "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
 	f = find_galaxy(D.unbinned_flux, quiet=True, plot=plots)#, 
@@ -77,7 +76,6 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
 	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 # ------------================ Kinemetry =================----------
-# ------------============== Fit kinemetry ===============----------
 	save_to = "%s/Data/vimos/analysis/%s/results/" % (cc.base_dir, 
 		galaxy) + "%s/plots/stellar_kinematics_%s.png" % (wav_range_dir, 
 		wav_range)
@@ -122,28 +120,31 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		
 		if el.any():
 			A_s = np.sum(el) * h * h
-			R_m[i] = math.sqrt(A_s/math.pi)
-
+			A_ellipse = math.pi * r**2 * math.sqrt((1+f.eps**2)/(1-f.eps))
+			if 0.85 * A_ellipse < A_s:
+				R_m[i] = math.sqrt(A_s/math.pi)
+			else:
+				R_m[i] = np.nan
 
 	order_m = np.argsort(R_m)
 
 	# NB: lam is ordered in terms of increasing R.
 	lam_num = D.flux[order_m]*R[order_m]*np.abs(np.array(
 		D.components['stellar'].plot['vel'][order_m])) # numerator
-	lam_den = D.flux[order]*R[order_m]*np.sqrt(np.square(
+	lam_den = D.flux[order_m]*R[order_m]*np.sqrt(np.square(
 		np.array(D.components['stellar'].plot['vel'])[order_m]) + np.square(
 		np.array(D.components['stellar'].plot['sigma'])[order_m])) # denominator
 
-	# cumulative summation
-	lam_num = np.cumsum(lam_num)
-	lam_den = np.cumsum(lam_den)
+	# cumulative summation with mask from R_m
+	lam_num = np.cumsum(lam_num[~np.isnan(R_m)])
+	lam_den = np.cumsum(lam_den[~np.isnan(R_m)])
 
 	lam = lam_num/lam_den
 	plt.figure()
 	plt.title(r"Radial $\lambda_R$ profile")
 	plt.ylabel(r"$\lambda_R$")
 	plt.xlabel("Radius (R_e)")
-	x = spxToRe(R[order_m], R_e) # Plotted as a fucntion of R not R_m
+	x = spxToRe(R[order_m], R_e)[~np.isnan(R_m[order_m])] # Plotted as a fucntion of R not R_m
 	order = np.argsort(x)
 	plt.plot(x[order[5:]], lam[order[5:]])
 	ax =plt.gca()
