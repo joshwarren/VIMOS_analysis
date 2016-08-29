@@ -295,9 +295,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	cubeFile = pyfits.open(dataCubeDirectory)
 	header = cubeFile[0].header
 	cubeFile.close()
-
-
-# ------------== Reading pcikle file and create plot  ===----------
+# ------------== Reading pickle file and create plot  ===----------
 
 	# Load pickle file from pickler.py
 	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')

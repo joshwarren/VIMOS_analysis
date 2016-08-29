@@ -9,6 +9,7 @@ from plot_results import plot_results
 from kinematics import kinematics
 from GH_plots import GH_plots
 from man_errors2 import man_errors
+from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 import os # for creating directory
 
@@ -24,7 +25,7 @@ galaxies = ['ic1459',
             'eso443-g024']
 #galaxies = ['ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 #galaxies = ['ngc3557']
-galaxies = ['ic1459']
+#galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
@@ -44,13 +45,14 @@ norm='lwv'
 for galaxy in galaxies:
 
     print galaxy
-    man_errors(galaxy, wav_range=wav_range)
-    pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-    plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-        nointerp=True, CO = True, residual="median", norm=norm)
-    plt.close("all")
+    #man_errors(galaxy, wav_range=wav_range)
+    #pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+    #    nointerp=True, CO = True, residual="median", norm=norm)
+    #plt.close("all")
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")
-    kinematics(galaxy, discard=discard, wav_range=wav_range)
-    plt.close("all")
+    #kinematics(galaxy, discard=discard, wav_range=wav_range)
+    #plt.close("all")
+    plot_absorption(galaxy, wav_range=wav_range)
 #v_vd_ellip(wav_range=wav_range)

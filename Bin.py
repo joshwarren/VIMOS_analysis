@@ -5,6 +5,7 @@
 
 import numpy as np
 import ppxf_util as util
+from absorption import absorption
 
 class Data(object):
 # Attributes:
@@ -33,7 +34,8 @@ class Data(object):
 #	to e_line.
 # set_spaxels_in_bins (spaxel x-coord, spaxel y-coord, bin membership of spaxel): 
 #	sets which bin contains which spaxel.
-
+# absorption_line (galaxy, absorption line): returns absorption line indice level
+# 	from Lick like methods.
 	def __init__(self, xyb_turple):
 		x,y,bin_num = xyb_turple
 		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
@@ -71,6 +73,9 @@ class Data(object):
 			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))
 			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
 			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
+
+	def absorption_line(self, galaxy, absorption_line):
+		return absorption(galaxy, absorption_line, self)
 
 	@property
 	def center_bin(self):
@@ -423,10 +428,10 @@ class myFloat(float):
 
 class _bin_data(object):
 # Attributes:
-# vel (_uncert): float
-# sigma (_uncert): float
-# h3 (_uncert): float
-# h4 (_uncert): float
+# vel (.uncert): float
+# sigma (.uncert): float
+# h3 (.uncert): float
+# h4 (.uncert): float
 	def __init__(self, parent):
 		self.__parent__=parent
 		self.vel = myFloat(np.nan)
