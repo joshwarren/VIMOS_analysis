@@ -10,29 +10,35 @@
 # warrenj 20160615 New routine to handle plot as just ax item so that it
 #                  can be used in subplots.
 ## *************************** KEYWORDS ************************* ##
-# x_pix
-# y_pix
-# bin_num
-# xBar_pix
-# yBar_pix
-# vel
-# vmin          None
-# vmax          None
-# nodots        False
-# ColorbarBase  False
-# label         None
-# flux          None
-# flux_unbinned None
-# galaxy        None
-# redshift      None
-# nticks        4
-# ncolors       64
-# title         None
-# save          None
-# show_bin_number False
-# flux_type     'mag'
-# ax            None
-# close         False
+# x_pix                 (Int Array) x/y coord of pixel
+# y_pix                 As above
+# bin_num               (Int Array) of bin numbers in order of above
+# xBar_pix              (Array) x/y center of each bin in bin number order in 
+#                           pixel units
+# yBar_pix              As xBar_pix
+# vel                   (Array) Values to be plotted in bin number order?
+# vmin          None    (Double) Limits on values of vel: values outside of 
+#                           this will be set to vmin/vmax
+# vmax          None    As vmin
+# nodots        False   (Boolean) to show a dot a x_pix,y_pix for each bin
+# label         None    (String) Colorbar label
+# flux          None    (Array) contains binned flux for plotting isophotes. 
+#                           (Not recommended - use flux_unbinned)
+# flux_unbinned None    (Array) contains flux at every spaxel for plotting isophotes. 
+# galaxy        None    (String) of galaxy name for printing on plot (top left)
+# redshift      None    (String) of galaxy redshift for printing on plot (top left)
+#                           and display secondary axis with length scales.
+# nticks        4       (Int) Default number of ticks on colorbar
+# ncolors       64      (Int) Number of color levels in colar chart
+# title         None    (String) of title of the plot
+# save          None    (String) of location to save the plot to
+# show_bin_number False (Boolean) to show bin number at x_pix,y_pix for each bin
+#                           This overrides nodots=True
+# flux_type     'mag'   'mag'   Plot isophots in magnitudes (log)
+#                       else    Plot in flux (linear)
+# ax            None    (matplotlib.axes.Axes) axes to create the plot on. New
+#                           axes are created if this is not supplied.
+# close         False   (Boolean) to close the figure.
 ## ************************************************************** ##
 
 
@@ -115,7 +121,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
         if isinstance(cmap, str):
             cmap = plt.get_cmap(cmap)
     #cmap.set_bad('darkslategray',1.0)
-    cmap.set_bad('brown',1.0)
+    cmap.set_bad('grey',1.0)
 
     cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
         cmap=cmap,extent=[xmin - pixelSize/2, 

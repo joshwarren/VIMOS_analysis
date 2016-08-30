@@ -366,7 +366,7 @@ class Bin(Data):
 	@property
 	def continuum(self):
 		# NB: Masks not used as emission lines still used in bestfit.
-		c = np.array(self.bestfit)
+		c = np.array(self.spectrum)
 		for key,line in self.e_line.iteritems():
 			c -= line.spectrum
 		return c

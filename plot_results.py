@@ -61,7 +61,7 @@ import ppxf_util as util
 from numpy.polynomial import legendre
 import os
 import colormaps as cm
-from sauron_colormap import sauron
+from sauron_colormap2 import sauron2 as sauron
 from Bin import Data
 import cPickle as pickle
 from checkcomp import checkcomp

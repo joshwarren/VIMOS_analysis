@@ -32,14 +32,14 @@ def absorption(galaxy, line_name, D):
 		redx = [np.abs(lam-red[0]).argmin(), np.abs(lam-red[1]).argmin()]
 		bluex = [np.abs(lam-blue[0]).argmin(), np.abs(lam-blue[1]).argmin()]
 		# average flux in side bands
-		F_red = np.mean(bin.spectrum[redx[0]:redx[1]])
-		F_blue = np.mean(bin.spectrum[bluex[0]:bluex[1]])
+		F_red = np.mean(bin.continuum[redx[0]:redx[1]])
+		F_blue = np.mean(bin.continuum[bluex[0]:bluex[1]])
 		# Gradient of staight line representing continuum
 		m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
 		# Staight line representing continuum
-		F_c = m *np.arange(len(bin.spectrum)) + F_red - m * (redx[0]+redx[1])/2
+		F_c = m *np.arange(len(bin.continuum)) + F_red - m * (redx[0]+redx[1])/2
 		# Indice value
-		I = np.trapz(1-bin.spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
+		I = np.trapz(1-bin.continuum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
 			x=lam[indexx[0]:indexx[1]])
 		line_strength.append(I)
 
