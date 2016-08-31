@@ -4,7 +4,7 @@
 import cPickle as pickle
 import matplotlib.pyplot as plt 
 from plot_velfield_nointerp import plot_velfield_nointerp 
-from sauron_colormap2 import sauron2 as sauron
+#from sauron_colormap2 import sauron2 as sauron
 import numpy as np 
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -29,14 +29,12 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 	D = pickle.load(pickleFile)
 	pickleFile.close()
 
-
-
 	# Set up figure and subplots
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')#np.ceil(len(lines)/2.0), sharex='col', sharey='row')
 	for i, line in enumerate(lines):
 		print "    " + line
 
-		# Remove big outliers
+		# Remove big outliers 
 		ab_line = D.absorption_line(galaxy,line)
 		std = np.nanstd(ab_line)
 		mean = np.nanmedian(ab_line)
@@ -57,7 +55,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 			D.yBar, D.absorption_line(galaxy, line), vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
-			title=line, ax=ax_array[i%2,np.floor(i/2)], cmap=sauron, 
+			title=line, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 
 

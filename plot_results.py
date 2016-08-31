@@ -303,8 +303,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	pickleFile.close()
 
 	# Create figure and array for axes
-	n_rows = len(outputs)/2 + int(np.ceil(len(outputs)*(len(outputs)-1)/6.0))
-
+	n_rows = 2+2*len(D.e_components) + int(np.ceil(len(D.e_components)*
+		(len(D.e_components)-1)/6.0))
 	f = plt.figure(frameon=False)
 	ax_array = []
 # ------------=============== Plot image ================----------

@@ -28,6 +28,7 @@ class Data(object):
 #				highest velocity dispersion.
 # vel_norm: float normalisation factor for finding the rest frame of the galaxy.
 # center_bin: int, bin number of the brightest bin.
+# common_range: array of min and max of common wavelength range
 #
 # Methods:
 # add_e_line (line name, line wavelength): adds a new emission line object 
@@ -44,6 +45,7 @@ class Data(object):
 		self.components = {'stellar':stellar_data(self)}
 		self.norm_method = 'lwv'
 		self.vel_norm = 0.0
+		self.common_range = np.array([])
 
 
 	def add_e_line(self, line, wav):
@@ -115,6 +117,12 @@ class Data(object):
 	@property
 	def n_spaxels_in_bin(self):
 		return np.array([bin.n_spaxels_in_bin for bin in self.bin])
+
+	# @property
+	# def common_range(self):
+	# 	return np.array([max([min(bin.lam) for bin in self.bin]), 
+	# 		min([max(bin.lam) for bin in self.bin])])
+
 
 # taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 class myArray(np.ndarray):
@@ -351,6 +359,13 @@ class Bin(Data):
 	@lam.setter
 	def lam(self, lam):
 		self._lam = np.array(lam)
+		if len(self.__parent__.common_range) != 0:
+			self.__parent__.common_range[0] = max(
+				self.__parent__.common_range[0],min(lam))
+			self.__parent__.common_range[1] = min(
+				self.__parent__.common_range[1],max(lam))
+		else:
+			self.__parent__.common_range = np.array([min(lam), max(lam)])
 
 	@property
 	def loglam(self):
@@ -365,7 +380,7 @@ class Bin(Data):
 
 	@property
 	def continuum(self):
-		# NB: Masks not used as emission lines still used in bestfit.
+		# NB: Masks not used
 		c = np.array(self.spectrum)
 		for key,line in self.e_line.iteritems():
 			c -= line.spectrum
@@ -373,7 +388,11 @@ class Bin(Data):
 
 	@property
 	def flux(self):
-		return np.trapz(self.spectrum, x=self.lam)
+		# NB: only calculated for the common wavelength range.
+		a = [min(np.where(self.lam > self.__parent__.common_range[0])[0]),
+			max(np.where(self.lam < self.__parent__.common_range[1])[0])]
+		return np.trapz(self.spectrum[a[0]:a[1]], x=self.lam[a[0]:a[1]]
+			)/self.n_spaxels_in_bin
 
 	@property
 	def xBar(self):

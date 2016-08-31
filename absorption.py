@@ -43,7 +43,7 @@ def absorption(galaxy, line_name, D):
 			x=lam[indexx[0]:indexx[1]])
 		line_strength.append(I)
 
-	return line_strength
+	return np.array(line_strength)
 
 
 
