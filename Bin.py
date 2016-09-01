@@ -6,6 +6,9 @@
 import numpy as np
 import ppxf_util as util
 from absorption import absorption
+#from glob import glob
+#from checkcomp import checkcomp
+#cc = checkcomp()
 
 class Data(object):
 # Attributes:
@@ -35,7 +38,7 @@ class Data(object):
 #	to e_line.
 # set_spaxels_in_bins (spaxel x-coord, spaxel y-coord, bin membership of spaxel): 
 #	sets which bin contains which spaxel.
-# absorption_line (galaxy, absorption line): returns absorption line indice level
+# absorption_line (absorption line): returns absorption line indice level
 # 	from Lick like methods.
 	def __init__(self, xyb_turple):
 		x,y,bin_num = xyb_turple
@@ -76,8 +79,8 @@ class Data(object):
 			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
 			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
 
-	def absorption_line(self, galaxy, absorption_line):
-		return absorption(galaxy, absorption_line, self)
+	def absorption_line(self, absorption_line):
+		return absorption(absorption_line, self)
 
 	@property
 	def center_bin(self):
@@ -118,10 +121,6 @@ class Data(object):
 	def n_spaxels_in_bin(self):
 		return np.array([bin.n_spaxels_in_bin for bin in self.bin])
 
-	# @property
-	# def common_range(self):
-	# 	return np.array([max([min(bin.lam) for bin in self.bin]), 
-	# 		min([max(bin.lam) for bin in self.bin])])
 
 
 # taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
@@ -326,6 +325,10 @@ class Bin(Data):
 #	utilites to determine which lines are within the observed spectrum.
 # set_templates (template name, ppxf fitted weighting): Sets the template weights
 #	particularly in the emission_line objects. 
+# Unconvolved spectrum (wavelength of templates, templates used in dictionary): 
+# 	(array) Returns the unconvolved templates. NB: this are not in the same 
+#	wavelength bins as spectrum, bestfit, lam etc, but are binned as the stellar 
+#	templates.
 
 	def __init__(self, bin_number, parent):
 		self.__parent__ = parent
@@ -343,6 +346,7 @@ class Bin(Data):
 		self.yspaxels = []
 		self._xBar = np.nan
 		self._yBar = np.nan
+		self.apweight = np.array([])
 
 
 	@property
@@ -381,10 +385,9 @@ class Bin(Data):
 	@property
 	def continuum(self):
 		# NB: Masks not used
-		c = np.array(self.spectrum)
-		for key,line in self.e_line.iteritems():
-			c -= line.spectrum
-		return c
+		return np.array(self.spectrum - np.nansum([line.spectrum for key, line in 
+			self.e_line.iteritems()],axis=0))
+
 
 	@property
 	def flux(self):
@@ -412,8 +415,22 @@ class Bin(Data):
 	@property
 	def n_spaxels_in_bin(self):
 		return len(self.xspaxels)
-	
 
+
+
+	def unconvolved_spectrum(self, wav, templates):
+		# ***** NB: spec is binned as the stellar templates are binned, NOT as 
+		# self.spectrum, bestfit etc i.e. wav != self.lam  *****
+		a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
+		spec = np.zeros(a[1]-a[0])
+
+		for key in self.temp_weight.keys():
+			if key.isdigit():
+				#wav, template = np.loadtxt(files[int(key)], unpack=True)
+				spec += templates[key][a[0]:a[1]] * self.temp_weight[key] + \
+					np.polynomial.legendre.legval(wav[a[0]:a[1]], self.apweight)
+		return wav[a[0]:a[1]], spec
+	
 	def set_emission_lines(self, FWHM_gal):
 	# Sets emission lines
 		self.FWHM_gal = float(FWHM_gal)

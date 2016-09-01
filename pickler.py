@@ -80,6 +80,9 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 
 		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
 			unpack=True)
+
+		D.bin[i].apweight = np.loadtxt("%s/apweights/%d.dat" %(vin_dir_gasMC,i), 
+			unpack=True)
 # ------------============== Read fields ================----------
 
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
@@ -100,13 +103,13 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 	pickleFile.close()
 ##############################################################################
 
-# Use of plot_results.py
+# Use of pickler.py
 
 if __name__ == '__main__':
 
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	galaxy = galaxies[5]
+	galaxy = galaxies[1]
 
 	wav_range="4200-"
 	discard = 2 # rows of pixels to discard- must have been the same 

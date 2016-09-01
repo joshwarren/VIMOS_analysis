@@ -236,7 +236,7 @@ def errors2(i_gal=None, bin=None):
     ## ^^^ this has changed from the last time we called this: we called v1 before...
         templates[:,i] = log_temp_template
 
-    templates /= np.median(log_temp_template)
+    #templates /= np.median(log_temp_template)
 ## ----------========= Reading Tessellation  ===============---------
 
     ## Reads the txt file containing the output of the binning_spaxels
@@ -363,9 +363,9 @@ def errors2(i_gal=None, bin=None):
     bin_log_noise = np.sqrt(bin_log_noise)
 
     ## Normalis the spectrum
-    med_bin = np.median(bin_log)
-    bin_log /= med_bin
-    bin_log_noise /= med_bin
+    #med_bin = np.median(bin_log)
+    #bin_log /= med_bin
+    #bin_log_noise /= med_bin
     noise = bin_log_noise+0.0000000000001
 
 

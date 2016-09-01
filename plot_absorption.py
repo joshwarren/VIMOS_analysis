@@ -35,7 +35,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 		print "    " + line
 
 		# Remove big outliers 
-		ab_line = D.absorption_line(galaxy,line)
+		ab_line = D.absorption_line(line)
 		std = np.nanstd(ab_line)
 		mean = np.nanmedian(ab_line)
 		ab_line = ab_line[ab_line<mean+3*std]
@@ -43,9 +43,9 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 		std = np.nanstd(ab_line)
 		mean = np.nanmedian(ab_line)
 
-		a_sorted = np.array(sorted(np.unique(D.absorption_line(galaxy, line))))
+		a_sorted = np.array(sorted(np.unique(D.absorption_line(line))))
 		if len(a_sorted) < 2*vLimit:
-			a_sorted= np.array(sorted(D.absorption_line(galaxy, line)))
+			a_sorted= np.array(sorted(D.absorption_line(line)))
 		a_sorted = a_sorted[~np.isnan(a_sorted)]
 		abmin, abmax = a_sorted[vLimit], a_sorted[-vLimit-1]
 		abmax = min([abmax, mean + std])
@@ -53,7 +53,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 
 
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-			D.yBar, D.absorption_line(galaxy, line), vmin=abmin, vmax=abmax,
+			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
 			title=line, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
