@@ -56,6 +56,19 @@ def man_errors(galaxy, wav_range=""):
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
 
+            # check componant is in bin
+            if os.path.isfile("%sgas/%s/%s.dat" % (dir, componants[i], bin)
+                ) or componants[i] == 'stellar':
+                v[bin] = vel[i]
+                s[bin] = sig[i]
+                h3[bin] = h3s[i]
+                h4[bin] = h4s[i]
+            else:
+                v[bin] = np.nan
+                s[bin] = np.nan
+                h3[bin] = np.nan
+                h4[bin] = np.nan
+
             # Check if Hdelta is included in this bin
             # try:
             #     vel[len(componants)-1]
@@ -66,10 +79,7 @@ def man_errors(galaxy, wav_range=""):
             #     h4s=np.insert(h4s,np.where(componants=='Hdelta')[0][0],np.nan)
                 
 
-            v[bin] = vel[i]
-            s[bin] = sig[i]
-            h3[bin] = h3s[i]
-            h4[bin] = h4s[i]
+            
 
         # Set errors as same as values. 
         v_s =v

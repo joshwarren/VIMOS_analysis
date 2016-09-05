@@ -54,7 +54,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
-			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
+			nodots=True, colorbar=True, label='log Index strength ('+r'$\AA$'+')', 
 			title=line, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 

@@ -72,9 +72,6 @@ def absorption(line_name, D):
 		line_strength_con = calc(line_name, lam, convolved, index, blue, red)
 		# LOSVD correction (From SAURON VI: Section 4.2.2)
 		corr = line_strength_uncon/line_strength_con
-
-		print min(spec), min(convolved), min(bin.continuum)
-
 		
 		line_strength = corr * calc(line_name, lam, bin.continuum, index, blue, red)
 		line_map.append(line_strength)

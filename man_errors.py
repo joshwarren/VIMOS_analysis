@@ -55,37 +55,20 @@ def man_errors(galaxy, wav_range="4200-"):
             glamdring_file = dir + str(bin) + ".dat"
             vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True)
 
-            # Check if Hdelta is included in this bin
-            try:
-                vel[len(componants)-1]
-            except:
-                vel=np.insert(vel,np.where(componants=='Hdelta')[0][0],np.nan)
-                sig=np.insert(sig,np.where(componants=='Hdelta')[0][0],np.nan)
-                h3s=np.insert(h3s,np.where(componants=='Hdelta')[0][0],np.nan)
-                h4s=np.insert(h4s,np.where(componants=='Hdelta')[0][0],np.nan)
+            # check componant is in bin
+            if os.path.isfile("%sgas/%s/%s.dat" % (dir, componants[i], bin)
+                ) or componants[i] == 'stellar':
+                v[bin] = vel[i]
+                s[bin] = sig[i]
+                h3[bin] = h3s[i]
+                h4[bin] = h4s[i]
 
-            v[bin] = vel[i]
-            s[bin] = sig[i]
-            h3[bin] = h3s[i]
-            h4[bin] = h4s[i]
-
-            # Calculating uncertainties
-            ex_dir = ""
-            if componants[i] != "stellar": ex_dir = "gas/"
-            glamdring_file = dir + ex_dir + componants[i] + "/" + str(bin) + \
-                ".dat"
-
-            # Check if file exists
-            try:
-                np.loadtxt(glamdring_file, unpack=True)
-            except IOError:
-                v_s[bin] = np.nan
-                s_s[bin] = np.nan
-                h3_s[bin] = np.nan
-                h4_s[bin] = np.nan
-            else:
+                # Calculating uncertainties
+                ex_dir = ""
+                if componants[i] != "stellar": ex_dir = "gas/"
+                glamdring_file = dir + ex_dir + componants[i] + "/" + \
+                    str(bin) + ".dat"
                 vel, sig, h3s, h4s =np.loadtxt(glamdring_file, unpack=True)
-
 
                 # Error thrown if 5000 reps not completed in this bin        
                 if len(vel) != 5000:
@@ -95,6 +78,17 @@ def man_errors(galaxy, wav_range="4200-"):
                 s_s[bin] = np.std(sig)
                 h3_s[bin] = np.std(h3s)
                 h4_s[bin] = np.std(h4s)
+
+            else:
+                v[bin] = np.nan
+                s[bin] = np.nan
+                h3[bin] = np.nan
+                h4[bin] = np.nan
+
+                v_s[bin] = np.nan
+                s_s[bin] = np.nan
+                h3_s[bin] = np.nan
+                h4_s[bin] = np.nan
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir) 

@@ -17,6 +17,7 @@ class checkcomp(object):
 	def __init__(self):
 		self.device = self.getDevice()
 		self.base_dir = self.getBase_dir()
+		self.home_dir = self.getHome_dir()
 
 		
 	def getDevice(self):
@@ -50,3 +51,19 @@ class checkcomp(object):
 			b_dir = ''
 
 		return b_dir
+
+
+	def getHome_dir(self):
+		comp = self.device
+		if comp == 'cygwin_home':
+			h_dir = '/home/Home'
+		elif comp == 'bash_home':
+			h_dir = '/root'
+		elif comp == 'glamdring':
+			h_dir = '/users/warrenj'
+		elif comp == 'uni':
+			h_dir = '/home/warrenj'
+		else:
+			h_dir = ''
+
+		return h_dir

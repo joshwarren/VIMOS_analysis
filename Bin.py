@@ -427,8 +427,9 @@ class Bin(Data):
 		for key in self.temp_weight.keys():
 			if key.isdigit():
 				#wav, template = np.loadtxt(files[int(key)], unpack=True)
-				spec += templates[key][a[0]:a[1]] * self.temp_weight[key] + \
-					np.polynomial.legendre.legval(wav[a[0]:a[1]], self.apweight)
+				spec += templates[key][a[0]:a[1]] * self.temp_weight[key] 
+		spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+			self.apweight)
 		return wav[a[0]:a[1]], spec
 	
 	def set_emission_lines(self, FWHM_gal):
