@@ -79,8 +79,8 @@ class Data(object):
 			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
 			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
 
-	def absorption_line(self, absorption_line):
-		return absorption(absorption_line, self)
+	def absorption_line(self, absorption_line, uncert=None):
+		return absorption(absorption_line, self, uncert=uncert)
 
 	@property
 	def center_bin(self):

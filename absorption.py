@@ -8,7 +8,7 @@ from checkcomp import checkcomp
 from glob import glob
 cc = checkcomp()
 
-def calc(line_name, lam, spectrum, index, blue, red):
+def calc(lam, spectrum, index, blue, red, uncert=None):
 
 # ------------========== Find line strength  ============----------
 	# pixel locations
@@ -25,18 +25,22 @@ def calc(line_name, lam, spectrum, index, blue, red):
 	# Indice value
 	line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
 		x=lam[indexx[0]:indexx[1]])
+	if uncert is not None:
+		uncert = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]])/
+			F_c[indexx[0]:indexx[1]],x=lam[indexx[0]:indexx[1]]))
 
 	return line_strength
 
 
 
 
-def absorption(line_name, D):
+def absorption(line_name, D, uncert=None):
 	c = 299792.458 # speed of light in km/s
 
 # ------------====== Templates for unconvolved =======----------
-	files = glob('%s/Data/idl_libraries/ppxf/MILES_library/m0[0-9][0-9][0-9]V' %
-		(cc.base_dir))
+	#files = glob('%s/Data/idl_libraries/ppxf/MILES_library/m0[0-9][0-9][0-9]V' %
+	#	(cc.base_dir))
+	files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
 	wav = np.loadtxt(files[int(D.bin[0].temp_weight.keys()[0])], 
 		usecols=(0,), unpack=True)
 	templates = {}
@@ -47,7 +51,7 @@ def absorption(line_name, D):
 
 # ------------====== Read absorption line file ==========----------
 
-	ab_file = '/home/HOME/Documents/useful_files/ab_linelist.dat'
+	ab_file = '%s/Documents/useful_files/ab_linelist.dat' % (cc.home_dir)
 	i1, i2, b1, b2, r1, r2, units = np.genfromtxt(ab_file, unpack=True, 
 		usecols=(1,2,3,4,5,6,7), skip_header=2, skip_footer=2)
 	lines = np.genfromtxt(ab_file, unpack=True, dtype=str, usecols=(8), 
@@ -59,23 +63,28 @@ def absorption(line_name, D):
 
 # ------------========= Find line strenghts ==========----------
 	line_map = []
+	uncert_map = []
 	for i, bin in enumerate(D.bin):
 		lam, spec = bin.unconvolved_spectrum(wav, templates)
 		# Line strength of unconvolved spectrum.
-		line_strength_uncon = calc(line_name, lam, spec, index, blue, red)
+		line_strength_uncon = calc(lam, spec, index, blue, red)
 		# Line strength of convolved spectrum (bestfit - emission lines)
 		convolved = bin.bestfit - np.nansum([line.spectrum for key, line in 
 			bin.e_line.iteritems()], axis=0)
 		# move observed spectrum to rest frame (z is already accounted for in 
 		# errors2.py)
-		lam = bin.lam/(1+bin.components['stellar'].vel/c) 
-		line_strength_con = calc(line_name, lam, convolved, index, blue, red)
+		lam = bin.lam/(1+bin.components['stellar'].vel/c)
+		line_strength_con = calc(lam, convolved, index, blue, red)
 		# LOSVD correction (From SAURON VI: Section 4.2.2)
 		corr = line_strength_uncon/line_strength_con
-		
-		line_strength = corr * calc(line_name, lam, bin.continuum, index, blue, red)
+		if uncert is not None:
+			uncert = bin.noise
+			line_strength = corr * calc(lam, bin.continuum, index, blue, red, 
+				uncert=uncert)
+			uncert_map.append(uncert*corr)
 		line_map.append(line_strength)
 
+	uncert = np.array(uncert_map)
 	return np.array(line_map)
 
 
