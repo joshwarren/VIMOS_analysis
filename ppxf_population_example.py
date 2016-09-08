@@ -299,6 +299,9 @@ def ppxf_population_gas_example_sdss():
     plt.savefig('population.png')
     #plt.show()
 
+    print(np.unravel_index(np.nanargmax(weights),weights.shape))
+
+
 #------------------------------------------------------------------------------
 
 if __name__ == '__main__':

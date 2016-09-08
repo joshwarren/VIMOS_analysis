@@ -13,7 +13,7 @@ cc = checkcomp()
 def stellar_pop(galaxy, wav_range="", vLimit=0):
 	grid_length = 40
 	# Find lines:
-	lines = ['Fe5015', 'H_beta', 'Ca4455', 'Mg_b']
+	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_1', 'Mg_2', 'Mg_b']
 
 
 	print 'Stellar populations'
@@ -33,8 +33,6 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 
 	D = pickle.load(pickleFile)
 	pickleFile.close()
-
-
 
 	models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 	titles = np.loadtxt(models_dir, dtype=str)[0]
@@ -56,6 +54,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	models = {}
 	interp = {}
 	n_lines = np.zeros(D.number_of_bins)
+	print '    Interpolating models'
 	for i, l in enumerate(titles):
 		if l in lines:
 			models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
@@ -68,21 +67,22 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	
 	chi2 = np.zeros((grid_length,grid_length,grid_length, D.number_of_bins))
 	for line in lines:
-		uncert = []
-		ab_line = D.absorption_line(line,uncert=uncert)
-		print uncert.shape
-		print ab_line.shape
-		d = ~np.isnan(ab_line)
+		print '    Fitting ' + line
+		ab_line, uncert = D.absorption_line(line, uncert=True)
+		d = np.array([~np.isnan(ab_line), ~np.isnan(uncert)]).all(axis=0)
 		for i, ag in enumerate(age):
 			for j, me in enumerate(metalicity):
 				for k, al in enumerate(alpha):
 					chi2[i,j,k,d] += np.square(ab_line[d] -	
-						interp[line]([ag,me,al]))/(1.0*n_lines[d])
+						interp[line]([ag,me,al]))/(uncert[d]*n_lines[d])
+
+	chi2[chi2==0] = np.nan
+	chi2[chi2 > 20] = np.nan
 
 	# Finding locations of minimum chi2 for each bin
-	a = [np.unravel_index(chi2[:,:,:,i].argmin(),chi2[:,:,:,i].shape) 
+	a = [np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape)
 		for i in range(D.number_of_bins)]
-
+	
 	chi2 = [chi2[i[0],i[1],i[2],j] for j, i in enumerate(a)]
 	age = [age[i[0]] for i in a]
 	metalicity = [metalicity[i[1]] for i in a]
@@ -92,13 +92,15 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	d = {'chi2':chi2, 'age':age,'metalicity':metalicity,'alpha':alpha}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
+	print '    Plotting and saving'
 	for plot, values in d.iteritems():
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
-			D.bin_num, D.xBar, D.yBar, values, nodots=True, colorbar=True, 
+			D.bin_num, D.xBar, D.yBar, values, vmin=sorted(values)[vLimit], 
+			vmax=sorted(values)[-1-vLimit], nodots=True, colorbar=True, 
 			title=plot, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 		i+=1
-	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
+	#saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
 	saveTo = '%s/test.pdf' % (cc.home_dir)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')

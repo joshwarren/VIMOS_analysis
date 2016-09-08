@@ -9,32 +9,38 @@ from glob import glob
 cc = checkcomp()
 
 def calc(lam, spectrum, index, blue, red, uncert=None):
-
 # ------------========== Find line strength  ============----------
 	# pixel locations
-	indexx = [np.abs(lam-index[0]).argmin(), np.abs(lam-index[1]).argmin()]
-	redx = [np.abs(lam-red[0]).argmin(), np.abs(lam-red[1]).argmin()]
-	bluex = [np.abs(lam-blue[0]).argmin(), np.abs(lam-blue[1]).argmin()]
-	# average flux in side bands
-	F_red = np.nanmean(spectrum[redx[0]:redx[1]])
-	F_blue = np.nanmean(spectrum[bluex[0]:bluex[1]])
-	# Gradient of staight line representing continuum
-	m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
-	# Staight line representing continuum
-	F_c = m *np.arange(len(spectrum)) + F_red - m * (redx[0]+redx[1])/2
-	# Indice value
-	line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
-		x=lam[indexx[0]:indexx[1]])
+	if blue[0] < lam[0] or red[1] > lam[-1]:
+		line_strength = np.nan
+		uncert_out = np.nan
+	else:
+		indexx = [np.abs(lam-index[0]).argmin(), np.abs(lam-index[1]).argmin()]
+		redx = [np.abs(lam-red[0]).argmin(), np.abs(lam-red[1]).argmin()]
+		bluex = [np.abs(lam-blue[0]).argmin(), np.abs(lam-blue[1]).argmin()]
+		# average flux in side bands
+		F_red = np.nanmean(spectrum[redx[0]:redx[1]])
+		F_blue = np.nanmean(spectrum[bluex[0]:bluex[1]])
+		# Gradient of staight line representing continuum
+		m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
+		# Staight line representing continuum
+		F_c = m *np.arange(len(spectrum)) + F_red - m * (redx[0]+redx[1])/2
+		# Indice value
+		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
+			x=lam[indexx[0]:indexx[1]])
+		if uncert is not None:
+			uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
+				F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
 	if uncert is not None:
-		uncert = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]])/
-			F_c[indexx[0]:indexx[1]],x=lam[indexx[0]:indexx[1]]))
-
-	return line_strength
-
+		return line_strength, uncert_out
+	else:
+		return line_strength
 
 
 
-def absorption(line_name, D, uncert=None):
+
+def absorption(line_name, D, uncert=False):
+	_uncert=uncert
 	c = 299792.458 # speed of light in km/s
 
 # ------------====== Templates for unconvolved =======----------
@@ -77,15 +83,19 @@ def absorption(line_name, D, uncert=None):
 		line_strength_con = calc(lam, convolved, index, blue, red)
 		# LOSVD correction (From SAURON VI: Section 4.2.2)
 		corr = line_strength_uncon/line_strength_con
-		if uncert is not None:
-			uncert = bin.noise
-			line_strength = corr * calc(lam, bin.continuum, index, blue, red, 
-				uncert=uncert)
+		if _uncert:
+			line_strength, uncert = calc(lam, bin.continuum, index, blue, red, 
+				uncert=bin.noise)
+			line_strength * corr
 			uncert_map.append(uncert*corr)
+		else:
+			line_strength = corr * calc(lam, bin.continuum, index, blue, red)
 		line_map.append(line_strength)
 
-	uncert = np.array(uncert_map)
-	return np.array(line_map)
+	if _uncert:
+		return np.array(line_map), np.array(uncert_map)	
+	else:
+		return np.array(line_map)
 
 
 
@@ -116,7 +126,9 @@ if __name__ == '__main__':
 	D = pickle.load(pickleFile)
 	pickleFile.close()
 
-	s = absorption(line, D)
+	s, uncert = absorption(line, D, uncert=True)
+	for i in range(len(s)):
+		print s[i], uncert[i]
 
 	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, s, nodots=True,
 		colorbar=True, galaxy = galaxy.upper(), save='/home/HOME/test.png')
