@@ -34,6 +34,8 @@
 # save          None    (String) of location to save the plot to
 # show_bin_number False (Boolean) to show bin number at x_pix,y_pix for each bin
 #                           This overrides nodots=True
+# show_vel      False (Boolean) to show value of vel at x_pix,y_pix for each bin
+#                           This overrides nodots=True
 # flux_type     'mag'   'mag'   Plot isophots in magnitudes (log)
 #                       else    Plot in flux (linear)
 # ax            None    (matplotlib.axes.Axes) axes to create the plot on. New
@@ -60,7 +62,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
     flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
     ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-    ax = None, close=False, **kwargs):
+    ax = None, close=False, show_vel=False, **kwargs):
 
     kwg = {}
     kwg.update(kwargs)
@@ -98,8 +100,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     axis_label = "Angular Size (arcsec)"
 
 
-    im_xBar = np.copy(xBar)
-    im_yBar = np.copy(yBar)
+    #im_xBar = np.copy(xBar)
+    #im_yBar = np.copy(yBar)
     bin_num = bin_num.astype(int)
 
     v = vel[bin_num].clip(vmin,vmax)
@@ -203,19 +205,25 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
                        np.reshape(x,np.shape(flux_unbinned)), 
                        flux_unbinned, colors='k')
 
-    if not nodots and not show_bin_num:
+    if not nodots and not show_bin_num and not show_vel:
         #**********************************################
         #xBar /= res # no idea why this needs removing...
         #yBar /= res
         #**********************************################
-        ax.plot(ax.get_xlim()[1]-xBar, ax.get_ylim()[1]-yBar, '.k',
+        ax.plot(xBar-max(xBar)/2, yBar-max(yBar)/2, '.k',
                 markersize=kwargs.get("markersize", 3))
 
-    if show_bin_num:
+    if show_bin_num and not show_vel:
         for i in range(len(xBar)):
-            ax.text(ax.get_ylim()[0]+yBar[i],
-                    ax.get_xlim()[0]+xBar[i], str(i), color='grey',
-                    fontsize=5)
+            ax.text(xBar[i]-max(xBar)/2+pixelSize/2, 
+                yBar[i]-max(yBar)/2+pixelSize/2, str(i), 
+                color='grey', fontsize=5)
+    if show_vel:
+        for i in range(len(xBar)):
+            if i%3==0:
+                ax.text(xBar[i]-max(xBar)/2+pixelSize/2, 
+                    yBar[i]-max(yBar)/2+pixelSize/2, str(vel[i]), 
+                    color='grey', fontsize=5)
         
 
     #ax.axis('equal')
@@ -265,3 +273,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
     #ax.ax3 = ax3
 
     return ax
+
+
+
+
+# if __name__ == '__main__':
+#     pass

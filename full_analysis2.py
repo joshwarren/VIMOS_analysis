@@ -11,6 +11,7 @@ from GH_plots import GH_plots
 from man_errors2 import man_errors
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
+from stellar_pop import stellar_pop
 
 galaxies = ['ic1459',
             'ic1531',
@@ -23,7 +24,7 @@ galaxies = ['ic1459',
             'ngc3557',
             'eso443-g024']
 #galaxies = ['ngc3557']
-galaxies = ['ic1459']
+#galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
@@ -41,8 +42,8 @@ norm='lwv'
 for galaxy in galaxies:
 
     print galaxy
-    #man_errors(galaxy, wav_range=wav_range)
-    #pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+    man_errors(galaxy, wav_range=wav_range)
+    pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
     #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
     #    nointerp=True, CO = True, residual="median", norm=norm)
     #plt.close("all")
@@ -50,5 +51,6 @@ for galaxy in galaxies:
     #plt.close("all")
     #kinematics(galaxy, discard=discard, wav_range=wav_range)
     #plt.close("all")
-    plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit)
+    #plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit)
+    stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit)
 #v_vd_ellip(wav_range=wav_range)

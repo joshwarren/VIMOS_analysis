@@ -13,8 +13,8 @@ cc = checkcomp()
 def stellar_pop(galaxy, wav_range="", vLimit=0):
 	grid_length = 40
 	# Find lines:
-	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_1', 'Mg_2', 'Mg_b']
-
+	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
+		'Mg_1', 'Mg_2', 'Mg_b']
 
 	print 'Stellar populations'
 
@@ -76,17 +76,40 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 					chi2[i,j,k,d] += np.square(ab_line[d] -	
 						interp[line]([ag,me,al]))/(uncert[d]*n_lines[d])
 
+	# f = 'test.pkl'
+	# p = open(f, 'wb')
+	# pickle.dump(chi2,p)
+	# p.close()
+
 	chi2[chi2==0] = np.nan
-	chi2[chi2 > 20] = np.nan
+	#chi2[chi2 > 100] = np.nan
 
 	# Finding locations of minimum chi2 for each bin
-	a = [np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape)
-		for i in range(D.number_of_bins)]
-	
-	chi2 = [chi2[i[0],i[1],i[2],j] for j, i in enumerate(a)]
-	age = [age[i[0]] for i in a]
-	metalicity = [metalicity[i[1]] for i in a]
-	alpha = [alpha[i[2]] for i in a]
+	#a = [np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape)
+	#	for i in range(D.number_of_bins)]
+	a = []
+	#nans = []
+	for i in range(D.number_of_bins):
+		try:
+			a.append(np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
+	#		nans.append(False)
+		except ValueError:
+			print i
+			a.append(np.unravel_index(np.argmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
+	#		nans.append(True)
+	#nans = np.ravel(nans)
+
+
+	chi2 = np.array([chi2[i[0],i[1],i[2],j] for j, i in enumerate(a)])
+	age = np.array([age[i[0]] for i in a])
+	metalicity = np.array([metalicity[i[1]] for i in a])
+	alpha = np.array([alpha[i[2]] for i in a])
+
+	nans = chi2>100
+	chi2[nans] = np.nan
+	age[nans] = np.nan
+	metalicity[nans] = np.nan
+	alpha[nans] = np.nan
 
 	# Produce and Save Plots
 	d = {'chi2':chi2, 'age':age,'metalicity':metalicity,'alpha':alpha}
@@ -94,14 +117,17 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	i=0
 	print '    Plotting and saving'
 	for plot, values in d.iteritems():
+		vmin = sorted(values[~np.isnan(values)])[vLimit]
+		vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
-			D.bin_num, D.xBar, D.yBar, values, vmin=sorted(values)[vLimit], 
-			vmax=sorted(values)[-1-vLimit], nodots=True, colorbar=True, 
-			title=plot, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
+			D.bin_num, D.xBar, D.yBar, values, vmin=vmin, vmax=vmax,
+			nodots=True, colorbar=True, title=plot, 
+			ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 		i+=1
-	#saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
-	saveTo = '%s/test.pdf' % (cc.home_dir)
+	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
+	#saveTo = '%s/test.pdf' % (cc.home_dir)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')
 	ax_array[0,0].set_xlabel('')
