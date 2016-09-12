@@ -47,8 +47,7 @@ def absorption(line_name, D, uncert=False):
 	#files = glob('%s/Data/idl_libraries/ppxf/MILES_library/m0[0-9][0-9][0-9]V' %
 	#	(cc.base_dir))
 	files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-	wav = np.loadtxt(files[int(D.bin[0].temp_weight.keys()[0])], 
-		usecols=(0,), unpack=True)
+	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
 	templates = {}
 	for template in D.bin[0].temp_weight.keys():
 		if template.isdigit():
@@ -75,7 +74,7 @@ def absorption(line_name, D, uncert=False):
 		# Line strength of unconvolved spectrum.
 		line_strength_uncon = calc(lam, spec, index, blue, red)
 		# Line strength of convolved spectrum (bestfit - emission lines)
-		convolved = bin.bestfit - np.nansum([line.spectrum for key, line in 
+		convolved = bin.bestfit - np.nansum([line.spectrum_nomask for key, line in 
 			bin.e_line.iteritems()], axis=0)
 		# move observed spectrum to rest frame (z is already accounted for in 
 		# errors2.py)

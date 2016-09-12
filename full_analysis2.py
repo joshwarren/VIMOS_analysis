@@ -15,7 +15,7 @@ from stellar_pop import stellar_pop
 
 galaxies = ['ic1459',
             'ic1531',
-            'ic4296',
+            #'ic4296',
             'ngc0612',
             'ngc3100',
             'ngc7075',
@@ -40,17 +40,17 @@ wav_range = '4200-'
 vLimit = 2
 norm='lwv'
 for galaxy in galaxies:
-
+    D = None
     print galaxy
     man_errors(galaxy, wav_range=wav_range)
-    pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-    #plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-    #    nointerp=True, CO = True, residual="median", norm=norm)
+    D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+    #D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+    #    nointerp=True, CO = True, residual="median", norm=norm, D=D)
     #plt.close("all")
     #GH_plots(galaxy, wav_range=wav_range)
     #plt.close("all")
     #kinematics(galaxy, discard=discard, wav_range=wav_range)
     #plt.close("all")
     #plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit)
-    stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit)
+    D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 #v_vd_ellip(wav_range=wav_range)

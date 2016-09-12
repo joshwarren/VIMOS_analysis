@@ -385,8 +385,8 @@ class Bin(Data):
 	@property
 	def continuum(self):
 		# NB: Masks not used
-		return np.array(self.spectrum - np.nansum([line.spectrum for key, line in 
-			self.e_line.iteritems()],axis=0))
+		return np.array(self.spectrum - np.nansum([line.spectrum_nomask 
+			for key, line in self.e_line.iteritems()],axis=0))
 
 
 	@property
@@ -432,12 +432,13 @@ class Bin(Data):
 			self.apweight)
 		return wav[a[0]:a[1]], spec
 	
-	def set_emission_lines(self, FWHM_gal):
+	def set_emission_lines(self, FWHM_gal, temp_wav):
 	# Sets emission lines
 		self.FWHM_gal = float(FWHM_gal)
-
+		# NB: Additional 0.8A to make up for the difference between the log 
+		#	and linear wavelengths from util.log_rebin
 		line_spectrums, line_names, line_wavs = util.emission_lines(
-			self.loglam, self.lamLimits, FWHM_gal, quiet=True)
+			self.loglam, self.lamLimits+0.8, FWHM_gal, quiet=True)
 
 		for i in range(len(line_wavs)):
 			line = emission_line(self, line_names[i], line_wavs[i], 
@@ -511,16 +512,17 @@ class emission_line(Bin, _bin_data):
 # name: str, name of emission line
 # weight: float, weighting from ppxf fit
 # wav: wavelength of emission
-# flux: float, integrated fitted spectrum
+# flux: float, integrated fitted spectrum.
 # spectrum: array if not masked of fitted spectrum
+# spectrum_nomask: as spectrum overides masking
 # AmpNoi: float, amplitude of fitted spectrum vs noise from Bin object
 # mask: boolean: True if emission line is masked in this bin
 # Inherited attributes from _bin_data object for storing ppxf fitted kinematics
-	def __init__(self, parent, name, wav, spectrum):
+	def __init__(self, parent, name, wav, _spectrum):
 		self.__parent__ = parent
 		self.name = str(name)
 		self.weight = 0.0
-		self._spectrum = np.array(spectrum)
+		self._spectrum = np.array(_spectrum)
 		self.wav = wav
 		self.__threshold__ = 4.0
 		_bin_data.__init__(self, self.__parent__)
@@ -533,6 +535,18 @@ class emission_line(Bin, _bin_data):
 		else:
 			return np.nan
 
+	# @flux.setter
+	# def flux(self,no_mask=False):
+	# 	if not self.mask or no_mask:
+	# 		return np.trapz(self.spectrum, x=self.__parent__.lam)
+	# 	else:
+	# 		return np.nan
+	# def spectrum(self, no_mask=False):
+	# 	if not self.mask or no_mask:
+	# 		return self._spectrum*self.weight
+	# 	else:
+	# 		return self._spectrum*np.nan
+		
 	@property
 	def spectrum(self):
 		if not self.mask:
@@ -540,10 +554,11 @@ class emission_line(Bin, _bin_data):
 		else:
 			return self._spectrum*np.nan
 
-	@spectrum.setter
-	def spectrum(self, spectrum):
-		self._spectrum = np.array(spectrum)
-		
+	@property
+	def spectrum_nomask(self):
+		return self._spectrum*self.weight
+
+	
 	@property
 	def AmpNoi(self):
 		return max(self._spectrum)/self.__parent__.noise[np.argmin(np.abs(

@@ -42,7 +42,7 @@ def man_errors(galaxy, wav_range=""):
 #	dynamics_uncert = [v_s, s_s, h3_s, h4_s]
 
 # ------------====== Reading Files and calc std_devs ==========----------
-	for i, componant in enumerate(componants):
+	for componant in componants:
 		v = np.zeros(n_bins)*np.nan
 		v_s = np.zeros(n_bins)*np.nan
 		s = np.zeros(n_bins)*np.nan
@@ -62,6 +62,7 @@ def man_errors(galaxy, wav_range=""):
 				
 			# Check if component is in bin.
 			if componant in c_in_bin:
+				i = np.where(c_in_bin == componant)[0][0]
 				v[bin] = vel[i]
 				s[bin] = sig[i]
 				h3[bin] = h3s[i]

@@ -63,6 +63,8 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 	D.unbinned_flux = np.sum(galaxy_data, axis=0)
 	
 	FWHM_gal = 4*0.71
+	temp_wav = np.loadtxt('%s/models/miles_library/m0001V' % (cc.home_dir),
+		usecols=(0,), unpack=True)
 	for i in range(D.number_of_bins):
 		D.bin[i].spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC,i), 
 			unpack=True)
@@ -71,7 +73,7 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 		D.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
 		
 		# Getting emission templates used
-		D.bin[i].set_emission_lines(FWHM_gal)
+		D.bin[i].set_emission_lines(FWHM_gal, temp_wav)
 
 		#Setting the weighting given to the gas templates 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
@@ -101,6 +103,8 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
+
+	return D
 ##############################################################################
 
 # Use of pickler.py

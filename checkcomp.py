@@ -11,12 +11,13 @@
 ## asosx146 		uni 			
 
 import platform
+import warnings
 
 class checkcomp(object):
 
 	def __init__(self):
 		self.device = self.getDevice()
-		self.base_dir = self.getBase_dir()
+		#self.base_dir = self.getBase_dir()
 		self.home_dir = self.getHome_dir()
 
 		
@@ -26,7 +27,7 @@ class checkcomp(object):
 			d = 'cygwin_home'
 		elif 'HAL' in uname and 'Linux' in uname:
 			d = 'bash_home'
-		elif 'glamring' in uname:
+		elif 'glamdring' in uname:
 			d = 'glamdring'
 		elif 'asosx146' in uname:
 			d = 'uni'
@@ -35,23 +36,22 @@ class checkcomp(object):
 		
 		return d
 
-
-	def getBase_dir(self):
+	@property
+	def base_dir(self):
 		comp = self.device
 		if comp == 'cygwin_home':
 			b_dir = '/cygdrive/x'
 		elif comp == 'bash_home':
 			b_dir = '/mnt/x'
 		elif comp == 'glamdring':
-			raise ValueError('This may not setup to run on Glamdring')
-			b_dir = '~'
+			warnings.warn('This may not setup to run on Glamdring')
+			b_dir = self.home_dir
 		elif comp == 'uni':
 			b_dir = ''
 		else:
 			b_dir = ''
 
 		return b_dir
-
 
 	def getHome_dir(self):
 		comp = self.device

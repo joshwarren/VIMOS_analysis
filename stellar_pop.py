@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 from plot_velfield_nointerp import plot_velfield_nointerp 
 #from sauron_colormap2 import sauron2 as sauron
 import numpy as np
+import os
 from scipy.interpolate import RegularGridInterpolator
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def stellar_pop(galaxy, wav_range="", vLimit=0):
+def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	grid_length = 40
 	# Find lines:
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
@@ -27,12 +28,13 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
-	out_pickle = '%s/pickled' % (output)
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
-	#pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
 
-	D = pickle.load(pickleFile)
-	pickleFile.close()
+	if D is None:
+		out_pickle = '%s/pickled' % (output)
+		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+		#pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
+		D = pickle.load(pickleFile)
+		pickleFile.close()
 
 	models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 	titles = np.loadtxt(models_dir, dtype=str)[0]
@@ -134,9 +136,11 @@ def stellar_pop(galaxy, wav_range="", vLimit=0):
 	ax_array[0,1].set_ylabel('')
 	ax_array[1,1].set_ylabel('')
 	f.suptitle(galaxy.upper())
+	if not os.path.exists(os.path.dirname(saveTo)):
+		os.makedirs(os.path.dirname(saveTo))  
 	f.savefig(saveTo, bbox_inches="tight")
 
-
+	return D
 
 
 

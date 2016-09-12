@@ -43,6 +43,7 @@
 #			False: do not calculate and produce plot of 
 #				residuals.
 # CO	   False	Boolean to show ALMA CO plots overlaied (if they exist)
+# D 		None Option to pass in the Data object instead of loading it.
 ## ************************************************************** ##
 
 #import matplotlib # 20160202 JP to stop lack-of X-windows error
@@ -264,7 +265,7 @@ def add_CO(ax, galaxy, header, close=False):
 #-----------------------------------------------------------------------------
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
 	plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
-	**kwargs):	
+	D=None, **kwargs):	
 
 	data_file =  "%s/galaxies.txt" % (vin_dir)
 	# different data types need to be read separetly
@@ -292,15 +293,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	outputs = glob.glob(output+'gal_*.dat')
 	#outputs = glob.glob(output+'gal_stellar*.dat')
 	#outputs = []
+
+	# Used for CO plotting
 	cubeFile = pyfits.open(dataCubeDirectory)
 	header = cubeFile[0].header
 	cubeFile.close()
 # ------------== Reading pickle file and create plot  ===----------
 
 	# Load pickle file from pickler.py
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
-	D = pickle.load(pickleFile)
-	pickleFile.close()
+	if D is None:
+		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+		D = pickle.load(pickleFile)
+		pickleFile.close()
 
 	# Create figure and array for axes
 	n_rows = 2+2*len(D.e_components) + int(np.ceil(len(D.e_components)*
@@ -705,6 +709,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	saveTo = "%s/grid_%s.pdf" % (out_plots, wav_range)
 	f.savefig(saveTo, bbox_inches="tight",format='pdf')
+
+	return D
 
 
 
