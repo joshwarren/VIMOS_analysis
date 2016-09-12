@@ -17,7 +17,7 @@ import sys
 
 #-----------------------------------------------------------------------------
 def set_params():
-    glamdring = False
+    glamdring = True
     quiet = True
     gas = 3 # 0   No gas emission lines
             # 1   Probe ionised gas
@@ -385,6 +385,7 @@ def errors2(i_gal=None, bin=None):
     if gas:
         moments = [stellar_moments]
         start_sav = start
+        element = ['stellar']
 
     ## ----------============ All lines together ===============---------
     if gas == 1:
@@ -400,6 +401,7 @@ def errors2(i_gal=None, bin=None):
         moments.append(gas_moments)
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
             gas=True)
+        element.append('gas')
     ## ----------=============== SF and shocks lines ==============---------
     if gas == 2:
         emission_lines, line_name, line_wav = util.emission_lines(
@@ -412,10 +414,12 @@ def errors2(i_gal=None, bin=None):
                 templatesToUse = np.append(templatesToUse, line_name[i])
                 templates = np.column_stack((templates, emission_lines[:,i]))
                 component = component + [1]
+                element.append['SF']
             else:
                 templatesToUse = np.append(templatesToUse, line_name[i])
                 templates = np.column_stack((templates, emission_lines[:,i]))
-                component = component + [2]       
+                component = component + [2] 
+                element.append['shocks']      
 
         start = [start, start_sav, start_sav]
         moments = [stellar_moments, gas_moments, gas_moments]
@@ -441,6 +445,7 @@ def errors2(i_gal=None, bin=None):
             component = component + [np.where(line_name[i] == aph_lin)[0][0]+1]
             templates = np.column_stack((templates, emission_lines[:,i]))
             moments.append(gas_moments)
+            element.append(aph_lin[i])
         # Bit of a fudge for start (limits ability to set different start for gas)
         start = [start_sav]*(len(line_name)+1)
         goodPixels = determine_goodpixels(logLam_bin,lamRange_template,
@@ -561,16 +566,17 @@ def errors2(i_gal=None, bin=None):
     for i in range(len(noise_sav)):
         inp.write(str(noise_sav[i]) + '\n')
 
-    ## save bestfit output
+    ## save bestfit LOSVD output
     bestfit_file = "%sanalysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
    
     b = open(bestfit_file, 'w')
     if gas:
         for i in range(np.shape(pp.sol)[0]):
-            b.write(str(pp.sol[i][0]) + "   " + str(pp.sol[i][1]) + "   " + \
-                str(pp.sol[i][2]) + "   " + str(pp.sol[i][3]) + '\n')
-    else: b.write(str(pp.sol[0]) + "   " + str(pp.sol[1]) + "   " + \
-        str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
+            b.write(element[i] + "   " + str(pp.sol[i][0]) + "   " + 
+                str(pp.sol[i][1]) + "   " + str(pp.sol[i][2]) + "   " + 
+                str(pp.sol[i][3]) + '\n')
+    else: b.write("stellar " + str(pp.sol[0]) + "   " + str(pp.sol[1]) + 
+        "   " + str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
     ## save input
     if not os.path.exists("%sanalysis/%s/gas_MC/chi2" % (dir, galaxy)):
