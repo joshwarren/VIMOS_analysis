@@ -133,8 +133,8 @@ def ppxf_population_gas_example_sdss(quiet=True):
     output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
     out_plots = "%splots" % (output)
     out_pickle = '%s/pickled' % (output)
-    #pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
-    pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
+    pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+    #pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
 
     D = pickle.load(pickleFile)
     pickleFile.close()
