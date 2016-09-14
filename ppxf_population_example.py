@@ -125,14 +125,9 @@ def setup_spectral_library(velscale, FWHM_gal):
 
 #------------------------------------------------------------------------------
 
-def ppxf_population_gas_example_sdss():
-
-    # Read SDSS DR8 galaxy spectrum taken from here http://www.sdss3.org/dr8/
-    # The spectrum is *already* log rebinned by the SDSS DR8
-    # pipeline and log_rebin should not be used in this case.
-    #
-    # Load pickle file from pickler.py
+def ppxf_population_gas_example_sdss(quiet=True):
     galaxy='ic1459'
+    z = 0.005
     wav_range='4200-'
     out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
     output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
@@ -143,39 +138,13 @@ def ppxf_population_gas_example_sdss():
 
     D = pickle.load(pickleFile)
     pickleFile.close()
-    b=D.bin[150]
 
 
-    # file = 'spectra/NGC3522_SDSS.fits'
-    # hdu = pyfits.open(file)
-    # t = hdu[1].data
-    # z = float(hdu[1].header["Z"]) # SDSS redshift estimate
-    z = 0.005
-
-
-    # # Only use the wavelength range in common between galaxy and stellar library.
-    # #
-    # mask = (t.field('wavelength') > 3540) & (t.field('wavelength') < 7409)
-    # galaxy = t[mask].field('flux')/np.median(t[mask].field('flux'))  # Normalize spectrum to avoid numerical issues
-    # wave = t[mask].field('wavelength')
-    mask = (b.lam > 3540) & (b.lam < 7409)
-    galaxy = b.spectrum/np.median(b.spectrum)  # Normalize spectrum to avoid numerical issues
-    wave = b.lam
-
-    # The noise level is chosen to give Chi^2/DOF=1 without regularization (REGUL=0).
-    # A constant error is not a bad approximation in the fitted wavelength
-    # range and reduces the noise in the fit.
-    #
-    noise = galaxy*0 + 0.01528           # Assume constant noise per pixel here
-
-    # The velocity step was already chosen by the SDSS pipeline
-    # and we convert it below to km/s
-    #
-    c = 299792.458 # speed of light in km/s
-    velscale = np.log(wave[1]/wave[0])*c
-    FWHM_gal = 2.76 # SDSS has an instrumental resolution FWHM of 2.76A.
 
     #------------------- Setup templates -----------------------
+    c = 299792.458 # speed of light in km/s
+    velscale = np.log(D.bin[100].lam[1]/D.bin[100].lam[0])*c
+    FWHM_gal = 4*0.71 # SDSS has an instrumental resolution FWHM of 2.76A.
 
     stars_templates, lamRange_temp, logLam_temp = \
         setup_spectral_library(velscale, FWHM_gal)
@@ -193,116 +162,141 @@ def ppxf_population_gas_example_sdss():
     stars_templates /= np.median(stars_templates) # Normalizes stellar templates by a scalar
     regul_err = 0.004 # Desired regularization error
 
-    # Construct a set of Gaussian emission line templates.
-    # Estimate the wavelength fitted range in the rest frame.
-    #
-    lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z)
-    gas_templates, line_names, line_wave = \
-        util.emission_lines(logLam_temp, lamRange_gal, FWHM_gal)
 
-    # Combines the stellar and gaseous templates into a single array
-    # during the PPXF fit they will be assigned a different kinematic
-    # COMPONENT value
-    #
-    templates = np.hstack([stars_templates, gas_templates])
 
-    #-----------------------------------------------------------
 
-    # The galaxy and the template spectra do not have the same starting wavelength.
-    # For this reason an extra velocity shift DV has to be applied to the template
-    # to fit the galaxy spectrum. We remove this artificial shift by using the
-    # keyword VSYST in the call to PPXF below, so that all velocities are
-    # measured with respect to DV. This assume the redshift is negligible.
-    # In the case of a high-redshift galaxy one should de-redshift its
-    # wavelength to the rest frame before using the line below as described
-    # in PPXF_KINEMATICS_EXAMPLE_SAURON.
-    #
-    c = 299792.458
-    dv = (np.log(lamRange_temp[0])-np.log(wave[0]))*c # km/s
-    vel = c*z # Initial estimate of the galaxy velocity in km/s
 
-    # Here the actual fit starts. The best fit is plotted on the screen.
-    #
-    # IMPORTANT: Ideally one would like not to use any polynomial in the fit
-    # as the continuum shape contains important information on the population.
-    # Unfortunately this is often not feasible, due to small calibration
-    # uncertainties in the spectral shape. To avoid affecting the line strength of
-    # the spectral features, we exclude additive polynomials (DEGREE=-1) and only use
-    # multiplicative ones (MDEGREE=10). This is only recommended for population, not
-    # for kinematic extraction, where additive polynomials are always recommended.
-    #
-    start = [vel, 180.] # (km/s), starting guess for [V,sigma]
 
-    t = clock()
 
-    # Assign component=0 to the stellar templates and
-    # component=1 to the gas emission lines templates.
-    # One can easily assign different kinematic components to different gas species
-    # e.g. component=1 for the Balmer series, component=2 for the [OIII] doublet, ...)
-    # Input a negative MOMENTS value to keep fixed the LOSVD of a component.
-    #
-    nTemps = stars_templates.shape[1]
-    nLines = gas_templates.shape[1]
-    component = [0]*nTemps + [1]*nLines
-    moments = [4, 2] # fit (V,sig,h3,h4) for the stars and (V,sig) for the gas
-    start = [start, start] # adopt the same starting value for both gas and stars
 
-    pp = ppxf(templates, galaxy, noise, velscale, start,
-              plot=False, moments=moments, degree=-1, mdegree=10,
-              vsyst=dv, clean=False, regul=1./regul_err,
-              reg_dim=reg_dim, component=component)
+    for bin_number in range(D.number_of_bins):
+        print(bin_number,'/',D.number_of_bins)
 
-    # Plot fit results for stars and gas
+        # Read SDSS DR8 galaxy spectrum taken from here http://www.sdss3.org/dr8/
+        # The spectrum is *already* log rebinned by the SDSS DR8
+        # pipeline and log_rebin should not be used in this case.
+        #
 
-    plt.clf()
-    plt.subplot(211)
-    plt.plot(wave, pp.galaxy, 'k')
-    plt.plot(wave, pp.bestfit, 'b', linewidth=2)
-    plt.xlabel("Observed Wavelength ($\AA$)")
-    plt.ylabel("Relative Flux")
-    plt.ylim([-0.1,1.3])
-    plt.xlim([np.min(wave), np.max(wave)])
-    plt.plot(wave, pp.galaxy-pp.bestfit, 'd', ms=4, color='LimeGreen', mec='LimeGreen') # fit residuals
-    plt.axhline(y=-0, linestyle='--', color='k', linewidth=2)
-    stars = pp.matrix[:,:nTemps].dot(pp.weights[:nTemps])
-    plt.plot(wave, stars, 'r', linewidth=2) # overplot stellar templates alone
-    gas = pp.matrix[:,-nLines:].dot(pp.weights[-nLines:])
-    plt.plot(wave, gas+0.15, 'b', linewidth=2) # overplot emission lines alone
+        b=D.bin[bin_number]
 
-    # When the two Delta Chi^2 below are the same, the solution is the smoothest
-    # consistent with the observed spectrum.
-    #
-    print('Desired Delta Chi^2: %.4g' % np.sqrt(2*galaxy.size))
-    print('Current Delta Chi^2: %.4g' % ((pp.chi2 - 1)*galaxy.size))
-    print('Elapsed time in PPXF: %.2f s' % (clock() - t))
 
-    w = np.where(np.array(component) == 1)[0] # Extract weights of gas emissions
-    print('++++++++++++++++++++++++++++++')
-    print('Gas V=%.4g and sigma=%.2g km/s' % (pp.sol[1][0], pp.sol[1][1]))
-    print('Emission lines peak intensity:')
-    for name, weight, line in zip(line_names, pp.weights[w], pp.matrix[:,w].T):
-        print('%12s: %.3g' % (name, weight*np.max(line)))
-    print('------------------------------')
+        # file = 'spectra/NGC3522_SDSS.fits'
+        # hdu = pyfits.open(file)
+        # t = hdu[1].data
+        # z = float(hdu[1].header["Z"]) # SDSS redshift estimate
 
-    # Plot stellar population mass distribution
 
-    plt.subplot(212)
-    weights = pp.weights[:np.prod(reg_dim)].reshape(reg_dim)/pp.weights.sum()
-    plt.imshow(np.rot90(weights), interpolation='nearest', 
-               cmap='gist_heat', aspect='auto', origin='upper', 
-               extent=(np.log10(1.0), np.log10(17.7828), -1.9, 0.45))
-    plt.colorbar()
-    plt.title("Mass Fraction")
-    plt.xlabel("log$_{10}$ Age (Gyr)")
-    plt.ylabel("[M/H]")
-    plt.tight_layout()
-    plt.savefig('population.png')
-    #plt.show()
+        # # Only use the wavelength range in common between galaxy and stellar library.
+        # #
+        # mask = (t.field('wavelength') > 3540) & (t.field('wavelength') < 7409)
+        # galaxy = t[mask].field('flux')/np.median(t[mask].field('flux'))  # Normalize spectrum to avoid numerical issues
+        # wave = t[mask].field('wavelength')
+        mask = (b.lam > 3540) & (b.lam < 7409)
+        galaxy = b.spectrum/np.median(b.spectrum)  # Normalize spectrum to avoid numerical issues
+        wave = b.lam
 
-    print(np.unravel_index(np.nanargmax(weights),weights.shape))
+        # The noise level is chosen to give Chi^2/DOF=1 without regularization (REGUL=0).
+        # A constant error is not a bad approximation in the fitted wavelength
+        # range and reduces the noise in the fit.
+        #
+        noise = galaxy*0 + 0.01528           # Assume constant noise per pixel here
+
+       
+        
+        # Construct a set of Gaussian emission line templates.
+        # Estimate the wavelength fitted range in the rest frame.
+        #
+        lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z)
+        gas_templates, line_names, line_wave = \
+            util.emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=quiet)
+
+        # Combines the stellar and gaseous templates into a single array
+        # during the PPXF fit they will be assigned a different kinematic
+        # COMPONENT value
+        #
+        templates = np.hstack([stars_templates, gas_templates])
+
+        #-----------------------------------------------------------
+
+        # The galaxy and the template spectra do not have the same starting wavelength.
+        # For this reason an extra velocity shift DV has to be applied to the template
+        # to fit the galaxy spectrum. We remove this artificial shift by using the
+        # keyword VSYST in the call to PPXF below, so that all velocities are
+        # measured with respect to DV. This assume the redshift is negligible.
+        # In the case of a high-redshift galaxy one should de-redshift its
+        # wavelength to the rest frame before using the line below as described
+        # in PPXF_KINEMATICS_EXAMPLE_SAURON.
+        #
+        dv = (np.log(lamRange_temp[0])-np.log(wave[0]))*c # km/s
+        vel = c*z # Initial estimate of the galaxy velocity in km/s
+
+        # Here the actual fit starts. The best fit is plotted on the screen.
+        #
+        # IMPORTANT: Ideally one would like not to use any polynomial in the fit
+        # as the continuum shape contains important information on the population.
+        # Unfortunately this is often not feasible, due to small calibration
+        # uncertainties in the spectral shape. To avoid affecting the line strength of
+        # the spectral features, we exclude additive polynomials (DEGREE=-1) and only use
+        # multiplicative ones (MDEGREE=10). This is only recommended for population, not
+        # for kinematic extraction, where additive polynomials are always recommended.
+        #
+        start = [vel, 180.] # (km/s), starting guess for [V,sigma]
+
+
+        # Assign component=0 to the stellar templates and
+        # component=1 to the gas emission lines templates.
+        # One can easily assign different kinematic components to different gas species
+        # e.g. component=1 for the Balmer series, component=2 for the [OIII] doublet, ...)
+        # Input a negative MOMENTS value to keep fixed the LOSVD of a component.
+        #
+        nTemps = stars_templates.shape[1]
+        nLines = gas_templates.shape[1]
+        component = [0]*nTemps + [1]*nLines
+        moments = [4, 2] # fit (V,sig,h3,h4) for the stars and (V,sig) for the gas
+        start = [start, start] # adopt the same starting value for both gas and stars
+
+        pp = ppxf(templates, galaxy, noise, velscale, start,
+                  plot=False, moments=moments, degree=-1, mdegree=10,
+                  vsyst=dv, clean=False, regul=1./regul_err,
+                  reg_dim=reg_dim, component=component, quiet=quiet)
+
+        # Plot fit results for stars and gas
+        weights = pp.weights[:np.prod(reg_dim)].reshape(reg_dim)/pp.weights.sum()
+
+        
+        w.append(weights)
+    w = np.array(w)
+
+    pickleFile = open("pop.pkl", 'wb')
+    pickle.dump(w,pickleFile)
+    pickleFile.close()
+
 
 
 #------------------------------------------------------------------------------
 
 if __name__ == '__main__':
+    
     ppxf_population_gas_example_sdss()
+
+    # bin_age = np.zeros(D.number_of_bins)
+    # bin_metal = np.zeros(D.number_of_bins)
+    # bin_age_spread = np.zeros(D.number_of_bins)
+    # bin_metal_spread = np.zeros(D.number_of_bins)
+
+    # for i in range(D.number_of_bins):
+    #     print( i,'/',D.number_of_bins)
+    #     w = ppxf_population_gas_example_sdss(D,z,i,quiet=True)
+    #     age = np.sum(w,axis=1)
+    #     metal = np.sum(w,axis=0)
+        
+    #     bin_age[i] = np.argmax(age)
+    #     bin_metal[i] = np.argmax(metal)
+    #     bin_age_spread[i] = max(age) - age[np.argmax(age)-2]
+    #     bin_metal_spread[i] = max(metal) - metal[np.argmax(metal)-1]
+
+    # f,ax = plt.figure()
+    # ax = plot_velfiel_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, bin_age, 
+    #     flux_type='notmag', nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+    #     galaxy = galaxy.upper(), redshift =z, ax=ax)
+    # plt.show()

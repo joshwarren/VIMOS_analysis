@@ -96,7 +96,6 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			a.append(np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
 	#		nans.append(False)
 		except ValueError:
-			print i
 			a.append(np.unravel_index(np.argmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
 	#		nans.append(True)
 	#nans = np.ravel(nans)

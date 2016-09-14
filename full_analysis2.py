@@ -13,16 +13,16 @@ from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 
-galaxies = [#'ic1459',
-            #'ic1531',
-            #'ic4296',
-            #'ngc0612', #216 missing
+galaxies = ['ic1459',
+            'ic1531',
+            'ic4296',
+            'ngc0612',
             'ngc3100',
             'ngc7075',
             'pks0718-34',
             'ngc1399',
-            'ngc3557', # 686 missing
-            'eso443-g024'] # 393 missing
+            'ngc3557',
+            'eso443-g024']
 #galaxies = ['ngc3557']
 #galaxies = ['ic1459']
 #galaxies = ['ic1531']
@@ -42,7 +42,7 @@ norm='lwv'
 for galaxy in galaxies:
     D = None
     print galaxy
-    man_errors(galaxy, wav_range=wav_range)
+    #man_errors(galaxy, wav_range=wav_range)
     D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
     #D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
     #    nointerp=True, CO = True, residual="median", norm=norm, D=D)

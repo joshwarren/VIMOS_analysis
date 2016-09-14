@@ -245,7 +245,7 @@ def errors2(i_gal=None, bin=None):
 	## Reads the txt file containing the output of the binning_spaxels
 	## routine. 
 	x,y,bin_num = np.loadtxt(tessellation_File, usecols=(0,1,2), \
-		unpack=True, skiprows=1)
+		unpack=True, skiprows=1).astype(int)#, dtype='int,int,int')
 
 	n_bins = max(bin_num) + 1
 	## Contains the order of the bin numbers in terms of index number.
@@ -276,16 +276,13 @@ def errors2(i_gal=None, bin=None):
 ## ----------============= Spatially Binning ===============---------
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)
-
 	bin_lin_temp = np.zeros(s[0])
 	bin_lin_noise_temp = np.zeros(s[0])
 
-	for i in range(n_spaxels_in_bin):
-		x_i = x[spaxels_in_bin[i]]
-		y_i = y[spaxels_in_bin[i]]
-		for k in range(s[0]):
-			bin_lin_temp[k] += galaxy_data[k,x_i,y_i]
-			bin_lin_noise_temp[k] += galaxy_noise[k,x_i,y_i]**2
+
+	bin_lin_temp = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]],axis=1)
+	bin_lin_noise_temp = np.nansum(galaxy_noise[:,x[spaxels_in_bin],y[spaxels_in_bin]]**2,
+		axis=1)
 
 	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
 	
@@ -304,20 +301,20 @@ def errors2(i_gal=None, bin=None):
 	h = np.delete(bin_lin_temp, ignore)
 	h = np.delete(h,ignore2)
 
-
 	half = s[0]/2
 	a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
 		h[4:]/np.median(h[np.nonzero(h)])
+	
 	a = np.where(np.isfinite(a), a, 0)
 
-	if any(np.abs(a[:0.5*half]) > 0.2):
-		lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
+	if any(np.abs(a[:half/2]) > 0.2):
+		lower_limit = max(np.where(np.abs(a[:half/2]) > 0.2)[0])
 	else: 
 		lower_limit = -1
 	
 	# lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	if any(np.abs(a[1.5*half:]) > 0.2):
-		upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
+	if any(np.abs(a[3*half/2:]) > 0.2):
+		upper_limit = min(np.where(np.abs(a[3*half/2:]) > 0.2)[0])+int(1.5*half)
 	else:
 		upper_limit = -1
 		
