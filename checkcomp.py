@@ -3,6 +3,8 @@
 ## ==================================================================
 ## warrenj 20160725 A routine to check which computer a given program 
 ## is currently being run on.
+## warrenj 20160916 Added override since glamdring cores do not know 
+## they are part of glamdring.
 ##
 ## Attributes:
 ## uname			device 			base_dir
@@ -15,11 +17,13 @@ import warnings
 
 class checkcomp(object):
 
-	def __init__(self):
-		self.device = self.getDevice()
+	def __init__(self, override=None):
+		if override is None:
+			self.device = self.getDevice()
+		else:
+			self.device = override
 		#self.base_dir = self.getBase_dir()
-		self.home_dir = self.getHome_dir()
-
+		self.home_dir = self.getHome_dir() 
 		
 	def getDevice(self):
 		uname = platform.uname()
@@ -29,7 +33,7 @@ class checkcomp(object):
 			d = 'bash_home'
 		elif 'glamdring' in uname:
 			d = 'glamdring'
-		elif 'asosx146' in uname:
+		elif 'asosx146' in uname or 'asosx134' in uname:
 			d = 'uni'
 		else:
 			d = -1 

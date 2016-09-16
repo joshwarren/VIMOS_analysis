@@ -319,6 +319,8 @@ class Bin(Data):
 # yBar: as xBar
 # n_spaxels_in_bin: (int) number of spaxels in this bin
 # stellar: (_bin_data) object for storing ppxf fitted stellar kinematics
+# apweight: (array) weighting of *addative* polynomial used in pPXF fit
+# mpweight: (array) weighting of *multiplicative* polynomial used in pPXF fit
 #
 # Methods:
 # set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
@@ -347,6 +349,7 @@ class Bin(Data):
 		self._xBar = np.nan
 		self._yBar = np.nan
 		self.apweight = np.array([])
+		self.mpweight = np.array([])
 
 
 	@property
@@ -427,9 +430,13 @@ class Bin(Data):
 		for key in self.temp_weight.keys():
 			if key.isdigit():
 				#wav, template = np.loadtxt(files[int(key)], unpack=True)
-				spec += templates[key][a[0]:a[1]] * self.temp_weight[key] 
-		spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-			self.apweight)
+				spec += templates[key][a[0]:a[1]] * self.temp_weight[key]
+		if len(self.apweight)!=0:
+			spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+				self.apweight)
+		elif len(self.mpweight):
+			spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+				np.append(1, self.mpweight))
 		return wav[a[0]:a[1]], spec
 	
 	def set_emission_lines(self, FWHM_gal, temp_wav):

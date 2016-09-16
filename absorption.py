@@ -121,7 +121,7 @@ if __name__ == '__main__':
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_pickle = '%s/pickled' % (output)
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+	pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
 	D = pickle.load(pickleFile)
 	pickleFile.close()
 

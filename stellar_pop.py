@@ -31,7 +31,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 	if D is None:
 		out_pickle = '%s/pickled' % (output)
-		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
 		#pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()

@@ -13,16 +13,16 @@ from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 
-galaxies = ['ic1459',
-            'ic1531',
-            'ic4296',
-            'ngc0612',
-            'ngc3100',
-            'ngc7075',
-            'pks0718-34',
-            'ngc1399',
-            'ngc3557',
-            'eso443-g024']
+galaxies = [#'ic1459',
+			#'ic1531',
+			#'ic4296',
+			#'ngc0612', missing 216
+			#'ngc3100',
+			#'ngc7075',
+			#'pks0718-34',
+			#'ngc1399',
+			'ngc3557', # missing 686
+			'eso443-g024'] # missing 453
 #galaxies = ['ngc3557']
 #galaxies = ['ic1459']
 #galaxies = ['ic1531']
@@ -39,18 +39,34 @@ discard = 2
 wav_range = '4200-'
 vLimit = 2
 norm='lwv'
+
+# Arrays for error catching
+gal_err=[]
+err = []
 for galaxy in galaxies:
-    D = None
-    print galaxy
-    #man_errors(galaxy, wav_range=wav_range)
-    D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-    #D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-    #    nointerp=True, CO = True, residual="median", norm=norm, D=D)
-    #plt.close("all")
-    #GH_plots(galaxy, wav_range=wav_range)
-    #plt.close("all")
-    #kinematics(galaxy, discard=discard, wav_range=wav_range)
-    #plt.close("all")
-    #plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit)
-    D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	D = None
+	print galaxy
+	try:
+		#man_errors(galaxy, wav_range=wav_range)
+		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		#D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+		#    nointerp=True, CO = True, residual="median", norm=norm, D=D)
+		#plt.close("all")
+		#GH_plots(galaxy, wav_range=wav_range)
+		#plt.close("all")
+		#kinematics(galaxy, discard=discard, wav_range=wav_range)
+		#plt.close("all")
+		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+		#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+		D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	except Exception as e:
+		gal_err.append(galaxy)
+		err.append(e)
 #v_vd_ellip(wav_range=wav_range)
+
+# Display errors
+for i in range(len(gal_err)):
+	print ''
+	print gal_err[i], ' FAILED'
+	print err[i]
+	print ''

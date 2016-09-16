@@ -5,6 +5,8 @@
 ##		data object and pickle it, ready for use by other routines.
 
 ## *************************** KEYWORDS ************************* ##
+## opt 		'kin'	Option of kinamatics (kin) or stellar population
+##					(pop).
 ## ************************************************************** ##
 
 import numpy as np # for array handling
@@ -24,8 +26,7 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 
 #-----------------------------------------------------------------------------
-def pickler(galaxy, discard=0, wav_range="", norm="lwv", 
-	**kwargs):
+def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	print "    Loading D"
 
 	if wav_range:
@@ -37,7 +38,10 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2.txt" %(vin_dir, galaxy)
 	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
-	vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
+	if opt == "kin":
+		vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
+	elif opt == "pop":
+		vin_dir_gasMC = "%s/%s/pop_MC" % (vin_dir, galaxy)
 	out_pickle = '%s/pickled' % (output)
 
 	# lists the files produced by man_errors[2].py
@@ -82,9 +86,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 
 		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
 			unpack=True)
-
-		D.bin[i].apweight = np.loadtxt("%s/apweights/%d.dat" %(vin_dir_gasMC,i), 
-			unpack=True)
+		if opt == 'kin':
+			D.bin[i].apweight = np.loadtxt("%s/apweights/%d.dat" %(vin_dir_gasMC,i), 
+				unpack=True)
+		elif opt == 'pop':
+			D.bin[i].mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC,i), 
+				unpack=True)
 # ------------============== Read fields ================----------
 
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
@@ -96,11 +103,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv",
 # ------------================ Pickling =================----------
 
 	print "    Pickling D"
-
 	if not os.path.exists(out_pickle):
 		os.makedirs(out_pickle) 
-	
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
+	if opt == 'kin':
+		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
+	elif opt == 'pop':
+		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
 

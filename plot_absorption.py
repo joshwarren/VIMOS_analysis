@@ -9,7 +9,7 @@ import numpy as np
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def plot_absorption(galaxy, wav_range="", vLimit=0):
+def plot_absorption(galaxy, wav_range="", vLimit=0, D=None):
 	# Find lines:
 	lines = ['Fe5015', 'H_beta', 'Ca4455', 'Mg_b']
 
@@ -24,10 +24,11 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
-	out_pickle = '%s/pickled' % (output)
-	pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
-	D = pickle.load(pickleFile)
-	pickleFile.close()
+	if D is None:
+		out_pickle = '%s/pickled' % (output)
+		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
+		D = pickle.load(pickleFile)
+		pickleFile.close()
 
 	# Set up figure and subplots
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')#np.ceil(len(lines)/2.0), sharex='col', sharey='row')
@@ -68,6 +69,8 @@ def plot_absorption(galaxy, wav_range="", vLimit=0):
 	ax_array[1,1].set_ylabel('')
 	f.suptitle(galaxy.upper())
 	f.savefig(saveTo, bbox_inches="tight")
+
+	return D
 
 
 

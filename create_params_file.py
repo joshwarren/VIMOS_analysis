@@ -28,6 +28,6 @@ for gal in gals:
 		if code == "IDL":
 			f.write("idl -e 'errors, " + str(gal) + ", " + str(i) + "' \n")
 		if code == "python":
-			f.write("python errors2.py " + str(gal) + " " + str(i) + "\n")
+			f.write("python errors3.py " + str(gal) + " " + str(i) + "\n")
 
 print "Done"
