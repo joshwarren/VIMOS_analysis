@@ -85,7 +85,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 	chi2[chi2==0] = np.nan
 	#chi2[chi2 > 100] = np.nan
-
+	chi2.dump('chi2.pkl')
 	# Finding locations of minimum chi2 for each bin
 	#a = [np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape)
 	#	for i in range(D.number_of_bins)]
@@ -99,7 +99,6 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			a.append(np.unravel_index(np.argmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
 	#		nans.append(True)
 	#nans = np.ravel(nans)
-
 
 	chi2 = np.array([chi2[i[0],i[1],i[2],j] for j, i in enumerate(a)])
 	age = np.array([age[i[0]] for i in a])

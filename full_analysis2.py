@@ -24,7 +24,7 @@ galaxies = [#'ic1459',
 			'ngc3557', # missing 686
 			'eso443-g024'] # missing 453
 #galaxies = ['ngc3557']
-#galaxies = ['ic1459']
+galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
@@ -56,7 +56,7 @@ for galaxy in galaxies:
 		#plt.close("all")
 		#kinematics(galaxy, discard=discard, wav_range=wav_range)
 		#plt.close("all")
-		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 		#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 		D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	except Exception as e:

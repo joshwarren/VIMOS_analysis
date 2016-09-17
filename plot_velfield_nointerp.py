@@ -188,7 +188,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
     if flux is not None:
-        ax.tricontour(y, x, -2.5*np.log10(flux.ravel()/np.max(flux)),
+        ax.tricontour(x, y, -2.5*np.log10(flux.ravel()/np.max(flux)),
                       levels=np.arange(20), colors='k') # 1 mag contours
 
     # NB: have assumed a square image!!!!
@@ -198,11 +198,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
             contours = -2.5*np.log10(flux_unbinned.ravel()/
                                      np.max(flux_unbinned))
             # 1 mag contours
-            ax.tricontour(y, x, contours, levels=np.arange(20),
+            ax.tricontour(x, y, contours, levels=np.arange(20),
                       colors='k')
+
         else:
-            ax.contour(np.reshape(y,np.shape(flux_unbinned)),
-                       np.reshape(x,np.shape(flux_unbinned)), 
+            ax.contour(np.reshape(x,np.shape(flux_unbinned)),
+                       np.reshape(y,np.shape(flux_unbinned)), 
                        flux_unbinned, colors='k')
 
     if not nodots and not show_bin_num and not show_vel:
