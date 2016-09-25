@@ -14,9 +14,9 @@ def plot_histogram(v_binned, galaxy=None, redshift=None, vmin=None,
     vmax=None, weights=None, title=None, xaxis=None, save=None):
 
     if vmin is None:
-	vmin = np.min(v_binned)
+	   vmin = np.nanmin(v_binned)
     if vmax is None:
-	vmax = np.max(v_binned)
+	   vmax = np.nanmax(v_binned)
 
     fig, ax = plt.subplots()
 

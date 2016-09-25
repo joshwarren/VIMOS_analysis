@@ -45,15 +45,15 @@ class Data(object):
 		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
 		self.set_spaxels_in_bins(x, y, bin_num)
 		self.unbinned_flux = np.zeros((int(max(x)+1),int(max(y)+1))) # 2D blank array
-		self.components = {'stellar':stellar_data(self)}
+		self._components = {'stellar':stellar_data(self)}
 		self.norm_method = 'lwv'
 		self.vel_norm = 0.0
 		self.common_range = np.array([])
 
 
 	def add_e_line(self, line, wav):
-		if line not in self.e_components:
-			self.components[line] = emission_data(self, line, wav)
+		if line not in self._components.keys():
+			self._components[line] = emission_data(self, line, wav)
 
 	def set_spaxels_in_bins(self, x, y, bin_num):
 		x,y,bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
@@ -95,7 +95,13 @@ class Data(object):
 
 	@property
 	def e_line(self):
-		return {k:v for k,v in self.components.iteritems() if k!='stellar'}	
+		return {k:v for k,v in self._components.iteritems() if k!='stellar' and (
+			any(~v.mask) and any(~np.isnan(v.flux)))}	
+
+	@property
+	def components(self):
+		return {k:v for k,v in self._components.iteritems() if k=='stellar' or (
+			any(~v.mask) and any(~np.isnan(v.flux)))}
 
 	@property
 	def flux(self):
@@ -225,7 +231,7 @@ class _data(object):
 	
 
 
-class stellar_data(Data, _data):
+class stellar_data(_data):
 # Attributes:
 # name: (str) 'stellar'
 # mask: (boolean array) all set to False
@@ -240,7 +246,7 @@ class stellar_data(Data, _data):
 
 
 
-class emission_data(Data, _data):
+class emission_data(_data):
 # Attributes:
 # flux: array of integrated fitted spectrum
 # name: emission line name (will also be directory key in Data object)
@@ -301,7 +307,7 @@ class emission_data(Data, _data):
 
 
 
-class Bin(Data):
+class Bin(object):
 # Attributes:
 # bin_number: (int)
 # e_line: (dictionary) of emission_line objects
@@ -451,8 +457,8 @@ class Bin(Data):
 			line = emission_line(self, line_names[i], line_wavs[i], 
 				line_spectrums[:,i].flatten())
 			self.components[line_names[i]] = line
-			if line_names[i] not in self.__parent__.e_components:
-				self.__parent__.add_e_line(line_names[i], line_wavs[i])
+			#if line_names[i] not in self.__parent__.e_components:
+			self.__parent__.add_e_line(line_names[i], line_wavs[i])
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
@@ -460,8 +466,7 @@ class Bin(Data):
 			self.temp_weight[name[i]] = weight[i]
 			if not name[i].isdigit():
 				self.components[name[i]].weight = weight[i]
-				if name[i] not in self.__parent__.e_components:
-					self.__parent__.add_e_line(name[i], self.e_line[name[i]].wav)
+				self.__parent__.add_e_line(name[i], self.e_line[name[i]].wav)
 
 class myFloat(float):
 # Required to add attributes to float object
@@ -514,7 +519,7 @@ class _bin_data(object):
 
 
 
-class emission_line(Bin, _bin_data):
+class emission_line(_bin_data):
 # Attributes:
 # name: str, name of emission line
 # weight: float, weighting from ppxf fit
@@ -568,10 +573,10 @@ class emission_line(Bin, _bin_data):
 	
 	@property
 	def AmpNoi(self):
-		return max(self._spectrum)/self.__parent__.noise[np.argmin(np.abs(
+		return max(self._spectrum)*self.weight/self.__parent__.noise[np.argmin(np.abs(
 			self.__parent__.lam-self.wav))]
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__threshold__
+		return self.AmpNoi < self.__threshold__ #and np.isnan(self.vel)
 

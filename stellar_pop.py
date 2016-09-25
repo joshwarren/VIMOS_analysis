@@ -85,7 +85,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 	chi2[chi2==0] = np.nan
 	#chi2[chi2 > 100] = np.nan
-	chi2.dump('chi2_2.pkl')
+	#chi2.dump('chi2_2.pkl')
 	# Finding locations of minimum chi2 for each bin
 	#a = [np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape)
 	#	for i in range(D.number_of_bins)]
@@ -126,8 +126,8 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 		i+=1
-	#saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
-	saveTo = '%s/test.pdf' % (cc.home_dir)
+	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
+	#saveTo = '%s/test.pdf' % (cc.home_dir)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')
 	ax_array[0,0].set_xlabel('')

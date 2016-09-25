@@ -58,12 +58,12 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
-import ppxf_util as util
-from numpy.polynomial import legendre
+#import ppxf_util as util
+#from numpy.polynomial import legendre
 import os
-import colormaps as cm
+#import colormaps as cm
 from sauron_colormap2 import sauron2 as sauron
-from Bin import Data
+#from Bin import Data
 import cPickle as pickle
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -140,29 +140,34 @@ def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 	mins, maxs = np.genfromtxt(f, unpack=True, usecols=c, skip_header=1, 
 		missing_values='nan', filling_values=np.nan)
 
-	s = np.where(species == plot_species)[0]
-	n = s[np.where(types[s] == plot_type)[0]]
-
-	v_sorted = np.array(sorted(np.unique(v)))
-	if len(v_sorted) < 2*vLimit:
-		v_sorted = np.array(sorted(v))
-	# remove nan from v_sorted
-	v_sorted = v_sorted[~np.isnan(v_sorted)]
-
-	# If limits nan in limits file.
-	if np.isnan(mins[n]): mins[n] = v_sorted[vLimit]
-	if np.isnan(maxs[n]): maxs[n] = v_sorted[-vLimit-1]
-
-	# If plot limits not in limits file
-	if len(n) == 0: # or len(mins[n]) == 0:
-		vmin, vmax = v_sorted[vLimit], v_sorted[-vLimit-1]
-	else:
-		# min must be less than max!
-		if mins[n] < maxs[n]:
+	# Is the plot in the limits file?
+	if plot_species in species:
+		s = np.where(species == plot_species)[0]
+		if plot_type in types[s]:
+			n = s[np.where(types[s] == plot_type)[0]]
 			vmin, vmax = mins[n], maxs[n]
 		else:
-			raise ValueError("min must be less than max limit.")
-			vmin, vmax = maxs[n], mins[n]
+			vmin, vmax = np.nan, np.nan
+	else: 
+		vmin, vmax = np.nan, np.nan
+
+	if np.isnan(vmin) or np.isnan(vmax):
+		v_sorted = np.sort(np.unique(v[~np.isnan(v)]))
+		# Is v_sorted too short for vLimit - normally means mostly nan.
+		if len(v_sorted) < 2*vLimit:
+			#v_sorted = np.sort(v[~np.isnan(v)])
+			vmin = np.nanmin(v)
+			vmax = np.nanmax(v)
+		else:
+			if np.isnan(vmin):
+				vmin = v_sorted[vLimit]
+			if np.isnan(vmax):
+				vmax = v_sorted[-vLimit-1]
+	
+	# min must be less than max!
+	if vmin > vmax:
+		raise ValueError("min must be less than max limit.")
+		vmin, vmax = vmax, vmin
 
 	# center the range on the mean.
 	if mean_centered:
@@ -173,11 +178,6 @@ def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 	# Uncertinty should always positive.
 	if positive and vmin < 0:
 		vmin = 0
-
-	# Find next entry above (for min) and below (for max)
-		 # may throw exception if nan in v_sorted, but handles fine.
-	vmin = v_sorted[min(np.where(v_sorted >= vmin)[0])]
-	vmax = v_sorted[max(np.where(v_sorted <= vmax)[0])]
 
 	# Velocity plots should be symmetric about 0
 	if symmetric:
@@ -409,7 +409,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 # ------------============ Amplitude/Noise ==============----------
-
 		amp_title = '%s Amplitude to Noise ratio' % (c_title)
 		amp_min, amp_max = set_lims(galaxy, D.e_line[c].amp_noise, vLimit, c, 
 			amp_title)
@@ -494,7 +493,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			vLimit, plot_title, utitle)
 # ------------============== Plot Histogram =============----------
 		# Field histogram
-
 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
 		plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
 			vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
@@ -508,7 +506,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if plots:
 			plt.show()			  
 # ------------==== Plot velfield - no interperlation ====----------
-
 		if nointerp:
 			# Field plot
 			ax = f.add_subplot(111, aspect='equal')
