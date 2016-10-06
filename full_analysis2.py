@@ -13,15 +13,15 @@ from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 
-galaxies = [#'ic1459',
-			#'ic1531',
-			#'ic4296',
-			#'ngc0612',# missing 216
-			#'ngc3100',
-			#'ngc7075',
-			##'pks0718-34',
+galaxies = ['ic1459',
+			'ic1531',
+			'ic4296',
+			'ngc0612',# missing 216
+			'ngc3100',
+			'ngc7075',
+			'pks0718-34',
 			'ngc1399',
-			#'ngc3557', # missing 686, 688
+			'ngc3557', # missing 686, 688
 			'eso443-g024'] # missing 453, 455
 #galaxies = ['ngc3557']
 #galaxies = ['ic1459']
