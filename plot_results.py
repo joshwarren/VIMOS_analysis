@@ -369,7 +369,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.saveTo = saveTo
 		ax.figx, ax.figy = 0, ax_y
 		
-		
+		if 'OIII' in c:
+			np.savetxt('flux.txt', D.e_line[c].mask)
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.e_line[c].flux, 
 			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
 			  title=f_title, cmap = 'gist_yarg', ax=ax)
@@ -491,20 +492,20 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			plot_title)
 		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, 
 			vLimit, plot_title, utitle)
-# ------------============== Plot Histogram =============----------
-		# Field histogram
-		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
-		plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
-			vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
-			xaxis=CBLabel, save=saveTo)
-		# Uncertainty histogram
-		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
-		plot_histogram(D.components[c].plot[k].uncert, galaxy=galaxy.upper(), redshift=z,
-			vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
-			title=uhtitle, xaxis=CBLabel, save=saveTo)
+# # ------------============== Plot Histogram =============----------
+# 		# Field histogram
+# 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
+# 		plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
+# 			vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
+# 			xaxis=CBLabel, save=saveTo)
+# 		# Uncertainty histogram
+# 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
+# 		plot_histogram(D.components[c].plot[k].uncert, galaxy=galaxy.upper(), redshift=z,
+# 			vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
+# 			title=uhtitle, xaxis=CBLabel, save=saveTo)
 
-		if plots:
-			plt.show()			  
+# 		if plots:
+# 			plt.show()
 # ------------==== Plot velfield - no interperlation ====----------
 		if nointerp:
 			# Field plot
@@ -512,7 +513,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			saveTo = ("%s/%s_field_%s.png" % (out_nointerp, plot_title, wav_range))
 			ax.saveTo = saveTo
 			ax.figx, ax.figy = ax_x, ax_y
-		   
+			if 'vel' in k and 'OIII' in c:
+				np.savetxt('vel.txt', D.components[c].plot[k]) ## save mask
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 

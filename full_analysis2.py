@@ -13,14 +13,14 @@ from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 
-galaxies = ['ic1459',
-			'ic1531',
-			'ic4296',
-			'ngc0612',# missing 216
-			'ngc3100',
+galaxies = [#'ic1459',
+			#'ic1531',
+			#'ic4296',
+			#'ngc0612',# missing 216
+			#'ngc1399']#,
+			#'ngc3100',
 			'ngc7075',
-			'pks0718-34',
-			'ngc1399',
+			#'pks0718-34',
 			'ngc3557', # missing 686, 688
 			'eso443-g024'] # missing 453, 455
 #galaxies = ['ngc3557']
@@ -46,24 +46,23 @@ err = []
 for galaxy in galaxies:
 	D = None
 	print galaxy
-	#try:
+	try:
 		#man_errors(galaxy, wav_range=wav_range)
-	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-	D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-	    nointerp=True, CO = True, residual="median", norm=norm, D=D)
+		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+	   		nointerp=True, CO = True, residual="median", norm=norm, D=D)
+	# 	plt.close("all")
+	# 	#GH_plots(galaxy, wav_range=wav_range)
+	# 	#plt.close("all")
+	# 	#kinematics(galaxy, discard=discard, wav_range=wav_range)
+	# 	#plt.close("all")
 		
-		#plt.close("all")
-		#GH_plots(galaxy, wav_range=wav_range)
-		#plt.close("all")
-		#kinematics(galaxy, discard=discard, wav_range=wav_range)
-		#plt.close("all")
-		
-		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-		#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-		#D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-	#except Exception as e:
-	#	gal_err.append(galaxy)
-	#	err.append(e)
+	# 	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+	# 	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	# 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	except Exception as e:
+		gal_err.append(galaxy)
+		err.append(e)
 #v_vd_ellip(wav_range=wav_range)
 
 # Display errors

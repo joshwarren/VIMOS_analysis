@@ -44,7 +44,8 @@ class checkcomp(object):
 	def base_dir(self):
 		comp = self.device
 		if comp == 'cygwin_home':
-			b_dir = '/cygdrive/x'
+			#b_dir = '/cygdrive/x' # Moved from external to laptop
+			b_dir = ''
 		elif comp == 'bash_home':
 			b_dir = '/mnt/x'
 		elif comp == 'glamdring':

@@ -242,7 +242,7 @@ class stellar_data(_data):
 		_data.__init__(self)
 	@property
 	def mask(self):
-		return [False]*self.__parent__.number_of_bins
+		return np.array([False]*self.__parent__.number_of_bins)
 
 
 
@@ -445,13 +445,14 @@ class Bin(object):
 				np.append(1, self.mpweight))
 		return wav[a[0]:a[1]], spec
 	
-	def set_emission_lines(self, FWHM_gal, temp_wav):
+	def set_emission_lines(self, FWHM_gal):#, temp_wav):
 	# Sets emission lines
 		self.FWHM_gal = float(FWHM_gal)
 		# NB: Additional 0.8A to make up for the difference between the log 
 		#	and linear wavelengths from util.log_rebin
 		line_spectrums, line_names, line_wavs = util.emission_lines(
-			self.loglam, self.lamLimits+0.8, FWHM_gal, quiet=True)
+			self.loglam, np.array([self.lamLimits[0],self.lamLimits[1]+0.8]), 
+			FWHM_gal, quiet=True)
 
 		for i in range(len(line_wavs)):
 			line = emission_line(self, line_names[i], line_wavs[i], 
@@ -462,11 +463,11 @@ class Bin(object):
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
-		for i in range(len(name)):
-			self.temp_weight[name[i]] = weight[i]
-			if not name[i].isdigit():
-				self.components[name[i]].weight = weight[i]
-				self.__parent__.add_e_line(name[i], self.e_line[name[i]].wav)
+		for i,n in enumerate(name):
+			self.temp_weight[n] = weight[i]
+			if not n.isdigit() and weight[i] != 0:
+				self.components[n].weight = weight[i]
+				self.__parent__.add_e_line(n, self.e_line[n].wav)
 
 class myFloat(float):
 # Required to add attributes to float object

@@ -77,11 +77,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		D.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
 		
 		# Getting emission templates used
-		D.bin[i].set_emission_lines(FWHM_gal, temp_wav)
+		D.bin[i].set_emission_lines(FWHM_gal)#, temp_wav)
 
 		#Setting the weighting given to the gas templates 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
-			vin_dir_gasMC, i), unpack=True, dtype=str)
+			vin_dir_gasMC, i), unpack=True, dtype='str')
+		temp_weight = temp_weight.astype(float)
 		D.bin[i].set_templates(temp_name, temp_weight)
 
 		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
