@@ -104,6 +104,8 @@ def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
 		plot_species = 'Hgamma'
 	elif 'OIII' in plot_species:
 		plot_species = 'OIII'
+	elif 'NI' in plot_species:
+		plot_species = 'NI'
 
 	if 'vel' in plot_type or 'velocity' in plot_type:
 		plot_type = 'velocity'

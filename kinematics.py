@@ -53,8 +53,9 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	z = z_gals[i_gal]
 
 	print galaxiesFile2
-	ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, Hgamma_mis = np.loadtxt(
-		galaxiesFile2, unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
+	lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
+		Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
+		usecols=(1,2,3,4,5,6,7))
 	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 'Hgamma':Hgamma_mis}
 
 
@@ -146,6 +147,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	plt.xlabel("Radius (R_e)")
 	x = spxToRe(R[order_m], R_e)[~np.isnan(R_m[order_m])] # Plotted as a fucntion of R not R_m
 	order = np.argsort(x)
+	lambda_R[i_gal] = lam[order][-1]
+	print 'lambda_R_MAX: ', lambda_R[i_gal]
 	plt.plot(x[order[5:]], lam[order[5:]])
 	ax =plt.gca()
 	plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
@@ -170,34 +173,30 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
 		gas_mis = math.degrees(gas_mis)
 
-		gas[c][i_gal] = gas_mis
+		if 'NI' not in c: gas[c][i_gal] = gas_mis
 
 		#gas_psi_gals[i_gal] = gas_mis
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
 	template = "{0:13}{1:14}{2:15}{3:16}{4:4}{5:4}{6:11}\n" 
-	template2 = "{0:13}{1:13}{2:15}{3:8}{4:8}{5:8}{6:8}\n" 
+	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
 	f.write(template.format('Galaxy', 'z', 'velocity', 'vel dispersion', 'x', 
 		'y', 'Target SN'))
 	f2 = open(galaxiesFile2, 'wb')
-	#f2.write('Galaxy    Ellipticity    Misalignment: Stellar    OIII    Hbeta' +
-	#	'    Hdelta   Hgamma\n')
-	f2.write(template2.format('Galaxy', 'Ellipticity', 'Misa: Stellar', 
-		'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
+	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
+		'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
+
 	for i in range(len(galaxy_gals)):
 		f.write(template.format(galaxy_gals[i], str(z_gals[i]),	str(vel_gals[i]), 
 			str(sig_gals[i]), str(int(x_gals[i])), str(int(y_gals[i])), 
 			str(SN_gals[i])))
 
-		#f2.write(galaxy_gals[i] + '   ' + str(ellip_gals[i]) + '   ' + \
-		#	str(star_mis[i]) + '   ' + str(OIII_mis[i]) + '   ' + \
-		#	str(Hbeta_mis[i]) + '   ' + str(Hdelta_mis[i]) + '   ' + \
-		#	str(Hgamma_mis[i]) + '\n')
-		f2.write(template2.format(galaxy_gals[i], str(round(ellip_gals[i],3)), 
-			str(round(star_mis[i],3)), str(OIII_mis[i]), str(Hbeta_mis[i]), 
-			str(Hdelta_mis[i]) ,str(Hgamma_mis[i])))
+		f2.write(template2.format(galaxy_gals[i], str(round(lambda_R[i],3)), 
+			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 
+			str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]) ,
+			str(Hgamma_mis[i])))
 
 ##############################################################################
 

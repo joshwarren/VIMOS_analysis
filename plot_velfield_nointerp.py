@@ -97,7 +97,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
     x -= max(x)/2
     y -= max(y)/2
-    axis_label = "Angular Size (arcsec)"
+    axis_label = "Position (arcsec)"
 
 
     #im_xBar = np.copy(xBar)
