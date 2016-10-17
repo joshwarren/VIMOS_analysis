@@ -49,12 +49,12 @@ for galaxy in galaxies:
 	#try:
 		#man_errors(galaxy, wav_range=wav_range)
 		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		#D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-	   	#	nointerp=True, CO = True, residual="median", norm=norm, D=D)
+	D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+		nointerp=True, CO = True, residual="median", norm=norm, D=D)
 	# 	plt.close("all")
 	# 	#GH_plots(galaxy, wav_range=wav_range)
 	# 	#plt.close("all")
-	kinematics(galaxy, discard=discard, wav_range=wav_range)
+	#	kinematics(galaxy, discard=discard, wav_range=wav_range)
 	# 	#plt.close("all")
 		
 	# 	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')

@@ -284,6 +284,11 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	else:
 		wav_range_dir = ""
 
+	# Return CO to False if ALMA file does not exist.
+	if CO:
+		CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
+		if ~os.path.exists(CO_image_dir): CO = False
+
 	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
@@ -371,8 +376,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax.saveTo = saveTo
 		ax.figx, ax.figy = 0, ax_y
 		
-		if 'OIII' in c:
-			np.savetxt('flux.txt', D.e_line[c].mask)
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.e_line[c].flux, 
 			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
 			  title=f_title, cmap = 'gist_yarg', ax=ax)
@@ -515,19 +518,20 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			saveTo = ("%s/%s_field_%s.png" % (out_nointerp, plot_title, wav_range))
 			ax.saveTo = saveTo
 			ax.figx, ax.figy = ax_x, ax_y
-			if 'vel' in k and 'OIII' in c:
-				np.savetxt('vel.txt', D.components[c].plot[k]) ## save mask
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-				label=CBLabel, #flux_unbinned=D.unbinned_flux, 
+				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
 				title=title, cmap=cmap, ax=ax)
+			#plots=True
+			if plots:
+				plt.show()
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
 			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-
+			
 			# Uncertainty plot
 			saveTo = "%s/%s_field_%s.png" % (out_nointerp,plot_title+'_uncert', 
 				wav_range)
@@ -540,7 +544,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				ax1.saveTo = saveTo
 				add_CO(ax1, galaxy, header, close=True)
 			
-
+		#plots=False
 		if plots:
 			plt.show()
 		#if CO:
@@ -678,7 +682,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		#a.axis('tight')
 		f.add_axes(a.cax)
 		if hasattr(a,'ax2'): f.add_axes(a.ax2)
-		if hasattr(a,'ax2'): f.add_axes(a.ax3)
+		if hasattr(a,'ax3'): f.add_axes(a.ax3)
 		if not os.path.exists(os.path.dirname(a.saveTo)):
 			os.makedirs(os.path.dirname(a.saveTo))  
 		f.savefig(a.saveTo, bbox_inches="tight")
@@ -688,20 +692,22 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		f.delaxes(a)
 		f.delaxes(a.cax)
-		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)		
-		if hasattr(a,'ax2'): f.delaxes(a.ax3)
+		if hasattr(a,'ax3'): f.delaxes(a.ax3)
+		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 
 
 
 	for a in ax_array:
 		if not np.isnan(a.figy):
 			f.add_axes(a)
-			f.add_axes(a.cax)
+			#f.add_axes(a.cax)
 			a.xaxis.set_visible(False)
 			a.yaxis.set_visible(False)
 			a.axis('off')
 			a.autoscale(False)
+			if hasattr(a,'gal_name'): a.gal_name.remove()
+			if hasattr(a, 'gal_z'): a.gal_z.remove()
 
 	f.set_size_inches(8.5,n_rows*1.8)
 	f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
