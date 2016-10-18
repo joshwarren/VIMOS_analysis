@@ -197,6 +197,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 
 			str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]) ,
 			str(Hgamma_mis[i])))
+	f.close()
+	f2.close()
 
 ##############################################################################
 

@@ -8,7 +8,16 @@ def use_kinemetry(gal):
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	f = '%s/%s/kinemetry.txt' % (out_dir, gal)
 	if os.path.exists(f):
-		rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, skiprows=1)
+		rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
+			skiprows=1)
+
+		# Optimizing PA
+		cut = np.arange(360,0,-10)
+		r = np.array([list(pa)]*len(cut))
+		for i, c in enumerate(cut):
+			r[i, np.where(r[i,:] > c)[0]] -=360
+		l = np.argmin(np.ptp(r,axis=1))
+		pa = r[l]
 
 		f, ax = plt.subplots()
 		a=ax.plot(rad,pa,label='PA')
@@ -24,8 +33,8 @@ def use_kinemetry(gal):
 		ax.yaxis.label.set_color('blue')
 		ax.tick_params(axis='y', colors='blue')
 
-		ax.ylabel('PA','b')
-		ax2.ylabel('k1','r')
+		ax.set_ylabel('PA',color='b')
+		ax2.set_ylabel('k1',color='r')
 
 		# lns = a+b
 		# labs = [l.get_label() for l in lns]
