@@ -112,6 +112,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
+# ------------======== Save flux for KINEMTRY (IDL) =====----------
+	if opt == 'kin':
+		print "    Saving flux for KINEMETRY (IDL)"
+		with open('%s/flux.dat' % (output), 'wb') as f:
+			for i in range(D.number_of_bins):
+				f.write(str(D.flux[i]) + '\n')
 
 	return D
 ##############################################################################

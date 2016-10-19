@@ -11,7 +11,9 @@ cc = checkcomp()
 
 def plot_absorption(galaxy, wav_range="", vLimit=0, D=None):
 	# Find lines:
-	lines = ['Fe5015', 'H_beta', 'Ca4455', 'Mg_b']
+	#lines = ['Fe5015', 'H_beta', 'Ca4455', 'Mg_b']
+	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
+		'Mg_1', 'Mg_2', 'Mg_b']
 
 	print 'Absorption lines'
 
@@ -31,7 +33,8 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None):
 		pickleFile.close()
 
 	# Set up figure and subplots
-	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')#np.ceil(len(lines)/2.0), sharex='col', sharey='row')
+	f, ax_array = plt.subplots(int(np.ceil(len(lines)/2.0)), 2, sharex='col', 
+		sharey='row')#np.ceil(len(lines)/2.0), sharex='col', sharey='row')
 	for i, line in enumerate(lines):
 		print "    " + line
 
@@ -45,21 +48,21 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None):
 		mean = np.nanmedian(ab_line)
 
 		a_sorted = np.array(sorted(np.unique(D.absorption_line(line))))
+		a_sorted = a_sorted[~np.isnan(a_sorted)]
 		if len(a_sorted) < 2*vLimit:
 			a_sorted= np.array(sorted(D.absorption_line(line)))
-		a_sorted = a_sorted[~np.isnan(a_sorted)]
 		abmin, abmax = a_sorted[vLimit], a_sorted[-vLimit-1]
 		abmax = min([abmax, mean + std])
 		abmin = max([abmin, mean - std])
 
-
-		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
+		ax_array[np.floor(i/2),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
+			D.yBar, D.absorption_line(line), #vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='log Index strength ('+r'$\AA$'+')', 
-			title=line, ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
+			title=line, ax=ax_array[np.floor(i/2),i%2], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 
 
+	f.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
 
 	saveTo = "%s/absorption_%s.pdf" % (out_plots, wav_range)
 	f.tight_layout()

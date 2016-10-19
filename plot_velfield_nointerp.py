@@ -75,16 +75,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if ax is None:
 		fig, ax = plt.subplots(nrows=1,ncols=1)
 
-
-	
 	if title is not None:
 		ax.set_title(title, fontdict={'fontsize':'small'})
 
 	if vmin is None:
-		vmin = np.min(vel)
+		vmin = np.nanmin(vel)
 
 	if vmax is None:
-		vmax = np.max(vel)
+		vmax = np.nanmax(vel)
 
 	xBar_pix, yBar_pix, vel = map(np.ravel, [xBar_pix, yBar_pix, vel])
 	levels = np.linspace(vmin, vmax, ncolors)

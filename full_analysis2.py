@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 from use_kinemetry import use_kinemetry
 
-galaxies = ['ic1459',
+galaxies = [#'ic1459',
 			'ic1531',
 			'ic4296',
 			'ngc0612',# missing 216
@@ -25,7 +25,7 @@ galaxies = ['ic1459',
 			'ngc3557', # missing 686, 688
 			'eso443-g024'] # missing 453, 455
 #galaxies = ['ngc3557']
-#galaxies = ['ic1459']
+galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
@@ -57,10 +57,10 @@ for galaxy in galaxies:
 	# 	#plt.close("all")
 	#	kinematics(galaxy, discard=discard, wav_range=wav_range)
 	# 	#plt.close("all")
-	use_kinemetry(galaxy)
+	#	use_kinemetry(galaxy)
 		
-	# 	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-	# 	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	# 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	#except Exception as e:
 	#	gal_err.append(galaxy)
