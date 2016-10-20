@@ -217,7 +217,7 @@ def set_ax_y(plt_title):
 #-----------------------------------------------------------------------------
 def add_CO(ax, galaxy, header, close=False):
 	CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
-	if os.path.exists(CO_image_dir):
+	if os.path.exists(CO_image_dir) and not ax.RaDec:
 		CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
 
 		#remove random extra dimenisons.

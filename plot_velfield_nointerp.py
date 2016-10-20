@@ -9,6 +9,7 @@
 # warrenj 20160413 Added flux_type keyword
 # warrenj 20160615 New routine to handle plot as just ax item so that it
 #                  can be used in subplots.
+# warrenj 20161020 Added to plot in RA and dec if header keyword is provided
 ## *************************** KEYWORDS ************************* ##
 # x_pix                 (Int Array) x/y coord of pixel
 # y_pix                 As above
@@ -40,6 +41,8 @@
 #                       else    Plot in flux (linear)
 # ax            None    (matplotlib.axes.Axes) axes to create the plot on. New
 #                           axes are created if this is not supplied.
+# header 		None 	(Header dictionary) If supplied, plot will be given in 
+#						terms of RA and Dec. Will be in arcsec if not.
 # close         False   (Boolean) to close the figure.
 ## ************************************************************** ##
 
@@ -62,7 +65,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, **kwargs):
+	ax = None, close=False, show_vel=False, header=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -87,15 +90,42 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	xBar_pix, yBar_pix, vel = map(np.ravel, [xBar_pix, yBar_pix, vel])
 	levels = np.linspace(vmin, vmax, ncolors)
 
-	res = 0.67 #arcsec per pixel
-	xBar = xBar_pix*res
-	yBar = yBar_pix*res
-	x = x_pix*res
-	y = y_pix*res
+	# Plot in arcsecs
+	if header is None:
+		res = 0.67 #arcsec per pixel
+		xBar = xBar_pix*res
+		yBar = yBar_pix*res
+		x = x_pix*res
+		y = y_pix*res
 
-	x -= max(x)/2
-	y -= max(y)/2
-	axis_label = "Position (arcsec)"
+		x -= max(x)/2
+		y -= max(y)/2
+		x_label = "Position (arcsec)"
+		y_label = x_label
+
+		# Tells add_CO method in plot_results coords where not supplied
+		ax.RaDec = False
+
+	# Plot in RA and Dec
+	else:
+		from astropy.coordinates import SkyCoord
+		from astropy import units as u
+
+		coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
+			header['HIERARCH CCD1 ESO INS IFU DEC'], 
+			unit=(u.deg, u.deg))
+
+		res = 0.67 #arcsec per pixel
+		xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
+		yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
+		x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
+		y = (y_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
+		
+		x_label = "RA"
+		y_label = "Dec"
+
+		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
+		ax.RaDec = True
 
 
 	#im_xBar = np.copy(xBar)
@@ -134,8 +164,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	
 
-	ax.set_ylabel(axis_label)
-	ax.set_xlabel(axis_label)
+	ax.set_ylabel(y_label)
+	ax.set_xlabel(x_label)
 	ax.set_aspect('equal')
 	ax.autoscale(tight=True)
 	ax.minorticks_on()
