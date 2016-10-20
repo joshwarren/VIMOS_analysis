@@ -29,8 +29,19 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
 			x=lam[indexx[0]:indexx[1]])
 		if uncert is not None:
-			uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
-				F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
+			# uncertainty in continuum
+			F_c_uncert = np.sqrt(
+				(np.sum((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2) +
+				np.sum((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2))
+				/(redx[1]-redx[0] + bluex[1]-bluex[0]))
+
+			# Uncertainty in absorption line
+			uncert_out = np.sqrt(np.sum(line_strength**2 * (
+				(uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]])**2 +
+				(F_c_uncert/F_c[indexx[0]:indexx[1]])**2 )))
+
+			#uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
+			#	F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
 	if uncert is not None:
 		return line_strength, uncert_out
 	else:

@@ -15,7 +15,8 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	grid_length = 40
 	# Find lines:
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
-		'Mg_1', 'Mg_2', 'Mg_b']
+		#'Mg_1', 'Mg_2', 
+		'Mg_b']
 
 	print 'Stellar populations'
 
@@ -76,7 +77,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			for j, me in enumerate(metalicity):
 				for k, al in enumerate(alpha):
 					chi2[i,j,k,d] += np.square(ab_line[d] -	
-						interp[line]([ag,me,al]))/(interp[line]([ag,me,al])*n_lines[d])
+						interp[line]([ag,me,al]))/(uncert[d]*n_lines[d])
 
 	# f = 'test.pkl'
 	# p = open(f, 'wb')
@@ -93,10 +94,10 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	#nans = []
 	for i in range(D.number_of_bins):
 		try:
-			a.append(np.unravel_index(np.nanargmin(chi2[24:,:,:,i]),chi2[24:,:,:,i].shape))
+			a.append(np.unravel_index(np.nanargmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
 	#		nans.append(False)
 		except ValueError:
-			a.append(np.unravel_index(np.argmin(chi2[24:,:,:,i]),chi2[24:,:,:,i].shape))
+			a.append(np.unravel_index(np.argmin(chi2[:,:,:,i]),chi2[:,:,:,i].shape))
 	#		nans.append(True)
 	#nans = np.ravel(nans)
 
