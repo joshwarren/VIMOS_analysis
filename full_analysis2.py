@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 from use_kinemetry import use_kinemetry
 
-galaxies = [#'ic1459',
+galaxies = ['ic1459',
 			'ic1531',
 			'ic4296',
 			'ngc0612',# missing 216
@@ -47,7 +47,7 @@ err = []
 for galaxy in galaxies:
 	D = None
 	print galaxy
-	#try:
+	try:
 		#man_errors(galaxy, wav_range=wav_range)
 		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
 		#D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
@@ -55,16 +55,16 @@ for galaxy in galaxies:
 	# 	plt.close("all")
 	# 	#GH_plots(galaxy, wav_range=wav_range)
 	# 	#plt.close("all")
-	#	kinematics(galaxy, discard=discard, wav_range=wav_range)
+		kinematics(galaxy, discard=discard, wav_range=wav_range)
 	# 	#plt.close("all")
 	#	use_kinemetry(galaxy)
 		
 	#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-	#except Exception as e:
-	#	gal_err.append(galaxy)
-	#	err.append(e)
+	#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	#D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	except Exception as e:
+		gal_err.append(galaxy)
+		err.append(e)
 #v_vd_ellip(wav_range=wav_range)
 
 # Display errors

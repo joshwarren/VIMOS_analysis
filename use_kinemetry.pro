@@ -53,7 +53,7 @@ PRO do_work, gal, type
 
 	file = '/Data/vimos/analysis/'+gal+'/kinemetry_'+type+'.txt'
 	forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
-		/SILENT, comment='  radius(pix)      pa(deg)     err     ellip     err      k1      err       k51     err'
+		/SILENT, comment='  radius(pix)      pa(deg)        err         ellip        err           k1           err          k51         err'
 
 
 	if keyword_set(plot) then begin
