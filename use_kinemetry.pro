@@ -25,8 +25,8 @@ PRO do_work, gal, type
 	rdfloat, file, _,_,bin_num, xbin,ybin, skipline=1
 
 	file = '/Data/vimos/analysis/galaxies.txt'
-	rdfloat, file, galaxy_gals,_,_,_,_,x0,y0,_, skipline=1
-	i_gal = where(galaxy_gals eq gal)[0]
+	readcol, file, galaxy_gals,_,_,_,x0,y0,_, skipline=1,format='A,D,D,D,I,I,I'
+	i_gal = where(galaxy_gals eq gal)
 
 	b = uniq(bin_num,sort(bin_num))
 	xbin = xbin[b]
@@ -34,7 +34,7 @@ PRO do_work, gal, type
 
 	; Center the origin on the center of the galaxy
 	x_cent = max(xbin)/2
-	y_cent = mac(ybin)/2
+	y_cent = max(ybin)/2
 	xbin = xbin - x_cent
 	ybin = ybin - y_cent
 

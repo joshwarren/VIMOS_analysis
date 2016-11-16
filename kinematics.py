@@ -17,7 +17,6 @@ from scipy.optimize import curve_fit # for fitting a gaussian
 from checkcomp import checkcomp
 cc = checkcomp()
 import cPickle as pickle
-import re # for regex expressions
 
 #---------------------------------------------------------------------------
 def spxToKpc(x, z):
@@ -55,8 +54,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	z = z_gals[i_gal]
 
 	lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
-		Hgamma_mis, k5k1 = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
-		usecols=(1,2,3,4,5,6,7,8))
+		Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
+		usecols=(1,2,3,4,5,6,7))
 	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 'Hgamma':Hgamma_mis}
 
 
@@ -178,14 +177,14 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
 	template = "{0:13}{1:14}{2:15}{3:16}{4:4}{5:4}{6:11}\n" 
-	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}{8:8}\n" 
+	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
 	f.write(template.format('Galaxy', 'z', 'velocity', 'vel dispersion', 'x', 
 		'y', 'Target SN'))
 	f2 = open(galaxiesFile2, 'wb')
 	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
-		'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma','k5/k1'))
+		'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
 
 	for i in range(len(galaxy_gals)):
 		f.write(template.format(galaxy_gals[i], str(z_gals[i]),	str(vel_gals[i]), 
@@ -195,7 +194,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		f2.write(template2.format(galaxy_gals[i], str(round(lambda_R[i],3)), 
 			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 
 			str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]) ,
-			str(Hgamma_mis[i]), str(k5k1[i])))
+			str(Hgamma_mis[i])))
 
 	f.close()
 	f2.close()

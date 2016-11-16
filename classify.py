@@ -8,12 +8,18 @@ from pickler import pickler
 import numpy as np # for array handling
 from checkcomp import checkcomp
 cc = checkcomp()
+import re # for regex expressions
+
 
 
 def classify(galaxy):
 	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
 	classify_file = "%s/galaxies_classify.txt" % (analysis_dir)
 	galaxiesFile_Re =  "%s/galaxies_R_e.txt" % (analysis_dir)
+
+	galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
+		unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
+	i_gal = np.where(galaxy_gals==galaxy)[0]
 
 	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
 		skiprows=1, usecols=(1,2))
@@ -22,10 +28,6 @@ def classify(galaxy):
 
 	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
 # ------------================= RR/NRR ===================----------
-	galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
-		unpack=True, usecols=(0,1,2,3,4,5,6), dtype='S3')
-	i_gal = np.where(galaxy_gals==galaxy)[0][0]
-
 	file = '%s/%s/kinemetry_vel.txt' % (analysis_dir,galaxy)
 	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)
 	rad *= 0.67 # Pix to arcsec
@@ -41,8 +43,8 @@ def classify(galaxy):
 	        pa[j:]+=360
 
 	###### NEEDS TO BE CHANGED TO LUMINOSITY WEIGHTED MEAN
-	k5k1[i_gal] = np.average(k51/k1, weights=np.ones(len(k1)))
-	if k5k1[i_gal] < 0.04:
+	k5k1 = np.average(k51/k1, weights=np.ones(len(k1)))
+	if k5k1 < 0.04:
 		RR[i_gal] = 'RR'
 	else: RR[i_gal] = 'NRR'
 # ------------=========== kinematic features =============----------
