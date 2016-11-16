@@ -13,6 +13,7 @@ from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from stellar_pop import stellar_pop
 from use_kinemetry import use_kinemetry
+from classify import classify
 
 galaxies = ['ic1459',
 			'ic1531',
@@ -58,6 +59,7 @@ for galaxy in galaxies:
 		kinematics(galaxy, discard=discard, wav_range=wav_range)
 	# 	#plt.close("all")
 	#	use_kinemetry(galaxy)
+		classify(galaxy)
 		
 	#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 	#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)

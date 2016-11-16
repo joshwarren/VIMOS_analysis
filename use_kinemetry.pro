@@ -24,19 +24,25 @@ PRO do_work, gal, type
 	file = '/Data/vimos/analysis/'+gal+'/voronoi_2d_binning_output.txt'
 	rdfloat, file, _,_,bin_num, xbin,ybin, skipline=1
 
+	file = '/Data/vimos/analysis/galaxies.txt'
+	rdfloat, file, galaxy_gals,_,_,_,_,x0,y0,_, skipline=1
+	i_gal = where(galaxy_gals eq gal)[0]
+
 	b = uniq(bin_num,sort(bin_num))
 	xbin = xbin[b]
 	ybin = ybin[b]
 
 	; Center the origin on the center of the galaxy
-	xbin = xbin-max(xbin)/2
-	ybin = ybin-max(ybin)/2
+	x_cent = max(xbin)/2
+	y_cent = mac(ybin)/2
+	xbin = xbin - x_cent
+	ybin = ybin - y_cent
 
 	; kinemetry on maps
 	t=systime(1)
-	KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, ntrm=6, scale=0.33, $
-		name=gal,er_cf=er_cf, er_pa=er_pa, even=even, $
-		ERROR=er_velbin, er_q=er_q, /verbose
+	KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0[i_gal]-x_cent, $
+		y0=y0[i_gal]-y_cent, ntrm=6, scale=0.33, name=gal,er_cf=er_cf, $
+		er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, /verbose
 	;catch, caught_error
 	;if caught_error ne 0 then catch, /cancel
 	print, systime(1) -t, 'seconds'
