@@ -294,6 +294,7 @@ def errors2(i_gal=None, bin=None):
 	## limits are the cuts in pixel units, while lamRange is the cuts in
 	## wavelength unis.
 	gap=12
+	change = 0.25
 	ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap)  
 	ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap) 
 
@@ -307,14 +308,14 @@ def errors2(i_gal=None, bin=None):
 	
 	a = np.where(np.isfinite(a), a, 0)
 
-	if any(np.abs(a[:half/2]) > 0.2):
-		lower_limit = max(np.where(np.abs(a[:half/2]) > 0.2)[0])
+	if any(np.abs(a[:half/2]) > change):
+		lower_limit = max(np.where(np.abs(a[:half/2]) > change)[0])
 	else: 
 		lower_limit = -1
 	
 	# lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	if any(np.abs(a[3*half/2:]) > 0.2):
-		upper_limit = min(np.where(np.abs(a[3*half/2:]) > 0.2)[0])+int(1.5*half)
+	if any(np.abs(a[3*half/2:]) > change):
+		upper_limit = min(np.where(np.abs(a[3*half/2:]) > change)[0])+int(1.5*half)
 	else:
 		upper_limit = -1
 		

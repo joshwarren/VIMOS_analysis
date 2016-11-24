@@ -15,6 +15,8 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
 		'Mg_b']
+	limits = {#'G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
+		'H_beta':[1.0,2.9], 'Fe5015':[3.5,5.9], 'Mg_b':[3.1,4.7]}
 
 	print 'Absorption lines'
 
@@ -64,6 +66,10 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 		abmin, abmax = a_sorted[vLimit], a_sorted[-vLimit-1]
 		abmax = min([abmax, mean + std])
 		abmin = max([abmin, mean - std])
+
+		if line in limits.keys():
+			abmin = limits[line][0]
+			abmax = limits[line][1]
 
 		ax_array[np.floor(i/2),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
