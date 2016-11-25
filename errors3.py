@@ -20,6 +20,8 @@ cc = checkcomp()
 if cc.device == -1:
 	cc = checkcomp(override='glamdring')
 # import of matplotlib.pyplot is within errors routine
+from errors2 import set_lines, use_templates, determine_goodpixels, remove_anomalies
+
 
 #-----------------------------------------------------------------------------
 def set_params():
@@ -46,95 +48,6 @@ def set_params():
 	mdegree = 10 # order of multaplicative Legendre polynomials used. 
 	return glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
 		stellar_moments, gas_moments, degree, mdegree
-#-----------------------------------------------------------------------------
-
-#-----------------------------------------------------------------------------
-def set_lines (lines, logLam_temp, FWHM_gal):
-	# In this routine all lines are free to have independent intensities.
-	# One can fix the intensity ratio of different lines (e.g. the [OIII] doublet)
-	# by placing them in the same emission template
-	lam = np.exp(logLam_temp)
-	#lines = lines[where((lines gt min(lam)) and (lines lt max(lam)))]
-	sigma = FWHM_gal/2.355 # Assumes instrumental sigma is constant in Angstrom
-	emission_lines = np.zeros((len(logLam_temp),len(lines)))
-	for j in range(len(lines)):
-		emission_lines[:,j] = np.exp(-0.5*np.power((lam - lines[j])/sigma,2))
-	return emission_lines
-#-----------------------------------------------------------------------------
-
-#-----------------------------------------------------------------------------
-def use_templates(galaxy, glamdring=False):
-	if glamdring:
-		template_weighting = '%s/analysis/%s/templates.txt' % (cc.base_dir, 
-			galaxy)
-	else:
-		template_weighting = '%s/Data/vimos/analysis/%s/templates.txt' % (
-			cc.base_dir, galaxy)
-
-	templatesToUse = np.loadtxt(template_weighting, usecols=(0,), dtype='i')
-	return templatesToUse
-#-----------------------------------------------------------------------------
-
-#-----------------------------------------------------------------------------
-def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
-	"""
-	warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
-	
-	PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of
-		goodPixels to be used as input keyword for the routine
-		PPXF. This is useful to mask gas emission lines or atmospheric
-		absorptions. It can be trivially adapted to mask different
-		lines. 
-	
-	INPUT PARAMETERS:
-	- LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom 
-		of each pixel of the log rebinned *galaxy* spectrum.
-	- LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the
-		minimum and maximum wavelength in Angstrom in the stellar
-		*template* used in PPXF. 
-	- VEL: Estimate of the galaxy velocity in km/s.
-	
-	V1.0: Michele Cappellari, Leiden, 9 September 2005
-	V1.01: Made a separate routine and included additional common
-	  emission lines. MC, Oxford 12 January 2012
-	V1.02: Included more lines. MC, Oxford, 7 Januray 2014
-	20150617 warrenj Added Telluric lines (tell) at 5199 (is a blended sky
-	line)
-	20160816 warrenj Added NI doublet 5199.36 and 5201.86
-	"""
-
-	c = 299792.458 # speed of light in km/s
- 
-	# dv = lines*0+800d # width/2 of masked gas emission region in km/s
-	dv = 800 # width/2 of masked gas emission region in km/s
-	# flag = bytearray([0]*len(logLam))
-	flag = logLam < 0
-
-	# Marks telluric line
-	tell = 5199
-	flag |= (logLam > np.log(tell) - z - dv/c) \
-		& (logLam < np.log(tell) - z + dv/c) 
-
-	if not gas:
-		#                 -----[OII]-----   Hdelta    Hgamma   Hbeta;
-		lines = np.array([3726.03, 3728.82, 4101.76, 4340.47, 4861.33, \
-		#    -----[OIII]----- -----[NI]----- ----??----   [OI]   
-			4958.92, 5006.84, 5199.36, 5201.86, 5528, 5535, 6300.30, \
-		#    -----[NII]------  Halpha   -----[SII]-----   
-			6548.03, 6583.41,  6562.80, 6716.47, 6730.85])
-
-		for j in range(len(lines)):
-			flag |= (logLam > np.log(lines[j]) + (vel- dv)/c) \
-				& (logLam < np.log(lines[j]) + (vel+ dv)/c)
-
-
-	flag |= logLam < np.log(lamRangeTemp[0]) + (vel + 900)/c # Mask edges of
-	flag |= logLam > np.log(lamRangeTemp[1]) + (vel - 900)/c # stellar library
-
-
-	flag[0:3] = 1 # Mask edge of data
-	flag[-4:]= 1 # to remove edge effects
-	return np.where(flag == 0)[0]
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -290,67 +203,18 @@ def errors3(i_gal=None, bin=None):
 		axis=1)
 
 	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-	
-	# fl = np.sum(galaxy_data, axis=0)
-	# plt.contour(fl)
-	# plt.scatter(x[spaxels_in_bin], y[spaxels_in_bin])
-	# plt.show()
-## ----------======== Finding limits of the spectrum =======---------
-	## limits are the cuts in pixel units, while lamRange is the cuts in
-	## wavelength unis.
-	gap=12
-	change=0.25
-	ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap)  
-	ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap) 
-
-	## h is the spectrum with the peak enclosed by 'ignore' removed.
-	h = np.delete(bin_lin_temp, ignore)
-	h = np.delete(h,ignore2)
-
-	half = s[0]/2
-	a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
-		h[4:]/np.median(h[np.nonzero(h)])
-	
-	a = np.where(np.isfinite(a), a, 0)
-
-	if any(np.abs(a[:half/2]) > change):
-		lower_limit = max(np.where(np.abs(a[:half/2]) > change)[0])
-	else: 
-		lower_limit = -1
-	
-	# lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	if any(np.abs(a[3*half/2:]) > change):
-		upper_limit = min(np.where(np.abs(a[3*half/2:]) > change)[0])+int(1.5*half)
-	else:
-		upper_limit = -1
-		
-	if upper_limit > ignore2[0]: upper_limit+=gap 
-	if upper_limit > ignore[0]: upper_limit+=gap
-
-	if lower_limit < 0:
-		lower_limit = min(np.where(a[:half] != 0)[0]) + 5
-		if lower_limit < 0: lower_limit = 0
-
-	else:
-		lower_limit +=5
-
-	if upper_limit > s[0]-1 or upper_limit < half:
-		upper_limit = s[0]-6 
-	else:
-		upper_limit += -5
 ## ----------========== Using set_range variable ===========---------
-	if set_range is not None:
-	## Change to pixel units
-		set_range = ((set_range - CRVAL_spec)/CDELT_spec).astype(int)
-		if set_range[0] > lower_limit: lower_limit = set_range[0] 
-		if set_range[1] < upper_limit: upper_limit = set_range[1]
+	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
+	if set_range is not None: 
+		lamRange=np.array([max(lamRange[0],set_range[0]),min(lamRange[1],set_range[1])])
+	lower_limit, upper_limit = (lamRange-CRVAL_spec)/CDELT_spec
+	lower_limit, upper_limit = int(lower_limit), int(upper_limit)
 
-	lamRange = np.array([lower_limit, upper_limit])*CDELT_spec + \
-		CRVAL_spec
-## ----------=========== Writing the spectrum  =============---------
 	bin_lin = bin_lin_temp[lower_limit:upper_limit]
 	bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
 ## ----------========= Calibrating the spectrum  ===========---------
+	bin_lin_temp = remove_anomalies(bin_lin_temp, window=201, repeats=3)
+
 	## For calibrating the resolutions between templates and observations
 	## using the gauss_smooth command
 	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)

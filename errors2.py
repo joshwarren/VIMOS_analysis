@@ -15,7 +15,10 @@ import os
 import sys
 from checkcomp import checkcomp
 cc = checkcomp()
+if cc.device == -1:
+	cc = checkcomp(override='glamdring')
 # import of matplotlib.pyplot is within errors routine
+from rolling_stats import *
 
 #-----------------------------------------------------------------------------
 def set_params():
@@ -130,6 +133,22 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 	flag[0:3] = 1 # Mask edge of data
 	flag[-4:]= 1 # to remove edge effects
 	return np.where(flag == 0)[0]
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+def remove_anomalies(spec, window=201, repeats=3):
+	x=np.arange(len(spec))
+	mask = np.zeros(len(spec)).astype(bool)
+
+	for r in range(repeats):
+		med = rollmed(spec,window)
+		std = rollstd(spec,window)
+		for i in range(len(mask)):
+			mask[i] += spec[i] > med[i]+3*std[i]
+			mask[i] += spec[i] < med[i]-3*std[i]
+
+		spec[mask] = np.interp(x[mask],x[~mask],spec[~mask])
+	return spec
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -285,67 +304,18 @@ def errors2(i_gal=None, bin=None):
 		axis=1)
 
 	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-	
-	# fl = np.sum(galaxy_data, axis=0)
-	# plt.contour(fl)
-	# plt.scatter(x[spaxels_in_bin], y[spaxels_in_bin])
-	# plt.show()
-## ----------======== Finding limits of the spectrum =======---------
-	## limits are the cuts in pixel units, while lamRange is the cuts in
-	## wavelength unis.
-	gap=12
-	change = 0.25
-	ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap)  
-	ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap) 
-
-	## h is the spectrum with the peak enclosed by 'ignore' removed.
-	h = np.delete(bin_lin_temp, ignore)
-	h = np.delete(h,ignore2)
-
-	half = s[0]/2
-	a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
-		h[4:]/np.median(h[np.nonzero(h)])
-	
-	a = np.where(np.isfinite(a), a, 0)
-
-	if any(np.abs(a[:half/2]) > change):
-		lower_limit = max(np.where(np.abs(a[:half/2]) > change)[0])
-	else: 
-		lower_limit = -1
-	
-	# lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	if any(np.abs(a[3*half/2:]) > change):
-		upper_limit = min(np.where(np.abs(a[3*half/2:]) > change)[0])+int(1.5*half)
-	else:
-		upper_limit = -1
-		
-	if upper_limit > ignore2[0]: upper_limit+=gap 
-	if upper_limit > ignore[0]: upper_limit+=gap
-
-	if lower_limit < 0:
-		lower_limit = min(np.where(a[:half] != 0)[0]) + 5
-		if lower_limit < 0: lower_limit = 0
-
-	else:
-		lower_limit +=5
-
-	if upper_limit > s[0]-1 or upper_limit < half:
-		upper_limit = s[0]-6 
-	else:
-		upper_limit += -5
 ## ----------========== Using set_range variable ===========---------
-	if set_range is not None:
-	## Change to pixel units
-		set_range = ((set_range - CRVAL_spec)/CDELT_spec).astype(int)
-		if set_range[0] > lower_limit: lower_limit = set_range[0] 
-		if set_range[1] < upper_limit: upper_limit = set_range[1]
+	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
+	if set_range is not None: 
+		lamRange=np.array([max(lamRange[0],set_range[0]),min(lamRange[1],set_range[1])])
+	lower_limit, upper_limit = (lamRange-CRVAL_spec)/CDELT_spec
+	lower_limit, upper_limit = int(lower_limit), int(upper_limit)
 
-	lamRange = np.array([lower_limit, upper_limit])*CDELT_spec + \
-		CRVAL_spec
-## ----------=========== Writing the spectrum  =============---------
 	bin_lin = bin_lin_temp[lower_limit:upper_limit]
 	bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
 ## ----------========= Calibrating the spectrum  ===========---------
+	bin_lin_temp = remove_anomalies(bin_lin_temp, window=201, repeats=3)
+
 	## For calibrating the resolutions between templates and observations
 	## using the gauss_smooth command
 	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)

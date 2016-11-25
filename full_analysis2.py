@@ -61,9 +61,9 @@ for galaxy in galaxies:
 	#	use_kinemetry(galaxy)
 	#	classify(galaxy)
 		
-	# 	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D, uncert=False)
-	# 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+	# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D, uncert=False)
+	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	#except Exception as e:
 	#	gal_err.append(galaxy)
 	#	err.append(e)
