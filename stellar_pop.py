@@ -77,7 +77,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			for j, me in enumerate(metalicity):
 				for k, al in enumerate(alpha):
 					chi2[i,j,k,d] += np.square(ab_line[d] -	
-						interp[line]([ag,me,al]))/(uncert[d]**2*n_lines[d])
+						interp[line]([ag,me,al]))/(uncert[d]**2*n_lines[d]**2)
 
 	# f = 'test.pkl'
 	# p = open(f, 'wb')
