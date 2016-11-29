@@ -17,6 +17,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
 		'Mg_b']
+	lines = ['Mg_b']
 
 	print 'Stellar populations'
 
@@ -83,12 +84,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			for j, me in enumerate(metallicity):
 				for k, al in enumerate(alpha):
 					chi2[i,j,k,d] += np.square(ab_line[d] -	
-						interp[line][ag,me,al])/((uncert[d]**2)*n_lines[d])
-
-	# f = 'test.pkl'
-	# p = open(f, 'wb')
-	# pickle.dump(chi2,p)
-	# p.close()
+						interp[line][ag,me,al])/(uncert[d]**2)#*n_lines[d])
 
 	chi2[chi2==0] = np.nan
 	age_map=np.zeros(D.number_of_bins)
@@ -102,7 +98,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		age_map[bin] = age[i]
 		metal_map[bin] = metallicity[j]
 		alpha_map[bin] = alpha[k]
-		chi2_map[bin] = chi2[i,j,k,bin]
+		chi2_map[bin] = chi2[i,j,k,bin]/n_lines[bin]
 
 
 

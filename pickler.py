@@ -14,7 +14,7 @@ import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 import os
 import cPickle as pickle
-from Bin import Data
+from Bin import Data, emission_line
 from checkcomp import checkcomp
 cc = checkcomp()
 
@@ -77,8 +77,17 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		D.bin[i].lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, i))
 		
 		# Getting emission templates used
-		D.bin[i].set_emission_lines(FWHM_gal)#, temp_wav)
-
+		lines = {'Hdelta':4101.76, 'Hgamma':4340.47, 'Hbeta':4861.33, 
+			'[OIII]5007d':5004.0,'[NI]d':5200.0}
+		#D.bin[i].set_emission_lines(FWHM_gal)#, temp_wav)
+		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, i),dtype=str)
+		ms = matrix.shape
+		for j in range(ms[0]):
+			if not matrix[j,0].isdigit():
+				D.bin[i].components[matrix[j,0]] = emission_line(D.bin[i],
+					matrix[j,0],lines[matrix[j,0]],matrix[j,1:].astype(float))
+				D.add_e_line(matrix[j,0],lines[matrix[j,0]])
+		
 		#Setting the weighting given to the gas templates 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
 			vin_dir_gasMC, i), unpack=True, dtype='str')

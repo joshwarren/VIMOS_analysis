@@ -437,29 +437,29 @@ class Bin(object):
 			if key.isdigit():
 				#wav, template = np.loadtxt(files[int(key)], unpack=True)
 				spec += templates[key][a[0]:a[1]] * self.temp_weight[key]
+		if len(self.mpweight)!=0:
+			spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+				np.append(1, self.mpweight))
 		if len(self.apweight)!=0:
 			spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
 				self.apweight)
-		elif len(self.mpweight):
-			spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-				np.append(1, self.mpweight))
 		return wav[a[0]:a[1]], spec
 	
-	def set_emission_lines(self, FWHM_gal):#, temp_wav):
-	# Sets emission lines
-		self.FWHM_gal = float(FWHM_gal)
-		# NB: Additional 0.8A to make up for the difference between the log 
-		#	and linear wavelengths from util.log_rebin
-		line_spectrums, line_names, line_wavs = util.emission_lines(
-			self.loglam, np.array([self.lamLimits[0],self.lamLimits[1]+0.8]), 
-			FWHM_gal, quiet=True)
+	# def set_emission_lines(self, FWHM_gal):#, temp_wav):
+	# # Sets emission lines
+	# 	self.FWHM_gal = float(FWHM_gal)
+	# 	# NB: Additional 0.8A to make up for the difference between the log 
+	# 	#	and linear wavelengths from util.log_rebin
+	# 	line_spectrums, line_names, line_wavs = util.emission_lines(
+	# 		self.loglam, np.array([self.lamLimits[0],self.lamLimits[1]+0.8]), 
+	# 		FWHM_gal, quiet=True)
 
-		for i in range(len(line_wavs)):
-			line = emission_line(self, line_names[i], line_wavs[i], 
-				line_spectrums[:,i].flatten())
-			self.components[line_names[i]] = line
-			#if line_names[i] not in self.__parent__.e_components:
-			self.__parent__.add_e_line(line_names[i], line_wavs[i])
+	# 	for i in range(len(line_wavs)):
+	# 		line = emission_line(self, line_names[i], line_wavs[i], 
+	# 			line_spectrums[:,i].flatten())
+	# 		self.components[line_names[i]] = line
+	# 		#if line_names[i] not in self.__parent__.e_components:
+	# 		self.__parent__.add_e_line(line_names[i], line_wavs[i])
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
@@ -523,7 +523,7 @@ class _bin_data(object):
 class emission_line(_bin_data):
 # Attributes:
 # name: str, name of emission line
-# weight: float, weighting from ppxf fit
+# _weight: float, weighting from ppxf fit
 # wav: wavelength of emission
 # flux: float, integrated fitted spectrum.
 # spectrum: array if not masked of fitted spectrum
@@ -574,7 +574,7 @@ class emission_line(_bin_data):
 	
 	@property
 	def AmpNoi(self):
-		return max(self._spectrum)*self.weight/self.__parent__.noise[np.argmin(np.abs(
+		return max(self.spectrum_nomask)/self.__parent__.noise[np.argmin(np.abs(
 			self.__parent__.lam-self.wav))]
 
 	@property

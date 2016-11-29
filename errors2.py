@@ -169,7 +169,7 @@ def errors2(i_gal=None, bin=None):
 
 	if glamdring:
 		dir = cc.base_dir
-		dir2 = cc.base_dir
+		templatesDirectory = '%s/ppxf/MILES_library/' % (cc.base_dir)	
 		
 		import matplotlib # 20160202 JP to stop lack-of X-windows error
 		matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
@@ -178,7 +178,7 @@ def errors2(i_gal=None, bin=None):
 		import ppxf_util as util
 	else:
 		dir = '%s/Data/vimos/' % (cc.base_dir)
-		dir2 = '%s/Data/idl_libraries/' % (cc.base_dir)
+		templatesDirectory = '%s/models/miles_library/' % (cc.home_dir)
 		import matplotlib.pyplot as plt # used for plotting
 		from ppxf import ppxf
 		import ppxf_util as util
@@ -211,7 +211,6 @@ def errors2(i_gal=None, bin=None):
 
 ## ----------=============== Miles library =================---------
 	# Finding the template files
-	templatesDirectory = dir2 + 'ppxf/MILES_library/'
 	templateFiles = glob.glob(templatesDirectory + \
 		'm0[0-9][0-9][0-9]V') #****** no longer have nfiles.
 
@@ -568,26 +567,46 @@ def errors2(i_gal=None, bin=None):
 		w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
 
-	## save addative polyweights
-	if not os.path.exists("%sanalysis/%s/gas_MC/apweights" % (dir, galaxy)):
-		os.makedirs("%sanalysis/%s/gas_MC/apweights" % (dir, galaxy)) 
-	polyweights_file = "%sanalysis/%s/gas_MC/apweights/%s.dat" % (dir, galaxy,
+	## save indervidual template bestfits
+	if not os.path.exists("%s/analysis/%s/gas_MC/bestfit/matrix" % (dir, galaxy)):
+		os.makedirs("%s/analysis/%s/gas_MC/bestfit/matrix" % (dir, galaxy)) 
+	matrix_file = "%s/analysis/%s/gas_MC/bestfit/matrix/%s.dat" % (dir, galaxy,
 		str(bin))
+	## save addative polyweights
+	if hasattr(pp, 'polyweights'):
+		if not os.path.exists("%s/analysis/%s/gas_MC/apweights" % (dir, galaxy)):
+			os.makedirs("%s/analysis/%s/gas_MC/apweights" % (dir, galaxy)) 
+		polyweights_file = "%s/analysis/%s/gas_MC/apweights/%s.dat" % (dir, galaxy,
+			str(bin))
 
-	apw = open(polyweights_file, 'w')
-	for i in range(len(pp.polyweights)):
-		apw.write(str(pp.polyweights[i]) + '\n')
+		apw = open(polyweights_file, 'w')
+		for i in range(len(pp.polyweights)):
+			apw.write(str(pp.polyweights[i]) + '\n')
+
+		l = open(matrix_file, 'w')
+		for i in range(len(pp.polyweights),pp.matrix.shape[1]):
+			l.write(str(templatesToUse[i]) + "   ")
+			for j in range(pp.matrix.shape[0]):
+				l.write(str(pp.matrix[j,i]) + "   ")
+			l.write('\n')
+	else:
+		l = open(matrix_file, 'w')
+		for i in range(pp.matrix.shape[1]):
+			l.write(str(templatesToUse[i]) + "   ")
+			for j in range(pp.matrix.shape[0]):
+				l.write(str(pp.matrix[j,i]) + "   ")
+			l.write('\n')
 
 	## save multiplicative polyweights
-	# if not os.path.exists("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)):
-	#     os.makedirs("%sanalysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
-	# polyweights_file = "%sanalysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
-	#     str(bin))
+	if hasattr(pp, 'mpolyweights'):
+		if not os.path.exists("%s/analysis/%s/gas_MC/mpweights" % (dir, galaxy)):
+			os.makedirs("%s/analysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
+		mpolyweights_file = "%s/analysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
+			str(bin))
 
-	# mpw = open(polyweights_file, 'w')
-	# for i in range(len(pp.mpolyweights)):
-	#     mpw.write(str(pp.mpolyweights[i]) + '\n')
-
+		mpw = open(mpolyweights_file, 'w')
+		for i in range(len(pp.mpolyweights)):
+			mpw.write(str(pp.mpolyweights[i]) + '\n')
 	## save lambda input
 	if not os.path.exists("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)):
 		os.makedirs("%sanalysis/%s/gas_MC/lambda" % (dir, galaxy)) 
@@ -597,6 +616,7 @@ def errors2(i_gal=None, bin=None):
 	l = open(lambda_file, 'w')
 	for i in range(len(lambdaq)):
 		l.write(str(lambdaq[i]) + '\n')
+
 ##############################################################################
 
 

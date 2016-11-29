@@ -20,7 +20,8 @@ cc = checkcomp()
 if cc.device == -1:
 	cc = checkcomp(override='glamdring')
 # import of matplotlib.pyplot is within errors routine
-from errors2 import set_lines, use_templates, determine_goodpixels, remove_anomalies
+from errors2 import set_lines, use_templates, determine_goodpixels, \
+	remove_anomalies
 
 
 #-----------------------------------------------------------------------------
@@ -68,8 +69,8 @@ def errors3(i_gal=None, bin=None):
 
 	if glamdring:
 		dir = cc.base_dir
-		dir2 = cc.base_dir
-		
+		templatesDirectory = '%s/ppxf/MILES_library/' % (cc.base_dir)	
+
 		import matplotlib # 20160202 JP to stop lack-of X-windows error
 		matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 		import matplotlib.pyplot as plt # used for plotting
@@ -77,7 +78,7 @@ def errors3(i_gal=None, bin=None):
 		import ppxf_util as util
 	else:
 		dir = '%s/Data/vimos' % (cc.base_dir)
-		dir2 = '%s/Data/idl_libraries' % (cc.base_dir)
+		templatesDirectory = '%s/models/miles_library/' % (cc.home_dir)
 		import matplotlib.pyplot as plt # used for plotting
 		from ppxf import ppxf
 		import ppxf_util as util
@@ -86,7 +87,8 @@ def errors3(i_gal=None, bin=None):
 
 	data_file = dir + "/analysis/galaxies.txt"
 	# different data types need to be read separetly
-	z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,2,3,4,5))
+	z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, 
+		unpack=True, skiprows=1, usecols=(1,2,3,4,5))
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	vel = vel_gals[i_gal]
@@ -110,10 +112,8 @@ def errors3(i_gal=None, bin=None):
 
 ## ----------=============== Miles library =================---------
 	# Finding the template files
-	templatesDirectory = dir2 + '/ppxf/MILES_library/'
 	templateFiles = glob.glob(templatesDirectory + \
 		'm0[0-9][0-9][0-9]V') #****** no longer have nfiles.
-
 
 	# v1 is wavelength, v2 is spectrum
 	v1, v2 = np.loadtxt(templateFiles[0], unpack='True')
@@ -198,15 +198,17 @@ def errors3(i_gal=None, bin=None):
 	bin_lin_noise_temp = np.zeros(s[0])
 
 
-	bin_lin_temp = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]],axis=1)
-	bin_lin_noise_temp = np.nansum(galaxy_noise[:,x[spaxels_in_bin],y[spaxels_in_bin]]**2,
-		axis=1)
+	bin_lin_temp = np.nansum(galaxy_data[:,x[spaxels_in_bin],
+		y[spaxels_in_bin]], axis=1)
+	bin_lin_noise_temp = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
+		y[spaxels_in_bin]]**2, axis=1)
 
 	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
 ## ----------========== Using set_range variable ===========---------
 	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
 	if set_range is not None: 
-		lamRange=np.array([max(lamRange[0],set_range[0]),min(lamRange[1],set_range[1])])
+		lamRange=np.array([max(lamRange[0],set_range[0]),
+			min(lamRange[1],set_range[1])])
 	lower_limit, upper_limit = (lamRange-CRVAL_spec)/CDELT_spec
 	lower_limit, upper_limit = int(lower_limit), int(upper_limit)
 
@@ -467,7 +469,11 @@ def errors3(i_gal=None, bin=None):
 	for i in range(len(pp.weights)):
 		w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
-
+	## save indervidual template bestfits
+	if not os.path.exists("%s/analysis/%s/pop_MC/bestfit/matrix" % (dir, galaxy)):
+		os.makedirs("%s/analysis/%s/pop_MC/bestfit/matrix" % (dir, galaxy)) 
+	matrix_file = "%s/analysis/%s/pop_MC/bestfit/matrix/%s.dat" % (dir, galaxy,
+		str(bin))
 	## save addative polyweights
 	if hasattr(pp, 'polyweights'):
 		if not os.path.exists("%s/analysis/%s/pop_MC/apweights" % (dir, galaxy)):
@@ -478,6 +484,20 @@ def errors3(i_gal=None, bin=None):
 		apw = open(polyweights_file, 'w')
 		for i in range(len(pp.polyweights)):
 			apw.write(str(pp.polyweights[i]) + '\n')
+
+		l = open(matrix_file, 'w')
+		for i in range(len(pp.polyweights),pp.matrix.shape[1]):
+			l.write(str(templatesToUse[i]) + "   ")
+			for j in range(pp.matrix.shape[0]):
+				l.write(str(pp.matrix[j,i]) + "   ")
+			l.write('\n')
+	else:
+		l = open(matrix_file, 'w')
+		for i in range(pp.matrix.shape[1]):
+			l.write(str(templatesToUse[i]) + "   ")
+			for j in range(pp.matrix.shape[0]):
+				l.write(str(pp.matrix[j,i]) + "   ")
+			l.write('\n')
 
 	## save multiplicative polyweights
 	if hasattr(pp, 'mpolyweights'):
@@ -499,6 +519,8 @@ def errors3(i_gal=None, bin=None):
 	l = open(lambda_file, 'w')
 	for i in range(len(lambdaq)):
 		l.write(str(lambdaq[i]) + '\n')
+
+
 ##############################################################################
 
 
