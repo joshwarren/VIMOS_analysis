@@ -17,7 +17,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
 		'Mg_b']
-	lines = ['Mg_b']
+	#lines = ['H_beta']
 
 	print 'Stellar populations'
 
@@ -114,7 +114,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
 
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
-			D.bin_num, D.xBar, D.yBar, values, vmin=vmin, vmax=vmax,
+			D.bin_num, D.xBar, D.yBar, values, #vmin=vmin, vmax=vmax,
 			nodots=True, colorbar=True, title=plot, 
 			ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)

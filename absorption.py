@@ -22,26 +22,36 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 		F_red = np.nanmean(spectrum[redx[0]:redx[1]])
 		F_blue = np.nanmean(spectrum[bluex[0]:bluex[1]])
 		# Gradient of staight line representing continuum
-		m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
+		m = 2 * (F_red - F_blue)/(red[0]+red[1] - blue[0]-blue[1])
 		# Staight line representing continuum
-		F_c = m *np.arange(len(spectrum)) + F_red - m * (redx[0]+redx[1])/2
+		F_c = m *np.arange(len(spectrum)) + F_red - m * (red[0]+red[1])/2
 		# Indice value
-		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]], 
-			x=lam[indexx[0]:indexx[1]])
+		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/
+			F_c[indexx[0]:indexx[1]], x=lam[indexx])
 		if uncert is not None:
 			# uncertainty in continuum
-			F_c_uncert = np.sqrt(
-				(np.sum((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2) +
-				np.sum((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2))
-				/(redx[1]-redx[0] + bluex[1]-bluex[0]))
+			m_uncert = np.sqrt(np.nanmean(spectrum[bluex[0]:bluex[1]]**2) +
+				np.nanmean(spectrum[redx[0]:redx[1]]**2))*\
+				2/(red[0]+red[1] - blue[0]-blue[1])
+
+			c_uncert = np.sqrt(np.nanmean(spectrum[redx[0]:redx[1]]**2) +
+				(m_uncert*(red[0]+red[1])/2)**2)
+			F_c_uncert = np.sqrt((lam*m_uncert)**2 + c_uncert**2)
+
+			# F_c_uncert = np.sqrt(
+			# 	(np.trapz((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2,x=lam[bluex]) +
+			# 	np.trapz((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2,x=lam[redx]))
+			# 	/(redx[1]-redx[0] + bluex[1]-bluex[0]))
 
 			# Uncertainty in absorption line
-			uncert_out = np.sqrt(np.sum(line_strength**2 * (
+			uncert_out = np.sqrt(np.trapz(line_strength**2 * (
 				(uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]])**2 +
-				(F_c_uncert/F_c[indexx[0]:indexx[1]])**2 )))
+				(F_c_uncert[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]])**2 ),
+#				(F_c_uncert/F_c[indexx[0]:indexx[1]])**2 ),
+				x=lam[indexx]))
 
-			#uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
-			#	F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
+			# uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
+			# 	F_c[indexx[0]:indexx[1]]),x=lam[indexx]))
 	if uncert is not None:
 		return line_strength, uncert_out
 	else:
