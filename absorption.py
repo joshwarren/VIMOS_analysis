@@ -22,25 +22,54 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 		F_red = np.nanmean(spectrum[redx[0]:redx[1]])
 		F_blue = np.nanmean(spectrum[bluex[0]:bluex[1]])
 		# Gradient of staight line representing continuum
+#		m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
 		m = 2 * (F_red - F_blue)/(red[0]+red[1] - blue[0]-blue[1])
 		# Staight line representing continuum
-		F_c = m *np.arange(len(spectrum)) + F_red - m * (red[0]+red[1])/2
+#		F_c = m *np.arange(len(spectrum)) + F_red - m * (redx[0]+redx[1])/2
+		F_c = m*lam + F_red - m * (red[0]+red[1])/2
 		# Indice value
 		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/
-			F_c[indexx[0]:indexx[1]], x=lam[indexx])
+			F_c[indexx[0]:indexx[1]], x=lam[indexx[0]:indexx[1]])
 		if uncert is not None:
 			# uncertainty in continuum
-			m_uncert = np.sqrt(np.nanmean(spectrum[bluex[0]:bluex[1]]**2) +
-				np.nanmean(spectrum[redx[0]:redx[1]]**2))*\
+			m_uncert = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2) +
+				np.nanmean(uncert[redx[0]:redx[1]]**2))*\
 				2/(red[0]+red[1] - blue[0]-blue[1])
 
-			c_uncert = np.sqrt(np.nanmean(spectrum[redx[0]:redx[1]]**2) +
+			c_uncert = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2) +
 				(m_uncert*(red[0]+red[1])/2)**2)
 			F_c_uncert = np.sqrt((lam*m_uncert)**2 + c_uncert**2)
+			b = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2))
+			r = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2))
+			F_c_uncert = np.ones(len(F_c))*np.sqrt(b**2+r**2)
+			# print b/F_blue
+			# print r/F_red
+			# print m_uncert/m
+			# print c_uncert/np.abs(F_red - m * (red[0]+red[1])/2)
+			# print F_c_uncert[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]]
+			# print uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]]
+			# print ''
+			# print np.sqrt(b**2+r**2)/(F_red-F_blue)
+			# import matplotlib.pyplot as plt
+			# plt.close('all') 
+			# f,ax=plt.subplots()
+			# ax.errorbar(lam, F_c, yerr=F_c_uncert)
+			# ax.errorbar(lam,spectrum,yerr=uncert, color='g')
+			# ax.errorbar([np.mean(red),np.mean(blue)],[F_red,F_blue],yerr=[r,b],fmt='.')
+			# ax.axvline(blue[0],color='b')
+			# ax.axvline(red[0],color='r')
+			# ax.axvline(index[0],color='g')
+			# ax.axvline(blue[1],color='b')
+			# ax.axvline(red[1],color='r')
+			# ax.axvline(index[1],color='g')
+			# ax.set_xlim([blue[0]-5,red[1]+5])
+			# ax.set_ylim([0.1,0.25])
+			# plt.show()
+			# kjshkd
 
 			# F_c_uncert = np.sqrt(
-			# 	(np.trapz((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2,x=lam[bluex]) +
-			# 	np.trapz((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2,x=lam[redx]))
+			# 	(np.trapz((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2,x=lam[bluex[0]:bluex[1]]) +
+			# 	np.trapz((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2,x=lam[redx[0]:redx[1]]))
 			# 	/(redx[1]-redx[0] + bluex[1]-bluex[0]))
 
 			# Uncertainty in absorption line
@@ -48,10 +77,10 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 				(uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]])**2 +
 				(F_c_uncert[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]])**2 ),
 #				(F_c_uncert/F_c[indexx[0]:indexx[1]])**2 ),
-				x=lam[indexx]))
+				x=lam[indexx[0]:indexx[1]]))
 
 			# uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
-			# 	F_c[indexx[0]:indexx[1]]),x=lam[indexx]))
+			# 	F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
 	if uncert is not None:
 		return line_strength, uncert_out
 	else:
@@ -103,6 +132,7 @@ def absorption(line_name, D, uncert=False):
 		line_strength_con = calc(lam, convolved, index, blue, red)
 		# LOSVD correction (From SAURON VI: Section 4.2.2)
 		corr = line_strength_uncon/line_strength_con
+		print corr
 		if _uncert:
 			line_strength, uncert = calc(lam, bin.continuum, index, blue, red, 
 				uncert=bin.noise)

@@ -5,7 +5,7 @@
 
 import numpy as np
 import ppxf_util as util
-from absorption import absorption
+from absorption3 import absorption
 #from glob import glob
 #from checkcomp import checkcomp
 #cc = checkcomp()
