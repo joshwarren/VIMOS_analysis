@@ -32,6 +32,9 @@ class Data(object):
 # vel_norm: float normalisation factor for finding the rest frame of the galaxy.
 # center_bin: int, bin number of the brightest bin.
 # common_range: array of min and max of common wavelength range
+# galaxy_spectrum: array of spectrum of whole galaxy
+# galaxy_continuum: array of spectrum of whole galaxy with emission lines 
+#	removed.
 #
 # Methods:
 # add_e_line (line name, line wavelength): adds a new emission line object 
@@ -126,6 +129,28 @@ class Data(object):
 	@property
 	def n_spaxels_in_bin(self):
 		return np.array([bin.n_spaxels_in_bin for bin in self.bin])
+
+	@property
+	def galaxy_spectrum(self):
+		s = np.zeros(1400)
+		for bin in self.bin:
+			s += bin.spectrum
+		return s
+
+	@property
+	def galaxy_continuum(self):
+		s = np.zeros(1400)
+		for bin in self.bin:
+			s += bin.continuum
+		return s
+
+	@property
+	def galaxy_varience(self):
+		s = np.zeros(1400)
+		for bin in self.bin:
+			s += bin.noise**2
+		return np.sqrt(s)
+		
 
 
 
@@ -319,6 +344,7 @@ class Bin(object):
 # bestfit: (array) bestfit from ppxf
 # spectrum: (array) observed spectrum (with cuts from errors2.py)
 # noise: (array) observed noise (with cuts from errors2.py)
+# contiuum: (array) observed spectrum with emission lines removed
 # xspaxels: (array) x-coords of spaxels in bin
 # yspaxels: as xspaxels
 # xBar: (float) x-coord of center of bin
