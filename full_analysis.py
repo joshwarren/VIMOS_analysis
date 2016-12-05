@@ -25,7 +25,7 @@ def full_analysis(galaxy=None):
 		'eso443-g024']
 	# an inital guess from quick internet search of redshift.
 	z_gals = [0.01, 0.005, 0.02, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
-	gal=9
+	gal=6
 	if galaxy is None:
 		galaxy = galaxies[gal]
 	else:
@@ -35,11 +35,15 @@ def full_analysis(galaxy=None):
 	
 	z = z_gals[gal]
 	discard = 2
-	targetSN = 30
+	targetSN = 50
 	set_range = [4200, 10000]
 
-	# binning_spaxels(galaxy, discard=discard, targetSN=targetSN)
+	#binning_spaxels(galaxy, discard=discard, targetSN=targetSN)
 
-	# find_template(galaxy, z=z, discard=discard, set_range=set_range)
+	#find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
 	mcmc(galaxy, z=z) #, discard=discard, set_range=set_range)
+
+
+if __name__=="__main__":
+	full_analysis()

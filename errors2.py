@@ -136,7 +136,8 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def remove_anomalies(spec, window=201, repeats=3):
+def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None, 
+	return_cuts=False):
 	x=np.arange(len(spec))
 	mask = np.zeros(len(spec)).astype(bool)
 
@@ -148,7 +149,19 @@ def remove_anomalies(spec, window=201, repeats=3):
 			mask[i] += spec[i] < med[i]-3*std[i]
 
 		spec[mask] = np.interp(x[mask],x[~mask],spec[~mask])
-	return spec
+	if set_range is not None and lam is not None:
+		r = (lam > set_range[0]) * (lam < set_range[1])
+		if return_cuts:
+			return spec[r], lam[r], r
+		else:
+			return spec[r], lam[r]
+	elif set_range is not None and lam is None:
+		raise ValueError('lam keyword must be supplied if set_range keyword'+\
+			' is supplied')
+	elif set_range is None and lam is not None:
+		return spec, lam
+	else:
+		return spec
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -303,17 +316,12 @@ def errors2(i_gal=None, bin=None):
 		axis=1)
 
 	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-## ----------========== Using set_range variable ===========---------
-	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
-	if set_range is not None: 
-		lamRange=np.array([max(lamRange[0],set_range[0]),min(lamRange[1],set_range[1])])
-	lower_limit, upper_limit = (lamRange-CRVAL_spec)/CDELT_spec
-	lower_limit, upper_limit = int(lower_limit), int(upper_limit)
-
-	bin_lin = bin_lin_temp[lower_limit:upper_limit]
-	bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
 ## ----------========= Calibrating the spectrum  ===========---------
-	bin_lin_temp = remove_anomalies(bin_lin_temp, window=201, repeats=3)
+	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
+	bin_lin_temp, lam, cut = remove_anomalies(bin_lin_temp, window=201, repeats=3, 
+		lam=lam, set_range=set_range, return_cuts=True)
+	lamRange = np.array([lam[0],lam[-1]])
+	bin_lin_noise = bin_lin_noise[cut]
 
 	## For calibrating the resolutions between templates and observations
 	## using the gauss_smooth command

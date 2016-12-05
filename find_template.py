@@ -6,12 +6,12 @@
 
 import numpy as np
 import glob
-from astro.io import fits
-from errors2 import determine_goodpixels
+from astropy.io import fits
 from ppxf import ppxf
 import ppxf_util as util
 from checkcomp import checkcomp
 cc= checkcomp()
+from errors2 import remove_anomalies, determine_goodpixels
 
 def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 
@@ -19,7 +19,7 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 # ----------============= Input parameters  ===============---------
 # ----------===============================================---------
 	dir = '%s/Data/vimos/'  %(cc.base_dir)
-	dir2 = '%s/Data/idl_libraries' % (cc.base_dir)
+	templatesDirectory = '%s/models/miles_library' % (cc.home_dir)
 
 	c = 299792.458
 	vel = 0.0 # Initial estimate of the galaxy velocity and
@@ -34,15 +34,12 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 				# keyword moments in ppxf.pro for more details)
 	degree = 4 # order of addative Legendre polynomial used to 
 		   # correct the template continuum shape during the fit 
-# File for output: an array containing the calculated dynamics of the
-# galaxy. 
+	# File for output: an array containing the calculated dynamics of the
+	# galaxy. 
 	output_temp_weighting = '%s/analysis/%s/templates.txt' % (dir,
 		galaxy)
 
-	
-#	OPENW, 1, output_temp_weighting
-
-# Tessellation input
+	# Tessellation input
 	tessellation_File = '%s/analysis/%s/voronoi_2d_binning_output.txt' % (
 		dir, galaxy)
 
@@ -51,14 +48,9 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 # ----------=============== Run analysis  =================---------
 # ----------===============================================---------
 
-
-
 ## ----------=============== Miles library =================---------
 	# Finding the template files
-	templatesDirectory = dir2 + 'ppxf/MILES_library/'
-	templateFiles = glob.glob(templatesDirectory + \
-		'm0[0-9][0-9][0-9]V') #****** no longer have nfiles.
-
+	templateFiles = glob.glob(templatesDirectory + '/m0[0-9][0-9][0-9]V') 
 
 	# v1 is wavelength, v2 is spectrum
 	v1, v2 = np.loadtxt(templateFiles[0], unpack='True')
@@ -91,10 +83,10 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	## Including rebinning them.
 	for i in range(nfiles):
 		v1, v2 = np.loadtxt(templateFiles[i], unpack='True')
-		v2 = ndimage.gaussian_filter1d(v2,sigma)
+		#v2 = ndimage.gaussian_filter1d(v2,sigma)
 		## Rebinning templates logarthmically
-		log_temp_template, logLam_template, velscale = \
-			util.log_rebin(lamRange_template, v2, velscale=velscale)
+		log_temp_template, logLam_template, _ = util.log_rebin(lamRange_template, 
+			v2, velscale=velscale)
 	## ****************************************************************
 	## ^^^ this has changed from the last time we called this: we called v1 before...
 		templates[:,i] = log_temp_template
@@ -129,66 +121,19 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 
 	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
+	s = galaxy_data.shape
 
 	# Collapse to single spectrum
 	gal_spec = np.nansum(np.nansum(galaxy_data, axis=2),axis=1)
 
 	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
-	
-## ----------======== Finding limits of the spectrum =======---------
-	## limits are the cuts in pixel units, while lamRange is the cuts in
-	## wavelength unis.
-	gap=12
-	ignore = int((5581 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap)  
-	ignore2 = int((5199 - CRVAL_spec)/CDELT_spec) + np.arange(-gap+1,gap) 
-
-	## h is the spectrum with the peak enclosed by 'ignore' removed.
-	h = np.delete(gal_spec, ignore)
-	h = np.delete(h,ignore2)
-
-
-	half = s[0]/2
-	a = np.delete(h,np.arange(-4,0)+len(h),None)/np.median(h[np.nonzero(h)]) - \
-		h[4:]/np.median(h[np.nonzero(h)])
-	a = np.where(np.isfinite(a), a, 0)
-
-	if any(np.abs(a[:0.5*half]) > 0.2):
-		lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	else: 
-		lower_limit = -1
-	
-	# lower_limit = max(np.where(np.abs(a[:0.5*half]) > 0.2)[0])
-	if any(np.abs(a[1.5*half:]) > 0.2):
-		upper_limit = min(np.where(np.abs(a[1.5*half:]) > 0.2)[0])+int(1.5*half)
-	else:
-		upper_limit = -1
-		
-	if upper_limit > ignore2[0]: upper_limit+=gap 
-	if upper_limit > ignore[0]: upper_limit+=gap
-
-	if lower_limit < 0:
-		lower_limit = min(np.where(a[:half] != 0)[0]) + 5
-		if lower_limit < 0: lower_limit = 0
-
-	else:
-		lower_limit +=5
-
-	if upper_limit > s[0]-1 or upper_limit < half:
-		upper_limit = s[0]-6 
-	else:
-		upper_limit += -5
-## ----------========== Using set_range variable ===========---------
-	if set_range is not None:
-	## Change to pixel units
-		set_range = ((set_range - CRVAL_spec)/CDELT_spec).astype(int)
-		if set_range[0] > lower_limit: lower_limit = set_range[0] 
-		if set_range[1] < upper_limit: upper_limit = set_range[1]
-
-	lamRange = np.array([lower_limit, upper_limit])*CDELT_spec + \
-		CRVAL_spec
-## ----------=========== Writing the spectrum  =============---------
-	gal_spec = gal_spec[lower_limit:upper_limit]
+	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
 ## ----------========= Calibrating the spectrum  ===========---------
+	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
+	gal_spec, lam = remove_anomalies(gal_spec, window=201, repeats=3, lam=lam, 
+		set_range=set_range)
+	lamRange = np.array([lam[0],lam[-1]])
+
 	## For calibrating the resolutions between templates and observations
 	## using the gauss_smooth command
 	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
@@ -197,13 +142,12 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	## smooth spectrum to fit with templates resolution
 	# bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
 	# bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
-	
 	lamRange = lamRange/(1+z)
-	## rebin spectrum logarthmically
-	bin_log, logLam_bin, velscale = util.log_rebin(lamRange, gal_spec, 
-		velscale=velscale)
 
-	noise = gal_spec*0+1
+	## rebin spectrum logarthmically
+	bin_log, logLam_bin, _ = util.log_rebin(lamRange, gal_spec, velscale=velscale)
+
+	noise = bin_log*0+1
 
 	dv = (logLam_template[0]-logLam_bin[0])*c # km/s
 	# Find the pixels to ignore to avoid being distracted by gas emission
@@ -216,16 +160,13 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
-	noise = np.abs(noise)
-	bin_log_sav = bin_log
-	noise_sav = noise
 
 	pp = ppxf(templates, bin_log, noise, velscale, start, 
 			goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
 			lam=lambdaq, plot=True, quiet=True)
 
 
-	with '%s/analysis/%s/templates.txt' % (dir, galaxy) as f:
+	with open('%s/analysis/%s/templates.txt' % (dir, galaxy), 'w') as f:
 		for i in range(nfiles):
 			if pp.weights[i] != 0.0:
-				f.write(i + '   ' + pp.weights[i] + '\n')
+				f.write(str(i) + '   ' + str(pp.weights[i]) + '\n')
