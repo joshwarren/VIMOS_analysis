@@ -22,6 +22,7 @@ class checkcomp(object):
 			self.device = self.getDevice()
 		else:
 			self.device = override
+		self.overriden = override is not None
 		#self.base_dir = self.getBase_dir()
 		self.home_dir = self.getHome_dir() 
 		
@@ -49,7 +50,8 @@ class checkcomp(object):
 		elif comp == 'bash_home':
 			b_dir = '/mnt/x'
 		elif comp == 'glamdring':
-			warnings.warn('This may not setup to run on Glamdring')
+			if not overriden:
+				warnings.warn('This may not setup to run on Glamdring')
 			b_dir = self.home_dir
 		elif comp == 'uni':
 			b_dir = ''

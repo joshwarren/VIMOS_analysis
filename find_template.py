@@ -7,14 +7,18 @@
 import numpy as np
 import glob
 from astropy.io import fits
+from scipy import ndimage # for gaussian blur
+
 from ppxf import ppxf
 import ppxf_util as util
+from errors2 import remove_anomalies, determine_goodpixels
 from checkcomp import checkcomp
 cc= checkcomp()
-from errors2 import remove_anomalies, determine_goodpixels
+
+quiet = True
 
 def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
-
+	print '     Finding templates to use'
 # ----------===============================================---------
 # ----------============= Input parameters  ===============---------
 # ----------===============================================---------
@@ -24,12 +28,7 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	c = 299792.458
 	vel = 0.0 # Initial estimate of the galaxy velocity and
 	sig = 200.0 # velocity dispersion in km/s in the rest frame
-	FWHM_gal = 4*0.571 # The fibre FWHM on VIMOS is
-						# about 4px with a dispersion of
-						# 0.571A/px. (From: http://www.eso.org
-						# /sci/facilities/paranal/instruments
-						# /vimos/inst/ifu.html)
-	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
+	FWHM_gal = 2.5/(1+z) # VIMOS documentation (and fits header)
 	moments = 4 # number of componants to calc with ppxf (see 
 				# keyword moments in ppxf.pro for more details)
 	degree = 4 # order of addative Legendre polynomial used to 
@@ -66,24 +65,19 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	log_temp_template, logLam_template, velscale = \
 		util.log_rebin(lamRange_template, v1)
 
-
-	## ****************************************************************
-	## NB: shouldn't this be 0.9A as this is resolution?
-	FWHM_tem = 2.5 # Miles spectra have a resolution
-							   # FWHM of 2.5A.
-
+	FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
+	FWHM_dif = np.sqrt(abs(FWHM_gal**2 - FWHM_tem**2))
 
 	nfiles = len(templateFiles)
 	templates = np.zeros((len(log_temp_template), nfiles))
-	FWHM_dif = np.sqrt(FWHM_gal**2 - FWHM_tem**2)
-	sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-
 
 	## Reading the contents of the files into the array templates. 
 	## Including rebinning them.
 	for i in range(nfiles):
 		v1, v2 = np.loadtxt(templateFiles[i], unpack='True')
-		#v2 = ndimage.gaussian_filter1d(v2,sigma)
+		if FWHM_tem < FWHM_gal:
+			sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+			v2 = ndimage.gaussian_filter1d(v2,sigma)
 		## Rebinning templates logarthmically
 		log_temp_template, logLam_template, _ = util.log_rebin(lamRange_template, 
 			v2, velscale=velscale)
@@ -107,7 +101,7 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
 		
 	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
-	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)
+	galaxy_badpix = fits.getdata(dataCubeDirectory[0], 3)
 
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']
@@ -121,28 +115,29 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 
 	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
+	galaxy_badpix = np.delete(galaxy_badpix, rows_to_remove, axis=1)
+	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
+
+	# Check for nan is data set.
+	galaxy_badpix[np.isnan(galaxy_data)] = 1
+	galaxy_data[galaxy_badpix==1] = 0
+
 	s = galaxy_data.shape
 
 	# Collapse to single spectrum
 	gal_spec = np.nansum(np.nansum(galaxy_data, axis=2),axis=1)
 
 	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
-	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
 	gal_spec, lam = remove_anomalies(gal_spec, window=201, repeats=3, lam=lam, 
 		set_range=set_range)
-	lamRange = np.array([lam[0],lam[-1]])
-
-	## For calibrating the resolutions between templates and observations
-	## using the gauss_smooth command
-	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
-	# sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+	lamRange = np.array([lam[0],lam[-1]])/(1+z)
 
 	## smooth spectrum to fit with templates resolution
-	# bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
-	# bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
-	lamRange = lamRange/(1+z)
+	if FWHM_gal < FWHM_tem:
+		sigma = FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+		gal_spec = ndimage.gaussian_filter1d(gal_spec, sigma)	
 
 	## rebin spectrum logarthmically
 	bin_log, logLam_bin, _ = util.log_rebin(lamRange, gal_spec, velscale=velscale)
@@ -163,7 +158,7 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 
 	pp = ppxf(templates, bin_log, noise, velscale, start, 
 			goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-			lam=lambdaq, plot=True, quiet=True)
+			lam=lambdaq, plot=not quiet, quiet=quiet)
 
 
 	with open('%s/analysis/%s/templates.txt' % (dir, galaxy), 'w') as f:

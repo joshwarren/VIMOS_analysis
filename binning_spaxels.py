@@ -31,6 +31,7 @@ def check_overwrite(new, old):
 
 
 def binning_spaxels(galaxy, discard=2, targetSN=None):
+	print '     Voronoi Binning'
 # ----------===============================================---------
 # ----------============ Default parameters ===============---------
 # ----------===============================================---------
@@ -49,9 +50,10 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 
 	if targetSN is None and i_gal != -1:
 		targetSN=SN_used_gals[i_gal]
-	elif i_gal  != -1: 
+	elif targetSN is not None and i_gal  != -1: 
 		targetSN = check_overwrite(targetSN, SN_used_gals[i_gal])
-	elif targetSN is not None:
+		SN_used_gals[i_gal] = targetSN
+	elif targetSN is not None and i_gal == -1:
 		SN_used_gals = [SN_used_gals, targetSN]
 	else:
 		targetSN = 30.0
@@ -96,6 +98,9 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 	galaxy_badpix = np.delete(galaxy_badpix, rows_to_remove, axis=1)
 	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
 
+	# Check for nan is data set.
+	galaxy_badpix[np.isnan(galaxy_data)] = 1
+
 	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
 
 	s = galaxy_data.shape
@@ -122,7 +127,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 				signal[i*s[1] + j] = 0
 				noise[i*s[1] + j] = 0.0000000001
 				print 'Spaxel containing badpixels: ', i, j
-				print 'Number of affected pixels: ', len(a)
+				print 'Number of affected pixels:   ', len(a)
 
 	binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale = voronoi_2d_binning(
         x, y, signal, noise, targetSN, quiet=True, 

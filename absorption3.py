@@ -24,6 +24,6 @@ def absorption(line_name, D, uncert=False):
 		index1_ob_var.append(index_va)
 
 	if uncert:
-		return np.array(index1_ob), np.array(index1_ob_var)
+		return np.array(index1_ob).flatten(), np.array(index1_ob_var).flatten()
 	else:
-		return np.array(index1_ob)
+		return np.array(index1_ob).flatten()

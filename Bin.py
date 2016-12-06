@@ -132,21 +132,21 @@ class Data(object):
 
 	@property
 	def galaxy_spectrum(self):
-		s = np.zeros(1400)
+		s = np.zeros(len(self.bin[0].spectrum))
 		for bin in self.bin:
 			s += bin.spectrum
 		return s
 
 	@property
 	def galaxy_continuum(self):
-		s = np.zeros(1400)
+		s = np.zeros(len(self.bin[0].continuum))
 		for bin in self.bin:
 			s += bin.continuum
 		return s
 
 	@property
 	def galaxy_varience(self):
-		s = np.zeros(1400)
+		s = np.zeros(len(self.bin[0].noise))
 		for bin in self.bin:
 			s += bin.noise**2
 		return np.sqrt(s)

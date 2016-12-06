@@ -10,7 +10,7 @@
 
 import numpy as np # for array handling
 import glob # for searching for files
-from astropy.io import fits as pyfits # reads fits files (is from astropy)
+from astropy.io import fits # reads fits files (is from astropy)
 from scipy import ndimage # for gaussian blur
 import math
 import os
@@ -103,7 +103,6 @@ def errors3(i_gal=None, bin=None):
 		"voronoi_2d_binning_output2.txt"
 
 
-
 	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
 
 ## ----------===============================================---------
@@ -129,32 +128,25 @@ def errors3(i_gal=None, bin=None):
 	log_temp_template, logLam_template, velscale = \
 		util.log_rebin(lamRange_template, v1)
 
-
-	## ****************************************************************
-	## NB: shouldn't this be 0.9A as this is resolution?
-	FWHM_tem = 2.5 # Miles spectra have a resolution
-							   # FWHM of 2.5A.
-
+	FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
+	FWHM_dif = np.sqrt(abs(FWHM_gal**2 - FWHM_tem**2))
 
 	## Which templates to use are given in use_templates.pro. This is
 	## transfered to the array templatesToUse.
 	templatesToUse = use_templates(galaxy, glamdring)
 	nfiles = len(templatesToUse)
 	templates = np.zeros((len(log_temp_template), nfiles))
-	FWHM_dif = np.sqrt(FWHM_gal**2 - FWHM_tem**2)
-	sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 
 
 	## Reading the contents of the files into the array templates. 
 	## Including rebinning them.
 	for i in range(nfiles):
 		v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
-		v2 = ndimage.gaussian_filter1d(v2,sigma)
-		## Rebinning templates logarthmically
-		log_temp_template, logLam_template, velscale = \
-			util.log_rebin(lamRange_template, v2, velscale=velscale)
-	## ****************************************************************
-	## ^^^ this has changed from the last time we called this: we called v1 before...
+		if FWHM_tem < FWHM_gal:
+			sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+			v2 = ndimage.gaussian_filter1d(v2,sigma)		## Rebinning templates logarthmically
+		log_temp_template, logLam_template, _ = util.log_rebin(lamRange_template, 
+			v2, velscale=velscale)
 		templates[:,i] = log_temp_template
 
 	#templates /= np.median(log_temp_template)
@@ -172,8 +164,9 @@ def errors3(i_gal=None, bin=None):
 
 	dataCubeDirectory = glob.glob(dir+"/cubes/%s.cube.combined.fits" % (galaxy)) 
 		
-	galaxy_data, header = pyfits.getdata(dataCubeDirectory[0], 0, header=True)
-	galaxy_noise = pyfits.getdata(dataCubeDirectory[0], 1)
+	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
+	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)
+	galaxy_badpix = fits.getdata(dataCubeDirectory[0], 3)
 
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']
@@ -189,49 +182,41 @@ def errors3(i_gal=None, bin=None):
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 	galaxy_noise = np.delete(galaxy_noise, rows_to_remove, axis=1)
 	galaxy_noise = np.delete(galaxy_noise, cols_to_remove, axis=2)
+	galaxy_badpix = np.delete(galaxy_badpix, rows_to_remove, axis=1)
+	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
+
+	# Check for nan is data set.
+	galaxy_badpix[np.isnan(galaxy_data)] = 1
+	galaxy_data[galaxy_badpix==1] = 0
+	galaxy_noise[galaxy_badpix==1] = 0.000000001
 
 	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
 ## ----------============= Spatially Binning ===============---------
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)
-	bin_lin_temp = np.zeros(s[0])
-	bin_lin_noise_temp = np.zeros(s[0])
 
-
-	bin_lin_temp = np.nansum(galaxy_data[:,x[spaxels_in_bin],
+	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],
 		y[spaxels_in_bin]], axis=1)
-	bin_lin_noise_temp = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
+	bin_lin_noise = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
 		y[spaxels_in_bin]]**2, axis=1)
-
-	bin_lin_noise_temp = np.sqrt(bin_lin_noise_temp)
-## ----------========== Using set_range variable ===========---------
-	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
-	if set_range is not None: 
-		lamRange=np.array([max(lamRange[0],set_range[0]),
-			min(lamRange[1],set_range[1])])
-	lower_limit, upper_limit = (lamRange-CRVAL_spec)/CDELT_spec
-	lower_limit, upper_limit = int(lower_limit), int(upper_limit)
-
-	bin_lin = bin_lin_temp[lower_limit:upper_limit]
-	bin_lin_noise = bin_lin_noise_temp[lower_limit:upper_limit]
+	bin_lin_noise = np.sqrt(bin_lin_noise)
 ## ----------========= Calibrating the spectrum  ===========---------
-	bin_lin_temp = remove_anomalies(bin_lin_temp, window=201, repeats=3)
-
-	## For calibrating the resolutions between templates and observations
-	## using the gauss_smooth command
-	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
-	# sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
+	bin_lin, lam, cut = remove_anomalies(bin_lin, window=201, repeats=3, 
+		lam=lam, set_range=set_range, return_cuts=True)
+	lamRange = np.array([lam[0],lam[-1]])/(1+z)
+	bin_lin_noise = bin_lin_noise[cut]
 
 	## smooth spectrum to fit with templates resolution
-	# bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
-	# bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
+	if FWHM_gal < FWHM_tem:
+		sigma = FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+		bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
+		bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(bin_lin_noise**2, sigma))
 	
-	lamRange = lamRange/(1+z)
 	## rebin spectrum logarthmically
-	bin_log, logLam_bin, velscale = util.log_rebin(lamRange, bin_lin, 
+	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, velscale=velscale)
+	bin_log_noise, logLam_bin, _ = util.log_rebin(lamRange, bin_lin_noise**2, 
 		velscale=velscale)
-	bin_log_noise, logLam_bin, velscale = util.log_rebin(lamRange, 
-		np.power(bin_lin_noise,2), velscale=velscale)
 	bin_log_noise = np.sqrt(bin_log_noise)
 
 	## Normalis the spectrum

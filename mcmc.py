@@ -6,16 +6,17 @@
 import numpy as np
 import glob
 import matplotlib.pyplot as plt
+from scipy import ndimage # for gaussian blur
+from astropy.io import fits
+
 from ppxf import ppxf
 import ppxf_util as util
-from checkcomp import checkcomp
-from errors2 import determine_goodpixels
-from astropy.io import fits
-cc=checkcomp()
 from errors2 import remove_anomalies, use_templates, determine_goodpixels
+from checkcomp import checkcomp
+cc=checkcomp()
 
 quiet = True
-plot = True
+plot = False
 c = 299792.458
 
 repeats = 100
@@ -26,11 +27,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 # ----------===============================================---------
 # ----------============= Input parameters ================---------
 # ----------===============================================---------
-	#FWHM_gal = 4*0.571 # The fibre FWHM on VIMOS is
-					   # about 4px with a dispersion of
-					   # 0.571A/px. (From: http://www.eso.org
-					   # /sci/facilities/paranal/instruments
-					   # /vimos/inst/ifu.html)
+	FWHM_gal = 2.5/(1+z) # VIMOS documentation (and fits header)
 	moments = 4 # number of componants to calc with ppxf (see 
 				# keyword moments in ppxf.pro for more details)
 	degree = 4 # order of addative Legendre polynomial used to 
@@ -68,27 +65,22 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 	log_temp_template, logLam_template, velscale = \
 		util.log_rebin(lamRange_template, v1)
 
-
-	## ****************************************************************
-	## NB: shouldn't this be 0.9A as this is resolution?
-	#FWHM_tem = 2.5 # Miles spectra have a resolution
-							   # FWHM of 2.5A.
-
+	FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
+	FWHM_dif = np.sqrt(abs(FWHM_gal**2 - FWHM_tem**2))
 
 	## Which templates to use are given in use_templates.pro. This is
 	## transfered to the array templatesToUse.
 	templatesToUse = use_templates(galaxy, cc.device=='glamdring')
 	nfiles = len(templatesToUse)
 	templates = np.zeros((len(log_temp_template), nfiles))
-	#FWHM_dif = np.sqrt(FWHM_gal**2 - FWHM_tem**2)
-	#sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-
 
 	## Reading the contents of the files into the array templates. 
 	## Including rebinning them.
 	for i in range(nfiles):
 		v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
-		#v2 = ndimage.gaussian_filter1d(v2,sigma)
+		if FWHM_tem < FWHM_gal:
+			sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+			v2 = ndimage.gaussian_filter1d(v2,sigma)
 		## Rebinning templates logarthmically
 		log_temp_template, logLam_template, _ = \
 			util.log_rebin(lamRange_template, v2, velscale=velscale)
@@ -113,6 +105,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 		
 	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)
+	galaxy_badpix = fits.getdata(dataCubeDirectory[0], 3)
 
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']
@@ -128,28 +121,31 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 	galaxy_noise = np.delete(galaxy_noise, rows_to_remove, axis=1)
 	galaxy_noise = np.delete(galaxy_noise, cols_to_remove, axis=2)
+	galaxy_badpix = np.delete(galaxy_badpix, rows_to_remove, axis=1)
+	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
+
+	# Check for nan is data set.
+	galaxy_badpix[np.isnan(galaxy_data)] = 1
+	galaxy_data[galaxy_badpix==1] = 0
+	galaxy_noise[galaxy_badpix==1] = 0.000000001
 
 	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
-	lamRange = np.array([0, s[0]])*CDELT_spec + CRVAL_spec
 ## ----------============= Spatially Binning ===============---------
 	gal_spec = np.nansum(np.nansum(galaxy_data, axis=2),axis=1)
 	bin_lin_noise = np.sqrt(np.nansum(np.nansum(galaxy_noise**2, axis=2),axis=1))
-		
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
 	bin_lin, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, 
 		lam=lam, set_range=set_range, return_cuts=True)
-	lamRange = np.array([lam[0],lam[-1]])
-	bin_lin_noise = bin_lin_noise[cut]	## For calibrating the resolutions between templates and observations
-	## using the gauss_smooth command
-	# FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_gal**2)
-	# sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+	lamRange = np.array([lam[0],lam[-1]])/(1+z)
+	bin_lin_noise = bin_lin_noise[cut]
 
 	## smooth spectrum to fit with templates resolution
-	# bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
-	# bin_lin_noise = ndimage.gaussian_filter1d(bin_lin_noise, sigma)
-	
-	lamRange = lamRange/(1+z)
+	if FWHM_gal < FWHM_tem:
+		sigma = FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+		bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
+		bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(bin_lin_noise**2, sigma))
+
 	## rebin spectrum logarthmically
 	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, velscale=velscale)
 	bin_log_noise, logLam_bin, _ = util.log_rebin(lamRange, 
@@ -188,6 +184,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
 def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
+	print '     MCMC'
 	
 	results = np.zeros((2,repeats))
 
@@ -195,9 +192,10 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 		templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, dv, \
 		lambdaq, plot, quiet = setup(galaxy, z=z, vel=vel, sig=sig, discard=discard, 
 			set_range=set_range)
+
 		pp = ppxf(templates, bin_log, noise, velscale, start, 
 			goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
-			lam=lambdaq, plot=not quiet, quiet=quiet)
+			lam=lambdaq, plot=plot, quiet=quiet)
 		z = (z + 1)*np.sqrt((1 + pp.sol[0]/c)/(1 - pp.sol[0]/c)) - 1 
 
 	templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, dv, \
@@ -227,8 +225,8 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 		results[:,i] = [vel,sig]
 		if abs(chi) > abs(chi_sav) or np.random.uniform() > threshold:
-			vel += np.random.uniform(low=-1, high=1)*local_step 
-			sig += np.random.uniform(low=-1, high=1)*local_step 
+			vel = v_sav + np.random.uniform(low=-1, high=1)*local_step 
+			sig = sigma_sav + np.random.uniform(low=-1, high=1)*local_step 
 			chi = chi_sav
 
 	vel = np.mean(results[0,:])
@@ -250,9 +248,9 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 	ax.set_ylabel("velocity dispersion")
 	ax.set_title("MCMC for initial conditions")
 
-	plt.show()
 	fig.savefig('%s/analysis/%s/MCMC_initial_fit.png' %(dir,galaxy))
-
+	if plot: 
+		plt.show()
 
 
 
