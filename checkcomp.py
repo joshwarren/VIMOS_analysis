@@ -50,7 +50,7 @@ class checkcomp(object):
 		elif comp == 'bash_home':
 			b_dir = '/mnt/x'
 		elif comp == 'glamdring':
-			if not overriden:
+			if not self.overriden:
 				warnings.warn('This may not setup to run on Glamdring')
 			b_dir = self.home_dir
 		elif comp == 'uni':

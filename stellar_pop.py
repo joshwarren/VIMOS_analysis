@@ -42,7 +42,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	titles = np.loadtxt(models_dir, dtype=str)[0]
 
 	age3, metallicity3, alpha3 = np.loadtxt(models_dir, usecols=(0,1,2), 
-		unpack=True, skiprows=36)
+		unpack=True, skiprows=35)
 
 	age2 = np.unique(age3)
 	metallicity2 = np.unique(metallicity3)
@@ -67,15 +67,14 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	for i, l in enumerate(titles):
 		if l in lines:
 			models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
-				skiprows=36)
+				skiprows=35)
 			interp[l] = griddata(np.array([age3, metallicity3, alpha3]).transpose(), 
 				models[l], np.array([age_p, metallicity_p, alpha_p]).transpose()
 				).reshape((grid_length,grid_length,grid_length))
 			n_lines += (~np.isnan(D.absorption_line(l))).astype(int)
 
-	
-	
-	chi2 = np.zeros((grid_length,grid_length,grid_length, D.number_of_bins))
+	s = interp[lines[0]].shape
+	chi2 = np.zeros((s[0], s[1], s[2], D.number_of_bins))
 	for line in lines:
 		print '    Fitting ' + line
 		ab_line, uncert = D.absorption_line(line, uncert=True)

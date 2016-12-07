@@ -39,8 +39,8 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 			c_uncert = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2) +
 				(m_uncert*(red[0]+red[1])/2)**2)
 			F_c_uncert = np.sqrt((lam*m_uncert)**2 + c_uncert**2)
-			b = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2))
-			r = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2))
+			b = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2))/np.sqrt(bluex[1]-bluex[0])
+			r = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2))/np.sqrt(redx[1]-redx[0])
 			F_c_uncert = np.ones(len(F_c))*np.sqrt(b**2+r**2)
 			# print b/F_blue
 			# print r/F_red
@@ -132,7 +132,6 @@ def absorption(line_name, D, uncert=False):
 		line_strength_con = calc(lam, convolved, index, blue, red)
 		# LOSVD correction (From SAURON VI: Section 4.2.2)
 		corr = line_strength_uncon/line_strength_con
-		print corr
 		if _uncert:
 			line_strength, uncert = calc(lam, bin.continuum, index, blue, red, 
 				uncert=bin.noise)
