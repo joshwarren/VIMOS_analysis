@@ -86,13 +86,10 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 				a_sorted= np.array(sorted(ab_uncert))
 			abmin, abmax = a_sorted[vLimit], a_sorted[-vLimit-1]
 
-			std = np.nanstd(ab_uncert[m])
-			mean = np.nanmedian(ab_uncert[m])
-			#print mean, std
-			abmax = min([abmax, mean + std])
-			abmin = max([abmin, mean - std])
-			#abmax = 6
-			#abmin = 0
+			#std = np.nanstd(ab_uncert[m])
+			#mean = np.nanmedian(ab_uncert[m])
+			#abmax = min([abmax, mean + std])
+			#abmin = max([abmin, mean - std])
 
 			ax_array_uncert[np.floor(i/2),i%2] = plot_velfield_nointerp(D.x, D.y, 
 				D.bin_num, D.xBar, D.yBar, ab_uncert, vmin=abmin, vmax=abmax,

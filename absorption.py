@@ -41,7 +41,8 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 			F_c_uncert = np.sqrt((lam*m_uncert)**2 + c_uncert**2)
 			b = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2))/np.sqrt(bluex[1]-bluex[0])
 			r = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2))/np.sqrt(redx[1]-redx[0])
-			F_c_uncert = np.ones(len(F_c))*np.sqrt(b**2+r**2)
+			F_c_uncert = ((2*lam-blue[1]-blue[0])/(red[0]+red[1]-blue[0]-blue[1])
+				)*np.sqrt(b**2+r**2)
 			# print b/F_blue
 			# print r/F_red
 			# print m_uncert/m
@@ -73,11 +74,11 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 			# 	/(redx[1]-redx[0] + bluex[1]-bluex[0]))
 
 			# Uncertainty in absorption line
-			uncert_out = np.sqrt(np.trapz(line_strength**2 * (
-				(uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]])**2 +
-				(F_c_uncert[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]])**2 ),
-#				(F_c_uncert/F_c[indexx[0]:indexx[1]])**2 ),
-				x=lam[indexx[0]:indexx[1]]))
+			integ_var = np.sqrt(F_c_uncert**2+uncert**2)
+			uncert_out = np.sqrt(((lam[indexx[0]+1]-lam[indexx[0]])*integ_var[indexx[0]])**2
+				+ ((lam[indexx[1]]-lam[indexx[1]-1])*integ_var[indexx[1]])**2
+				+ np.sum(((lam[indexx[0]+2:indexx[1]]-lam[indexx[0]:indexx[1]-2])
+					*integ_var[indexx[0]+1:indexx[1]-1])**2))/2
 
 			# uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
 			# 	F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))

@@ -91,13 +91,13 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	alpha_map=np.zeros(D.number_of_bins)
 	chi2_map=np.zeros(D.number_of_bins)
 	for bin in range(D.number_of_bins):
-		i = np.argmax(np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(1,2)))
-		j = np.argmax(np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(0,2)))
-		k = np.argmax(np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(0,1)))
+		i = np.argmax(np.nansum(mp.exp(-chi2[:,:,:,bin]**2/2),axis=(1,2)))
+		j = np.argmax(np.nansum(mp.exp(-chi2[:,:,:,bin]**2/2),axis=(0,2)))
+		k = np.argmax(np.nansum(mp.exp(-chi2[:,:,:,bin]**2/2),axis=(0,1)))
 		age_map[bin] = age[i]
 		metal_map[bin] = metallicity[j]
 		alpha_map[bin] = alpha[k]
-		chi2_map[bin] = chi2[i,j,k,bin]/n_lines[bin]
+		chi2_map[bin] = chi2_sav[i,j,k,bin]/n_lines[bin]
 
 
 
