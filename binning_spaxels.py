@@ -112,9 +112,10 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 	y = np.zeros(n_spaxels)
 
 # collapsing the spectrum for each spaxel.
-	signal = np.mean(galaxy_data, axis=0).flatten()
-	noise = np.sqrt(np.mean(galaxy_noise**2, axis=0)).flatten()
-
+	signal = np.median(galaxy_data, axis=0).flatten()
+	noise = np.median(galaxy_noise,axis=0).flatten()
+	#noise = np.sqrt(np.mean(galaxy_noise**2, axis=0)).flatten()/\
+	#	np.sqrt(len(galaxy_noise))
 
 	for i in range(s[1]):
 		for j in range(s[2]):
@@ -126,8 +127,8 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 			if len(a) != 0:
 				signal[i*s[1] + j] = 0
 				noise[i*s[1] + j] = 0.0000000001
-				print 'Spaxel containing badpixels: ', i, j
-				print 'Number of affected pixels:   ', len(a)
+				# print 'Spaxel containing badpixels: ', i, j
+				# print 'Number of affected pixels:   ', len(a)
 
 	binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale = voronoi_2d_binning(
         x, y, signal, noise, targetSN, quiet=True, 
