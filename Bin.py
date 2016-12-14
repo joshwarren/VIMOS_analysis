@@ -6,9 +6,11 @@
 import numpy as np
 import ppxf_util as util
 from absorption import absorption
-#from glob import glob
-#from checkcomp import checkcomp
-#cc = checkcomp()
+from glob import glob
+from checkcomp import checkcomp
+cc = checkcomp()
+
+c = 299792.458 # speed of light in km/s
 
 class Data(object):
 # Attributes:
@@ -83,8 +85,19 @@ class Data(object):
 			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
 
 	def absorption_line(self, absorption_line, uncert=False):
-		return absorption(absorption_line, self, uncert=uncert)
-		
+		ab = np.zeros(self.number_of_bins)
+		ab_uncert = np.zeros(self.number_of_bins)
+		for i, bin in enumerate(self.bin):
+			if uncert:
+				ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
+					uncert=uncert)
+			else:
+				ab[i] = bin.absorption_line(absorption_line, uncert=uncert)
+		if uncert:
+			return ab, ab_uncert
+		else:
+			return ab
+
 	@property
 	def center_bin(self):
 		return np.nanargmax(self.flux)
@@ -353,16 +366,24 @@ class Bin(object):
 # stellar: (_bin_data) object for storing ppxf fitted stellar kinematics
 # apweight: (array) weighting of *addative* polynomial used in pPXF fit
 # mpweight: (array) weighting of *multiplicative* polynomial used in pPXF fit
+# unconvolved_spectrum: (array) The unconvolved spectrum created using the template
+#	weights and ap and mp weights.
+# unconvolved_lam: (array) wavelength array corresponding to unconvolved_spectrum 
+#	(see above)
 #
 # Methods:
-# set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
+# **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
 #	utilites to determine which lines are within the observed spectrum.
 # set_templates (template name, ppxf fitted weighting): Sets the template weights
-#	particularly in the emission_line objects. 
-# Unconvolved spectrum (wavelength of templates, templates used in dictionary): 
+#	particularly in the emission_line objects. Also now loads the unconvolved 
+#	spectrum instead of method below.
+# **DEPRECATED** Unconvolved spectrum (wavelength of templates, templates used in dictionary): 
 # 	(array) Returns the unconvolved templates. NB: this are not in the same 
 #	wavelength bins as spectrum, bestfit, lam etc, but are binned as the stellar 
 #	templates.
+# absorption_line (line name): returns absorption line strength (of LICK style 
+#	indicies). Use uncert (boolean ) keyword to return uncertainty as well 
+#	(defualt False). 
 
 	def __init__(self, bin_number, parent):
 		self.__parent__ = parent
@@ -382,7 +403,8 @@ class Bin(object):
 		self._yBar = np.nan
 		self.apweight = np.array([])
 		self.mpweight = np.array([])
-
+		self.unconvolved_spectrum = np.array([])
+		self.unconvolved_lam = np.array([])
 
 	@property
 	def e_line(self):
@@ -452,24 +474,33 @@ class Bin(object):
 		return len(self.xspaxels)
 
 
+	# @property
+	# def unconvolved_spectrum(self):
+	# 	# Load template files on the fly.
+	# 	files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+	# 	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+	# 	templates = {}
+	# 	for template in self.temp_weight.keys():
+	# 		if template.isdigit():
+	# 			templates[template] = np.loadtxt(files[int(template)], usecols=(1,), 
+	# 				unpack=True) 
 
-	def unconvolved_spectrum(self, wav, templates):
-		# ***** NB: spec is binned as the stellar templates are binned, NOT as 
-		# self.spectrum, bestfit etc i.e. wav != self.lam  *****
-		a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
-		spec = np.zeros(a[1]-a[0])
+	# 	# ***** NB: spec is binned as the stellar templates are binned, NOT as 
+	# 	# self.spectrum, bestfit etc i.e. wav != self.lam  *****
+	# 	a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
+	# 	spec = np.zeros(a[1]-a[0])
 
-		for key in self.temp_weight.keys():
-			if key.isdigit():
-				#wav, template = np.loadtxt(files[int(key)], unpack=True)
-				spec += templates[key][a[0]:a[1]] * self.temp_weight[key]
-		if len(self.mpweight)!=0:
-			spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-				np.append(1, self.mpweight))
-		if len(self.apweight)!=0:
-			spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-				self.apweight)
-		return wav[a[0]:a[1]], spec
+	# 	for key in self.temp_weight.keys():
+	# 		if key.isdigit():
+	# 			#wav, template = np.loadtxt(files[int(key)], unpack=True)
+	# 			spec += templates[key][a[0]:a[1]] * self.temp_weight[key]
+	# 	if len(self.mpweight)!=0:
+	# 		spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+	# 			np.append(1, self.mpweight))
+	# 	if len(self.apweight)!=0:
+	# 		spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
+	# 			self.apweight)
+	# 	return wav[a[0]:a[1]], spec
 	
 	# def set_emission_lines(self, FWHM_gal):#, temp_wav):
 	# # Sets emission lines
@@ -489,11 +520,43 @@ class Bin(object):
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
+
+		files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+		# ***** NB: spec is binned as the stellar templates are binned, NOT as 
+		# self.spectrum, bestfit etc i.e. wav != self.lam  *****
+		a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
+		unc_spec = np.zeros(a[1]-a[0])
+
 		for i,n in enumerate(name):
 			self.temp_weight[n] = weight[i]
 			if not n.isdigit() and weight[i] != 0:
 				self.components[n].weight = weight[i]
 				self.__parent__.add_e_line(n, self.e_line[n].wav)
+			elif n.isdigit() and weight[i] !=0:
+				template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
+				unc_spec += template[a[0]:a[1]]*weight[i]
+		if len(self.mpweight)!=0:
+			unc_spec *= np.polynomial.legendre.legval(np.linspace(-1,1,
+				len(unc_spec)), np.append(1, self.mpweight))
+		if len(self.apweight)!=0:
+			unc_spec += np.polynomial.legendre.legval(np.linspace(-1,1,
+				len(unc_spec)), self.apweight)
+		self.unconvolved_spectrum = unc_spec
+		self.unconvolved_lam = wav[a[0]:a[1]]
+
+	def absorption_line(self, absorption_line, uncert=False):
+		convolved = self.bestfit - np.nansum([line.spectrum_nomask for key, 
+			line in self.e_line.iteritems()], axis=0)
+		lam = self.lam/(1+self.components['stellar'].vel/c)
+		if uncert:
+			return absorption(absorption_line, self.unconvolved_lam, 
+				self.unconvolved_spectrum, lam, convolved, self.continuum, 
+				noise=self.noise)
+		else:
+			return absorption(absorption_line, self.unconvolved_lam, 
+				self.unconvolved_spectrum, lam, convolved, self.continuum)
+
 
 class myFloat(float):
 # Required to add attributes to float object

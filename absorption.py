@@ -1,12 +1,13 @@
 ## ==================================================================
 ## 		Measure Lick indices for absorption lines
 ## ==================================================================
-import cPickle as pickle
 import numpy as np
+from scipy.ndimage.filters import gaussian_filter1d
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from checkcomp import checkcomp
-from glob import glob
 cc = checkcomp()
+
+c = 299792.458 # speed of light in km/s
 
 def calc(lam, spectrum, index, blue, red, uncert=None):
 # ------------========== Find line strength  ============----------
@@ -22,56 +23,18 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 		F_red = np.nanmean(spectrum[redx[0]:redx[1]])
 		F_blue = np.nanmean(spectrum[bluex[0]:bluex[1]])
 		# Gradient of staight line representing continuum
-#		m = 2 * (F_red - F_blue)/(redx[0]+redx[1] - bluex[0]-bluex[1])
 		m = 2 * (F_red - F_blue)/(red[0]+red[1] - blue[0]-blue[1])
 		# Staight line representing continuum
-#		F_c = m *np.arange(len(spectrum)) + F_red - m * (redx[0]+redx[1])/2
 		F_c = m*lam + F_red - m * (red[0]+red[1])/2
 		# Indice value
 		line_strength = np.trapz(1-spectrum[indexx[0]:indexx[1]]/
 			F_c[indexx[0]:indexx[1]], x=lam[indexx[0]:indexx[1]])
 		if uncert is not None:
 			# uncertainty in continuum
-			m_uncert = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2) +
-				np.nanmean(uncert[redx[0]:redx[1]]**2))*\
-				2/(red[0]+red[1] - blue[0]-blue[1])
-
-			c_uncert = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2) +
-				(m_uncert*(red[0]+red[1])/2)**2)
-			F_c_uncert = np.sqrt((lam*m_uncert)**2 + c_uncert**2)
 			b = np.sqrt(np.nanmean(uncert[bluex[0]:bluex[1]]**2))/np.sqrt(bluex[1]-bluex[0])
 			r = np.sqrt(np.nanmean(uncert[redx[0]:redx[1]]**2))/np.sqrt(redx[1]-redx[0])
 			F_c_uncert = ((2*lam-blue[1]-blue[0])/(red[0]+red[1]-blue[0]-blue[1])
 				)*np.sqrt(b**2+r**2)
-			# print b/F_blue
-			# print r/F_red
-			# print m_uncert/m
-			# print c_uncert/np.abs(F_red - m * (red[0]+red[1])/2)
-			# print F_c_uncert[indexx[0]:indexx[1]]/F_c[indexx[0]:indexx[1]]
-			# print uncert[indexx[0]:indexx[1]]/spectrum[indexx[0]:indexx[1]]
-			# print ''
-			# print np.sqrt(b**2+r**2)/(F_red-F_blue)
-			# import matplotlib.pyplot as plt
-			# plt.close('all') 
-			# f,ax=plt.subplots()
-			# ax.errorbar(lam, F_c, yerr=F_c_uncert)
-			# ax.errorbar(lam,spectrum,yerr=uncert, color='g')
-			# ax.errorbar([np.mean(red),np.mean(blue)],[F_red,F_blue],yerr=[r,b],fmt='.')
-			# ax.axvline(blue[0],color='b')
-			# ax.axvline(red[0],color='r')
-			# ax.axvline(index[0],color='g')
-			# ax.axvline(blue[1],color='b')
-			# ax.axvline(red[1],color='r')
-			# ax.axvline(index[1],color='g')
-			# ax.set_xlim([blue[0]-5,red[1]+5])
-			# ax.set_ylim([0.1,0.25])
-			# plt.show()
-			# kjshkd
-
-			# F_c_uncert = np.sqrt(
-			# 	(np.trapz((spectrum[bluex[0]:bluex[1]] - F_c[bluex[0]:bluex[1]])**2,x=lam[bluex[0]:bluex[1]]) +
-			# 	np.trapz((spectrum[redx[0]:redx[1]] - F_c[redx[0]:redx[1]])**2,x=lam[redx[0]:redx[1]]))
-			# 	/(redx[1]-redx[0] + bluex[1]-bluex[0]))
 
 			# Uncertainty in absorption line
 			integ_var = np.sqrt(F_c_uncert**2+uncert**2)
@@ -80,8 +43,6 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 				+ np.sum(((lam[indexx[0]+2:indexx[1]]-lam[indexx[0]:indexx[1]-2])
 					*integ_var[indexx[0]+1:indexx[1]-1])**2))/2
 
-			# uncert_out = np.sqrt(np.trapz(np.square(uncert[indexx[0]:indexx[1]]/
-			# 	F_c[indexx[0]:indexx[1]]),x=lam[indexx[0]:indexx[1]]))
 	if uncert is not None:
 		return line_strength, uncert_out
 	else:
@@ -89,22 +50,25 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 
 
 
-
-def absorption(line_name, D, uncert=False):
-	_uncert=uncert
-	c = 299792.458 # speed of light in km/s
-
-# ------------====== Templates for unconvolved =======----------
-	#files = glob('%s/Data/idl_libraries/ppxf/MILES_library/m0[0-9][0-9][0-9]V' %
-	#	(cc.base_dir))
-	files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
-	templates = {}
-	for template in D.bin[0].temp_weight.keys():
-		if template.isdigit():
-			templates[template] = np.loadtxt(files[int(template)], usecols=(1,), 
-				unpack=True) 
-
+# Keywords:
+# line_name: 	Name of line to be found
+# unc_lam:		Wavelength of unconvolved spectrum - from the templates used by pPXF
+# unc_spec:		Unconcolved spectum
+# lam:			Wavelngth array of pPXF bestfit and observed spectrum
+# conv_spec:	Convolved spectrum i.e. pPXF bestfit
+# spec:			Observed spectrum
+# noise:		Observed noise from reduction pipeline
+def absorption(line_name, unc_lam, unc_spec, lam, conv_spec, spec, noise=None):
+	if len(unc_lam) != len(unc_spec):
+		raise ValueError('Length of unconvoled spectrum and corresponding '+\
+			'wavelength should be the same.')
+	if len(lam) != len(conv_spec) != len(spec):
+		raise ValueError('Length of spectrum (bestfit and observed) and '+\
+			'corresponding wavelength should be the same.')
+	if noise is not None:
+		if len(noise) != len(spec):
+			raise ValueError('Length of noise and observed spectrum '+\
+				'should be the same.')
 # ------------====== Read absorption line file ==========----------
 
 	ab_file = '%s/Documents/useful_files/ab_linelist.dat' % (cc.home_dir)
@@ -118,35 +82,22 @@ def absorption(line_name, D, uncert=False):
 	red =[r1[line],r2[line]]
 
 # ------------========= Find line strenghts ==========----------
-	line_map = []
-	uncert_map = []
-	for i, bin in enumerate(D.bin):
-		lam, spec = bin.unconvolved_spectrum(wav, templates)
-		# Line strength of unconvolved spectrum.
-		line_strength_uncon = calc(lam, spec, index, blue, red)
-		# Line strength of convolved spectrum (bestfit - emission lines)
-		convolved = bin.bestfit - np.nansum([line.spectrum_nomask for key, line in 
-			bin.e_line.iteritems()], axis=0)
-		# move observed spectrum to rest frame (z is already accounted for in 
-		# errors2.py)
-		lam = bin.lam/(1+bin.components['stellar'].vel/c)
-		line_strength_con = calc(lam, convolved, index, blue, red)
-		# LOSVD correction (From SAURON VI: Section 4.2.2)
-		corr = line_strength_uncon/line_strength_con
-		if _uncert:
-			line_strength, uncert = calc(lam, bin.continuum, index, blue, red, 
-				uncert=bin.noise)
-			line_strength * corr
-			uncert_map.append(uncert*corr)
-		else:
-			line_strength = corr * calc(lam, bin.continuum, index, blue, red)
-		line_map.append(line_strength)
-
-	if _uncert:
-		return np.array(line_map), np.array(uncert_map)	
+	# Line strength of unconvolved spectrum.
+	sig_pix = 200*np.mean(index)/c/(unc_lam[1]-unc_lam[0])
+	lick_spec = gaussian_filter1d(unc_spec, sig_pix)
+	line_strength_uncon = calc(unc_lam, lick_spec, index, blue, red)
+	# Line strength of convolved spectrum (bestfit - emission lines)
+	line_strength_con = calc(lam, conv_spec, index, blue, red)
+	# LOSVD correction (From SAURON VI: Section 4.2.2)
+	corr = line_strength_uncon/line_strength_con
+	if noise is not None:
+		line_strength, uncert = calc(lam, spec, index, blue, red, uncert=noise)
+		line_strength *= corr
+		uncert *= corr
+		return line_strength, uncert
 	else:
-		return np.array(line_map)
-
+		line_strength = corr * calc(lam, spec, index, blue, red)
+		return line_strength
 
 
 
@@ -160,6 +111,8 @@ def absorption(line_name, D, uncert=False):
 # Use of plot_results.py
 
 if __name__ == '__main__':
+	import cPickle as pickle
+
 	galaxy = 'ic1459'
 	line = 'Fe5015'
 

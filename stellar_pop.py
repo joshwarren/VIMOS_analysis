@@ -10,8 +10,8 @@ import os
 from scipy.interpolate import griddata
 from checkcomp import checkcomp
 cc = checkcomp()
-from decimal import *
-getcontext().prec=80
+# from decimal import *
+# getcontext().prec=80
 
 def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	grid_length = 40
@@ -43,19 +43,15 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 	titles = np.loadtxt(models_dir, dtype=str)[0]
 
-	age3, metallicity3, alpha3 = np.loadtxt(models_dir, usecols=(0,1,2), 
+	age_in, metallicity_in, alpha_in = np.loadtxt(models_dir, usecols=(0,1,2), 
 		unpack=True, skiprows=35)
 
-	age2 = np.unique(age3)
-	metallicity2 = np.unique(metallicity3)
-	alpha2 = np.unique(alpha3)
-
-	age = np.logspace(np.log10(min(age2)), np.log10(max(age2)), 
+	age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), 
 		num=grid_length)
-	age[np.argmax(age)] = max(age2)
-	metallicity = np.linspace(min(metallicity2), max(metallicity2), 
+	age[np.argmax(age)] = max(age_in)
+	metallicity = np.linspace(min(metallicity_in), max(metallicity_in), 
 		num=grid_length)
-	alpha = np.linspace(min(alpha2), max(alpha2), num=grid_length)
+	alpha = np.linspace(min(alpha_in), max(alpha_in), num=grid_length)
 
 	age_p=np.array([[m]*grid_length**2 for m in age]).flatten()
 	metallicity_p=np.array([[m]*grid_length for m in metallicity]*grid_length
@@ -70,33 +66,23 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		if l in lines:
 			models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
 				skiprows=35)
-			interp[l] = griddata(np.array([age3, metallicity3, alpha3]).transpose(), 
+			interp[l] = griddata(np.array([age_in, metallicity_in, alpha_in]).transpose(), 
 				models[l], np.array([age_p, metallicity_p, alpha_p]).transpose()
 				).reshape((grid_length,grid_length,grid_length))
 			n_lines += (~np.isnan(D.absorption_line(l))).astype(int)
 
 	s = interp[lines[0]].shape
 	chi2 = np.zeros((s[0], s[1], s[2], D.number_of_bins))
-#	chi2 =[Decimal(0)]*(grid_length**3*D.number_of_bins)
-#	chi2 = np.array(chi2).reshape((grid_length,grid_length,grid_length,D.number_of_bins))
 	for line in lines:
 		print '    Fitting ' + line
 		ab_line, uncert = D.absorption_line(line, uncert=True)
 		d = np.array([~np.isnan(ab_line), ~np.isnan(uncert)]).all(axis=0)
-
-#		ab_line = np.array([Decimal(a) for a in ab_line],dtype=Decimal)
-#		uncert = np.array([Decimal(a) for a in uncert],dtype=Decimal)
 		for i, ag in enumerate(age):
 			for j, me in enumerate(metallicity):
 				for k, al in enumerate(alpha):
-					chi2[i,j,k,d] += (ab_line[d] -	
-#						Decimal(interp[line][ag,me,al]))/(uncert[d]**2)#*n_lines[d])
-						interp[line][i,j,k])**2/(uncert[d]**2)
+					chi2[i,j,k,d] += (ab_line[d] - interp[line][i,j,k])**2/\
+						uncert[d]**2
 
-#	f,ax=plt.subplots()
-#	f2,ax2=plt.subplots()
-#	f3,ax3=plt.subplots()
-#	chi2[chi2==0] = np.nan
 	age_map=np.zeros(D.number_of_bins)
 	metal_map=np.zeros(D.number_of_bins)
 	alpha_map=np.zeros(D.number_of_bins)
@@ -112,21 +98,8 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		alpha_map[bin] = alpha[k]
 		chi2_map[bin] = chi2[i,j,k,bin]/n_lines[bin]
 
-
-#		ag=np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(1,2))
-#		me=np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(0,2))
-#		al=np.nansum(np.exp(-chi2[:,:,:,bin]**2/2),axis=(0,1))
-
-#		ax.plot(age,ag)
-#		ax2.plot(metallicity,me)
-#		ax3.plot(alpha,al)
-#	plt.show()
-
-
-
 	# Produce and Save Plots
 	d = {'chi2':chi2_map, 'age':age_map,'metallicity':metal_map,'alpha':alpha_map}
-#	d = {'age':age_map,'metallicity':metal_map,'alpha':alpha_map}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
 	print '    Plotting and saving'
@@ -151,55 +124,6 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	if not os.path.exists(os.path.dirname(saveTo)):
 		os.makedirs(os.path.dirname(saveTo))  
 	f.savefig(saveTo, bbox_inches="tight")
-
-
-
-
-
-
-
-
-
-	# for bin in range(D.number_of_bins):
-	# 	i = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(1,2)))
-	# 	j = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(0,2)))
-	# 	k = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(0,1)))
-	# 	age_map[bin] = age[i]
-	# 	metal_map[bin] = metallicity[j]
-	# 	alpha_map[bin] = alpha[k]
-	# 	chi2_map[bin] = float(chi2[i,j,k,bin])/n_lines[bin]
-
-
-
-
-
-	# # Produce and Save Plots
-	# d = {'chi2':chi2_map, 'age':age_map,'metallicity':metal_map,'alpha':alpha_map}
-	# f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
-	# i=0
-	# print '    Plotting and saving'
-	# for plot, values in d.iteritems():
-	# 	vmin = sorted(values[~np.isnan(values)])[vLimit]
-	# 	vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
-
-	# 	ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
-	# 		D.bin_num, D.xBar, D.yBar, values, #vmin=vmin, vmax=vmax,
-	# 		nodots=True, colorbar=True, title=plot, 
-	# 		ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
-	# 		flux_unbinned=D.unbinned_flux)
-	# 	i+=1
-	# saveTo = "%s/stellar_pop_%s2.pdf" % (out_plots, wav_range)
-	# #saveTo = '%s/test.pdf' % (cc.home_dir)
-	# f.tight_layout()
-	# ax_array[0,1].set_xlabel('')
-	# ax_array[0,0].set_xlabel('')
-	# ax_array[0,1].set_ylabel('')
-	# ax_array[1,1].set_ylabel('')
-	# f.suptitle(galaxy.upper())
-	# if not os.path.exists(os.path.dirname(saveTo)):
-	# 	os.makedirs(os.path.dirname(saveTo))  
-	# f.savefig(saveTo, bbox_inches="tight")
-
 
 	return D
 
