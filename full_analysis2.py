@@ -20,7 +20,7 @@ galaxies = ['ic1459',
 			'ic4296',
 			'ngc0612',# missing 216
 			'ngc1399',
-			'ngc3100',
+			#'ngc3100',
 			'ngc7075',
 			'pks0718-34',
 			'ngc3557', # missing 686, 688
@@ -31,7 +31,7 @@ galaxies = ['ic1459',
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
 #galaxies = ['ngc1399']
-galaxies = ['ngc3100']
+#galaxies = ['ngc3100']
 #galaxies = ['ngc7075']
 #galaxies = ['pks0718-34']
 #galaxies = ['eso443-g024']
@@ -48,7 +48,7 @@ err = []
 for galaxy in galaxies:
 	D = None
 	print galaxy
-	# try:
+	#try:
 		#man_errors(galaxy, wav_range=wav_range)
 		#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
 		#D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
@@ -62,7 +62,7 @@ for galaxy in galaxies:
 	#	classify(galaxy)
 		
 	#	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-	#	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
+	#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	# except Exception as e:
 	# 	gal_err.append(galaxy)

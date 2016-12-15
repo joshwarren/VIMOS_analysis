@@ -66,9 +66,9 @@ def population(ab_lines, uncerts, interp=None, grid_length=40):
 			uncert = np.array([uncert])
 
 		d = np.array([~np.isnan(ab), ~np.isnan(uncert)]).all(axis=0)
-		for i, ag in enumerate(age):
-			for j, me in enumerate(metallicity):
-				for k, al in enumerate(alpha):
+		for i in range(s[0]): 			# age
+			for j in range(s[1]): 		# metallicity
+				for k in range(s[2]):	# alpha
 					chi2[i,j,k,d] += (ab[d] - interp[line][i,j,k])**2/uncert[d]**2
 	chi2[chi2==0] = np.nan
 

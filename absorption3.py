@@ -2,28 +2,23 @@ from spectools import *
 from Thomas_models_index_model_variation import *
 import numpy as np 
 
-def absorption(line_name, D, uncert=False):
+def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
+	noise=None):
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
 	elif line_name=='Mg_b':
 		line_name='Mgb'
 
-	spectra=[]
-	variance=[]
-	index1_ob=[]
-	index1_ob_var=[]
-	for i in range(D.number_of_bins):
-		spectra.append(spectrum(D.bin[i].lam, D.bin[i].continuum))
-		variance.append(spectrum(D.bin[i].lam, D.bin[i].noise))
-		try:
-			index_value, index_va, continuum_def,feature_def = spectra[i].irindex(0.71,line_name,varSED=variance[i])
-		except ValueError:
-			index_value=np.nan
-			index_va = np.nan
-		index1_ob.append(index_value)
-		index1_ob_var.append(index_va)
+	spectra = spectrum(lam, spec)
+	variance = spectrum(lam, noise)
+	try:
+		index_value, index_va, continuum_def,feature_def = spectra.irindex(0.71,
+			line_name,varSED=variance)
+	except ValueError:
+		index_value=np.nan
+		index_va = np.nan
 
-	if uncert:
-		return np.array(index1_ob).flatten(), np.array(index1_ob_var).flatten()
+	if noise is not None:
+		return index_value, index_va
 	else:
-		return np.array(index1_ob).flatten()
+		return index_value

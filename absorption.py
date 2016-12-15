@@ -4,11 +4,13 @@
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
+from tools import length as len
 from checkcomp import checkcomp
 cc = checkcomp()
 
 c = 299792.458 # speed of light in km/s
 
+##############################################################################
 def calc(lam, spectrum, index, blue, red, uncert=None):
 # ------------========== Find line strength  ============----------
 	# pixel locations
@@ -47,24 +49,28 @@ def calc(lam, spectrum, index, blue, red, uncert=None):
 		return line_strength, uncert_out
 	else:
 		return line_strength
+##############################################################################
 
 
-
+##############################################################################
+def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
+	noise=None):
 # Keywords:
-# line_name: 	Name of line to be found
-# unc_lam:		Wavelength of unconvolved spectrum - from the templates used by pPXF
-# unc_spec:		Unconcolved spectum
-# lam:			Wavelngth array of pPXF bestfit and observed spectrum
-# conv_spec:	Convolved spectrum i.e. pPXF bestfit
-# spec:			Observed spectrum
-# noise:		Observed noise from reduction pipeline
-def absorption(line_name, unc_lam, unc_spec, lam, conv_spec, spec, noise=None):
+# line_name: 			Name of line to be found
+# lam:					Wavelngth array of observed spectrum and conv_spec if supplied 
+# spec:					Observed spectrum
+# unc_lam:		None	Wavelength of unconvolved spectrum - from the templates used by pPXF
+# unc_spec:		None	Unconcolved spectum
+# conv_spec:	None	Convolved spectrum i.e. pPXF bestfit
+# noise:		None	Observed noise from reduction pipeline
+##############################################################################
 	if len(unc_lam) != len(unc_spec):
 		raise ValueError('Length of unconvoled spectrum and corresponding '+\
 			'wavelength should be the same.')
-	if len(lam) != len(conv_spec) != len(spec):
-		raise ValueError('Length of spectrum (bestfit and observed) and '+\
-			'corresponding wavelength should be the same.')
+	if conv_spec is not None:
+		if len(lam) != len(conv_spec) != len(spec):
+			raise ValueError('Length of spectrum (bestfit and observed) and '+\
+				'corresponding wavelength should be the same.')
 	if noise is not None:
 		if len(noise) != len(spec):
 			raise ValueError('Length of noise and observed spectrum '+\
@@ -82,14 +88,17 @@ def absorption(line_name, unc_lam, unc_spec, lam, conv_spec, spec, noise=None):
 	red =[r1[line],r2[line]]
 
 # ------------========= Find line strenghts ==========----------
-	# Line strength of unconvolved spectrum.
-	sig_pix = 200*np.mean(index)/c/(unc_lam[1]-unc_lam[0])
-	lick_spec = gaussian_filter1d(unc_spec, sig_pix)
-	line_strength_uncon = calc(unc_lam, lick_spec, index, blue, red)
-	# Line strength of convolved spectrum (bestfit - emission lines)
-	line_strength_con = calc(lam, conv_spec, index, blue, red)
-	# LOSVD correction (From SAURON VI: Section 4.2.2)
-	corr = line_strength_uncon/line_strength_con
+	if unc_lam is not None and unc_spec is not None and conv_spec is not None:
+		# Line strength of unconvolved spectrum.
+		sig_pix = 200*np.mean(index)/c/(unc_lam[1]-unc_lam[0])
+		lick_spec = gaussian_filter1d(unc_spec, sig_pix)
+		line_strength_uncon = calc(unc_lam, lick_spec, index, blue, red)
+		# Line strength of convolved spectrum (bestfit - emission lines)
+		line_strength_con = calc(lam, conv_spec, index, blue, red)
+		# LOSVD correction (From SAURON VI: Section 4.2.2)
+		corr = line_strength_uncon/line_strength_con
+	else:
+		corr = 1
 	if noise is not None:
 		line_strength, uncert = calc(lam, spec, index, blue, red, uncert=noise)
 		line_strength *= corr
@@ -98,11 +107,7 @@ def absorption(line_name, unc_lam, unc_spec, lam, conv_spec, spec, noise=None):
 	else:
 		line_strength = corr * calc(lam, spec, index, blue, red)
 		return line_strength
-
-
-
-
-
+##############################################################################
 
 
 
@@ -129,9 +134,7 @@ if __name__ == '__main__':
 	D = pickle.load(pickleFile)
 	pickleFile.close()
 
-	s, uncert = absorption(line, D, uncert=True)
-	for i in range(len(s)):
-		print s[i], uncert[i]
+	s, uncert = D.absorption_line(line, uncert=True)
 
 	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, s, nodots=True,
 		colorbar=True, galaxy = galaxy.upper(), save='/home/HOME/test.png')

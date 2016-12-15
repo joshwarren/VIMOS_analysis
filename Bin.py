@@ -5,7 +5,7 @@
 
 import numpy as np
 import ppxf_util as util
-from absorption import absorption
+from absorption3 import absorption
 from glob import glob
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -550,12 +550,13 @@ class Bin(object):
 			line in self.e_line.iteritems()], axis=0)
 		lam = self.lam/(1+self.components['stellar'].vel/c)
 		if uncert:
-			return absorption(absorption_line, self.unconvolved_lam, 
-				self.unconvolved_spectrum, lam, convolved, self.continuum, 
-				noise=self.noise)
+			return absorption(absorption_line, lam, self.continuum, 
+				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 
+				conv_spec=convolved, noise=self.noise)
 		else:
-			return absorption(absorption_line, self.unconvolved_lam, 
-				self.unconvolved_spectrum, lam, convolved, self.continuum)
+			return absorption(absorption_line, lam, self.continuum, 
+				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 
+				conv_spec=convolved)
 
 
 class myFloat(float):

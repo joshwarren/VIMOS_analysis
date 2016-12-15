@@ -43,16 +43,27 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 	# Produce and Save Plots
 	d = {'chi2':chi2, 'age':age,'metallicity':metal,'alpha':alpha}
+	c_label = {'chi2':'', 'age':'Gyrs','metallicity':'[Z/H]','alpha':'[alpha/Fe]'}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
 	print '    Plotting and saving'
 	for plot, values in d.iteritems():
-		vmin = sorted(values[~np.isnan(values)])[vLimit]
-		vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+		
+		if plot=='chi2':
+			vmin = sorted(values[~np.isnan(values)])[vLimit]
+			vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+		elif plot=='age':
+			vmin,vmax=0,15
+		elif plot=='metallicity':
+			vmin,vmax=-2.25,0.67
+		elif plot=='alpha':
+			vmin,vmax=-0.3,0.5
+
+
 
 		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
-			D.bin_num, D.xBar, D.yBar, values, #vmin=vmin, vmax=vmax,
-			nodots=True, colorbar=True, title=plot, 
+			D.bin_num, D.xBar, D.yBar, values, vmin=vmin, vmax=vmax,
+			nodots=True, colorbar=True, title=plot, label=c_label[plot],
 			ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 		i+=1
