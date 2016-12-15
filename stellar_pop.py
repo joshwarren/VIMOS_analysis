@@ -7,99 +7,42 @@ from plot_velfield_nointerp import plot_velfield_nointerp
 #from sauron_colormap2 import sauron2 as sauron
 import numpy as np
 import os
-from scipy.interpolate import griddata
+from population import population
 from checkcomp import checkcomp
 cc = checkcomp()
-# from decimal import *
-# getcontext().prec=80
 
 def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	grid_length = 40
 	# Find lines:
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
-		#'Mg_1', 'Mg_2', 
 		'Mg_b']
 	#lines = ['H_beta']
 
 	print 'Stellar populations'
 
-	if wav_range:
-		wav_range_dir = wav_range + "/"
-	else:
-		wav_range_dir = ""
-
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
-	out_plots = "%splots" % (output)
+	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
+	out_plots = "%s/plots" % (output)
 
 	if D is None:
 		out_pickle = '%s/pickled' % (output)
 		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
-		#pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()
 
-	models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
-	titles = np.loadtxt(models_dir, dtype=str)[0]
+	line_dir = {}
+	uncert_dir = {}
+	for l in lines:
+		ab, uncert = D.absorption_line(l, uncert=True)
+		line_dir[l] = ab
+		uncert_dir[l] = uncert
 
-	age_in, metallicity_in, alpha_in = np.loadtxt(models_dir, usecols=(0,1,2), 
-		unpack=True, skiprows=35)
-
-	age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), 
-		num=grid_length)
-	age[np.argmax(age)] = max(age_in)
-	metallicity = np.linspace(min(metallicity_in), max(metallicity_in), 
-		num=grid_length)
-	alpha = np.linspace(min(alpha_in), max(alpha_in), num=grid_length)
-
-	age_p=np.array([[m]*grid_length**2 for m in age]).flatten()
-	metallicity_p=np.array([[m]*grid_length for m in metallicity]*grid_length
-		).flatten()
-	alpha_p=np.array(list(alpha)*grid_length**2)
-
-	models = {}
-	interp = {}
-	n_lines = np.zeros(D.number_of_bins)
-	print '    Interpolating models'
-	for i, l in enumerate(titles):
-		if l in lines:
-			models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
-				skiprows=35)
-			interp[l] = griddata(np.array([age_in, metallicity_in, alpha_in]).transpose(), 
-				models[l], np.array([age_p, metallicity_p, alpha_p]).transpose()
-				).reshape((grid_length,grid_length,grid_length))
-			n_lines += (~np.isnan(D.absorption_line(l))).astype(int)
-
-	s = interp[lines[0]].shape
-	chi2 = np.zeros((s[0], s[1], s[2], D.number_of_bins))
-	for line in lines:
-		print '    Fitting ' + line
-		ab_line, uncert = D.absorption_line(line, uncert=True)
-		d = np.array([~np.isnan(ab_line), ~np.isnan(uncert)]).all(axis=0)
-		for i, ag in enumerate(age):
-			for j, me in enumerate(metallicity):
-				for k, al in enumerate(alpha):
-					chi2[i,j,k,d] += (ab_line[d] - interp[line][i,j,k])**2/\
-						uncert[d]**2
-
-	age_map=np.zeros(D.number_of_bins)
-	metal_map=np.zeros(D.number_of_bins)
-	alpha_map=np.zeros(D.number_of_bins)
-	chi2_map=np.zeros(D.number_of_bins)
-	for bin in range(D.number_of_bins):
-		chi2[:,:,:,bin] /= np.min(chi2[:,:,:,bin])
-
-		i = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(1,2)))
-		j = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(0,2)))
-		k = np.argmax(np.nansum(np.exp(-np.square(chi2[:,:,:,bin])/2),axis=(0,1)))
-		age_map[bin] = age[i]
-		metal_map[bin] = metallicity[j]
-		alpha_map[bin] = alpha[k]
-		chi2_map[bin] = chi2[i,j,k,bin]/n_lines[bin]
+	age, metal, alpha, chi2 = population(line_dir, uncert_dir, 
+		grid_length=grid_length)
 
 	# Produce and Save Plots
-	d = {'chi2':chi2_map, 'age':age_map,'metallicity':metal_map,'alpha':alpha_map}
+	d = {'chi2':chi2, 'age':age,'metallicity':metal,'alpha':alpha}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
 	print '    Plotting and saving'
@@ -114,7 +57,6 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			flux_unbinned=D.unbinned_flux)
 		i+=1
 	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
-	#saveTo = '%s/test.pdf' % (cc.home_dir)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')
 	ax_array[0,0].set_xlabel('')
@@ -134,5 +76,5 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 # Use of stellar_pop.py
 
 if __name__ == '__main__':
-	stellar_pop('ic1459', wav_range='4200-', vLimit=2)
+	stellar_pop('ngc3100', wav_range='4200-', vLimit=2)
 

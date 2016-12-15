@@ -1,15 +1,31 @@
 ## ==================================================================
 ## 		Stellar population
 ## ==================================================================
+##
+#######################################################################
+# Keywords:
+# ab_lines: 			Dict of absorption line strength. NB: entry can be 
+#						array to fit more than one bin simulataniously.
+# uncerts:				Dict of uncertainty in the absorption line strenghts.
+# interp:		None 	Dict of interpolated models. If None, models are read 
+#						and interpolated everytime routine is called.
+# grid_length	40		Int of the length of a side of the cube of interpolated 
+#						models. NB: This is not used if interp is given.
+#######################################################################
 import numpy as np
 from scipy.interpolate import griddata
+from tools import length as len
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def population(ab_lines, uncerts, interp=None):
-	grid_length = 40
-	# Find lines:
+def population(ab_lines, uncerts, interp=None, grid_length=40):
+	# Absorption lines provided:
 	lines = ab_lines.keys()
+	n = len(ab_lines[lines[0]])
+	if interp is None:
+		s=[grid_length,grid_length,grid_length]
+	else:
+		s = interp[lines[0]].shape
 
 	models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 	titles = np.loadtxt(models_dir, dtype=str)[0]
@@ -17,17 +33,14 @@ def population(ab_lines, uncerts, interp=None):
 	age_in, metallicity_in, alpha_in = np.loadtxt(models_dir, usecols=(0,1,2), 
 		unpack=True, skiprows=35)
 
-	age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), 
-		num=grid_length)
+	age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), num=s[0])
 	age[np.argmax(age)] = max(age_in)
-	metallicity = np.linspace(min(metallicity_in), max(metallicity_in), 
-		num=grid_length)
-	alpha = np.linspace(min(alpha_in), max(alpha_in), num=grid_length)
+	metallicity = np.linspace(min(metallicity_in), max(metallicity_in), num=s[1])
+	alpha = np.linspace(min(alpha_in), max(alpha_in), num=s[2])
 
-	age_p=np.array([[m]*grid_length**2 for m in age]).flatten()
-	metallicity_p=np.array([[m]*grid_length for m in metallicity]*grid_length
-		).flatten()
-	alpha_p=np.array(list(alpha)*grid_length**2)
+	age_p=np.array([[m]*s[2]*s[1] for m in age]).flatten()
+	metallicity_p=np.array([[m]*s[2] for m in metallicity]*s[0]).flatten()
+	alpha_p=np.array(list(alpha)*s[1]*s[0])
 
 	if interp is None:
 		models = {}
@@ -40,23 +53,32 @@ def population(ab_lines, uncerts, interp=None):
 				interp[l] = griddata(
 					np.array([age_in, metallicity_in, alpha_in]).transpose(), 
 					models[l], np.array([age_p, metallicity_p, alpha_p]).transpose()
-					).reshape((grid_length,grid_length,grid_length))
+					).reshape((s[0],s[1],s[2]))
+		s = interp[lines[0]].shape
 
-	s = interp[lines[0]].shape
-	chi2 = np.zeros((s[0], s[1], s[2]))
+	print '    Fitting'
+	chi2 = np.zeros((s[0], s[1], s[2], n))
 	for line in lines:
-		d = np.array([~np.isnan(ab_lines[line]), ~np.isnan(uncerts[line])]).all(axis=0)
+		ab = ab_lines[line]
+		uncert = uncerts[line]
+		if len(ab)==1 and (type(ab)!=list or type(ab)!=np.ndarray):
+			ab = np.array([ab])
+			uncert = np.array([uncert])
+
+		d = np.array([~np.isnan(ab), ~np.isnan(uncert)]).all(axis=0)
 		for i, ag in enumerate(age):
 			for j, me in enumerate(metallicity):
 				for k, al in enumerate(alpha):
-					chi2[i,j,k] += (ab_lines[line] - interp[line][i,j,k])**2/\
-						uncerts[line][d]**2
+					chi2[i,j,k,d] += (ab[d] - interp[line][i,j,k])**2/uncert[d]**2
+	chi2[chi2==0] = np.nan
 
-	chi2_m = chi2/np.min(chi2[:,:,:])
+	chi2_m = np.array(chi2)
+	for b in range(n):
+		chi2_m[:,:,:,b] /= np.nanmin(chi2_m[:,:,:,b])
 
-	i = np.argmax(np.nansum(np.exp(-np.square(chi2_m[:,:,:])/2),axis=(1,2)))
-	j = np.argmax(np.nansum(np.exp(-np.square(chi2_m[:,:,:])/2),axis=(0,2)))
-	k = np.argmax(np.nansum(np.exp(-np.square(chi2_m[:,:,:])/2),axis=(0,1)))
+	i = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2)),axis=0)
+	j = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2)),axis=0)
+	k = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1)),axis=0)
 
-	return age[i], metallicity[j], alpha[k], chi2[i,j,k]
+	return age[i], metallicity[j], alpha[k], chi2[i,j,k,range(n)]
 #############################################################################
