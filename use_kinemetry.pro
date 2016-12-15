@@ -21,11 +21,11 @@ PRO do_work, gal, type
 	if type eq 'flux' then er_velbin = velbin*0+1 else er_velbin=er_velbin*0.01
 
 	; Read in binning
-	file = '/Data/vimos/analysis/'+gal+'/voronoi_2d_binning_output.txt'
+	file = '/Data/vimos/analysis/'+gal+'/voronoi_2d_binning_output_kin.txt'
 	rdfloat, file, _,_,bin_num, xbin,ybin, skipline=1
 
 	file = '/Data/vimos/analysis/galaxies.txt'
-	readcol, file, galaxy_gals,_,_,_,x0,y0,_, skipline=1,format='A,D,D,D,I,I,I'
+	readcol, file, galaxy_gals,_,_,_,x0,y0,_,_, skipline=1,format='A,D,D,D,I,I,I,I'
 	i_gal = where(galaxy_gals eq gal)
 
 	b = uniq(bin_num,sort(bin_num))

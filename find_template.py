@@ -38,11 +38,6 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 	output_temp_weighting = '%s/analysis/%s/templates.txt' % (dir,
 		galaxy)
 
-	# Tessellation input
-	tessellation_File = '%s/analysis/%s/voronoi_2d_binning_output.txt' % (
-		dir, galaxy)
-
-
 # ----------===============================================---------
 # ----------=============== Run analysis  =================---------
 # ----------===============================================---------
@@ -86,16 +81,6 @@ def find_template (galaxy, z=0.01, discard=2, set_range=[4200,10000]):
 		templates[:,i] = log_temp_template
 
 	#templates /= np.median(log_temp_template)
-## ----------========= Reading Tessellation  ===============---------
-
-	## Reads the txt file containing the output of the binning_spaxels
-	## routine. 
-	x,y,bin_num = np.loadtxt(tessellation_File, usecols=(0,1,2), \
-		unpack=True, skiprows=1)
-
-	n_bins = max(bin_num) + 1
-	## Contains the order of the bin numbers in terms of index number.
-	order = np.sort(bin_num)
 ## ----------========= Reading the spectrum  ===============---------
 
 	dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 

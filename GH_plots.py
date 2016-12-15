@@ -28,9 +28,9 @@ def GH_plots(galaxy, wav_range="", plots=False):
 
 
     tessellation_File = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output.txt"
+        "voronoi_2d_binning_output_kin.txt"
     tessellation_File2 = "%s/Data/vimosindi/analysis/%s/" %(cc.base_dir, galaxy) +\
-        "voronoi_2d_binning_output2.txt"
+        "voronoi_2d_binning_output2_kin.txt"
     output_v = "%s/Data/vimosindi/analysis/%s/results/" % (cc.base_dir, galaxy) +\
         "%sgal_stellar_vel.dat" % (wav_range_dir)
     output_v_uncert = output_v

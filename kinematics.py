@@ -47,8 +47,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	pickleFile.close()
 
 
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_gals = np.loadtxt(galaxiesFile, 
-		unpack=True, skiprows=1, usecols=(1,2,3,4,5,6))
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
+		galaxiesFile, unpack=True, skiprows=1, usecols=(1,2,3,4,5,6,7))
 	galaxy_gals = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
@@ -176,12 +176,12 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		#gas_psi_gals[i_gal] = gas_mis
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
-	template = "{0:13}{1:14}{2:15}{3:16}{4:4}{5:4}{6:11}\n" 
+	template = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
-	f.write(template.format('Galaxy', 'z', 'velocity', 'vel dispersion', 'x', 
-		'y', 'Target SN'))
+	f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
+		"Kin SN", "Pop SN"))
 	f2 = open(galaxiesFile2, 'wb')
 	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
 		'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
@@ -189,7 +189,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	for i in range(len(galaxy_gals)):
 		f.write(template.format(galaxy_gals[i], str(z_gals[i]),	str(vel_gals[i]), 
 			str(sig_gals[i]), str(int(x_gals[i])), str(int(y_gals[i])), 
-			str(SN_gals[i])))
+			str(SN_kin_gals[i]), str(SN_pop_gals[i])))
 
 		f2.write(template2.format(galaxy_gals[i], str(round(lambda_R[i],3)), 
 			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 

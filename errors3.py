@@ -98,9 +98,9 @@ def errors3(i_gal=None, bin=None):
 
 
 	tessellation_File = dir + "/analysis/%s/" %(galaxy) +\
-		"voronoi_2d_binning_output.txt"
+		"voronoi_2d_binning_output_pop.txt"
 	tessellation_File2 = dir + "/analysis/%s/" %(galaxy) +\
-		"voronoi_2d_binning_output2.txt"
+		"voronoi_2d_binning_output2_pop.txt"
 
 
 	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom

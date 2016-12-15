@@ -24,7 +24,7 @@ def man_errors(galaxy, wav_range=""):
     dir = "/Data/vimosindi/analysis/%s/gas_MC/" % (galaxy)
     output_dir = "/Data/vimosindi/analysis/%s/results/%s/" % (galaxy, wav_range)
     tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
-        "voronoi_2d_binning_output.txt"
+        "voronoi_2d_binning_output_kin.txt"
     x, y, bin_num, xBin, yBin = np.loadtxt(tessellation_File, unpack=True, 
         skiprows = 1) 
     n_bins = int(max(bin_num)+1)

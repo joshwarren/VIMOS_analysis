@@ -30,7 +30,7 @@ def check_overwrite(new, old):
 
 
 
-def binning_spaxels(galaxy, discard=2, targetSN=None):
+def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin'):
 	print '     Voronoi Binning'
 # ----------===============================================---------
 # ----------============ Default parameters ===============---------
@@ -38,9 +38,14 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 	dir = "%s/Data/vimos" % (cc.base_dir)
 	data_file = "%s/analysis/galaxies.txt" %(dir)
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_used_gals = np.loadtxt(
-		data_file, skiprows=1, usecols=(1,2,3,4,5,6), unpack=True,
-		dtype='float,float,float,int,int,float')
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
+		data_file, skiprows=1, usecols=(1,2,3,4,5,6,7), unpack=True,
+		dtype='float,float,float,int,int,float,float')
+	if opt=='kin':
+		SN_used_gals = SN_kin_gals
+	elif opt=='pop':
+		SN_used_gals = SN_pop_gals
+
 	try:
 		i_gal = np.where(galaxy_gals == galaxy)[0]
 	except:
@@ -63,14 +68,20 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 
 
 # ----------================= Save SN_used ===============---------
-	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:10}\n"
+	if opt=='kin':
+		SN_kin_gals = SN_used_gals
+	elif opt=='pop':
+		SN_pop_gals = SN_used_gals 
+
+	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
-			"Target SN"))
+			"Kin SN", "Pop SN"))
 		for i in range(len(galaxy_gals)):
 			f.write(temp.format(galaxy_gals[i], str(round(z_gals[i],7)), 
 				str(round(vel_gals[i],4)), str(round(sig_gals[i],4)), 
-				str(int(x_gals[i])), str(int(y_gals[i])), str(round(SN_used_gals[i],2))))
+				str(int(x_gals[i])), str(int(y_gals[i])), str(round(SN_kin_gals[i],2)),
+				str(round(SN_pop_gals[i],2))))
 
 # ----------================ Find S/N ================------------
 # Final wildcard notes that depending on the method used the quadrants
@@ -160,14 +171,16 @@ def binning_spaxels(galaxy, discard=2, targetSN=None):
 	temp = "{0:3}{1:3}{2:8}{3:9}{4:9}\n"
 	temp2 = "{0:9}{1:9}\n"
 
-	with open("%s/analysis/%s/voronoi_2d_binning_output.txt" % (dir,galaxy), 'w') as f:
+	with open("%s/analysis/%s/voronoi_2d_binning_output_%s.txt" % (dir,galaxy,opt), 
+		'w') as f:
 		f.write(temp.format('X"', 'Y"', 'BIN_NUM', 'XBIN', 'YBIN'))
 		for i in range(len(xBin)):
 			f.write(temp.format(str(int(x[i])), str(int(y[i])), str(int(binNum[i])), 
 				str(round(xBin[i],5)), str(round(yBin[i],5))))
 
 
-	with open("%s/analysis/%s/voronoi_2d_binning_output2.txt" % (dir,galaxy), 'w') as f:
+	with open("%s/analysis/%s/voronoi_2d_binning_output2_%s.txt" % (dir,galaxy,opt), 
+		'w') as f:
 		f.write(temp2.format('XBAR','YBAR'))
 		for i in range(len(xBar)):
 			f.write(temp2.format(str(round(xBar[i],5)), str(round(yBar[i],5)))) 

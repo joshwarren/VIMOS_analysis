@@ -29,7 +29,7 @@ def v_vd_ellip(wav_range=""):
     for i in range(len(galaxies)):
         galaxy = galaxies[i]
         tessellation_File = "/Data/vimosindi/analysis/%s/" %(galaxy) +\
-            "voronoi_2d_binning_output.txt"
+            "voronoi_2d_binning_output_kin.txt"
         dataCubeDirectory = glob.glob("/Data/vimosindi/reduced/%s/cube/" \
             "*crcl_oextr1*vmcmb_darc_cexp_cube.fits" % (galaxy))
         v_file = "/Data/vimosindi/analysis/%s/results/" % (galaxy) +\

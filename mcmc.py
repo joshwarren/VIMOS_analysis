@@ -35,11 +35,6 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 	dir = '%s/Data/vimos/'  %(cc.base_dir)
 	templatesDirectory = '%s/models/miles_library' % (cc.home_dir)
 
-	# Tessellation input
-	tessellation_File = '%s/analysis/%s/voronoi_2d_binning_output.txt' % (
-		dir, galaxy)
-
-
 # ----------===============================================---------
 # ----------=============== Run analysis  =================---------
 # ----------===============================================---------
@@ -89,16 +84,6 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 		templates[:,i] = log_temp_template
 
 	#templates /= np.median(log_temp_template)
-## ----------========= Reading Tessellation  ===============---------
-
-	## Reads the txt file containing the output of the binning_spaxels
-	## routine. 
-	x,y,bin_num = np.loadtxt(tessellation_File, usecols=(0,1,2), \
-		unpack=True, skiprows=1)
-
-	n_bins = max(bin_num) + 1
-	## Contains the order of the bin numbers in terms of index number.
-	order = np.sort(bin_num)
 ## ----------========= Reading the spectrum  ===============---------
 
 	dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
@@ -275,11 +260,12 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 		vel_gals[i_gal] = vel
 		sig_gals[i_gal] = sig
 
-	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:10}\n"
+	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
-			"Target SN"))
+			"Kin SN", "Pop SN"))
 		for i in range(len(galaxy_gals)):
 			f.write(temp.format(galaxy_gals[i], str(round(z_gals[i],7)), 
 				str(round(vel_gals[i],4)), str(round(sig_gals[i],4)), 
-				str(int(x_gals[i])), str(int(y_gals[i])), str(round(SN_used_gals[i],2))))
+				str(int(x_gals[i])), str(int(y_gals[i])), str(round(SN_kin_gals[i],2)),
+				str(round(SN_pop_gals[i],2))))

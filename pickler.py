@@ -29,15 +29,10 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	print "    Loading D"
 
-	if wav_range:
-		wav_range_dir = wav_range + "/"
-	else:
-		wav_range_dir = ""
-
-	tessellation_File = "%s/%s/voronoi_2d_binning_output.txt" % (vin_dir, galaxy)
-	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2.txt" %(vin_dir, galaxy)
+	tessellation_File = "%s/%s/voronoi_2d_binning_output_%s.txt" % (vin_dir, galaxy, opt)
+	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2_%s.txt" %(vin_dir, galaxy, opt)
 	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
-	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
+	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
 	if opt == "kin":
 		vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
 	elif opt == "pop":
@@ -45,8 +40,8 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	out_pickle = '%s/pickled' % (output)
 
 	# lists the files produced by man_errors[2].py
-	outputs = glob.glob(output+'gal_*.dat')
-	#outputs = glob.glob(output+'gal_stellar*.dat')
+	outputs = glob.glob(output+'/gal_*.dat')
+	#outputs = glob.glob(output+'/gal_stellar*.dat')
 	#outputs = []
 
 # ------------======== Reading the spectrum  ============----------

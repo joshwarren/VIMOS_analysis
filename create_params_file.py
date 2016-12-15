@@ -4,7 +4,7 @@ cc = checkcomp()
 
 i_gal_beg = 0
 code = "python"
-#code = "IDL"
+opt = 'kin'
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 	'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
@@ -17,8 +17,8 @@ f = open(output_file, 'w')
 for gal in gals:
 	galaxy = galaxies[gal]
 
-	tessellation_File = '%s/Data/vimos/analysis/%s/voronoi_2d_binning_output.txt' % (
-		cc.base_dir, galaxy)
+	tessellation_File = '%s/Data/vimos/analysis/%s/voronoi_2d_binning_output_%s.txt' % (
+		cc.base_dir, galaxy, opt)
 
 	bin_num = np.loadtxt(tessellation_File, usecols=(2,), skiprows=1, unpack=True)
 	n_bins = int(max(bin_num)+1)
