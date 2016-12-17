@@ -3,6 +3,7 @@
 ## ==================================================================
 ## warrenj 20160810 Routine to load pPXF fits from Glamdring into 
 ##		data object and pickle it, ready for use by other routines.
+## warrenj 20161217 Added section to replace man_errors.py routine.
 
 ## *************************** KEYWORDS ************************* ##
 ## opt 		'kin'	Option of kinamatics (kin) or stellar population
@@ -14,6 +15,7 @@ import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 import os
 import cPickle as pickle
+import warnings
 from Bin import Data, emission_line
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -74,7 +76,6 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		# Getting emission templates used
 		lines = {'Hdelta':4101.76, 'Hgamma':4340.47, 'Hbeta':4861.33, 
 			'[OIII]5007d':5004.0,'[NI]d':5200.0}
-		#D.bin[i].set_emission_lines(FWHM_gal)#, temp_wav)
 		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, i),dtype=str)
 		ms = matrix.shape
 		for j in range(ms[0]):
@@ -97,13 +98,58 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		elif opt == 'pop':
 			D.bin[i].mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC,i), 
 				unpack=True)
-# ------------============== Read fields ================----------
-
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
-	for plot in outputs:
-		[c,k] = plot.split('gal_')[-1].split('.')[0].split('_')
-		D.components[c].setkin(k, np.loadtxt(plot, usecols=(0,), unpack=True))
-		D.components[c].setkin_uncert(k,np.loadtxt(plot, usecols=(1,), unpack=True))
+# ------------=========== Read kinematics results ==============----------
+	componants = ["stellar"]
+	componants.extend([d for d in os.listdir(vin_dir_gasMC + "/gas") if \
+		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))])
+	dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
+		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+		'h4':np.zeros(D.number_of_bins)*np.nan}
+	dynamics_uncert = {'vel':np.zeros(D.number_of_bins)*np.nan, 
+		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+		'h4':np.zeros(D.number_of_bins)*np.nan}
+
+	for c in componants:
+		for bin in range(D.number_of_bins):
+			# Bestfit values
+			glamdring_file = "%s/%i.dat" % (vin_dir_gasMC, bin)
+			c_in_bin = np.loadtxt(glamdring_file, unpack=True, usecols=(0,), 
+				dtype=str)
+			vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True, 
+				usecols=(1,2,3,4))
+
+			# check componant is in bin
+			if c in c_in_bin:
+				i = np.where(c_in_bin == c)[0][0]
+				dynamics['vel'][bin] = vel[i]
+				dynamics['sigma'][bin] = sig[i]
+				dynamics['h3'][bin] = h3s[i]
+				dynamics['h4'][bin] = h4s[i]
+
+				# Calculating uncertainties
+				if c != "stellar": MC_dir = "%s/gas" % (vin_dir_gasMC) 
+				else: MC_dir=vin_dir_gasMC
+
+				glamdring_file = '%s/%s/%i.dat' % (MC_dir, c, bin)
+				# Ignore empty file warnings
+				with warnings.catch_warnings():
+					warnings.simplefilter("ignore")
+					f = np.loadtxt(glamdring_file, unpack=True)
+				# Check if MC has been run.
+				if len(f) != 0:
+					vel, sig, h3s, h4s = f[0,:], f[1,:], f[2,:], f[3,:]
+					dynamics_uncert['vel'][bin] = np.std(vel)
+					dynamics_uncert['sigma'][bin] = np.std(sig)
+					dynamics_uncert['h3'][bin] = np.std(h3s)
+					dynamics_uncert['h4'][bin] = np.std(h4s)
+				else:
+					dynamics_uncert = dynamics
+
+		for kine in dynamics:
+			D.components[c].setkin(kine, dynamics[kine])
+			D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
+
 	D.find_restFrame()
 # ------------================ Pickling =================----------
 
@@ -132,10 +178,10 @@ if __name__ == '__main__':
 
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	galaxy = galaxies[1]
+	galaxy = galaxies[6]
 
 	wav_range="4200-"
 	discard = 2 # rows of pixels to discard- must have been the same 
 			#	for all routines 
 
-	pickler(galaxy, discard=discard, wav_range=wav_range)
+	pickler(galaxy, discard=discard, wav_range=wav_range, opt='pop')
