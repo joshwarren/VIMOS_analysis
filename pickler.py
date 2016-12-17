@@ -4,7 +4,7 @@
 ## warrenj 20160810 Routine to load pPXF fits from Glamdring into 
 ##		data object and pickle it, ready for use by other routines.
 ## warrenj 20161217 Added section to replace man_errors.py routine.
-
+##
 ## *************************** KEYWORDS ************************* ##
 ## opt 		'kin'	Option of kinamatics (kin) or stellar population
 ##					(pop).
@@ -41,11 +41,20 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		vin_dir_gasMC = "%s/%s/pop_MC" % (vin_dir, galaxy)
 	out_pickle = '%s/pickled' % (output)
 
-	# lists the files produced by man_errors[2].py
-	outputs = glob.glob(output+'/gal_*.dat')
-	#outputs = glob.glob(output+'/gal_stellar*.dat')
-	#outputs = []
-
+	# Check tessellation file is older than pPXF outputs (checks vin_dir_gasMC/0.dat only).
+	if os.path.getmtime(tessellation_File) > os.path.getmtime('%s/0.dat' % (vin_dir_gasMC)
+		): 
+		bin_num = np.loadtxt(tessellation_File, unpack=True, skiprows = 1, usecols=(2,), 
+			dtype=int)
+		if os.path.exists('%s/%i.dat' % (vin_dir_gasMC,max(bin_num))) and not \
+			os.path.exists('%s/%i.dat' % (vin_dir_gasMC, max(bin_num)+1)):
+			# Issue warning, but do not stop.
+			warnings.warn('WANING: The tesselation file '+\
+				'voronoi_2d_binning_output_%s.txt may to have been changed.' % (opt))
+		else:
+			# Stop and raise exception
+			raise UserWarning('WANING: The tesselation file '+\
+				'voronoi_2d_binning_output_%s.txt has been overwritten.' % (opt))
 # ------------======== Reading the spectrum  ============----------
 	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
 			usecols=(0,1,2)))

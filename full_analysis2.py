@@ -19,7 +19,7 @@ galaxies = ['ic1459',
 			'ic4296',
 			'ngc0612',# missing 216
 			'ngc1399',
-			#'ngc3100',
+			'ngc3100',
 			'ngc7075',
 			'pks0718-34',
 			'ngc3557', # missing 686, 688
@@ -59,7 +59,7 @@ for galaxy in galaxies:
 	#	use_kinemetry(galaxy)
 	#	classify(galaxy)
 		
-	#	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 	#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	# except Exception as e:

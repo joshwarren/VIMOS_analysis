@@ -22,6 +22,9 @@ def population(ab_lines, uncerts, interp=None, grid_length=40):
 	# Absorption lines provided:
 	lines = ab_lines.keys()
 	n = len(ab_lines[lines[0]])
+	if n==1 and (type(ab_lines[lines[0]])!=list or type(ab_lines[lines[0]])!=np.ndarray):
+		for key in ab_lines:
+			ab_lines[key] = np.array([ab_lines[key]])
 	if interp is None:
 		s=[grid_length,grid_length,grid_length]
 	else:
@@ -58,14 +61,13 @@ def population(ab_lines, uncerts, interp=None, grid_length=40):
 
 	print '    Fitting'
 	chi2 = np.zeros((s[0], s[1], s[2], n))
+	n_lines =  np.zeros(n)
 	for line in lines:
 		ab = ab_lines[line]
 		uncert = uncerts[line]
-		if len(ab)==1 and (type(ab)!=list or type(ab)!=np.ndarray):
-			ab = np.array([ab])
-			uncert = np.array([uncert])
 
 		d = np.array([~np.isnan(ab), ~np.isnan(uncert)]).all(axis=0)
+		n_lines += d
 		for i in range(s[0]): 			# age
 			for j in range(s[1]): 		# metallicity
 				for k in range(s[2]):	# alpha
@@ -74,11 +76,11 @@ def population(ab_lines, uncerts, interp=None, grid_length=40):
 
 	chi2_m = np.array(chi2)
 	for b in range(n):
-		chi2_m[:,:,:,b] /= np.nanmin(chi2_m[:,:,:,b])
+		chi2_m[:,:,:,b] -= np.nanmin(chi2_m[:,:,:,b])
 
 	i = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2)),axis=0)
 	j = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2)),axis=0)
 	k = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1)),axis=0)
 
-	return age[i], metallicity[j], alpha[k], chi2[i,j,k,range(n)]
+	return age[i], metallicity[j], alpha[k], chi2[i,j,k,range(n)]/(n_lines-3)
 #############################################################################
