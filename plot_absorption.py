@@ -4,7 +4,6 @@
 import cPickle as pickle
 import matplotlib.pyplot as plt 
 from plot_velfield_nointerp import plot_velfield_nointerp 
-#from sauron_colormap2 import sauron2 as sauron
 import numpy as np 
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -71,10 +70,10 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 			abmin = limits[line][0]
 			abmax = limits[line][1]
 
-		ax_array[np.floor(i/2),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
+		ax_array[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
 			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
-			nodots=True, colorbar=True, label='log Index strength ('+r'$\AA$'+')', 
-			title=line, ax=ax_array[np.floor(i/2),i%2], cmap='gnuplot2', 
+			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
+			title=line, ax=ax_array[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 
 		#m=(D.absorption_line(line)>mean-std)*(D.absorption_line(line)<mean+std)
@@ -91,10 +90,10 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 			#abmax = min([abmax, mean + std])
 			#abmin = max([abmin, mean - std])
 
-			ax_array_uncert[np.floor(i/2),i%2] = plot_velfield_nointerp(D.x, D.y, 
+			ax_array_uncert[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, 
 				D.bin_num, D.xBar, D.yBar, ab_uncert, vmin=abmin, vmax=abmax,
-				nodots=True, colorbar=True, label='log Index strength ('+r'$\AA$'+')', 
-				title=line, ax=ax_array_uncert[np.floor(i/2),i%2], cmap='gnuplot2', 
+				nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
+				title=line, ax=ax_array_uncert[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
 				flux_unbinned=D.unbinned_flux)
 
 

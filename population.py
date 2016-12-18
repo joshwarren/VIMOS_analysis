@@ -78,9 +78,12 @@ def population(ab_lines, uncerts, interp=None, grid_length=40):
 	for b in range(n):
 		chi2_m[:,:,:,b] -= np.nanmin(chi2_m[:,:,:,b])
 
-	i = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2)),axis=0)
-	j = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2)),axis=0)
-	k = np.argmax(np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1)),axis=0)
+	age_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2))
+	metal_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2))
+	alpha_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1))
+	i = np.argmax(age_prob_dist, axis=0)
+	j = np.argmax(metal_prob_dist,axis=0)
+	k = np.argmax(alpha_prob_dist,axis=0)
 
 	return age[i], metallicity[j], alpha[k], chi2[i,j,k,range(n)]/(n_lines-3)
 #############################################################################

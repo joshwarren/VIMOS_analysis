@@ -111,13 +111,13 @@ class Data(object):
 
 	@property
 	def e_line(self):
-		return {k:v for k,v in self._components.iteritems() if k!='stellar' and (
-			any(~v.mask) and any(~np.isnan(v.flux)))}	
+		return {k:v for k,v in self._components.iteritems() if k!='stellar' and not
+			all(v.mask)}
 
 	@property
 	def components(self):
-		return {k:v for k,v in self._components.iteritems() if k=='stellar' or (
-			any(~v.mask) and any(~np.isnan(v.flux)))}
+		return {k:v for k,v in self._components.iteritems() if k=='stellar' or not
+			all(v.mask)}
 
 	@property
 	def flux(self):
@@ -205,7 +205,6 @@ class _data(object):
 			
 
 	def setkin(self, attr, value):
-		#print '*SETattr called by ' + attr
 		# Ensures only acts on kinematics
 		if attr in ['vel','sigma','h3','h4']:
 			m = self.mask
@@ -218,7 +217,6 @@ class _data(object):
 					pass
 
 	def setkin_uncert(self, attr, value):
-		#print '*SETattr called by ' + attr
 		# Ensures only acts on kinematics
 		if attr in ['vel','sigma','h3','h4']:
 			for i, bin in enumerate(self.__parent__.bin):
@@ -229,7 +227,6 @@ class _data(object):
 		
 	# __getattr__ only called when attribute is not found by other means. 
 	def __getattr__(self, attr):
-		#print 'getattr called by ' + attr
 		if attr in ['vel','sigma','h3','h4']:
 			m = self.mask
 			# Normalise to rest frame of stars

@@ -70,7 +70,7 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
 	
-	D.unbinned_flux = np.sum(galaxy_data, axis=0)
+	D.unbinned_flux = np.nansum(galaxy_data, axis=0)
 	
 	FWHM_gal = 4*0.71
 	temp_wav = np.loadtxt('%s/models/miles_library/m0001V' % (cc.home_dir),
@@ -156,8 +156,9 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 					dynamics_uncert = dynamics
 
 		for kine in dynamics:
-			D.components[c].setkin(kine, dynamics[kine])
-			D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
+			if c in D.list_components:
+				D.components[c].setkin(kine, dynamics[kine])
+				D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
 
 	D.find_restFrame()
 # ------------================ Pickling =================----------

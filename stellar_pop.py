@@ -38,11 +38,11 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		line_dir[l] = ab
 		uncert_dir[l] = uncert
 
-	age, metal, alpha, chi2 = population(line_dir, uncert_dir, 
+	age, metal, alpha, red_chi2 = population(line_dir, uncert_dir, 
 		grid_length=grid_length)
 
 	# Produce and Save Plots
-	d = {'chi2':chi2, 'age':age,'metallicity':metal,'alpha':alpha}
+	d = {'chi2':red_chi2, 'age':age,'metallicity':metal,'alpha':alpha}
 	c_label = {'chi2':'', 'age':'Gyrs','metallicity':'[Z/H]','alpha':'[alpha/Fe]'}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
@@ -50,8 +50,10 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	for plot, values in d.iteritems():
 		
 		if plot=='chi2':
-			vmin = sorted(values[~np.isnan(values)])[vLimit]
-			vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+#			vmin = sorted(values[~np.isnan(values)])[vLimit]
+#			vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+			vmin = min(values)
+			vmax = max(values)
 		elif plot=='age':
 			vmin,vmax=0,15
 		elif plot=='metallicity':
@@ -59,12 +61,10 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		elif plot=='alpha':
 			vmin,vmax=-0.3,0.5
 
-
-
-		ax_array[i%2,np.floor(i/2)] = plot_velfield_nointerp(D.x, D.y, 
+		ax_array[i%2,int(np.floor(i/2))] = plot_velfield_nointerp(D.x, D.y, 
 			D.bin_num, D.xBar, D.yBar, values, vmin=vmin, vmax=vmax,
 			nodots=True, colorbar=True, title=plot, label=c_label[plot],
-			ax=ax_array[i%2,np.floor(i/2)], cmap='gnuplot2', 
+			ax=ax_array[i%2,int(np.floor(i/2))], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
 		i+=1
 	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)

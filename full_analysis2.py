@@ -17,20 +17,20 @@ from classify import classify
 galaxies = ['ic1459',
 			'ic1531',
 			'ic4296',
-			'ngc0612',# missing 216
+			'ngc0612',
 			'ngc1399',
-			'ngc3100',
+			#'ngc3100',
+			'ngc3557',
 			'ngc7075',
 			'pks0718-34',
-			'ngc3557', # missing 686, 688
-			'eso443-g024'] # missing 453, 455
+			'eso443-g024']
 #galaxies = ['ngc3557']
 #galaxies = ['ic1459']
 #galaxies = ['ic1531']
 #galaxies = ['ic4296']
 #galaxies = ['ngc0612']
 #galaxies = ['ngc1399']
-#galaxies = ['ngc3100']
+galaxies = ['ngc3100']
 #galaxies = ['ngc7075']
 #galaxies = ['pks0718-34']
 #galaxies = ['eso443-g024']
@@ -59,7 +59,7 @@ for galaxy in galaxies:
 	#	use_kinemetry(galaxy)
 	#	classify(galaxy)
 		
-	D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+	#D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 	#D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 	D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	# except Exception as e:

@@ -3,7 +3,6 @@
 ## ==================================================================
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
-from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from tools import length as len
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -89,7 +88,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 # ------------========= Find line strenghts ==========----------
 	if unc_lam is not None and unc_spec is not None and conv_spec is not None:
-		# Line strength of unconvolved spectrum.
+		# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
 		sig_pix = 200*np.mean(index)/c/(unc_lam[1]-unc_lam[0])
 		lick_spec = gaussian_filter1d(unc_spec, sig_pix)
 		line_strength_uncon = calc(unc_lam, lick_spec, index, blue, red)
@@ -117,6 +116,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 if __name__ == '__main__':
 	import cPickle as pickle
+	from plot_velfield_nointerp import plot_velfield_nointerp
+
 
 	galaxy = 'ic1459'
 	line = 'Fe5015'
