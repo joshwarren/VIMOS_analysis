@@ -38,14 +38,14 @@ class population(object):
 		age_in, metallicity_in, alpha_in = np.loadtxt(models_dir, usecols=(0,1,2), 
 			unpack=True, skiprows=35)
 
-		age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), num=s[0])
-		age[np.argmax(age)] = max(age_in)
-		metallicity = np.linspace(min(metallicity_in), max(metallicity_in), num=s[1])
-		alpha = np.linspace(min(alpha_in), max(alpha_in), num=s[2])
+		self._age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), num=s[0])
+		self._age[np.argmax(self._age)] = max(age_in)
+		self._metallicity = np.linspace(min(metallicity_in), max(metallicity_in), num=s[1])
+		self._alpha = np.linspace(min(alpha_in), max(alpha_in), num=s[2])
 
-		age_p=np.array([[m]*s[2]*s[1] for m in age]).flatten()
-		metallicity_p=np.array([[m]*s[2] for m in metallicity]*s[0]).flatten()
-		alpha_p=np.array(list(alpha)*s[1]*s[0])
+		age_p=np.array([[m]*s[2]*s[1] for m in self._age]).flatten()
+		metallicity_p=np.array([[m]*s[2] for m in self._metallicity]*s[0]).flatten()
+		alpha_p=np.array(list(self._alpha)*s[1]*s[0])
 
 		if interp is None:
 			models = {}
@@ -80,33 +80,43 @@ class population(object):
 		for b in range(n):
 			chi2_m[:,:,:,b] -= np.nanmin(chi2_m[:,:,:,b])
 
-		age_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2))
-		metal_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2))
-		alpha_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1))
-		i = np.argmax(age_prob_dist, axis=0)
-		j = np.argmax(metal_prob_dist,axis=0)
-		k = np.argmax(alpha_prob_dist,axis=0)
+		self.age_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2))
+		self.metal_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2))
+		self.alpha_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1))
+		i = np.argmax(self.age_prob_dist, axis=0)
+		j = np.argmax(self.metal_prob_dist,axis=0)
+		k = np.argmax(self.alpha_prob_dist,axis=0)
 
-		unc_age = np.sqrt(np.sum(age_prob_dist*(age[:,np.newaxis] - 
-			age[i])**2,axis=0)/np.sum(age_prob_dist,axis=0))
-		unc_met = np.sqrt(np.sum(metal_prob_dist*(metallicity[:,np.newaxis] - 
-			metallicity[i])**2,axis=0)/np.sum(metal_prob_dist,axis=0))
-		unc_alp = np.sqrt(np.sum(alpha_prob_dist*(alpha[:,np.newaxis] - 
-			alpha[i])**2,axis=0)/np.sum(alpha_prob_dist,axis=0))
-
-
-		self.age_prob_dist = age_prob_dist
-		self.age_prob_dist_x = age
-		self.metal_prob_dist = metal_prob_dist
-		self.metal_prob_dist_x = metallicity
-		self.alpha_prob_dist = alpha_prob_dist
-		self.alpha_prob_dist_x = alpha
-			
-		self.age = age[i]
-		self.metallicity = metallicity[j]
-		self.alpha = alpha[k]
+		self.age = self._age[i]
+		self.metallicity = self._metallicity[j]
+		self.alpha = self._alpha[k]
 		self.red_chi2 = chi2[i,j,k,range(n)]/(n_lines-3)
-		self.unc_age = unc_age
-		self.unc_met = unc_met
-		self.unc_alp = unc_alp
+
+		self.unc_age = np.sqrt(np.sum(self.age_prob_dist*(self._age[:,np.newaxis] - 
+			self.age)**2,axis=0)/np.sum(self.age_prob_dist,axis=0))
+		self.unc_met = np.sqrt(np.sum(self.metal_prob_dist*(self._metallicity[:,np.newaxis] - 
+			self.metallicity)**2,axis=0)/np.sum(self.metal_prob_dist,axis=0))
+		self.unc_alp = np.sqrt(np.sum(self.alpha_prob_dist*(self._alpha[:,np.newaxis] - 
+			self.alpha)**2,axis=0)/np.sum(self.alpha_prob_dist,axis=0))
+
 #############################################################################
+
+	def plot_probability_distribution(self, galaxy=None):
+		import matplotlib.pyplot as plt
+
+		f, ax_array = plt.subplots(2,2)
+		if galaxy is not None:
+			f.suptitle('%s Probability Distribution' % (galaxy.upper()))
+		else:
+			f.suptitle('Probability Distribution')
+		for b in range(len(self.age)):
+			ax_array[0,0].plot(self._age, self.age_prob_dist[:,b]/np.nansum(
+				self.age_prob_dist[:,b]))
+			ax_array[0,1].plot(self._metallicity, self.metal_prob_dist[:,b]/np.nansum(
+				self.metal_prob_dist[:,b]))
+			ax_array[1,0].plot(self._alpha, self.alpha_prob_dist[:,b]/np.nansum(
+				self.alpha_prob_dist[:,b]))
+		ax_array[0,0].set_title('Age')
+		ax_array[0,1].set_title('Metallicity')
+		ax_array[1,0].set_title('Alpha/Fe ratio')
+		ax_array[1,1].axis('off')

@@ -109,34 +109,24 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 	f,ax=plt.subplots(2,2)
 	x = np.arange(len(pop.age))*header['CDELT1']
-	ax[1,0].plot(x,pop.age)
-	ax[1,0].errorbar(x,pop.age,yerr=pop.unc_age)
-	ax[1,0].set_title('Age')
-	ax[0,1].plot(x,pop.metallicity)
-	ax[0,1].errorbar(x,pop.metallicity, yerr=pop.unc_met)
-	ax[0,1].set_title('Metallicity')
+	ax[0,1].plot(x,pop.age)
+	ax[0,1].errorbar(x,pop.age,yerr=pop.unc_age)
+	ax[0,1].set_title('Age')
+	ax[0,1].set_ylim([0,15.5])
+	ax[1,0].plot(x,pop.metallicity)
+	ax[1,0].errorbar(x,pop.metallicity, yerr=pop.unc_met)
+	ax[1,0].set_title('Metallicity')
+	ax[1,0].set_ylim([-2.3,0.7])
 	ax[1,1].plot(x,pop.alpha)
 	ax[1,1].set_title('Alpha')
 	ax[1,1].errorbar(x,pop.alpha,yerr=pop.unc_alp)
+	ax[1,1].set_ylim([-0.4,0.6])
 	ax[0,0].plot(x,pop.red_chi2)
 	ax[0,0].set_title('Reduced Chi^2')
 	f.suptitle(galaxy.upper())
 
 	
-	f2, ax_array = plt.subplots(2,2)
-	f2.suptitle('%s Probability Distribution' % (galaxy.upper()))
-	for b in range(len(pop.age)):
-		ax_array[0,0].plot(pop.age_prob_dist_x, pop.age_prob_dist[:,b]/np.nansum(
-			pop.age_prob_dist[:,b]))
-		ax_array[1,0].plot(pop.metal_prob_dist_x, pop.metal_prob_dist[:,b]/np.nansum(
-			pop.metal_prob_dist[:,b]))
-		ax_array[0,1].plot(pop.alpha_prob_dist_x, pop.alpha_prob_dist[:,b]/np.nansum(
-			pop.alpha_prob_dist[:,b]))
-	ax_array[0,0].set_title('Age')
-	ax_array[1,0].set_title('Metallicity')
-	ax_array[0,1].set_title('Alpha/Fe ratio')
-	ax_array[1,1].axis('off')
-
+	pop.plot_probability_distribution(galaxy)
 	
 
 # need to consider angle
@@ -162,7 +152,7 @@ def annulus(x, args):
 if __name__=="__main__":
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	#galaxies=['ngc3100']
+	galaxies=['ngc3100']
 	for gal in galaxies:
 		print gal
 		stellar_pop(gal, wav_range='4200-', vLimit=2)
