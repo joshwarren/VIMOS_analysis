@@ -38,22 +38,29 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		line_dir[l] = ab
 		uncert_dir[l] = uncert
 
-	age, metal, alpha, red_chi2 = population(line_dir, uncert_dir, 
-		grid_length=grid_length)
+	pop = population(line_dir, 
+		uncert_dir, grid_length=grid_length)
 
 	# Produce and Save Plots
-	d = {'chi2':red_chi2, 'age':age,'metallicity':metal,'alpha':alpha}
+	d = {'chi2':pop.red_chi2, 'age':pop.age,'metallicity':pop.metal,'alpha':pop.alpha}
+	d_uncert = {'chi2':pop.red_chi2, 'age':pop.unc_age,'metallicity':pop.unc_met,
+		'alpha':pop.unc_alp}
 	c_label = {'chi2':'', 'age':'Gyrs','metallicity':'[Z/H]','alpha':'[alpha/Fe]'}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')
+	f2, ax_array2 = plt.subplots(2, 2, sharex='col', sharey='row')
 	i=0
 	print '    Plotting and saving'
 	for plot, values in d.iteritems():
 		
 		if plot=='chi2':
-#			vmin = sorted(values[~np.isnan(values)])[vLimit]
-#			vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
-			vmin = min(values)
-			vmax = max(values)
+			vmin = sorted(values[~np.isnan(values)])[vLimit]
+			vmax = sorted(values[~np.isnan(values)])[-1-vLimit]
+			
+			mean = np.nanmedian(values)
+			std = np.nanstd(values)
+
+			vmin = max([vmin, mean-2*std])
+			vmax = min([vmax, mean+2*std])
 		elif plot=='age':
 			vmin,vmax=0,15
 		elif plot=='metallicity':
@@ -66,6 +73,12 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 			nodots=True, colorbar=True, title=plot, label=c_label[plot],
 			ax=ax_array[i%2,int(np.floor(i/2))], cmap='gnuplot2', 
 			flux_unbinned=D.unbinned_flux)
+
+		ax_array2[i%2,int(np.floor(i/2))] = plot_velfield_nointerp(D.x, D.y, 
+			D.bin_num, D.xBar, D.yBar, d_uncert[plot], #vmin=vmin, vmax=vmax,
+			nodots=True, colorbar=True, title='Uncertainty in '+plot, label=c_label[plot],
+			ax=ax_array2[i%2,int(np.floor(i/2))], cmap='gnuplot2', 
+			flux_unbinned=D.unbinned_flux)
 		i+=1
 	saveTo = "%s/stellar_pop_%s.pdf" % (out_plots, wav_range)
 	f.tight_layout()
@@ -77,6 +90,16 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	if not os.path.exists(os.path.dirname(saveTo)):
 		os.makedirs(os.path.dirname(saveTo))  
 	f.savefig(saveTo, bbox_inches="tight")
+
+	saveTo = "%s/stellar_pop_%s_uncert.pdf" % (out_plots, wav_range)
+	f2.tight_layout()
+	ax_array2[0,1].set_xlabel('')
+	ax_array2[0,0].set_xlabel('')
+	ax_array2[0,1].set_ylabel('')
+	ax_array2[1,1].set_ylabel('')
+	f2.suptitle(galaxy.upper())
+	f2.savefig(saveTo, bbox_inches="tight")
+
 
 	return D
 

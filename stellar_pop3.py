@@ -6,7 +6,7 @@ import cPickle as pickle
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
-from absorption import absorption
+from absorption3 import absorption
 from population import population
 from tools import funccontains
 from checkcomp import checkcomp
@@ -16,6 +16,7 @@ c = 299792.458 # speed of light in km/s
 
 def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	discard=2
+	step_size=0.5
 
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		'Mg_b']
@@ -79,7 +80,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		for j in range(s[2]):
 			# Assign x and y
 			x[i*s[1]+j] = i
-			y[i*s[2]+j] = j
+			y[i*s[1]+j] = j
 
 
 	lam = np.arange(s[0])*CDELT_spec+CRVAL_spec
@@ -91,36 +92,50 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		ab_strength[l] = []
 		uncerts[l] = []
 
-	#f2,ax2=plt.subplots()
-	for i in range(0,s[1]/2,2):
-		a = funccontains(annulus, x_cent ,y_cent, i, 2, x=x,y=y)
+	for i in np.arange(0,s[1]/2,step_size):
+		a = funccontains(annulus, x_cent ,y_cent, i, step_size, x=x,y=y)
 		spec = np.nansum(galaxy_data[:,x[a],y[a]],axis=(1))
 		noise = np.sqrt(np.nansum(galaxy_noise[:,x[a],y[a]]**2,axis=(1)))
 		
-		#ax2.plot(lam,spec,label=i)
 		for l in lines:
 			ab, uncert = absorption(l, lam, spec, noise=noise)
 			ab_strength[l].append(ab)
 			uncerts[l].append(uncert)
 	for l in lines:
-		ab_strength[l] = np.array(ab_strength[l])
-		uncerts[l] = np.array(uncerts[l])
+		ab_strength[l] = np.array(ab_strength[l]).flatten()
+		uncerts[l] = np.array(uncerts[l]).flatten()
 
-	#plt.legend()
-	age, metal, alpha, chi2 = population(ab_strength,uncerts)
+	pop = population(ab_strength, uncerts)
 
 	f,ax=plt.subplots(2,2)
-	x = np.arange(len(age))*header['CDELT1']
-	ax[1,0].plot(x,age)
+	x = np.arange(len(pop.age))*header['CDELT1']
+	ax[1,0].plot(x,pop.age)
+	ax[1,0].errorbar(x,pop.age,yerr=pop.unc_age)
 	ax[1,0].set_title('Age')
-	ax[0,1].plot(x,metal)
+	ax[0,1].plot(x,pop.metallicity)
+	ax[0,1].errorbar(x,pop.metallicity, yerr=pop.unc_met)
 	ax[0,1].set_title('Metallicity')
-	ax[1,1].plot(x,alpha)
+	ax[1,1].plot(x,pop.alpha)
 	ax[1,1].set_title('Alpha')
-	ax[0,0].plot(x,chi2)
-	ax[0,0].set_title('Chi^2')
+	ax[1,1].errorbar(x,pop.alpha,yerr=pop.unc_alp)
+	ax[0,0].plot(x,pop.red_chi2)
+	ax[0,0].set_title('Reduced Chi^2')
 	f.suptitle(galaxy.upper())
 
+	
+	f2, ax_array = plt.subplots(2,2)
+	f2.suptitle('%s Probability Distribution' % (galaxy.upper()))
+	for b in range(len(pop.age)):
+		ax_array[0,0].plot(pop.age_prob_dist_x, pop.age_prob_dist[:,b]/np.nansum(
+			pop.age_prob_dist[:,b]))
+		ax_array[1,0].plot(pop.metal_prob_dist_x, pop.metal_prob_dist[:,b]/np.nansum(
+			pop.metal_prob_dist[:,b]))
+		ax_array[0,1].plot(pop.alpha_prob_dist_x, pop.alpha_prob_dist[:,b]/np.nansum(
+			pop.alpha_prob_dist[:,b]))
+	ax_array[0,0].set_title('Age')
+	ax_array[1,0].set_title('Metallicity')
+	ax_array[0,1].set_title('Alpha/Fe ratio')
+	ax_array[1,1].axis('off')
 
 	
 
@@ -147,6 +162,7 @@ def annulus(x, args):
 if __name__=="__main__":
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+	#galaxies=['ngc3100']
 	for gal in galaxies:
 		print gal
 		stellar_pop(gal, wav_range='4200-', vLimit=2)

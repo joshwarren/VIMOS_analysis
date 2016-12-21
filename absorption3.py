@@ -16,6 +16,7 @@
 # noise:		None	Observed noise from reduction pipeline
 ##############################################################################
 from spectools import *
+from tools import length as len
 #from Thomas_models_index_model_variation import *
 from scipy.ndimage.filters import gaussian_filter1d
 import numpy as np 
