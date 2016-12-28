@@ -42,7 +42,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		uncert_dir, grid_length=grid_length)
 
 	# Produce and Save Plots
-	d = {'chi2':pop.red_chi2, 'age':pop.age,'metallicity':pop.metal,'alpha':pop.alpha}
+	d = {'chi2':pop.red_chi2, 'age':pop.age,'metallicity':pop.metallicity,'alpha':pop.alpha}
 	d_uncert = {'chi2':pop.red_chi2, 'age':pop.unc_age,'metallicity':pop.unc_met,
 		'alpha':pop.unc_alp}
 	c_label = {'chi2':'', 'age':'Gyrs','metallicity':'[Z/H]','alpha':'[alpha/Fe]'}

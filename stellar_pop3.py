@@ -105,6 +105,31 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		ab_strength[l] = np.array(ab_strength[l]).flatten()
 		uncerts[l] = np.array(uncerts[l]).flatten()
 
+
+
+
+
+
+
+	x = np.arange(len(ab_strength[lines[0]]))*header['CDELT1']
+	f, ax_array = plt.subplots(int(np.ceil(len(lines)/2.0)), 2, sharex='col', 
+		sharey='row')
+	for i, l in enumerate(lines):
+		ax_array[int(np.floor(i/2)),i%2].plot(x,ab_strength[l])
+		ax_array[int(np.floor(i/2)),i%2].errorbar(x,ab_strength[l],yerr=uncerts[l])
+		ax_array[int(np.floor(i/2)),i%2].set_title(l)
+		ax_array[int(np.floor(i/2)),i%2].set_ylim([min(ab_strength[l])-2, max(ab_strength[l])+2])
+	plt.show()
+	lkjasdlk
+
+
+
+
+
+
+
+
+
 	pop = population(ab_strength, uncerts)
 
 	f,ax=plt.subplots(2,2)
