@@ -7,7 +7,7 @@ from plot_velfield_nointerp import plot_velfield_nointerp
 #from sauron_colormap2 import sauron2 as sauron
 import numpy as np
 import os
-from population import population
+from population2 import population
 from checkcomp import checkcomp
 cc = checkcomp()
 
@@ -38,12 +38,11 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		line_dir[l] = ab
 		uncert_dir[l] = uncert
 
-	pop = population(line_dir, 
-		uncert_dir, grid_length=grid_length)
+	pop = population(line_dir, uncert_dir, grid_length=grid_length)
 
 	# Produce and Save Plots
-	d = {'chi2':pop.red_chi2, 'age':pop.age,'metallicity':pop.metallicity,'alpha':pop.alpha}
-	d_uncert = {'chi2':pop.red_chi2, 'age':pop.unc_age,'metallicity':pop.unc_met,
+	d = {'age':pop.age,'metallicity':pop.metallicity,'alpha':pop.alpha}
+	d_uncert = {'age':pop.unc_age,'metallicity':pop.unc_met,
 		'alpha':pop.unc_alp}
 	c_label = {'chi2':'', 'age':'Gyrs','metallicity':'[Z/H]','alpha':'[alpha/Fe]'}
 	f, ax_array = plt.subplots(2, 2, sharex='col', sharey='row')

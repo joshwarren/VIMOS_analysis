@@ -13,10 +13,8 @@
 #						models. NB: This is not used if interp is given.
 #######################################################################
 import numpy as np
-#from scipy.interpolate import griddata
 from scipy.interpolate import LinearNDInterpolator
 import emcee
-import cPickle as pickle
 from tools import length as len
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -25,15 +23,18 @@ class population(object):
 
 	def __init__(self, ab_lines, uncerts, interp=None, grid_length=40):
 		# Absorption lines provided:
-		lines = ab_lines.keys()
-		n = len(ab_lines[lines[0]])
-		if n==1 and (type(ab_lines[lines[0]])!=list or type(ab_lines[lines[0]])!=np.ndarray):
+		self.lines = ab_lines.keys()
+		self.ab_lines = ab_lines
+		self.uncerts = uncerts
+		self.nbins = len(ab_lines[self.lines[0]])
+		if self.nbins==1 and (type(ab_lines[self.lines[0]])!=list or \
+			type(ab_lines[self.lines[0]])!=np.ndarray):
 			for key in ab_lines:
 				ab_lines[key] = np.array([ab_lines[key]])
 		if interp is None:
 			s=[grid_length,grid_length,grid_length]
 		else:
-			s = interp[lines[0]].shape
+			s = interp[self.lines[0]].shape
 
 		models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 		titles = np.loadtxt(models_dir, dtype=str)[0]
@@ -52,122 +53,41 @@ class population(object):
 
 		# if interp is None:
 		models = {}
-		interp = {}
+		self.interp = {}
 		# 	print '    Interpolating models'
 		for i, l in enumerate(titles):
-			if l in lines:
+			if l in self.lines:
 				models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
 					skiprows=35)
-					# interp[l] = griddata(
-					# 	np.array([age_in, metallicity_in, alpha_in]).transpose(), 
-					# 	models[l], np.array([age_p, metallicity_p, alpha_p]).transpose()
-					# 	).reshape((s[0],s[1],s[2]))
-				interp[l] = LinearNDInterpolator(
+				self.interp[l] = LinearNDInterpolator(
 					np.array([age_in, metallicity_in, alpha_in]).transpose(), 
 					models[l])
-		# 	s = interp[lines[0]].shape
-
 
 		print '    Fitting'
-		def lnprob(theta):
-			f_age,f_metal,f_alpha = theta
-			if f_age<min(self._age) or f_age>max(self._age):
-				return -np.inf
-			if f_metal<min(self._metallicity) or f_metal>max(self._metallicity):
-				return -np.inf
-			if f_alpha<min(self._alpha) or f_alpha>max(self._alpha):
-				return -np.inf
-			# i = np.argmin(np.abs(self._age - f_age))
-			# j = np.argmin(np.abs(self._metallicity - f_metal))
-			# k = np.argmin(np.abs(self._alpha - f_alpha))
 
-			chi2 = 0
+		ndim, nwalkers, nsteps = 3, 200, 500
+		self.samples = np.zeros((self.nbins, nwalkers*(nsteps-50), ndim))
+		for bin in range(self.nbins):
+			sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=[bin])
+			pos = [np.array([13,0.2,-0.1]) +1e-3*np.random.randn(ndim) for i in 
+				range(nwalkers)]
+			sampler.run_mcmc(pos, 500)
 
-			for l in lines:
-				ab = ab_lines[l]
-				uncert = uncerts[l]
-
-				# interp = griddata(
-				# 		np.array([age_in, metallicity_in, alpha_in]).transpose(), 
-				# 		models[l], np.array([f_age,f_metal,f_alpha]).transpose())[0]
-
-				chi2 += (ab - interp[l](theta))**2/uncert**2
-			return -chi2/2
-
-		# only considering bin 0.
-		ndim, nwalkers = 3, 200
-
-		sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
-
-		pos = [np.array([10,0.2,-0.1]) +1e-3*np.random.randn(ndim) for i in range(nwalkers)]
-
-		sampler.run_mcmc(pos, 500)
-
-		# Discard initial steps away from initial point
-		samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
-
-		import corner
-		fig = corner.corner(samples, labels=["age", "metalicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
+			# Discard initial steps away from initial point
+			self.samples[bin,:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
+			
+		# import corner
+		# fig = corner.corner(samples, labels=["age", "metalicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
 		
-		import matplotlib.pyplot as plt
-		plt.show()
+		# import matplotlib.pyplot as plt
+		# plt.show()
 
-		kjsf
-
-
-
-
-
-
-
-
-
-
-
-
-		chi2 = np.zeros((s[0], s[1], s[2], n))
-		n_lines =  np.zeros(n)
-		for line in lines:
-			ab = ab_lines[line]
-			uncert = uncerts[line]
-
-			d = np.array([~np.isnan(ab), ~np.isnan(uncert)]).all(axis=0)
-			n_lines += d
-			for i in range(s[0]): 			# age
-				for j in range(s[1]): 		# metallicity
-					for k in range(s[2]):	# alpha
-						chi2[i,j,k,d] += (ab[d] - interp[line][i,j,k])**2/uncert[d]**2
-		chi2[chi2==0] = np.nan
-
-		chi2_m = np.array(chi2)
-		for b in range(n):
-			chi2_m[:,:,:,b] -= np.nanmin(chi2_m[:,:,:,b])
-
-		self.age_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(1,2))[:,0]
-		self.metal_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,2))[:,0]
-		self.alpha_prob_dist = np.nansum(np.exp(-np.square(chi2_m)/2),axis=(0,1))[:,0]
-		i = np.argmax(self.age_prob_dist)
-		j = np.argmax(self.metal_prob_dist)
-		k = np.argmax(self.alpha_prob_dist)
-
-
-
-
-		i = np.argmax(self.age_prob_dist, axis=0)
-		j = np.argmax(self.metal_prob_dist,axis=0)
-		k = np.argmax(self.alpha_prob_dist,axis=0)
-
-		self.age = self._age[i]
-		self.metallicity = self._metallicity[j]
-		self.alpha = self._alpha[k]
-		self.red_chi2 = chi2[i,j,k,range(n)]/(n_lines-3)
-
-		self.unc_age = np.sqrt(np.sum(self.age_prob_dist*(self._age[:,np.newaxis] - 
-			self.age)**2,axis=0)/np.sum(self.age_prob_dist,axis=0))
-		self.unc_met = np.sqrt(np.sum(self.metal_prob_dist*(self._metallicity[:,np.newaxis] - 
-			self.metallicity)**2,axis=0)/np.sum(self.metal_prob_dist,axis=0))
-		self.unc_alp = np.sqrt(np.sum(self.alpha_prob_dist*(self._alpha[:,np.newaxis] - 
-			self.alpha)**2,axis=0)/np.sum(self.alpha_prob_dist,axis=0))
+		self.age = np.mean(self.samples[:,:,0], axis=1)
+		self.unc_age = np.std(self.samples[:,:,0], axis=1)
+		self.metalicity = np.mean(self.samples[:,:,1], axis=1)
+		self.unc_met = np.std(self.samples[:,:,1], axis=1)
+		self.alpha = np.mean(self.samples[:,:,2], axis=1)
+		self.unc_alp = np.std(self.samples[:,:,2], axis=1)
 
 #############################################################################
 
@@ -179,22 +99,42 @@ class population(object):
 			f.suptitle('%s Probability Distribution' % (galaxy.upper()))
 		else:
 			f.suptitle('Probability Distribution')
-		for b in range(len(self.age)):
-			ax_array[0,0].plot(self._age, self.age_prob_dist[:,b]/np.nansum(
-				self.age_prob_dist[:,b]))
-			ax_array[0,1].plot(self._metallicity, self.metal_prob_dist[:,b]/np.nansum(
-				self.metal_prob_dist[:,b]))
-			ax_array[1,0].plot(self._alpha, self.alpha_prob_dist[:,b]/np.nansum(
-				self.alpha_prob_dist[:,b]))
+		for b in range(self.nbins):
+			ax_array[0,0].hist(self.samples[b,:,0],bins=40,histtype='step',normed=True)
+			ax_array[0,1].hist(self.samples[b,:,1],bins=40,histtype='step',normed=True)
+			ax_array[1,0].hist(self.samples[b,:,2],bins=40,histtype='step',normed=True)
+
+			ax_array[0,0].axvline(self.age)
 		ax_array[0,0].set_title('Age')
 		ax_array[0,1].set_title('Metallicity')
 		ax_array[1,0].set_title('Alpha/Fe ratio')
 		ax_array[1,1].axis('off')
+		plt.show()
 
 
 #############################################################################
 
+	def lnprob(self, theta, bin):
+		f_age,f_metal,f_alpha = theta
+		if f_age<min(self._age) or f_age>max(self._age):
+			return -np.inf
+		if f_metal<min(self._metallicity) or f_metal>max(self._metallicity):
+			return -np.inf
+		if f_alpha<min(self._alpha) or f_alpha>max(self._alpha):
+			return -np.inf
+
+		chi2 = 0
+		for l in self.lines:
+			chi2 += (self.ab_lines[l][bin] - self.interp[l](theta))**2/\
+				self.uncerts[l][bin]**2
+
+		return -chi2/2
+
+#############################################################################
+
 if __name__=="__main__":
+	import cPickle as pickle
+
 	gal='ngc3100'
 	bin=25
 	wav_range='4200-'
@@ -211,7 +151,7 @@ if __name__=="__main__":
 	uncert_dir = {}
 	for l in lines:
 		ab, uncert = D.absorption_line(l, uncert=True)
-		line_dir[l] = ab[bin]
-		uncert_dir[l] = uncert[bin]
+		line_dir[l] = np.array([ab[bin]])
+		uncert_dir[l] = np.array([uncert[bin]])
 
 	pop = population(line_dir, uncert_dir, grid_length=40)
