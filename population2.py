@@ -77,17 +77,17 @@ class population(object):
 			self.samples[bin,:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
 			
 		# import corner
-		# fig = corner.corner(samples, labels=["age", "metalicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
+		# fig = corner.corner(samples, labels=["age", "metallicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
 		
 		# import matplotlib.pyplot as plt
 		# plt.show()
 
-		self.age = np.mean(self.samples[:,:,0], axis=1)
-		self.unc_age = np.std(self.samples[:,:,0], axis=1)
-		self.metalicity = np.mean(self.samples[:,:,1], axis=1)
-		self.unc_met = np.std(self.samples[:,:,1], axis=1)
-		self.alpha = np.mean(self.samples[:,:,2], axis=1)
-		self.unc_alp = np.std(self.samples[:,:,2], axis=1)
+		self.age = np.nanmean(self.samples[:,:,0], axis=1)
+		self.unc_age = np.nanstd(self.samples[:,:,0], axis=1)
+		self.metallicity = np.nanmean(self.samples[:,:,1], axis=1)
+		self.unc_met = np.nanstd(self.samples[:,:,1], axis=1)
+		self.alpha = np.nanmean(self.samples[:,:,2], axis=1)
+		self.unc_alp = np.nanstd(self.samples[:,:,2], axis=1)
 
 #############################################################################
 
