@@ -189,13 +189,14 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 	chi = 1000000
 	for i in range(repeats):
-		print 'i=',i
 		v_sav = vel 
 		sigma_sav = sig
 		chi_sav = chi
-		print "input v: ",v_sav
-		print "input sig: ",sigma_sav
-		print "input chi2: ",chi_sav
+		if not quiet:
+			print 'i=',i
+			print "input v: ",v_sav
+			print "input sig: ",sigma_sav
+			print "input chi2: ",chi_sav
 
 		start = [vel,sig]
 
@@ -217,8 +218,9 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 	vel = np.mean(results[0,:])
 	sig = np.mean(results[1,:])
 
-	print "Mean vel: :",vel
-	print "MEAN vel dispersion: ",sig
+	if not quiet:
+		print "Mean vel: :",vel
+		print "MEAN vel dispersion: ",sig
 
 # ----------===============================================---------
 # ----------================= Save Result =================---------
@@ -239,14 +241,14 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 
 
-
 	data_file = "%s/analysis/galaxies.txt" % (dir)
 	galaxy_gals = np.loadtxt(data_file, usecols=(0,), unpack=True, 
 		dtype=str, skiprows=1)
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_used_gals = np.loadtxt(
-		data_file, skiprows=1, usecols=(1,2,3,4,5,6), unpack=True,
-		dtype='float,float,float,int,int,float')
+	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
+		data_file, skiprows=1, usecols=(1,2,3,4,5,6,7), unpack=True,
+		dtype='float,float,float,int,int,float,float')
 
+	# If galaxy is already in galaxies.txt file
 	try:
 		i_gal = np.where(galaxy_gals == galaxy)
 	except:

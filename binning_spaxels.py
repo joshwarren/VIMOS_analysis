@@ -20,8 +20,8 @@ import os
 # ----------===============================================---------
 # ----------======== Check overwrite of target SN =========---------
 # ----------===============================================---------
-def check_overwrite(new, old):
-	if new != old:
+def check_overwrite(new, old, auto_override=False):
+	if not auto_override and new != old:
 		A = raw_input('Are you sure you want to overwrite the old target ' + 
 			'of %d with a new target of %d? (Y/N) ' % (old, new))
 		if A == "N" or A == "n": new = old
@@ -30,7 +30,7 @@ def check_overwrite(new, old):
 
 
 
-def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin'):
+def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=False):
 	print '     Voronoi Binning'
 # ----------===============================================---------
 # ----------============ Default parameters ===============---------
@@ -56,7 +56,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin'):
 	if targetSN is None and i_gal != -1:
 		targetSN=SN_used_gals[i_gal]
 	elif targetSN is not None and i_gal  != -1: 
-		targetSN = check_overwrite(targetSN, SN_used_gals[i_gal])
+		targetSN = check_overwrite(targetSN, SN_used_gals[i_gal], auto_override)
 		SN_used_gals[i_gal] = targetSN
 	elif targetSN is not None and i_gal == -1:
 		SN_used_gals = [SN_used_gals, targetSN]
@@ -142,7 +142,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin'):
 				# print 'Number of affected pixels:   ', len(a)
 
 	binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale = voronoi_2d_binning(
-        x, y, signal, noise, targetSN, quiet=True, 
+        x, y, signal, noise, targetSN, quiet=True, plot=False,
         saveTo='%s/analysis/%s/binning.png' %(dir,galaxy))
 
 

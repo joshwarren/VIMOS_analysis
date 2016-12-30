@@ -11,7 +11,7 @@ from binning_spaxels import binning_spaxels
 from find_template import find_template
 from mcmc import mcmc
 
-def full_analysis(galaxy=None):
+def full_analysis(galaxy=None, opt='kin'):
 
 	galaxies = np.array(['ngc3557',
 		'ic1459', 
@@ -36,19 +36,19 @@ def full_analysis(galaxy=None):
 	
 	z = z_gals[gal]
 	discard = 2
-	targetSN = 50
+	targetSN = 30
 	set_range = [4200, 10000]
 
-	binning_spaxels(galaxy, discard=discard, targetSN=targetSN)
+	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt)
 
-	#find_template(galaxy, z=z, discard=discard, set_range=set_range)
+	find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
-	#mcmc(galaxy, z=z, discard=discard, set_range=set_range)
+	mcmc(galaxy, z=z, discard=discard, set_range=set_range)
 
 
 if __name__=="__main__":
 	galaxies = ['ngc3557',
-		'ic1459', 
+		'ic1459',
 		'ic1531', 
 		'ic4296', 
 		'ngc0612',
@@ -57,6 +57,6 @@ if __name__=="__main__":
 		'ngc7075', 
 		'pks0718-34', 
 		'eso443-g024']
-	# for g in galaxies:
-	# 	full_analysis(galaxy=g)
-	full_analysis()
+	for g in galaxies:
+		full_analysis(galaxy=g, opt='pop')
+	# full_analysis(opt='pop')
