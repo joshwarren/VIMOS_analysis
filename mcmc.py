@@ -262,7 +262,7 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 		vel_gals[i_gal] = vel
 		sig_gals[i_gal] = sig
 
-	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
+	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
 			"Kin SN", "Pop SN"))

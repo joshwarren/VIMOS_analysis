@@ -37,21 +37,31 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 # ----------===============================================---------
 	dir = "%s/Data/vimos" % (cc.base_dir)
 	data_file = "%s/analysis/galaxies.txt" %(dir)
-	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
-		data_file, skiprows=1, usecols=(1,2,3,4,5,6,7), unpack=True,
-		dtype='float,float,float,int,int,float,float')
+	# Check if file has anything in it - it does need to exsist.
+	try:
+		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+		z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
+			data_file, skiprows=1, usecols=(1,2,3,4,5,6,7), unpack=True,
+			dtype='float,float,float,int,int,float,float')
+	except StopIteration:
+		galaxy_gals = np.array([])
+		z_gals = np.array([])
+		vel_gals = np.array([])
+		sig_gals = np.array([])
+		x_gals = np.array([])
+		y_gals = np.array([])
+		SN_kin_gals = np.array([])
+		SN_pop_gals = np.array([])
+
 	if opt=='kin':
 		SN_used_gals = SN_kin_gals
 	elif opt=='pop':
 		SN_used_gals = SN_pop_gals
 
-	try:
-		i_gal = np.where(galaxy_gals == galaxy)[0]
-	except:
+	i_gal = np.where(galaxy_gals == galaxy)[0]
+	if len(i_gal) == 0:
 		i_gal = -1
-		galaxy_gals = [galaxy_gals, galaxy]
-
+		galaxy_gals = np.append(galaxy_gals, galaxy)
 
 	if targetSN is None and i_gal != -1:
 		targetSN=SN_used_gals[i_gal]
@@ -59,13 +69,21 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 		targetSN = check_overwrite(targetSN, SN_used_gals[i_gal], auto_override)
 		SN_used_gals[i_gal] = targetSN
 	elif targetSN is not None and i_gal == -1:
-		SN_used_gals = [SN_used_gals, targetSN]
+		SN_used_gals = np.append(SN_used_gals, targetSN)
 	else:
 		targetSN = 30.0
-		SN_used_gals = [SN_used_gals, targetSN]
+		SN_used_gals = np.append(SN_used_gals, targetSN)
 
-
-
+	if i_gal == -1:
+		z_gals = np.append(z_gals, 0)
+		vel_gals = np.append(vel_gals, 0)
+		sig_gals = np.append(sig_gals, 0)
+		x_gals = np.append(x_gals, 0)
+		y_gals = np.append(y_gals, 0)
+		if opt == 'kin':
+			SN_pop_gals = np.append(SN_pop_gals, 0)
+		elif opt == 'pop':
+			SN_kin_gals = np.append(SN_kin_gals, 0)
 
 # ----------================= Save SN_used ===============---------
 	if opt=='kin':
@@ -73,7 +91,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 	elif opt=='pop':
 		SN_pop_gals = SN_used_gals 
 
-	temp = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
+	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
 			"Kin SN", "Pop SN"))
@@ -141,10 +159,12 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 				# print 'Spaxel containing badpixels: ', i, j
 				# print 'Number of affected pixels:   ', len(a)
 
+	if not os.path.exists("%s/analysis/%s" % (dir,galaxy)):
+		os.makedirs("%s/analysis/%s" % (dir, galaxy))
+
 	binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale = voronoi_2d_binning(
         x, y, signal, noise, targetSN, quiet=True, plot=False,
         saveTo='%s/analysis/%s/binning.png' %(dir,galaxy))
-
 
 	order = sorted(binNum)
 	xBin = np.zeros(n_spaxels)
@@ -159,14 +179,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 			# move onto next spaxel
 			i = i + 1
 
-
-
-# Save to a text file the initial coordinates of each pixel together
-# with the corresponding bin number computed by this procedure.
-# binNum uniquely specifies the bins and for this reason it is the only
-# number required for any subsequent calculation on the bins.
-	if not os.path.exists("%s/analysis/%s" % (dir,galaxy)):
-		os.makedirs("%s/analysis/%s" % (dir, galaxy))
+# ------------================ Saving Results ===============---------------			
 
 	temp = "{0:3}{1:3}{2:8}{3:9}{4:9}\n"
 	temp2 = "{0:9}{1:9}\n"

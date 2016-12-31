@@ -176,7 +176,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		#gas_psi_gals[i_gal] = gas_mis
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
-	template = "{0:12}{1:11}{2:9}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
+	template = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
