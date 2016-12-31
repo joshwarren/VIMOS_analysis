@@ -5,6 +5,7 @@ import cPickle as pickle
 import matplotlib.pyplot as plt 
 from plot_velfield_nointerp import plot_velfield_nointerp 
 import numpy as np 
+import os
 from checkcomp import checkcomp
 cc = checkcomp()
 
@@ -28,6 +29,8 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
+	if not os.path.exists(out_plots): os.makedirs(out_plots)
+	 
 	if D is None:
 		out_pickle = '%s/pickled' % (output)
 		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')

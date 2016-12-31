@@ -24,6 +24,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
 	out_plots = "%s/plots" % (output)
+	if not os.path.exists(out_plots): os.makedirs(out_plots)
 
 	if D is None:
 		out_pickle = '%s/pickled' % (output)

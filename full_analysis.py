@@ -39,9 +39,9 @@ def full_analysis(galaxy=None, opt='kin'):
 	targetSN = 30
 	set_range = [4200, 10000]
 
-	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt)
+	# binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
 
-	find_template(galaxy, z=z, discard=discard, set_range=set_range)
+	# find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
 	mcmc(galaxy, z=z, discard=discard, set_range=set_range)
 
