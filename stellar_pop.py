@@ -101,6 +101,14 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	f2.savefig(saveTo, bbox_inches="tight")
 
 
+# ------------================ Pickling =================----------
+	print "    Pickling Stellar population object"
+	if not os.path.exists(out_pickle):
+		os.makedirs(out_pickle) 
+	pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+	pickle.dump(pop,pickleFile)
+	pickleFile.close()
+
 	return D
 
 

@@ -17,12 +17,12 @@ from classify import classify
 galaxies = ['ic1459',
 			'ic1531',
 			'ic4296',
-			'ngc0612',
+			'ngc0612', # Failed
 			'ngc1399',
-			'ngc3100',
+			'ngc3100', # Failed
 			'ngc3557',
 			'ngc7075',
-			'pks0718-34',
+			'pks0718-34', # Failed
 			'eso443-g024']
 #galaxies = ['ngc3557']
 #galaxies = ['ic1459']
@@ -60,7 +60,7 @@ for galaxy in galaxies:
 	#	classify(galaxy)
 		
 		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-		D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
+	#	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 		D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	except Exception as e:
 		gal_err.append(galaxy)
