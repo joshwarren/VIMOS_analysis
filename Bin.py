@@ -517,8 +517,13 @@ class Bin(object):
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
-
-		files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+		## Solving an error in the Uni system with loading large numbers of files from 
+		## the home directory - they have to come from the Data partition instead.
+		if cc.getDevice() == 'uni':
+			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
+				'm0[0-9][0-9][0-9]V')
+		else:
+			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
 		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
 		# ***** NB: spec is binned as the stellar templates are binned, NOT as 
 		# self.spectrum, bestfit etc i.e. wav != self.lam  *****
