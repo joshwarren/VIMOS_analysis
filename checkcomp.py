@@ -10,7 +10,8 @@
 ## uname			device 			base_dir
 ## Hal				home			/cygdrive/x
 ## glamdring 		glamdring 		~
-## asosx146 		uni 			
+## asosx146 		uni 			/
+## asosx134 		uni 			/
 
 import platform
 import warnings

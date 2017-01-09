@@ -6,8 +6,8 @@ import cPickle as pickle
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
-from absorption3 import absorption
-from population import population
+from absorption import absorption
+from population2 import population
 from tools import funccontains
 from checkcomp import checkcomp
 cc = checkcomp()

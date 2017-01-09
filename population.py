@@ -1,6 +1,8 @@
 ## ==================================================================
 ## 		Stellar population
 ## ==================================================================
+## A much faster method than population2.py for finding the bestfit model 
+## to the absorption index strengths given, but doesn't seem as good/rigorous.
 ##
 #######################################################################
 # Keywords:
