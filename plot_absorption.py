@@ -2,16 +2,18 @@
 ## 		Plot the absorption indices
 ## ==================================================================
 import cPickle as pickle
+from checkcomp import checkcomp
+cc = checkcomp()
+if 'home' not in cc.device:
+	import matplotlib # 20160202 JP to stop lack-of X-windows error
+	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 import matplotlib.pyplot as plt 
 from plot_velfield_nointerp import plot_velfield_nointerp 
 import numpy as np 
 import os
-from checkcomp import checkcomp
-cc = checkcomp()
 
 def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 	# Find lines:
-	#lines = ['Fe5015', 'H_beta', 'Ca4455', 'Mg_b']
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
 		'Mg_b']

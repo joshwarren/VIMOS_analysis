@@ -127,10 +127,6 @@ class population(object):
 
 		chi2 = 0
 		for l in self.lines:
-			print bin, l
-			print theta
-			print self.ab_lines[l][bin], self.uncerts[l][bin], self.interp[l](theta)
-			print ''
 			if ~np.isnan(self.ab_lines[l][bin]) and ~np.isnan(self.uncerts[l][bin]):
 				chi2 += (self.ab_lines[l][bin] - self.interp[l](theta))**2/\
 					self.uncerts[l][bin]**2
