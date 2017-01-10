@@ -2,17 +2,14 @@
 ## 		Stellar population
 ## ==================================================================
 import cPickle as pickle
-from checkcomp import checkcomp
-cc = checkcomp()
-if 'home' not in cc.device:
-	import matplotlib # 20160202 JP to stop lack-of X-windows error
-	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 import matplotlib.pyplot as plt 
 from plot_velfield_nointerp import plot_velfield_nointerp 
 #from sauron_colormap2 import sauron2 as sauron
 import numpy as np
 import os
 from population2 import population
+from checkcomp import checkcomp
+cc = checkcomp()
 
 def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	grid_length = 40

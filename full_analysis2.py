@@ -4,6 +4,11 @@
 ## warrenj 20150923 Routine to call a neccessary wrapper scripts for 
 ## plotting results, and calculating the alignment angles. 
 
+from checkcomp import checkcomp
+cc = checkcomp()
+if 'home' not in cc.device:
+	import matplotlib # 20160202 JP to stop lack-of X-windows error
+	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from pickler import pickler
 from plot_results import plot_results
 from kinematics import kinematics
