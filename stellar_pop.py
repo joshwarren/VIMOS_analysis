@@ -105,7 +105,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 	print "    Pickling Stellar population object"
 	if not os.path.exists(out_pickle):
 		os.makedirs(out_pickle) 
-	pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+	pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'wb')
 	pickle.dump(pop,pickleFile)
 	pickleFile.close()
 
