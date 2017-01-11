@@ -11,14 +11,9 @@ cc = checkcomp()
 import re # for regex expressions
 
 
-
-def classify(galaxy):
-	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
-	classify_file = "%s/galaxies_classify.txt" % (analysis_dir)
-	galaxiesFile_Re =  "%s/galaxies_R_e.txt" % (analysis_dir)
-
-	galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
-		unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
+def R_e(galaxy):
+	galaxiesFile_Re =  "%s/Data/galaxies_R_e.txt" % (cc.base_dir)
+	galaxy_gals = np.loadtxt(galaxiesFile_Re, dtype=str, usecols=(0,), unpack=True)
 	i_gal = np.where(galaxy_gals==galaxy)[0]
 
 	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
@@ -26,7 +21,18 @@ def classify(galaxy):
 	R_e_RC3 = 6*10**log_R_e_RC3_gals[i_gal]/2 # convert to arcsec
 	R_e_2MASS = R_e_2MASS_gals[i_gal]
 
-	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
+	return np.nanmean([R_e_RC3,R_e_2MASS])
+
+
+def classify(galaxy):
+	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
+	classify_file = "%s/galaxies_classify.txt" % (analysis_dir)
+
+	galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
+		unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
+	i_gal = np.where(galaxy_gals==galaxy)[0]
+
+	R_e = R_e(galaxy)
 # ------------================= RR/NRR ===================----------
 	file = '%s/%s/kinemetry_vel.txt' % (analysis_dir,galaxy)
 	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)
