@@ -671,5 +671,5 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__threshold__ #and np.isnan(self.vel)
+		return self.AmpNoi < self.__threshold__ or self.AmpNoi > 10**3 #and np.isnan(self.vel)
 
