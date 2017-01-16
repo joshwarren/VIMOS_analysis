@@ -11,7 +11,7 @@ cc = checkcomp()
 import re # for regex expressions
 
 
-def R_e(galaxy):
+def get_R_e(galaxy):
 	galaxiesFile_Re =  "%s/Data/galaxies_R_e.txt" % (cc.base_dir)
 	galaxy_gals = np.loadtxt(galaxiesFile_Re, dtype=str, usecols=(0,), unpack=True)
 	i_gal = np.where(galaxy_gals==galaxy)[0]
@@ -32,7 +32,7 @@ def classify(galaxy):
 		unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0]
 
-	R_e = R_e(galaxy)
+	R_e = get_R_e(galaxy)
 # ------------================= RR/NRR ===================----------
 	file = '%s/%s/kinemetry_vel.txt' % (analysis_dir,galaxy)
 	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)

@@ -46,9 +46,6 @@
 # D 		None Option to pass in the Data object instead of loading it.
 ## ************************************************************** ##
 
-#import matplotlib # 20160202 JP to stop lack-of X-windows error
-#matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
-#from cap_plot_velfield import plot_velfield #as plot_velfield
 import numpy as np # for array handling
 import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
@@ -58,12 +55,8 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp # for plotting with no interpolations. 
 from plot_histogram import plot_histogram
-#import ppxf_util as util
-#from numpy.polynomial import legendre
 import os
-#import colormaps as cm
 from sauron_colormap2 import sauron2 as sauron
-#from Bin import Data
 import cPickle as pickle
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -296,11 +289,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
 	out_pickle = '%s/pickled' % (output)
 
-	# lists the files produced by man_errors[2].py
-	outputs = glob.glob(output+'gal_*.dat')
-	#outputs = glob.glob(output+'gal_stellar*.dat')
-	#outputs = []
-
 	# Used for CO plotting
 	cubeFile = pyfits.open(dataCubeDirectory)
 	header = cubeFile[0].header
@@ -427,128 +415,124 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax1.saveTo = saveTo
 			add_CO(ax1, galaxy, header, close=True)
 # ------------=========== Setting titles etc ============----------
-	for plot in outputs:
-		plot_title = plot.split('gal_')[-1].split('.')[0]
-		print "    " + plot_title
-		[c, k] = plot_title.split('_')
-		im_type = c
-		if im_type == "gas":
-			im_type=""
-			ax_y=set_ax_y(plot_title)
-		elif im_type == "SF":
-			im_type=" (Star Forming)"
-			ax_y=set_ax_y(plot_title)
-		elif im_type == "Shocks":
-			im_type=" (Shocking)"
-			ax_y=set_ax_y(plot_title)
-		elif 'Hbeta' in im_type:
-			im_type=" ("+r'H$_\beta$'+")"
-			ax_y=set_ax_y(plot_title)
-		elif 'Hgamma' in im_type:
-			im_type=" ("+r'H$_\gamma$'+")"
-			ax_y=set_ax_y(plot_title)
-		elif 'OIII' in im_type:
-			im_type=" (OIII)"
-			ax_y=set_ax_y(plot_title)
-		else:
-			im_type=" (" + im_type + ")"
-			ax_y=set_ax_y(plot_title)
+	for c in D.list_components:
+		for k in D.components[c].plot.keys():
+			im_type = c
+			if im_type == "gas":
+				im_type=""
+				ax_y=set_ax_y(c)
+			elif im_type == "SF":
+				im_type=" (Star Forming)"
+				ax_y=set_ax_y(c)
+			elif im_type == "Shocks":
+				im_type=" (Shocking)"
+				ax_y=set_ax_y(c)
+			elif 'Hbeta' in im_type:
+				im_type=" ("+r'H$_\beta$'+")"
+				ax_y=set_ax_y(c)
+			elif 'Hgamma' in im_type:
+				im_type=" ("+r'H$_\gamma$'+")"
+				ax_y=set_ax_y(c)
+			elif 'OIII' in im_type:
+				im_type=" (OIII)"
+				ax_y=set_ax_y(c)
+			else:
+				im_type=" (" + im_type + ")"
+				ax_y=set_ax_y(c)
 
-			
-		CBLabel = None
-		if "vel" in plot_title:
-			ax_x=1
-			title = 'Velocity'
-			CBLabel = "V (km s$^{-1}$)"
-			cmap = sauron
+				
+			CBLabel = None
+			if k == "vel":
+				ax_x=1
+				title = 'Velocity'
+				CBLabel = "V (km s$^{-1}$)"
+				cmap = sauron
 
-		else:
-			cmap = sauron#cm.blue
-		if "sigma" in plot_title:
-			ax_x=2
-			title = 'Velocity Dispersion'
-			CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
+			else:
+				cmap = sauron#cm.blue
+			if  k == "sigma":
+				ax_x=2
+				title = 'Velocity Dispersion'
+				CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
 
-		if "h3" in plot_title:
-			ax_x=1
-			ax_y+=1
-			title = 'h3'
+			if k == "h3":
+				ax_x=1
+				ax_y+=1
+				title = 'h3'
 
-		if "h4" in plot_title:
-			ax_x=2
-			ax_y+=1
-			title = 'h4'		
+			if k == "h4":
+				ax_x=2
+				ax_y+=1
+				title = 'h4'		
 
 
 
-		if "stellar" in plot_title:
-			utitle = "Stellar Uncertainty " + title + " Map"
-			htitle = "Stellar " + title + " Histogram"
-			uhtitle = "Stellar Uncertainty " + title + " Histogram"
-			title = "Stellar " + title + " Map"
-		else:
-			utitle = "Ionised" + im_type + " Gas Uncertainty " + title + " Map"
-			htitle = "Ionised" + im_type + " Gas " + title + " Histogram"
-			uhtitle = "Ionised" + im_type + " Gas Uncertainty " + title + \
-				" Histogram"
-			title = "Ionised" + im_type + " Gas\n" + title + " Map"
+			if c == "stellar":
+				utitle = "Stellar Uncertainty " + title + " Map"
+				htitle = "Stellar " + title + " Histogram"
+				uhtitle = "Stellar Uncertainty " + title + " Histogram"
+				title = "Stellar " + title + " Map"
+			else:
+				utitle = "Ionised" + im_type + " Gas Uncertainty " + title + " Map"
+				htitle = "Ionised" + im_type + " Gas " + title + " Histogram"
+				uhtitle = "Ionised" + im_type + " Gas Uncertainty " + title + \
+					" Histogram"
+				title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
-		vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, plot_title, 
-			plot_title)
-		v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, 
-			vLimit, plot_title, utitle)
+			vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, c, k)
+			v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, 
+				vLimit, c, utitle)
 # # ------------============== Plot Histogram =============----------
-# 		# Field histogram
-# 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
-# 		plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
-# 			vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
-# 			xaxis=CBLabel, save=saveTo)
-# 		# Uncertainty histogram
-# 		saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
-# 		plot_histogram(D.components[c].plot[k].uncert, galaxy=galaxy.upper(), redshift=z,
-# 			vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
-# 			title=uhtitle, xaxis=CBLabel, save=saveTo)
+			# Field histogram
+			# saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
+			# plot_histogram(D.components[c].plot[k], galaxy=galaxy.upper(), redshift=z,
+			# 	vmin=vmin,vmax=vmax, weights=D.n_spaxels_in_bin, title=htitle,
+			# 	xaxis=CBLabel, save=saveTo)
+			# # Uncertainty histogram
+			# saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title+'_uncert', wav_range)
+			# plot_histogram(D.components[c].plot[k].uncert, galaxy=galaxy.upper(), redshift=z,
+			# 	vmin=v_uncert_min,vmax=v_uncert_max, weights=D.n_spaxels_in_bin,
+			# 	title=uhtitle, xaxis=CBLabel, save=saveTo)
 
-# 		if plots:
-# 			plt.show()
+			# if plots:
+			# 	plt.show()
 # ------------==== Plot velfield - no interperlation ====----------
-		if nointerp:
-			# Field plot
-			ax = f.add_subplot(111, aspect='equal')
-			saveTo = ("%s/%s_field_%s.png" % (out_nointerp, plot_title, wav_range))
-			ax.saveTo = saveTo
-			ax.figx, ax.figy = ax_x, ax_y
-			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
-				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
-				title=title, cmap=cmap, ax=ax)
-			#plots=True
+			if nointerp:
+				# Field plot
+				ax = f.add_subplot(111, aspect='equal')
+				saveTo = ("%s/%s_%s_field_%s.png" % (out_nointerp, c, k, wav_range))
+				ax.saveTo = saveTo
+				ax.figx, ax.figy = ax_x, ax_y
+				ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
+					D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
+					nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+					label=CBLabel,galaxy = galaxy.upper(), redshift = z,
+					title=title, cmap=cmap, ax=ax)
+				#plots=True
+				if plots:
+					plt.show()
+				ax_array.append(ax)
+				f.delaxes(ax)
+				f.delaxes(ax.cax)
+				if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+				if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
+				
+				# Uncertainty plot
+				saveTo = "%s/%s_%s_uncert_field_%s.png" % (out_nointerp, c, k, wav_range)
+				ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
+					D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
+					flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
+					colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
+					redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
+				if CO:
+					ax1.saveTo = saveTo
+					add_CO(ax1, galaxy, header, close=True)
+				
+			#plots=False
 			if plots:
 				plt.show()
-			ax_array.append(ax)
-			f.delaxes(ax)
-			f.delaxes(ax.cax)
-			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
-			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-			
-			# Uncertainty plot
-			saveTo = "%s/%s_field_%s.png" % (out_nointerp,plot_title+'_uncert', 
-				wav_range)
-			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
-				D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
-				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
-				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-				redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
-			if CO:
-				ax1.saveTo = saveTo
-				add_CO(ax1, galaxy, header, close=True)
-			
-		#plots=False
-		if plots:
-			plt.show()
-		#if CO:
-		#	D.unbinned_flux = D.unbinned_flux_sav
+			#if CO:
+			#	D.unbinned_flux = D.unbinned_flux_sav
 # ------------============= Plot residuals ==============----------
 	if residual:
 		print "    " + residual + " residuals"
@@ -614,7 +598,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax1.saveTo = saveTo
 		add_CO(ax1, galaxy, header, close=True)
 # ------------============ Line ratio maps ==============----------
-	if any('OIII' in o for o in outputs):
+	if any('OIII' in o for o in D.list_components):
 		print "    line ratios"
 
 		t_num = (len(D.e_components)-1)*len(D.e_components)/2
@@ -729,7 +713,7 @@ if __name__ == '__main__':
 
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	galaxy = galaxies[5]
+	galaxy = galaxies[0]
 
 	wav_range="4200-"
 	discard = 2 # rows of pixels to discard- must have been the same 

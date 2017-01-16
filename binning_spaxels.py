@@ -164,7 +164,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 
 	binNum, xNode, yNode, xBar, yBar, sn, nPixels, scale = voronoi_2d_binning(
         x, y, signal, noise, targetSN, quiet=True, plot=False,
-        saveTo='%s/analysis/%s/binning.png' %(dir,galaxy))
+        saveTo='%s/analysis/%s/binning_%s.png' %(dir,galaxy, opt))
 
 	order = sorted(binNum)
 	xBin = np.zeros(n_spaxels)

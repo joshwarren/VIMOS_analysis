@@ -6,6 +6,7 @@
 
 
 import numpy as np # for reading files
+import os
 import glob # for searching for files
 from astropy.io import fits as pyfits # reads fits files (is from astropy)
 from find_galaxy import find_galaxy # part of mge package, fits photometry
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt # used for plotting
 import matplotlib.axes as ax # for adding text onto images
 from scipy.optimize import curve_fit # for fitting a gaussian
 from checkcomp import checkcomp
+from classify import get_R_e
 cc = checkcomp()
 import cPickle as pickle
 
@@ -29,7 +31,7 @@ def spxToRe(x, R_e):
 	return val
 
 
-def kinematics(galaxy, discard=0, wav_range="", plots=False):
+def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 
 	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
 
@@ -40,11 +42,11 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		wav_range = ""
 	galaxiesFile = "%s/galaxies.txt" % (analysis_dir)
 	galaxiesFile2 = "%s/galaxies2.txt" % (analysis_dir)
-	galaxiesFile_Re =  "%s/galaxies_R_e.txt" % (analysis_dir)
 	output = '%s/%s/results/%s' % (analysis_dir, galaxy, wav_range_dir)
-	pickleFile = open('%s/pickled/dataObj_%s.pkl' % (output, wav_range))
-	D = pickle.load(pickleFile)
-	pickleFile.close()
+	if D is None:
+		pickleFile = open('%s/pickled/dataObj_%s.pkl' % (output, wav_range))
+		D = pickle.load(pickleFile)
+		pickleFile.close()
 
 
 	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
@@ -53,18 +55,37 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
 
-	lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
-		Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
-		usecols=(1,2,3,4,5,6,7))
-	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 'Hgamma':Hgamma_mis}
+	if os.path.exists(galaxiesFile2):
+		lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
+			Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
+			usecols=(1,2,3,4,5,6,7))
+		galaxy_gals2 = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
+		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
+		if len(i_gal2) == 0:
+			i_gal2 = -1
+			galaxy_gals2 = np.append(galaxy_gals2, galaxy)
+			lambda_R = np.append(lambda_R, np.nan)
+			ellip_gals = np.append(ellip_gals, np.nan)
+			star_mis = np.append(star_mis, np.nan)
+			OIII_mis = np.append(OIII_mis, np.nan)
+			Hbeta_mis = np.append(Hbeta_mis, np.nan)
+			Hdelta_mis = np.append(Hdelta, np.nan)
+			Hgamma_mis = np.append(Hgamma_mis, np.nan)
+	else:
+		galaxy_gals2 = np.array([galaxy])
+		lambda_R = np.array([np.nan])
+		ellip_gals = np.array([np.nan])
+		star_mis = np.array([np.nan])
+		OIII_mis = np.array([np.nan])
+		Hbeta_mis = np.array([np.nan])
+		Hdelta_mis = np.array([np.nan])
+		Hgamma_mis = np.array([np.nan])
+		i_gal2 = 0
 
+	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 
+		'Hgamma':Hgamma_mis}
 
-	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
-		skiprows=1, usecols=(1,2))
-	R_e_RC3 = 6*10**log_R_e_RC3_gals[i_gal]/2 # convert to arcsec
-	R_e_2MASS = R_e_2MASS_gals[i_gal]
-
-	R_e = np.nanmean([R_e_RC3,R_e_2MASS])
+	R_e = get_R_e(galaxy)
 # ------------=============== Photometry =================----------
 	save_to = "%s/%s/results/" % (analysis_dir,	galaxy
 		) + "%splots/photometry_%s.png" % (wav_range_dir, wav_range)
@@ -72,8 +93,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		#galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
 	#f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
 	x_gals[i_gal] = f.xpeak # f.xmed?
-	y_gals[i_gal] = f.ypeak # f.ymed ?
-	ellip_gals[i_gal] = f.eps
+	y_gals[i_gal] = f.ypeak # f.ymed?
+	ellip_gals[i_gal2] = f.eps
 	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
 	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 # ------------================ Kinemetry =================----------
@@ -94,7 +115,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 
 	mis = math.asin(abs(math.sin(phot-kine)))
 	mis = math.degrees(mis)
-	star_mis[i_gal] = mis
+	star_mis[i_gal2] = mis
 	print "Stars misalignment: " + str(mis)
 # ------------================ Lambda_R ==================----------
 	# distance from center
@@ -146,8 +167,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 	plt.xlabel("Radius (R_e)")
 	x = spxToRe(R[order_m], R_e)[~np.isnan(R_m[order_m])] # Plotted as a fucntion of R not R_m
 	order = np.argsort(x)
-	lambda_R[i_gal] = lam[order][-1]
-	print 'lambda_R_MAX: ', lambda_R[i_gal]
+	lambda_R[i_gal2] = lam[order][-1]
+	print 'lambda_R_MAX: ', lambda_R[i_gal2]
 	plt.plot(x[order[5:]], lam[order[5:]])
 	ax =plt.gca()
 	plt.text(0.02,0.98, "Galaxy: " + galaxy.upper(), verticalalignment='top',
@@ -171,16 +192,15 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 		gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
 		gas_mis = math.degrees(gas_mis)
 
-		if 'NI' not in c: gas[c][i_gal] = gas_mis
+		if 'NI' not in c: gas[c][i_gal2] = gas_mis
 
-		#gas_psi_gals[i_gal] = gas_mis
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
 	template = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
 	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
-	f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
+	f.write(template.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
 		"Kin SN", "Pop SN"))
 	f2 = open(galaxiesFile2, 'wb')
 	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
@@ -191,7 +211,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False):
 			str(sig_gals[i]), str(int(x_gals[i])), str(int(y_gals[i])), 
 			str(SN_kin_gals[i]), str(SN_pop_gals[i])))
 
-		f2.write(template2.format(galaxy_gals[i], str(round(lambda_R[i],3)), 
+	for i in range(len(galaxy_gals2)):
+		f2.write(template2.format(galaxy_gals2[i], str(round(lambda_R[i],3)), 
 			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 
 			str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]) ,
 			str(Hgamma_mis[i])))
@@ -208,4 +229,4 @@ if __name__ == '__main__':
 	discard = 2
 	wav_range = '4200-'
 
-	kinematics(galaxy, discard=discard, wav_range=wav_range, plots=True)
+	kinematics(galaxy, discard=discard, wav_range=wav_range, plots=False)
