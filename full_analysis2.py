@@ -22,14 +22,14 @@ from classify import classify
 galaxies = ['ic1459',
 			'ic1531',
 			'ic4296',
-			'ngc0612', # Failed
+			'ngc0612',
 			'ngc1399',
-			'ngc3100', # Failed
+			# 'ngc3100', # cant do kinematics...
 			'ngc3557',
 			'ngc7075',
-			'pks0718-34', # Failed
+			'pks0718-34',
 			'eso443-g024']
-galaxies = ['ngc3557']
+# galaxies = ['ngc3557']
 # galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
@@ -53,12 +53,12 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-		# 	nointerp=True, CO = True, residual="median", norm=norm, D=D)
-		# plt.close("all")
-		# GH_plots(galaxy, wav_range=wav_range)
+		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+			nointerp=True, CO = True, residual="median", norm=norm, D=D)
 		plt.close("all")
+		# GH_plots(galaxy, wav_range=wav_range)
+		# plt.close("all")
 		kinematics(galaxy, discard=discard, wav_range=wav_range)
 		plt.close("all")
 

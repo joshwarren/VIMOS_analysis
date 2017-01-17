@@ -32,6 +32,7 @@ def spxToRe(x, R_e):
 
 
 def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
+	print '  kinematics'
 
 	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
 
@@ -59,7 +60,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 		lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
 			Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
 			usecols=(1,2,3,4,5,6,7))
-		galaxy_gals2 = np.loadtxt(galaxiesFile, skiprows=1, usecols=(0,),dtype=str)
+		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, usecols=(0,),dtype=str)
 		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
 		if len(i_gal2) == 0:
 			i_gal2 = -1
@@ -69,8 +70,19 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 			star_mis = np.append(star_mis, np.nan)
 			OIII_mis = np.append(OIII_mis, np.nan)
 			Hbeta_mis = np.append(Hbeta_mis, np.nan)
-			Hdelta_mis = np.append(Hdelta, np.nan)
+			Hdelta_mis = np.append(Hdelta_mis, np.nan)
 			Hgamma_mis = np.append(Hgamma_mis, np.nan)
+		else: i_gal2 = i_gal2[0]
+		if type(lambda_R) is np.float64:
+			i_gal2 = 0
+			galaxy_gals2 = np.array([galaxy_gals2])
+			lambda_R = np.array([lambda_R])
+			ellip_gals = np.array([ellip_gals])
+			star_mis = np.array([star_mis])
+			OIII_mis = np.array([OIII_mis])
+			Hbeta_mis = np.array([Hbeta_mis])
+			Hdelta_mis = np.array([Hdelta_mis])
+			Hgamma_mis = np.array([Hgamma_mis])
 	else:
 		galaxy_gals2 = np.array([galaxy])
 		lambda_R = np.array([np.nan])
@@ -225,7 +237,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	galaxy = 'ngc3557'
+	galaxy = 'eso443-g024'
 	discard = 2
 	wav_range = '4200-'
 

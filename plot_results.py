@@ -78,109 +78,23 @@ ain_dir = '%s/Data/alma' % (cc.base_dir)
 out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 #-----------------------------------------------------------------------------
-def set_lims(galaxy, v, vLimit, plot_species, plot_type, mean_centered=False,
-	positive=False, symmetric=False):
+def set_lims(v, positive=False, symmetric=False):
 
-	if 'uncert' in plot_type:
-		uncert = True
-		positive = True
-	else:
-		uncert = False
+	for i in range(2):
+		av = np.nanmedian(v)
+		std = np.nanstd(v)
 
-	if 'stellar' in plot_species:
-		plot_species = 'stellar'
-	elif 'Hbeta' in plot_species:
-		plot_species = 'Hbeta'
-	elif 'Hdelta' in plot_species:
-		plot_species = 'Hdelta'
-	elif 'Hgamma' in plot_species:
-		plot_species = 'Hgamma'
-	elif 'OIII' in plot_species:
-		plot_species = 'OIII'
-	elif 'NI' in plot_species:
-		plot_species = 'NI'
+		include = (v > av - 3*std) * (v < av + 3*std)
+		v = v[include]
 
-	if 'vel' in plot_type or 'velocity' in plot_type:
-		plot_type = 'velocity'
-		mean_centered = False
-		symmetric = True
-	elif 'sigma' in plot_type:
-		plot_type = 'sigma'
-	elif 'h3' in plot_type:
-		plot_type = 'h3'
-		symmetric = True
-	elif 'h4' in plot_type:
-		plot_type = 'h4'
-	elif 'image' in plot_type or 'Flux' in plot_type:
-		plot_type = 'image'
-		postive = True
-	elif 'Equivalent Width' in plot_type:
-		plot_type = 'equivalent_width'
-		positive = True
-	if 'line ratio' in plot_type and 'OIII' in plot_type:
-		plot_type = 'lrOIII'
-		positive = True
-	elif 'line ratio' in plot_type and 'Hbeta' in plot_type:
-		plot_type = 'lrHbeta'
-		positive = True
+	vmin, vmax = min(v), max(v)
 
-	# Read Limits file
-	f = '%s/%s/limits.dat' % (vin_dir, galaxy)
-	species, types = np.loadtxt(f, unpack=True, dtype=str, usecols=(0,1),
-								skiprows=1)
-	if uncert:
-		c = (4,5)
-	else:
-		c = (2,3)
-	mins, maxs = np.genfromtxt(f, unpack=True, usecols=c, skip_header=1, 
-		missing_values='nan', filling_values=np.nan)
-
-	# Is the plot in the limits file?
-	if plot_species in species:
-		s = np.where(species == plot_species)[0]
-		if plot_type in types[s]:
-			n = s[np.where(types[s] == plot_type)[0]]
-			vmin, vmax = mins[n], maxs[n]
-		else:
-			vmin, vmax = np.nan, np.nan
-	else: 
-		vmin, vmax = np.nan, np.nan
-
-	if np.isnan(vmin) or np.isnan(vmax):
-		v_sorted = np.sort(np.unique(v[~np.isnan(v)]))
-		# Is v_sorted too short for vLimit - normally means mostly nan.
-		if len(v_sorted) < 2*vLimit:
-			#v_sorted = np.sort(v[~np.isnan(v)])
-			vmin = np.nanmin(v)
-			vmax = np.nanmax(v)
-		else:
-			if np.isnan(vmin):
-				vmin = v_sorted[vLimit]
-			if np.isnan(vmax):
-				vmax = v_sorted[-vLimit-1]
-	
-	# min must be less than max!
-	if vmin > vmax:
-		raise ValueError("min must be less than max limit.")
-		vmin, vmax = vmax, vmin
-
-	# center the range on the mean.
-	if mean_centered:
-		mean = np.mean(v)
-		d = 2*mean - vmax
-		vmin = mean-d
-
-	# Uncertinty should always positive.
-	if positive and vmin < 0:
-		vmin = 0
-
-	# Velocity plots should be symmetric about 0
 	if symmetric:
-		 if abs(vmin)>vmax:
-			 # Check if both are < or > 0.
-			 vmin=-abs(vmax)
-		 else:
-			 vmax=abs(vmin)
+		vmax = np.mean(vmax, abs(vmin))
+		vmin = -vmax
+
+	if positive:
+		vmin = max(vmin, 0)
 
 	return vmin, vmax
 #-----------------------------------------------------------------------------
@@ -318,7 +232,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	ax.saveTo = saveTo
 	ax.figx, ax.figy = 0, 0
 
-	fmin, fmax = set_lims(galaxy, D.flux, vLimit, 'stellar', title)
+	fmin, fmax = set_lims(D.flux, positive=True)
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
@@ -350,7 +264,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		fh_title = "%s Flux Histogram" % (c_title)
 		# from header
 		fCBtitle = r"Flux (erg s$^{-1}$ cm$^{-2}$)"
-		f_min, f_max = set_lims(galaxy, D.e_line[c].flux, vLimit, c, f_title)
+		f_min, f_max = set_lims(D.e_line[c].flux, positive=True)
 
 		saveTo = "%s/%s_flux_hist_%s.png" % (out_plots, c, wav_range)
 		plot_histogram(D.e_line[c].flux, galaxy=galaxy.upper(), redshift=z,
@@ -380,8 +294,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		eqh_title = "%s Equivalent Width Histogram" % (c_title)
 		eqCBtitle = r"Equivalent Width ($\AA$)"
 
-		eq_min, eq_max = set_lims(galaxy, D.e_line[c].equiv_width, vLimit, c, 
-			eq_title)
+		eq_min, eq_max = set_lims(D.e_line[c].equiv_width, positive=True)
 
 		saveTo = "%s/%s_eqWidth_hist_%s.png" % (out_plots, c, wav_range)
 		plot_histogram(D.e_line[c].equiv_width, galaxy=galaxy.upper(), redshift=z,
@@ -404,8 +317,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 # ------------============ Amplitude/Noise ==============----------
 		amp_title = '%s Amplitude to Noise ratio' % (c_title)
-		amp_min, amp_max = set_lims(galaxy, D.e_line[c].amp_noise, vLimit, c, 
-			amp_title)
+		amp_min, amp_max = set_lims(D.e_line[c].amp_noise, positive=True)
 		saveTo = "%s/%s_amp_nosie_%s.png" % (out_nointerp, c, wav_range)
 
 		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
@@ -440,6 +352,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				im_type=" (" + im_type + ")"
 				ax_y=set_ax_y(c)
 
+			symmetric=False
+			positive=False
 				
 			CBLabel = None
 			if k == "vel":
@@ -447,6 +361,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				title = 'Velocity'
 				CBLabel = "V (km s$^{-1}$)"
 				cmap = sauron
+				symmetric=True
 
 			else:
 				cmap = sauron#cm.blue
@@ -454,17 +369,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				ax_x=2
 				title = 'Velocity Dispersion'
 				CBLabel = r'$\mathrm{\sigma}$ (km s$^{-1}$)'
+				positive = True
 
 			if k == "h3":
 				ax_x=1
 				ax_y+=1
 				title = 'h3'
+				symmetric = True
 
 			if k == "h4":
 				ax_x=2
 				ax_y+=1
-				title = 'h4'		
-
+				title = 'h4'
 
 
 			if c == "stellar":
@@ -479,9 +395,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 					" Histogram"
 				title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
-			vmin, vmax = set_lims(galaxy, D.components[c].plot[k], vLimit, c, k)
-			v_uncert_min, v_uncert_max = set_lims(galaxy, D.components[c].plot[k].uncert, 
-				vLimit, c, utitle)
+			vmin, vmax = set_lims(D.components[c].plot[k], positive=positive, 
+				symmetric=symmetric)
+			v_uncert_min, v_uncert_max = set_lims(D.components[c].plot[k].uncert, 
+				positive=True)
 # # ------------============== Plot Histogram =============----------
 			# Field histogram
 			# saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
@@ -553,8 +470,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			elif residual=="max":
 				average_residuals[i] = np.max(np.abs(residuals))
 				
-		minres, maxres = set_lims(galaxy, average_residuals, vLimit, 'stellar', 
-			'residuals', positive=True) #mean_centered=True,
+		minres, maxres = set_lims(average_residuals, positive=True) #mean_centered=True,
 		
 		CBLabel = "Residuals"
 		title = str.capitalize(residual) + \
@@ -579,8 +495,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	for i in range(D.number_of_bins):
 		chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
 
-	minchi2, maxchi2 = set_lims(galaxy, chi2, vLimit, 'stellar', 'chi2',
-		positive = True)
+	minchi2, maxchi2 = set_lims(chi2, positive = True)
 	
 	CBLabel = "Chi2/DOF"
 	title = "Chi2/DOF of the bestfit"
@@ -638,7 +553,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			lr_title = "%s/%s Line Ratio" % (cB_title, cA_title)
 			lrCBtitle = r"log$_{10}$ (%s/%s)" %(cB_title,cA_title)
 
-			lr_min, lr_max = set_lims(galaxy, line_ratio, vLimit, cA, lr_title)
+			lr_min, lr_max = set_lims(line_ratio)
 
 
 			ax = f.add_subplot(111, aspect='equal')
@@ -713,12 +628,13 @@ if __name__ == '__main__':
 
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	galaxy = galaxies[0]
+	galaxy = galaxies[2]
 
 	wav_range="4200-"
 	discard = 2 # rows of pixels to discard- must have been the same 
 			#	for all routines 
 	vLimit = 2 #
+	print galaxy
 
 	plot_results(galaxy, discard=discard, vLimit=vLimit, 
 		wav_range=wav_range, plots=False, nointerp = True, residual = "median")

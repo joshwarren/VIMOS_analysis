@@ -13,7 +13,8 @@ import re # for regex expressions
 
 def get_R_e(galaxy):
 	galaxiesFile_Re =  "%s/Data/galaxies_R_e.txt" % (cc.base_dir)
-	galaxy_gals = np.loadtxt(galaxiesFile_Re, dtype=str, usecols=(0,), unpack=True)
+	galaxy_gals = np.loadtxt(galaxiesFile_Re, dtype=str, usecols=(0,), skiprows=1,
+		unpack=True)
 	i_gal = np.where(galaxy_gals==galaxy)[0]
 
 	log_R_e_RC3_gals, R_e_2MASS_gals = np.loadtxt(galaxiesFile_Re, unpack=True, 
