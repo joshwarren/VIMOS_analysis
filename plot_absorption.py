@@ -76,7 +76,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
 			title=line, ax=ax_array[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux)
+			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio)
 
 		#m=(D.absorption_line(line)>mean-std)*(D.absorption_line(line)<mean+std)
 		if uncert:
@@ -137,5 +137,5 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	plot_absorption('ic1459', wav_range='4200-', vLimit=2)
+	plot_absorption('pks0718-34', wav_range='4200-', vLimit=2)
 

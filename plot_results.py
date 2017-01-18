@@ -80,17 +80,20 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 #-----------------------------------------------------------------------------
 def set_lims(v, positive=False, symmetric=False):
 
+	if all(np.isnan(v)):
+		return 0, 0
+
 	for i in range(2):
 		av = np.nanmedian(v)
 		std = np.nanstd(v)
 
-		include = (v > av - 3*std) * (v < av + 3*std)
+		include = (v >= av - 3*std) * (v <= av + 3*std)
 		v = v[include]
 
 	vmin, vmax = min(v), max(v)
 
 	if symmetric:
-		vmax = np.mean(vmax, abs(vmin))
+		vmax = np.mean([vmax, abs(vmin)])
 		vmin = -vmax
 
 	if positive:
@@ -173,7 +176,7 @@ def add_CO(ax, galaxy, header, close=False):
 
 #-----------------------------------------------------------------------------
 def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv", 
-	plots=False, nointerp=False, residual=False, CO=False, show_bin_num=False,
+	plots=False, residual=False, CO=False, show_bin_num=False,
 	D=None, **kwargs):	
 
 	data_file =  "%s/galaxies.txt" % (vin_dir)
@@ -214,6 +217,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()
+	
+	if D.norm_method != norm:
+		D.norm_method = norm
+		D.find_restFrame()
 
 	# Create figure and array for axes
 	n_rows = 2+2*len(D.e_components) + int(np.ceil(len(D.e_components)*
@@ -236,7 +243,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, title=title, cmap='gist_yarg', ax=ax)#"gist_yarg", ax=ax)
+		label=CBLabel, title=title, cmap='gist_yarg', ax=ax)
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)
@@ -360,11 +367,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				ax_x=1
 				title = 'Velocity'
 				CBLabel = "V (km s$^{-1}$)"
-				cmap = sauron
 				symmetric=True
 
-			else:
-				cmap = sauron#cm.blue
 			if  k == "sigma":
 				ax_x=2
 				title = 'Velocity Dispersion'
@@ -414,36 +418,35 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			# if plots:
 			# 	plt.show()
 # ------------==== Plot velfield - no interperlation ====----------
-			if nointerp:
-				# Field plot
-				ax = f.add_subplot(111, aspect='equal')
-				saveTo = ("%s/%s_%s_field_%s.png" % (out_nointerp, c, k, wav_range))
-				ax.saveTo = saveTo
-				ax.figx, ax.figy = ax_x, ax_y
-				ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-					D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
-					nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-					label=CBLabel,galaxy = galaxy.upper(), redshift = z,
-					title=title, cmap=cmap, ax=ax)
-				#plots=True
-				if plots:
-					plt.show()
-				ax_array.append(ax)
-				f.delaxes(ax)
-				f.delaxes(ax.cax)
-				if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
-				if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-				
-				# Uncertainty plot
-				saveTo = "%s/%s_%s_uncert_field_%s.png" % (out_nointerp, c, k, wav_range)
-				ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
-					D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
-					flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
-					colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-					redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
-				if CO:
-					ax1.saveTo = saveTo
-					add_CO(ax1, galaxy, header, close=True)
+			# Field plot
+			ax = f.add_subplot(111, aspect='equal')
+			saveTo = ("%s/%s_%s_field_%s.png" % (out_nointerp, c, k, wav_range))
+			ax.saveTo = saveTo
+			ax.figx, ax.figy = ax_x, ax_y
+			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
+				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
+				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
+				title=title, ax=ax)
+			#plots=True
+			if plots:
+				plt.show()
+			ax_array.append(ax)
+			f.delaxes(ax)
+			f.delaxes(ax.cax)
+			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
+			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
+			
+			# Uncertainty plot
+			saveTo = "%s/%s_%s_uncert_field_%s.png" % (out_nointerp, c, k, wav_range)
+			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
+				D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
+				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
+				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
+				redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
+			if CO:
+				ax1.saveTo = saveTo
+				add_CO(ax1, galaxy, header, close=True)
 				
 			#plots=False
 			if plots:
@@ -489,30 +492,30 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax1.saveTo = saveTo
 			add_CO(ax1, galaxy, header, close=True)
 # ------------=============== Plot Chi2/DOF =============----------
-	print "    chi2"
+# 	print "    chi2"
 
-	chi2 = np.zeros(D.number_of_bins)
-	for i in range(D.number_of_bins):
-		chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
+# 	chi2 = np.zeros(D.number_of_bins)
+# 	for i in range(D.number_of_bins):
+# 		chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
 
-	minchi2, maxchi2 = set_lims(chi2, positive = True)
+# 	minchi2, maxchi2 = set_lims(chi2, positive = True)
 	
-	CBLabel = "Chi2/DOF"
-	title = "Chi2/DOF of the bestfit"
-	saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
+# 	CBLabel = "Chi2/DOF"
+# 	title = "Chi2/DOF of the bestfit"
+# 	saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
 
-	ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, chi2, 
-		vmin=minchi2, vmax=maxchi2, flux_type='notmag',
-		nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, flux_unbinned=D.unbinned_flux, 
-		galaxy = galaxy.upper(), redshift = z, title=title, 
-		save=saveTo, close=not CO)#, cmap=cm.blue)
-	if plots:
-		plt.show()
-	if CO:
-		ax1.saveTo = saveTo
-		add_CO(ax1, galaxy, header, close=True)
-# ------------============ Line ratio maps ==============----------
+# 	ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, chi2, 
+# 		vmin=minchi2, vmax=maxchi2, flux_type='notmag',
+# 		nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+# 		label=CBLabel, flux_unbinned=D.unbinned_flux, 
+# 		galaxy = galaxy.upper(), redshift = z, title=title, 
+# 		save=saveTo, close=not CO)#, cmap=cm.blue)
+# 	if plots:
+# 		plt.show()
+# 	if CO:
+# 		ax1.saveTo = saveTo
+# 		add_CO(ax1, galaxy, header, close=True)
+# # ------------============ Line ratio maps ==============----------
 	if any('OIII' in o for o in D.list_components):
 		print "    line ratios"
 
@@ -565,13 +568,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 				line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
-				nodots=True, title=lr_title, label=lrCBtitle, ax=ax)
+				nodots=True, title=lr_title, label=lrCBtitle, ax=ax,
+				show_bin_num=show_bin_num, galaxy = galaxy.upper(), redshift = z,)
 
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
 			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
-			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)	
+			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 # ------------============= Plot and save ===============----------
 
 	print "    Plotting and saving"
@@ -591,25 +595,28 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		f.delaxes(a)
 		f.delaxes(a.cax)
-		if hasattr(a,'ax2'): f.delaxes(a.ax2)		
+		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 
-
-
 	for a in ax_array:
 		if not np.isnan(a.figy):
-			f.add_axes(a)
-			#f.add_axes(a.cax)
+			a2 = f.add_axes(a)
+			p = a2.get_position()
+			c = f.add_axes([p.x1,p.y0*1.06-0.004,0.005, p.height*1.05])
+			plt.colorbar(a.images[0], cax=c)
+				
+
 			a.xaxis.set_visible(False)
 			a.yaxis.set_visible(False)
 			a.axis('off')
 			a.autoscale(False)
+			c.autoscale(False)
 			if hasattr(a,'gal_name'): a.gal_name.remove()
 			if hasattr(a, 'gal_z'): a.gal_z.remove()
 
 	f.set_size_inches(8.5,n_rows*1.8)
-	f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
+#	f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
 	f.subplots_adjust(top=0.94)
 	f.suptitle(galaxy.upper())
 
@@ -628,7 +635,7 @@ if __name__ == '__main__':
 
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-	galaxy = galaxies[2]
+	galaxy = galaxies[5]
 
 	wav_range="4200-"
 	discard = 2 # rows of pixels to discard- must have been the same 
@@ -637,4 +644,4 @@ if __name__ == '__main__':
 	print galaxy
 
 	plot_results(galaxy, discard=discard, vLimit=vLimit, 
-		wav_range=wav_range, plots=False, nointerp = True, residual = "median")
+		wav_range=wav_range, plots=False, residual = "median")

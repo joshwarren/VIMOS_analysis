@@ -73,13 +73,16 @@ class Data(object):
 	# Calculate the rest frame for velocities.
 	def find_restFrame(self):
 		if self.norm_method == "lum":
+			self.vel_norm = 0.0
 			self.vel_norm = self.components['stellar'].\
 				plot['vel'][self.center_bin]
 		if self.norm_method == "lwv":
+			self.vel_norm = 0.0
 			lwv = self.components['stellar'].plot['vel'].unbinned*self.unbinned_flux
 			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin)/ \
 				np.nansum(self.unbinned_flux)
 		if self.norm_method == "sig":
+			self.vel_norm = 0.0
 			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))
 			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
 			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
@@ -367,6 +370,7 @@ class Bin(object):
 #	weights and ap and mp weights.
 # unconvolved_lam: (array) wavelength array corresponding to unconvolved_spectrum 
 #	(see above)
+# SNRatio: (array) Signal to Noise Ratio of each bin. 
 #
 # Methods:
 # **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
@@ -469,6 +473,10 @@ class Bin(object):
 	@property
 	def n_spaxels_in_bin(self):
 		return len(self.xspaxels)
+
+	@property
+	def SNRatio(self):
+		return np.array([np.median(bin.spectrum)/np.median(bin.noise) for bin in self.bin])
 
 
 	# @property

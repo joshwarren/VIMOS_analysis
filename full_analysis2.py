@@ -24,7 +24,7 @@ galaxies = ['ic1459',
 			'ic4296',
 			'ngc0612',
 			'ngc1399',
-			# 'ngc3100', # cant do kinematics...
+			# 'ngc3100', # Fails unless masking is removed from vel
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34',
@@ -53,14 +53,14 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-			nointerp=True, CO = True, residual="median", norm=norm, D=D)
-		plt.close("all")
+		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+		# 	CO = True, residual="median", norm=norm, D=D)
+		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
-		kinematics(galaxy, discard=discard, wav_range=wav_range)
-		plt.close("all")
+		# kinematics(galaxy, discard=discard, wav_range=wav_range)
+		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# use_kinemetry(galaxy)

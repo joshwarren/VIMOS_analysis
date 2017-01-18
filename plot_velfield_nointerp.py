@@ -65,7 +65,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, header=None, **kwargs):
+	ax = None, close=False, show_vel=False, header=None, signal_noise=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -151,18 +151,21 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if isinstance(cmap, str):
 			cmap = plt.get_cmap(cmap)
 	#cmap.set_bad('darkslategray',1.0)
-	cmap.set_bad('grey',1.0)
+	#cmap.set_bad('grey',1.0)
 
-	cs = ax.imshow(np.rot90(img[:,:]), interpolation='none', 
-		cmap=cmap,extent=[xmin - pixelSize/2, 
-		xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2],
-		clim = (vmin,vmax))
+	# Change to RGBA
+	pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/np.nanmax(img))
+	if signal_noise is not None:
+		pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
+	pic[np.isnan(np.rot90(img)),:] = (128,128,128,1)
+
+	cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
+		cmap=cmap, extent=[xmin - pixelSize/2, 
+		xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
 
 	# RA increases right to left
 	ax.invert_xaxis()
 
-
-	
 
 	ax.set_ylabel(y_label)
 	ax.set_xlabel(x_label)
@@ -276,26 +279,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax.ax3 = ax3
 
 	if colorbar:
-		#divider = make_axes_locatable(ax)
-		#cax = divider.append_axes("right", size="5%", pad=0.05)
-		#fig.subplots_adjust(right=0.66, top=0.84)
-		#cax = fig.add_axes([0.75, 0.1, 0.02, 0.74])
 		ticks = MaxNLocator(nbins=nticks)
-		#cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
 		if hasattr(ax,'ax3'):
 			cbar = plt.colorbar(cs, ax=[ax,ax2,ax3], ticks=ticks)
 		else:
 			cbar = plt.colorbar(cs, ax=ax, ticks=ticks)
 
 		cbar.ax.tick_params(labelsize=6)
-
-		# Manual method - documentation advices not to do it this way
-		#cax = mpl.colorbar.make_axes(ax, location='right', fraction=0.05, pad=0.05, shrink=0.95)
-		#norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-		#cbar = mpl.colorbar.ColorbarBase(cax[0], cmap=cmap, norm=norm, orientation='vertical', ticks=ticks)
-		#cbar.ax.tick_params(labelsize=8)         
-
-
 		
 		if label:
 			#cbar.set_label(label, rotation=270, fontsize='small')
@@ -303,7 +293,15 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				verticalalignment='center')
 			
 		ax.cax = cbar.ax
-		#ax.cbar = cbar
+
+		# from matplotlib_colorbar.colorbar import ColorBar
+		# p = ax.get_position()
+		# cbar = ColorBar(cs, location=(p.x1,p.y0))
+		# a = plt.gca().add_artist(cbar)
+		# print a 
+
+		# ax.cax = a
+		# ax.cbar = cbar
 
 	
 	if save is not None:
