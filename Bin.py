@@ -560,9 +560,9 @@ class Bin(object):
 			line in self.e_line.iteritems()], axis=0)
 		lam = self.lam/(1+self.components['stellar'].vel/c)
 		if uncert:
-			return absorption(absorption_line, lam, self.continuum, 
+			return absorption(absorption_line, lam, self.continuum, noise=self.noise,
 				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 
-				conv_spec=convolved, noise=self.noise)
+				conv_spec=convolved)
 		else:
 			return absorption(absorption_line, lam, self.continuum, 
 				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 

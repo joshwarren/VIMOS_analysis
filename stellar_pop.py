@@ -11,16 +11,9 @@ from population2 import population
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
-	grid_length = 40
-	# Find lines:
-	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
-		'Mg_b']
-	#lines = ['H_beta']
-
+def stellar_pop(galaxy, wav_range="", vLimit=0, D=None, previous=False):
 	print 'Stellar populations'
 
-	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
 	out_plots = "%s/plots" % (output)
@@ -32,14 +25,31 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		D = pickle.load(pickleFile)
 		pickleFile.close()
 
-	line_dir = {}
-	uncert_dir = {}
-	for l in lines:
-		ab, uncert = D.absorption_line(l, uncert=True)
-		line_dir[l] = ab
-		uncert_dir[l] = uncert
+	if previous:
+		out_pickle = '%s/pickled' % (output)
+		print "    Load Stellar population object"
+		if not os.path.exists(out_pickle):
+			os.makedirs(out_pickle) 
+		pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+		pop = pickle.load(pickleFile)
+		pickleFile.close()
 
-	pop = population(line_dir, uncert_dir, grid_length=grid_length)
+	else:
+		grid_length = 40
+		# Find lines:
+		lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
+			'Mg_b']
+		#lines = ['H_beta']
+		
+		line_dir = {}
+		uncert_dir = {}
+		for l in lines:
+			ab, uncert = D.absorption_line(l, uncert=True)
+			line_dir[l] = ab
+			uncert_dir[l] = uncert
+
+		pop = population(line_dir, uncert_dir, grid_length=grid_length)
+
 
 	# Produce and Save Plots
 	d = {'age':pop.age,'metallicity':pop.metallicity,'alpha':pop.alpha}
@@ -102,14 +112,15 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 
 
 # ------------================ Pickling =================----------
-	print "    Pickling Stellar population object"
-	if not os.path.exists(out_pickle):
-		os.makedirs(out_pickle) 
-	pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'wb')
-	pickle.dump(pop,pickleFile)
-	pickleFile.close()
+	if not previous:
+		print "    Pickling Stellar population object"
+		if not os.path.exists(out_pickle):
+			os.makedirs(out_pickle) 
+		pickleFile = open("%s/stellarPopObj_%s.pkl" % (out_pickle, wav_range), 'wb')
+		pickle.dump(pop,pickleFile)
+		pickleFile.close()
 
-	return D
+		return D
 
 
 
@@ -118,5 +129,5 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 # Use of stellar_pop.py
 
 if __name__ == '__main__':
-	stellar_pop('ngc3100', wav_range='4200-', vLimit=2)
+	stellar_pop('pks0718-34', wav_range='4200-', vLimit=2, previous=True)
 
