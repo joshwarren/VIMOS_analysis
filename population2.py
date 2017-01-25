@@ -77,12 +77,6 @@ class population(object):
 
 			# Discard initial steps away from initial point
 			self.samples[bin,:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
-			
-		# import corner
-		# fig = corner.corner(samples, labels=["age", "metallicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
-		
-		# import matplotlib.pyplot as plt
-		# plt.show()
 
 		self.age = np.nanmean(self.samples[:,:,0], axis=1)
 		self.unc_age = np.nanstd(self.samples[:,:,0], axis=1)
@@ -106,7 +100,7 @@ class population(object):
 			ax_array[0,1].hist(self.samples[b,:,1],bins=40,histtype='step',normed=True)
 			ax_array[1,0].hist(self.samples[b,:,2],bins=40,histtype='step',normed=True)
 
-			ax_array[0,0].axvline(self.age)
+			ax_array[0,0].axvline(self.age[b])
 		ax_array[0,0].set_title('Age')
 		ax_array[0,1].set_title('Metallicity')
 		ax_array[1,0].set_title('Alpha/Fe ratio')

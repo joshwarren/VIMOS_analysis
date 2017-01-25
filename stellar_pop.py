@@ -120,7 +120,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None, previous=False):
 		pickle.dump(pop,pickleFile)
 		pickleFile.close()
 
-		return D
+	return D
 
 
 
@@ -129,5 +129,5 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None, previous=False):
 # Use of stellar_pop.py
 
 if __name__ == '__main__':
-	stellar_pop('pks0718-34', wav_range='4200-', vLimit=2, previous=True)
+	stellar_pop('ic1531', wav_range='4200-', vLimit=2, previous=True)
 

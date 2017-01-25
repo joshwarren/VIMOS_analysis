@@ -34,7 +34,7 @@ galaxies = ['ic1459',
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
-galaxies = ['ngc1399']
+# galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
@@ -52,7 +52,7 @@ err = []
 for galaxy in galaxies:
 	D = None
 	print galaxy
-	# try:
+	try:
 		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
 		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 		# 	CO = True, residual="median", norm=norm, D=D)
@@ -66,12 +66,12 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy)
 		# classify(galaxy)
 		
-	# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-	D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
-	#D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-	# except Exception as e:
-	# 	gal_err.append(galaxy)
-	# 	err.append(e)
+		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+		D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
+		# D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+	except Exception as e:
+		gal_err.append(galaxy)
+		err.append(e)
 #v_vd_ellip(wav_range=wav_range)
 
 # Display errors
