@@ -3,6 +3,9 @@
 ## ==================================================================
 ## A method to impliment MCMC routines to find the bestfit model to the 
 ## indices strengths given.
+## warrenj 20170126 Added previous keyword to load from pop directory that 
+## is created in the save routine. This was an attempt to create something a 
+## little quicker than pickling (not sure it has worked...)
 ##
 #######################################################################
 # Keywords:
@@ -23,7 +26,8 @@ cc = checkcomp()
 
 class population(object):
 
-	def __init__(self, ab_lines, uncerts, interp=None, grid_length=40):
+	def __init__(self, ab_lines, uncerts, interp=None, grid_length=40, previous=False, 
+		galaxy=None):
 		# Absorption lines provided:
 		self.lines = ab_lines.keys()
 		self.ab_lines = ab_lines
@@ -65,18 +69,30 @@ class population(object):
 					np.array([age_in, metallicity_in, alpha_in]).transpose(), 
 					models[l])
 
-		print '    Fitting'
-
 		ndim, nwalkers, nsteps = 3, 200, 500
 		self.samples = np.zeros((self.nbins, nwalkers*(nsteps-50), ndim))
-		for bin in range(self.nbins):
-			sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=[bin])
-			pos = [np.array([13,0.2,-0.1]) +1e-3*np.random.randn(ndim) for i in 
-				range(nwalkers)]
-			sampler.run_mcmc(pos, 500)
+		if previous:
+			print '    Loading'
+			for bin in range(self.nbins):
+				a,m,al = np.loadtxt('%s/Data/vimos/analysis/%s/' % (cc.base_dir, galaxy) +
+					'results/4200-/pickled/pop/%i.dat' % (bin), unpack=True)
+				self.samples[bin,:,0] = a 
+				self.samples[bin,:,1] = m 
+				self.samples[bin,:,2] = al
+		else:
+			print '    Fitting'
+			for bin in range(self.nbins):
 
-			# Discard initial steps away from initial point
-			self.samples[bin,:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
+				sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=[bin])
+				pos = [np.array([13,0.2,-0.1]) +1e-3*np.random.randn(ndim) for i in 
+					range(nwalkers)]
+				sampler.run_mcmc(pos, 500)
+
+				# Discard initial steps away from initial point
+				self.samples[bin,:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
+
+				if galaxy is not None:
+					self.save(galaxy)
 
 		self.age = np.nanmean(self.samples[:,:,0], axis=1)
 		self.unc_age = np.nanstd(self.samples[:,:,0], axis=1)
@@ -125,6 +141,23 @@ class population(object):
 				chi2 += (self.ab_lines[l][bin] - self.interp[l](theta))**2/\
 					self.uncerts[l][bin]**2
 		return -chi2/2
+
+
+	def save(self, galaxy):
+		import os
+		if not os.path.exists("%s/Data/vimos/analysis/%s/results/4200-/pickled/pop/" % (
+			cc.base_dir, galaxy)):
+			os.makedirs("%s/Data/vimos/analysis/%s/results/4200-/pickled/pop/" % (
+				cc.base_dir, galaxy))
+		for i in range(self.nbins):
+			file = "%s/Data/vimos/analysis/%s/results/4200-/pickled/pop/%i.dat" % (
+				cc.base_dir, galaxy, i)
+
+			f = open(file, 'w')
+			s = self.samples.shape
+			for j in range(s[1]):
+				f.write('%f   %f   %f \n' % (self.samples[i,j,0], self.samples[i,j,1],
+					self.samples[i,j,2]))
 
 #############################################################################
 
