@@ -109,9 +109,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 				unpack=True)
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
 # ------------=========== Read kinematics results ==============----------
-	componants = ["stellar"]
-	componants.extend([d for d in os.listdir(vin_dir_gasMC + "/gas") if \
-		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))])
+	componants = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
+		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
+	if componants == ['gas']: gas = 1
+	elif componants == ['Shocks','SF']: gas = 2
+	else: gas = 3
+
 	dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
 		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
 		'h4':np.zeros(D.number_of_bins)*np.nan}
@@ -119,7 +122,7 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
 		'h4':np.zeros(D.number_of_bins)*np.nan}
 
-	for c in componants:
+	for c in D.list_components:
 		for bin in range(D.number_of_bins):
 			# Bestfit values
 			glamdring_file = "%s/%i.dat" % (vin_dir_gasMC, bin)
@@ -128,19 +131,29 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 			vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True, 
 				usecols=(1,2,3,4))
 
+			if gas == 1 and c != 'stellar':
+				c_type = 'gas'
+			elif gas == 2 and c != 'stellar':
+				if 'H' in c:
+					c_type = 'SF'
+				else:
+					c_type = 'Shocks'
+			else:
+				c_type = c
+
 			# check componant is in bin
-			if c in c_in_bin:
-				i = np.where(c_in_bin == c)[0][0]
+			if c_type in c_in_bin:
+				i = np.where(c_in_bin == c_type)[0][0]
 				dynamics['vel'][bin] = vel[i]
 				dynamics['sigma'][bin] = sig[i]
 				dynamics['h3'][bin] = h3s[i]
 				dynamics['h4'][bin] = h4s[i]
 
 				# Calculating uncertainties
-				if c != "stellar": MC_dir = "%s/gas" % (vin_dir_gasMC) 
+				if c_type != "stellar": MC_dir = "%s/gas" % (vin_dir_gasMC) 
 				else: MC_dir=vin_dir_gasMC
 
-				glamdring_file = '%s/%s/%i.dat' % (MC_dir, c, bin)
+				glamdring_file = '%s/%s/%i.dat' % (MC_dir, c_type, bin)
 				# Ignore empty file warnings
 				with warnings.catch_warnings():
 					warnings.simplefilter("ignore")
