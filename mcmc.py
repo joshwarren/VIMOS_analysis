@@ -86,7 +86,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000])
 	#templates /= np.median(log_temp_template)
 ## ----------========= Reading the spectrum  ===============---------
 
-	dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.fits" % (galaxy)) 
+	dataCubeDirectory = glob.glob(dir+"cubes/%s.cube.combined.corr.fits" % (galaxy)) 
 		
 	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)

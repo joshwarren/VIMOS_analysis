@@ -34,7 +34,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		pickleFile.close()
 
 
-	dataCubeDirectory = "%s/Data/vimos/cubes/%s.cube.combined.fits" % (cc.base_dir, 
+	dataCubeDirectory = "%s/Data/vimos/cubes/%s.cube.combined.corr.fits" % (cc.base_dir, 
 		galaxy)
 	galaxy_data, header = fits.getdata(dataCubeDirectory, 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory, 1)

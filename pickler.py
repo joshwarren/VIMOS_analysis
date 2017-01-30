@@ -33,7 +33,7 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 
 	tessellation_File = "%s/%s/voronoi_2d_binning_output_%s.txt" % (vin_dir, galaxy, opt)
 	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2_%s.txt" %(vin_dir, galaxy, opt)
-	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
+	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
 	if opt == "kin":
 		vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)

@@ -36,7 +36,7 @@ def full_analysis(galaxy=None, opt='kin'):
 	
 	z = z_gals[gal]
 	discard = 2
-	targetSN = 30
+	targetSN = 1
 	set_range = [4200, 10000]
 
 	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
@@ -57,6 +57,6 @@ if __name__=="__main__":
 		'ngc7075', 
 		'pks0718-34', 
 		'eso443-g024']
-	for g in galaxies:
-		full_analysis(galaxy=g, opt='kin')
-	# full_analysis(opt='pop')
+	# for g in galaxies:
+	# 	full_analysis(galaxy=g, opt='kin')
+	full_analysis(galaxy='ngc3100', opt='kin')

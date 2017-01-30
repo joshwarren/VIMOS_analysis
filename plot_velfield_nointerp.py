@@ -53,6 +53,7 @@ import numpy as np # for reading files
 from scipy.spatial import distance
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import MaxNLocator
+# from sauron_colormap2 import sauron2 as sauron
 from sauron_colormap import sauron
 import math
 import matplotlib.pyplot as plt # used for plotting

@@ -104,7 +104,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 # ----------================ Find S/N ================------------
 # Final wildcard notes that depending on the method used the quadrants
 #may or may not have been flux calibrated. 
-	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.fits" % (dir,galaxy)) 
+	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.corr.fits" % (dir,galaxy)) 
 
 	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)

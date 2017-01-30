@@ -6,19 +6,19 @@ from astropy.io import fits as pyfits # reads fits files (is from astropy)
 
 def removerows(gal):
     d = "/Data/vimos/cubes/"
-    f = glob.glob(d + gal + ".cube.combined.fits")
+    f = glob.glob(d + gal + ".cube.combined.corr.fits")
     p = pyfits.open(f[0])
     data = p[0].data
     header = p[0].header
     data_new = data[:,0:40,0:40]
 
-    pyfits.writeto(d+gal+".cube.combined.fits", data_new, header=header, clobber=True)
+    pyfits.writeto(d+gal+".cube.combined.corr.fits", data_new, header=header, clobber=True)
 
     for ex in range(1, len(p)):
         data_ex = p[ex].data
         header_ex = p[ex].header
         data_ex_new = data_ex[:,0:40,0:40]
-        pyfits.append(d+gal+".cube.combined.fits",data_ex_new,header=header_ex)
+        pyfits.append(d+gal+".cube.combined.corr.fits",data_ex_new,header=header_ex)
 
     p.close()
 

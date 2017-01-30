@@ -162,7 +162,7 @@ def errors3(i_gal=None, bin=None):
 	order = np.sort(bin_num)
 ## ----------========= Reading the spectrum  ===============---------
 
-	dataCubeDirectory = glob.glob(dir+"/cubes/%s.cube.combined.fits" % (galaxy)) 
+	dataCubeDirectory = glob.glob(dir+"/cubes/%s.cube.combined.corr.fits" % (galaxy)) 
 		
 	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)

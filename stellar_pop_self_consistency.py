@@ -69,9 +69,9 @@ def stellar_pop_self_consis(galaxy, wav_range="", vLimit=0, interp=None, D=None)
 		for j in range(D.number_of_bins):
 			# fig = corner.corner(pop.samples[j,:,:], labels=["age", "metalicity", "alpha"])#, truths=[m_true, b_true, np.log(f_true)])
 			# plt.show()
-			ax2[0].hist(pop.samples[j,:,0])
-			ax2[1].hist(pop.samples[j,:,1])
-			ax2[2].hist(pop.samples[j,:,2])
+			ax2[0].hist(pop.samples[j,:,0], histtype='step')
+			ax2[1].hist(pop.samples[j,:,1], histtype='step')
+			ax2[2].hist(pop.samples[j,:,2], histtype='step')
 
 			a = pop._age[nearest(pop._age, pop.age[j])]
 			b = pop._metallicity[nearest(pop._metallicity, pop.metallicity[j])]

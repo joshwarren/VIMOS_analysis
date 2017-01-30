@@ -197,9 +197,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	# Return CO to False if ALMA file does not exist.
 	if CO:
 		CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
-		if ~os.path.exists(CO_image_dir): CO = False
+		if not os.path.exists(CO_image_dir): CO = False
 
-	dataCubeDirectory = "%s/%s.cube.combined.fits" % (vin_dir_cube, galaxy)
+	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
 	out_plots = "%splots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
