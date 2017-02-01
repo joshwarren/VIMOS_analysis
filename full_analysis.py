@@ -35,28 +35,28 @@ def full_analysis(galaxy=None, opt='kin'):
 	print galaxy
 	
 	z = z_gals[gal]
-	discard = 2
-	targetSN = 1
+	discard = 0
+	targetSN = None
 	set_range = [4200, 10000]
 
 	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
 
-	# find_template(galaxy, z=z, discard=discard, set_range=set_range)
+	find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
-	# mcmc(galaxy, z=z, discard=discard, set_range=set_range)
+	mcmc(galaxy, z=z, discard=discard, set_range=set_range)
 
 
 if __name__=="__main__":
-	galaxies = ['ngc3557',
-		'ic1459',
-		'ic1531', 
-		'ic4296', 
-		'ngc0612',
-		'ngc1399',
-		'ngc3100',
-		'ngc7075', 
-		'pks0718-34', 
-		'eso443-g024']
-	# for g in galaxies:
-	# 	full_analysis(galaxy=g, opt='kin')
-	full_analysis(galaxy='ngc3100', opt='kin')
+	galaxies = [# 'ngc3557',
+		# 'ic1459',
+		# 'ic1531', 
+		# 'ic4296', 
+		# 'ngc0612',
+		# 'ngc1399',
+		# 'ngc3100',
+		# 'ngc7075#, 
+		# 'pks0718-34', 
+		'eso443-g024'
+		]
+	for g in galaxies: full_analysis(galaxy=g, opt='kin')
+	# full_analysis(galaxy='ngc3557', opt='kin')

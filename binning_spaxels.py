@@ -128,23 +128,37 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
 
 	# Check for nan is data set.
-	galaxy_badpix[np.isnan(galaxy_data)] = 1
-
-	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
+	# galaxy_data[galaxy_badpix==1] = 0
+	# galaxy_noise[galaxy_badpix==1] = 1
 
 	s = galaxy_data.shape
 
+	
+	x = np.zeros(s[1]*s[2])
+	y = np.zeros(s[1]*s[2])
 
-	#signal = np.zeros(n_spaxels)
-	#noise = np.zeros(n_spaxels)
-	x = np.zeros(n_spaxels)
-	y = np.zeros(n_spaxels)
+	# import matplotlib.pyplot as plt 
+	# signal = np.nanmedian(galaxy_data, axis=0)
+	# noise = np.nanmedian(galaxy_noise,axis=0)
+
+	# f,ax=plt.subplots(1,3)
+	# a = ax[0].imshow(signal)
+	# b = ax[1].imshow(noise)
+	# c = ax[2].imshow(signal/noise)
+	# ax[2].scatter(np.where(signal/noise<3)[1],np.where(signal/noise<3)[0])
+	# ax[1].scatter(np.where(~np.isfinite(noise))[1],np.where(~np.isfinite(noise))[0])
+	# ax[1].scatter(np.where(noise<0)[1],np.where(noise<0)[0],marker='x')
+	# f.colorbar(a, ax=ax[0])
+	# f.colorbar(b, ax=ax[1])
+	# f.colorbar(c, ax=ax[2])
+	# mask = galaxy_badpix[10,:,:] != 0
+	# ax[0].scatter(np.where(mask)[1],np.where(mask)[0],marker='x')
+	# plt.show()
+
 
 # collapsing the spectrum for each spaxel.
-	signal = np.median(galaxy_data, axis=0).flatten()
-	noise = np.median(galaxy_noise,axis=0).flatten()
-	#noise = np.sqrt(np.mean(galaxy_noise**2, axis=0)).flatten()/\
-	#	np.sqrt(len(galaxy_noise))
+	signal = np.nanmedian(galaxy_data, axis=0).flatten()
+	noise = np.nanmedian(galaxy_noise,axis=0).flatten()
 
 	for i in range(s[1]):
 		for j in range(s[2]):
@@ -152,12 +166,13 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 			x[i*s[1]+j] = i
 			y[i*s[2]+j] = j
 
-			a = np.where(galaxy_badpix[:,i,j] == 1)[0]
-			if len(a) != 0:
-				signal[i*s[1] + j] = 0
-				noise[i*s[1] + j] = 0.0000000001
-				# print 'Spaxel containing badpixels: ', i, j
-				# print 'Number of affected pixels:   ', len(a)
+	mask = (np.isfinite(signal)) * (np.isfinite(noise))
+	signal = signal[mask]
+	noise = noise[mask]
+	x = x[mask]
+	y = y[mask]
+	n_spaxels = np.sum(mask)
+
 
 	if not os.path.exists("%s/analysis/%s" % (dir,galaxy)):
 		os.makedirs("%s/analysis/%s" % (dir, galaxy))

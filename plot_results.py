@@ -79,13 +79,14 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 #-----------------------------------------------------------------------------
 def set_lims(v, positive=False, symmetric=False):
-
-	if all(np.isnan(v)):
+	if all(~np.isfinite(v)):
 		return 0, 0
 
+	v = v[np.isfinite(v)]
+
 	for i in range(2):
-		av = np.nanmedian(v)
-		std = np.nanstd(v)
+		av = np.median(v)
+		std = np.std(v)
 
 		include = (v >= av - 3*std) * (v <= av + 3*std)
 		v = v[include]
@@ -217,6 +218,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()
+
+	# for bin in D.bin:
+	# 	for l in bin.e_line.keys():
+	# 		bin.components[l].__threshold__ = 3
 	
 	if D.norm_method != norm:
 		D.norm_method = norm
@@ -403,6 +408,10 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				symmetric=symmetric)
 			v_uncert_min, v_uncert_max = set_lims(D.components[c].plot[k].uncert, 
 				positive=True)
+
+			if 'OIII' in c and k == 'vel':
+				vmin = -100
+				vmax = 100
 # # ------------============== Plot Histogram =============----------
 			# Field histogram
 			# saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
@@ -483,39 +492,39 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 			average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
 			nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-			label=CBLabel, flux_unbinned=D.unbinned_flux, 
+			label=CBLabel, #flux_unbinned=D.unbinned_flux, 
 			galaxy = galaxy.upper(), redshift = z, title=title, 
-			save=saveTo, close=not CO)#, cmap = cm.blue)
+			save=saveTo, close=not CO)
 		if plots:
 			plt.show()
 		if CO:
 			ax1.saveTo = saveTo
 			add_CO(ax1, galaxy, header, close=True)
-# ------------=============== Plot Chi2/DOF =============----------
-# 	print "    chi2"
+# # ------------=============== Plot Chi2/DOF =============----------
+	# print "    chi2"
 
-# 	chi2 = np.zeros(D.number_of_bins)
-# 	for i in range(D.number_of_bins):
-# 		chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
+	# chi2 = np.zeros(D.number_of_bins)
+	# for i in range(D.number_of_bins):
+	# 	chi2[i] = np.loadtxt("%s/chi2/%d.dat" % (vin_dir_gasMC, i))
 
-# 	minchi2, maxchi2 = set_lims(chi2, positive = True)
+	# minchi2, maxchi2 = set_lims(chi2, positive = True)
 	
-# 	CBLabel = "Chi2/DOF"
-# 	title = "Chi2/DOF of the bestfit"
-# 	saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
+	# CBLabel = "Chi2/DOF"
+	# title = "Chi2/DOF of the bestfit"
+	# saveTo = "%s/chi2_%s.png" % (out_nointerp, wav_range)
 
-# 	ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, chi2, 
-# 		vmin=minchi2, vmax=maxchi2, flux_type='notmag',
-# 		nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-# 		label=CBLabel, flux_unbinned=D.unbinned_flux, 
-# 		galaxy = galaxy.upper(), redshift = z, title=title, 
-# 		save=saveTo, close=not CO)#, cmap=cm.blue)
-# 	if plots:
-# 		plt.show()
-# 	if CO:
-# 		ax1.saveTo = saveTo
-# 		add_CO(ax1, galaxy, header, close=True)
-# # ------------============ Line ratio maps ==============----------
+	# ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, chi2, 
+	# 	vmin=minchi2, vmax=maxchi2, flux_type='notmag',
+	# 	nodots=True, show_bin_num=show_bin_num, colorbar=True, 
+	# 	label=CBLabel, flux_unbinned=D.unbinned_flux, 
+	# 	galaxy = galaxy.upper(), redshift = z, title=title, 
+	# 	save=saveTo, close=not CO)#, cmap=cm.blue)
+	# if plots:
+	# 	plt.show()
+	# if CO:
+	# 	ax1.saveTo = saveTo
+	# 	add_CO(ax1, galaxy, header, close=True)
+# ------------============ Line ratio maps ==============----------
 	if any('OIII' in o for o in D.list_components):
 		print "    line ratios"
 
@@ -616,7 +625,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			if hasattr(a, 'gal_z'): a.gal_z.remove()
 
 	f.set_size_inches(8.5,n_rows*1.8)
-#	f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
+	# f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
 	f.subplots_adjust(top=0.94)
 	f.suptitle(galaxy.upper())
 

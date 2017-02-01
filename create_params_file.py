@@ -11,8 +11,8 @@ gals=[6]
 
 output_file = "params.txt"
 f = open(output_file, 'w')
-for gal in gals:
-#for gal in range(10):
+# for gal in gals:
+for gal in range(10):
 	galaxy = galaxies[gal]
 
 	tessellation_File = '%s/Data/vimos/analysis/%s/voronoi_2d_binning_output_%s.txt' % (
