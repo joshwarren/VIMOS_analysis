@@ -30,5 +30,7 @@ for gal in range(10):
 				f.write("python errors2.py " + str(gal) + " " + str(i) + "\n")
 			elif opt == "pop":
 				f.write("python errors3.py " + str(gal) + " " + str(i) + "\n")
+f.write("push 'Glamdring run finished'")
 
+f.close()
 print "Done"
