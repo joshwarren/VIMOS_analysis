@@ -104,7 +104,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		x_label = "Position (arcsec)"
 		y_label = x_label
 
-		# Tells add_CO method in plot_results coords where not supplied
+		# Tells add_CO method in plot_results coords were not supplied
 		ax.RaDec = False
 
 	# Plot in RA and Dec
@@ -116,7 +116,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			header['HIERARCH CCD1 ESO INS IFU DEC'], 
 			unit=(u.deg, u.deg))
 
-		res = 0.67 #arcsec per pixel
+		res = header['CDELT1'] #arcsec per pixel
 		xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
 		yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
 		x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
@@ -128,14 +128,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
 		ax.RaDec = True
 
-
-	#im_xBar = np.copy(xBar)
-	#im_yBar = np.copy(yBar)
 	bin_num = bin_num.astype(int)
 
-	v = vel[bin_num].clip(vmin,vmax)
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
-
 	xmin, xmax = np.min(x), np.max(x)
 	ymin, ymax = np.min(y), np.max(y)
 	nx = round((xmax - xmin)/pixelSize) + 1
@@ -143,7 +138,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
 	j = np.round((x - xmin)/pixelSize).astype(int)
 	k = np.round((y - ymin)/pixelSize).astype(int)
-	img[j, k] = v
+	# Clipping vel and creating 2D array of image (img)
+	img[j, k] = vel[bin_num].clip(vmin, vmax)
 	
 	if 'cmap' not in kwargs:
 		cmap=kwargs.get('cmap',sauron)
@@ -151,18 +147,16 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		cmap = kwg['cmap']
 		if isinstance(cmap, str):
 			cmap = plt.get_cmap(cmap)
-	#cmap.set_bad('darkslategray',1.0)
-	#cmap.set_bad('grey',1.0)
 
-	# Change to RGBA
-	pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/np.nanmax(img))
-	if signal_noise is not None:
-		pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
-	pic[np.isnan(np.rot90(img)),:] = (128,128,128,1)
+	# Change to RGBA - NOT YET WORKING **************************************
+	# pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/np.nanmax(img))
+	# if signal_noise is not None:
+	# 	pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
+	# # Set bad pixels grey
+	# pic[np.isnan(np.rot90(img)),:] = (128,128,128,1)
 
 	cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
-		cmap=cmap, extent=[xmin - pixelSize/2, 
-		xmax + pixelSize/2, ymin - pixelSize/2, ymax + pixelSize/2])
+		cmap=cmap, extent=[xmin, xmax, ymin, ymax])
 
 	# RA increases right to left
 	ax.invert_xaxis()

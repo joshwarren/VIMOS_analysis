@@ -48,7 +48,7 @@
 
 import numpy as np # for array handling
 import glob # for searching for files
-from astropy.io import fits as pyfits # reads fits files (is from astropy)
+from astropy.io import fits # reads fits files (is from astropy)
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from matplotlib.collections import LineCollection
@@ -128,17 +128,17 @@ def set_ax_y(plt_title):
 #-----------------------------------------------------------------------------
 def add_CO(ax, galaxy, header, close=False):
 	CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
+	# Arcsec coords
 	if os.path.exists(CO_image_dir) and not ax.RaDec:
-		CO_image, CO_header = pyfits.getdata(CO_image_dir, 0, header=True)
+		## *** This option doesn't seem to be working correctly and I don't understand 
+		##	why... *******************************************************************
+		alma = fits.open(CO_image_dir)[0]
 
-		#remove random extra dimenisons.
-		CO_image = np.sum(np.sum(CO_image,axis=0), axis=0)
+		CO_x = np.arange(alma.header['NAXIS1'])*alma.header['CDELT1']*60*60
+		CO_y = np.arange(alma.header['NAXIS2'])*alma.header['CDELT2']*60*60
 
-		CO_x = np.arange(CO_header['NAXIS1'])*CO_header['CDELT1']*60*60
-		CO_y = np.arange(CO_header['NAXIS2'])*CO_header['CDELT2']*60*60
-
-		#x += max(ax.get_xlim())
-		#y -= max(ax.get_ylim())
+		CO_x -= max(CO_x)/2
+		CO_y -= max(CO_y)/2
 
 		# Coordinates of VIMOS pointing
 		vc = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
@@ -146,19 +146,35 @@ def add_CO(ax, galaxy, header, close=False):
 			unit=(u.deg, u.deg))
 
 		# Coordinates of ALMA pointing
-		ac = SkyCoord(CO_header['CRVAL1'], CO_header['CRVAL2'],
+		ac = SkyCoord(alma.header['CRVAL1'], alma.header['CRVAL2'],
 			unit=(u.deg, u.deg))
 
 		# Offset between the two pointings
 		CO_x -= ((vc.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
 			(ac.ra.degree +
-			CO_header['CRPIX1']*CO_header['CDELT1']/(60*60)))*60*60
+			alma.header['CRPIX1']*alma.header['CDELT1']/(60*60)))*60*60
 				
 		CO_y += ((vc.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
 			(ac.dec.degree +
-			CO_header['CRPIX2']*CO_header['CDELT2']/(60*60)))*60*60
-			
-		cs = ax.contour(CO_x,CO_y,CO_image, colors='k')
+			alma.header['CRPIX2']*alma.header['CDELT2']/(60*60)))*60*60
+
+	#RA and dec coords
+	elif os.path.exists(CO_image_dir):
+		alma = fits.open(CO_image_dir)[0]
+
+		ac = SkyCoord(alma.header['CRVAL1'], alma.header['CRVAL2'],
+			unit=(u.deg, u.deg))
+
+		CO_x = (np.arange(alma.header['NAXIS1']) - alma.header['CRPIX1']) *\
+			alma.header['CDELT1'] + ac.ra.degree
+		CO_y = (np.arange(alma.header['NAXIS2'])-alma.header['CRPIX2']) *\
+			alma.header['CDELT2'] + ac.dec.degree
+
+	# Plot and save
+	if os.path.exists(CO_image_dir):
+		#remove random extra dimenisons.
+		CO_image = np.sum(np.sum(alma.data,axis=0), axis=0)
+		cs = ax.contour(CO_x,CO_y,CO_image, colors='r')
 
 		saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
 			os.path.basename(ax.saveTo)
@@ -208,7 +224,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	out_pickle = '%s/pickled' % (output)
 
 	# Used for CO plotting
-	cubeFile = pyfits.open(dataCubeDirectory)
+	cubeFile = fits.open(dataCubeDirectory)
 	header = cubeFile[0].header
 	cubeFile.close()
 # ------------== Reading pickle file and create plot  ===----------
@@ -248,7 +264,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, title=title, cmap='gist_yarg', ax=ax)
+		label=CBLabel, title=title, cmap='gist_yarg', ax=ax, header=header)
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)
@@ -292,7 +308,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.e_line[c].flux, 
 			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
-			  title=f_title, cmap = 'gist_yarg', ax=ax)
+			  title=f_title, cmap = 'gist_yarg', ax=ax, header=header)
 		ax_array.append(ax)
 		f.delaxes(ax)
 		f.delaxes(ax.cax)
@@ -321,7 +337,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 			D.e_line[c].equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, 
-			nodots=True, label=eqCBtitle, title=eq_title, ax=ax)
+			nodots=True, label=eqCBtitle, title=eq_title, ax=ax, header=header)
 		ax_array.append(ax)
 		f.delaxes(ax)
 		f.delaxes(ax.cax)
@@ -334,12 +350,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 			D.e_line[c].amp_noise, vmin=amp_min, vmax=amp_max, colorbar=True, 
-			nodots=True, title=amp_title, save=saveTo, close=not CO)
+			nodots=True, title=amp_title, save=saveTo, close=not CO, header=header)
 		if CO:
 			ax1.saveTo = saveTo
 			add_CO(ax1, galaxy, header, close=True)
 # ------------=========== Setting titles etc ============----------
 	for c in D.list_components:
+		print '        %s kinematics' % (c)
+		
 		for k in D.components[c].plot.keys():
 			im_type = c
 			if im_type == "gas":
@@ -408,10 +426,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				symmetric=symmetric)
 			v_uncert_min, v_uncert_max = set_lims(D.components[c].plot[k].uncert, 
 				positive=True)
-
-			if 'OIII' in c and k == 'vel':
-				vmin = -100
-				vmax = 100
 # # ------------============== Plot Histogram =============----------
 			# Field histogram
 			# saveTo = "%s/%s_hist_%s.png" % (out_plots, plot_title, wav_range)
@@ -436,7 +450,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
-				title=title, ax=ax)
+				title=title, ax=ax, header=header)
 			#plots=True
 			if plots:
 				plt.show()
@@ -452,7 +466,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
 				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
 				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-				redshift = z, title=utitle, save=saveTo, close=not CO)#, cmap=cm.blue)
+				redshift = z, title=utitle, save=saveTo, close=not CO, header=header)
 			if CO:
 				ax1.saveTo = saveTo
 				add_CO(ax1, galaxy, header, close=True)
@@ -494,7 +508,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 			label=CBLabel, #flux_unbinned=D.unbinned_flux, 
 			galaxy = galaxy.upper(), redshift = z, title=title, 
-			save=saveTo, close=not CO)
+			save=saveTo, close=not CO, header=header)
 		if plots:
 			plt.show()
 		if CO:
@@ -518,7 +532,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	# 	nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 	# 	label=CBLabel, flux_unbinned=D.unbinned_flux, 
 	# 	galaxy = galaxy.upper(), redshift = z, title=title, 
-	# 	save=saveTo, close=not CO)#, cmap=cm.blue)
+	# 	save=saveTo, close=not CO, header=header)#, cmap=cm.blue)
 	# if plots:
 	# 	plt.show()
 	# if CO:
@@ -578,7 +592,8 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 				line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
 				nodots=True, title=lr_title, label=lrCBtitle, ax=ax,
-				show_bin_num=show_bin_num, galaxy = galaxy.upper(), redshift = z,)
+				show_bin_num=show_bin_num, galaxy = galaxy.upper(), redshift = z,
+				header=header)
 
 			ax_array.append(ax)
 			f.delaxes(ax)
