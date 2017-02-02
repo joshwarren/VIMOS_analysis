@@ -66,7 +66,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, header=None, signal_noise=None, **kwargs):
+	ax = None, close=False, show_vel=False, header=None, signal_noise=None, 
+	signal_noise_target=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -148,15 +149,22 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if isinstance(cmap, str):
 			cmap = plt.get_cmap(cmap)
 
-	# Change to RGBA - NOT YET WORKING **************************************
-	# pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/np.nanmax(img))
-	# if signal_noise is not None:
-	# 	pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
-	# # Set bad pixels grey
-	# pic[np.isnan(np.rot90(img)),:] = (128,128,128,1)
+	# Change to RGBA 
+	pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/(np.nanmax(img)-np.nanmin(img)))
+	if signal_noise is not None:
+		if signal_noise_target is None:
+			pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
+		else:
+			pic[j,k,3] = ((np.clip(signal_noise[bin_num],signal_noise_target/2,
+				signal_noise_target) - signal_noise_target/2)/signal_noise_target/2)
+	# Set bad pixels grey
+	pic[np.isnan(np.rot90(img)),:] = [0.5,0.5,0.5,1]
 
-	cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
-		cmap=cmap, extent=[xmin, xmax, ymin, ymax])
+	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
+	# 	cmap=cmap, extent=[xmin, xmax, ymin, ymax])
+
+	cs = ax.imshow(pic, interpolation='none', extent=[xmin, xmax, ymin, ymax],
+		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
 
 	# RA increases right to left
 	ax.invert_xaxis()

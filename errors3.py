@@ -34,13 +34,9 @@ def set_params():
 			#     (Hb and Hd)
 			# 3   All gas seperate.
 	reps = 0 ## number of monte carlo reps per bin.
-	discard = 2
+	discard = 0
 	set_range = np.array([4200,10000])
-	FWHM_gal = 4*0.71 # The fibre FWHM on VIMOS is
-						   # about 4px with a dispersion of
-						   # 0.571A/px. (From: http://www.eso.org
-						   # /sci/facilities/paranal/instruments
-						   # /vimos/inst/ifu.html)
+	FWHM_gal = 2.5 # VIMOS documentation (and fits header)
 	stellar_moments = 4 # number of componants to calc with ppxf (see 
 						# keyword moments in ppxf.pro for more details)
 	gas_moments = 2
@@ -97,9 +93,9 @@ def errors3(i_gal=None, bin=None):
 
 
 
-	tessellation_File = dir + "/analysis/%s/" %(galaxy) +\
+	tessellation_File = "%s/analysis/%s/" % (dir, galaxy) +\
 		"voronoi_2d_binning_output_pop.txt"
-	tessellation_File2 = dir + "/analysis/%s/" %(galaxy) +\
+	tessellation_File2 = "%s/analysis/%s/" % (dir, galaxy) +\
 		"voronoi_2d_binning_output2_pop.txt"
 
 
@@ -185,12 +181,12 @@ def errors3(i_gal=None, bin=None):
 	galaxy_badpix = np.delete(galaxy_badpix, rows_to_remove, axis=1)
 	galaxy_badpix = np.delete(galaxy_badpix, cols_to_remove, axis=2)
 
-	# Check for nan is data set.
-	galaxy_badpix[np.isnan(galaxy_data)] = 1
-	galaxy_data[galaxy_badpix==1] = 0
-	galaxy_noise[galaxy_badpix==1] = 0.000000001
+	s = galaxy_data.shape
 
-	n_spaxels = len(galaxy_data[0,0,:])*len(galaxy_data[0,:,0])
+	# Check for nan is data set.
+	# galaxy_badpix[np.isnan(galaxy_data)] = 1
+	# galaxy_data[galaxy_badpix==1] = 0
+	# galaxy_noise[galaxy_badpix==1] = 0.000000001
 ## ----------============= Spatially Binning ===============---------
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)

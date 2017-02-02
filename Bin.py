@@ -37,6 +37,7 @@ class Data(object):
 # galaxy_spectrum: array of spectrum of whole galaxy
 # galaxy_continuum: array of spectrum of whole galaxy with emission lines 
 #	removed.
+# SNRatio: (array) Signal to Noise Ratio of each bin. 
 #
 # Methods:
 # add_e_line (line name, line wavelength): adds a new emission line object 
@@ -166,6 +167,10 @@ class Data(object):
 		for bin in self.bin:
 			s += bin.noise**2
 		return np.sqrt(s)
+
+	@property
+	def SNRatio(self):
+		return np.array([np.median(bin.spectrum)/np.median(bin.noise) for bin in self.bin])
 		
 
 
@@ -370,7 +375,6 @@ class Bin(object):
 #	weights and ap and mp weights.
 # unconvolved_lam: (array) wavelength array corresponding to unconvolved_spectrum 
 #	(see above)
-# SNRatio: (array) Signal to Noise Ratio of each bin. 
 #
 # Methods:
 # **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
@@ -473,10 +477,6 @@ class Bin(object):
 	@property
 	def n_spaxels_in_bin(self):
 		return len(self.xspaxels)
-
-	@property
-	def SNRatio(self):
-		return np.array([np.median(bin.spectrum)/np.median(bin.noise) for bin in self.bin])
 
 
 	# @property

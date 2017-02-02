@@ -3,7 +3,7 @@ from checkcomp import checkcomp
 cc = checkcomp()
 
 code = "python" 	# python or IDL
-opt = 'kin' 		# kin or pop
+opt = 'pop' 		# kin or pop
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 	'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']

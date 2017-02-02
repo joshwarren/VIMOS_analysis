@@ -22,14 +22,14 @@ from classify import classify
 galaxies = ['ic1459',
 			'ic1531', # Segmentation error...
 			'ic4296',
-			# 'ngc0612', # Segmentation error
+			'ngc0612', # Segmentation error
 			'ngc1399',
 			'ngc3100',
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34',
 			'eso443-g024']
-# galaxies = ['ngc3557']
+galaxies = ['ngc3557']
 # galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']

@@ -25,7 +25,7 @@ def full_analysis(galaxy=None, opt='kin'):
 		'eso443-g024'])
 
 	# an inital guess from quick internet search of redshift.
-	z_gals = [0.01, 0.005, 0.02, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
+	z_gals = [0.01, 0.005, 0.017, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
 	gal=6
 	if galaxy is None:
 		galaxy = galaxies[gal]
@@ -39,7 +39,7 @@ def full_analysis(galaxy=None, opt='kin'):
 	targetSN = None
 	set_range = [4200, 10000]
 
-	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
+	# binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
 
 	find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
@@ -47,16 +47,16 @@ def full_analysis(galaxy=None, opt='kin'):
 
 
 if __name__=="__main__":
-	galaxies = [# 'ngc3557',
-		# 'ic1459',
-		# 'ic1531', 
-		# 'ic4296', 
-		# 'ngc0612',
-		# 'ngc1399',
-		# 'ngc3100',
-		# 'ngc7075#, 
-		# 'pks0718-34', 
+	galaxies = ['ngc3557',
+		'ic1459',
+		'ic1531', 
+		'ic4296', 
+		'ngc0612',
+		'ngc1399',
+		'ngc3100',
+		'ngc7075', 
+		'pks0718-34', 
 		'eso443-g024'
 		]
-	for g in galaxies: full_analysis(galaxy=g, opt='kin')
-	# full_analysis(galaxy='ngc3557', opt='kin')
+	# for g in galaxies: full_analysis(galaxy=g, opt='pop')
+	full_analysis(galaxy='ic1531', opt='kin')
