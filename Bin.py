@@ -170,7 +170,8 @@ class Data(object):
 
 	@property
 	def SNRatio(self):
-		return np.array([np.median(bin.spectrum)/np.median(bin.noise) for bin in self.bin])
+		return np.array([np.nanmedian(bin.spectrum)/np.nanmedian(bin.noise) 
+			for bin in self.bin])
 		
 
 

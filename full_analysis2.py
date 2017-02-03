@@ -29,7 +29,7 @@ galaxies = ['ic1459',
 			'ngc7075',
 			'pks0718-34',
 			'eso443-g024']
-galaxies = ['ngc3557']
+# galaxies = ['ngc3557']
 # galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']

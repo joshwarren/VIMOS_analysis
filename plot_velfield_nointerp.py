@@ -21,7 +21,7 @@
 # vmin          None    (Double) Limits on values of vel: values outside of 
 #                           this will be set to vmin/vmax
 # vmax          None    As vmin
-# nodots        False   (Boolean) to show a dot a x_pix,y_pix for each bin
+# nodots        True	(Boolean) to show a dot a x_pix,y_pix for each bin
 # label         None    (String) Colorbar label
 # flux          None    (Array) contains binned flux for plotting isophotes. 
 #                           (Not recommended - use flux_unbinned)
@@ -63,7 +63,7 @@ import os
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
-	vmin=None, vmax=None, nodots=False, colorbar=False, label=None, flux=None, 
+	vmin=None, vmax=None, nodots=True, colorbar=False, label=None, flux=None, 
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, header=None, signal_noise=None, 
@@ -150,20 +150,20 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			cmap = plt.get_cmap(cmap)
 
 	# Change to RGBA 
-	pic = cmap((np.rot90(img[:,:])-np.nanmin(img))/(np.nanmax(img)-np.nanmin(img)))
+	pic = cmap((img-np.nanmin(img))/(np.nanmax(img)-np.nanmin(img)))
 	if signal_noise is not None:
 		if signal_noise_target is None:
-			pic[j,k,3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
+			pic[j, k, 3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
 		else:
-			pic[j,k,3] = ((np.clip(signal_noise[bin_num],signal_noise_target/2,
-				signal_noise_target) - signal_noise_target/2)/signal_noise_target/2)
+			pic[j, k, 3] = ((signal_noise[bin_num] - signal_noise_target/2)/\
+				(signal_noise_target/2)).clip(0.05,1)
 	# Set bad pixels grey
-	pic[np.isnan(np.rot90(img)),:] = [0.5,0.5,0.5,1]
+	pic[np.isnan(img),:] = [0.5,0.5,0.5,1]
 
 	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
 	# 	cmap=cmap, extent=[xmin, xmax, ymin, ymax])
 
-	cs = ax.imshow(pic, interpolation='none', extent=[xmin, xmax, ymin, ymax],
+	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmin, xmax, ymin, ymax],
 		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
 
 	# RA increases right to left
@@ -179,14 +179,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ax.tick_params(length=5, which='minor')
 
 
-
 	xmin_sav, xmax_sav = ax.get_xlim()
 	ymin_sav, ymax_sav = ax.get_ylim()
 	xlim=np.array([xmin_sav, xmax_sav])
 	ylim=np.array([ymin_sav, ymax_sav])
-
-
-   #y1, y2 = ax.get_ylim()   
 
 	if galaxy is not None:
 		gal_name = plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
@@ -205,7 +201,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# NB: have assumed a square image!!!!
 	if flux_unbinned is not None:
-		#flux_unbinned[477]=0.001
 		if flux_type == 'mag':
 			contours = -2.5*np.log10(flux_unbinned.ravel()/
 									 np.max(flux_unbinned))
@@ -219,30 +214,20 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 					   flux_unbinned, colors='k')
 
 	if not nodots and not show_bin_num and not show_vel:
-		#**********************************################
-		#xBar /= res # no idea why this needs removing...
-		#yBar /= res
-		#**********************************################
-		ax.plot(xBar-max(xBar)/2, yBar-max(yBar)/2, '.k',
+		ax.plot(xBar, yBar, '.k',
 				markersize=kwargs.get("markersize", 3))
 
 	if show_bin_num and not show_vel:
 		for i in range(len(xBar)):
-			ax.text(xBar[i]-max(xBar)/2+pixelSize/2, 
-				yBar[i]-max(yBar)/2+pixelSize/2, str(i), 
+			ax.text(xBar[i], yBar[i], str(i), 
 				color='grey', fontsize=5)
 	if show_vel:
 		for i in range(len(xBar)):
-			if i%3==0:
-				ax.text(xBar[i]-max(xBar)/2+pixelSize/2, 
-					yBar[i]-max(yBar)/2+pixelSize/2, str(vel[i]), 
+			if i%5==0:
+				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(vel[i]), 
 					color='grey', fontsize=5)
 		
 
-	#ax.axis('equal')
-
-	#ax2 = ax.twinx()
-	#ax3 = ax.twiny()
 	if redshift is not None:
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
@@ -296,16 +281,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				verticalalignment='center')
 			
 		ax.cax = cbar.ax
-
-		# from matplotlib_colorbar.colorbar import ColorBar
-		# p = ax.get_position()
-		# cbar = ColorBar(cs, location=(p.x1,p.y0))
-		# a = plt.gca().add_artist(cbar)
-		# print a 
-
-		# ax.cax = a
-		# ax.cbar = cbar
-
 	
 	if save is not None:
 		if not os.path.exists(os.path.dirname(save)):
@@ -317,9 +292,3 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		plt.close(fig)
 
 	return ax
-
-
-
-
-# if __name__ == '__main__':
-#     pass
