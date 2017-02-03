@@ -15,6 +15,7 @@
 
 import platform
 import warnings
+import os
 
 class checkcomp(object):
 
@@ -25,7 +26,8 @@ class checkcomp(object):
 			self.device = override
 		self.overriden = override is not None
 		#self.base_dir = self.getBase_dir()
-		self.home_dir = self.getHome_dir() 
+		self.home_dir = os.environ['HOME'] # self.getHome_dir() 
+		self.remote = os.environ.get('DISPLAY') is None
 		
 	def getDevice(self):
 		uname = platform.uname()
@@ -61,17 +63,17 @@ class checkcomp(object):
 
 		return b_dir
 
-	def getHome_dir(self):
-		comp = self.device
-		if comp == 'cygwin_home':
-			h_dir = '/home/Home'
-		elif comp == 'bash_home':
-			h_dir = '/root'
-		elif comp == 'glamdring':
-			h_dir = '/users/warrenj'
-		elif comp == 'uni':
-			h_dir = '/home/warrenj'
-		else:
-			h_dir = ''
+	# def getHome_dir(self):
+	# 	comp = self.device
+	# 	if comp == 'cygwin_home':
+	# 		h_dir = '/home/Home'
+	# 	elif comp == 'bash_home':
+	# 		h_dir = '/root'
+	# 	elif comp == 'glamdring':
+	# 		h_dir = '/users/warrenj'
+	# 	elif comp == 'uni':
+	# 		h_dir = '/home/warrenj'
+	# 	else:
+	# 		h_dir = ''
 
-		return h_dir
+	# 	return h_dir

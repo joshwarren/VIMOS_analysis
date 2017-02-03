@@ -26,7 +26,6 @@ from errors2 import set_lines, use_templates, determine_goodpixels, \
 
 #-----------------------------------------------------------------------------
 def set_params():
-	glamdring = cc.device=='glamdring'
 	quiet = True
 	gas = 3 # 0   No gas emission lines
 			# 1   Probe ionised gas
@@ -43,8 +42,8 @@ def set_params():
 	degree = -1  # order of addative Legendre polynomial used to 
 				#; correct the template continuum shape during the fit
 	mdegree = 10 # order of multaplicative Legendre polynomials used. 
-	return glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
-		stellar_moments, gas_moments, degree, mdegree
+	return quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, \
+		gas_moments, degree, mdegree
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -54,8 +53,8 @@ def errors3(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-	glamdring, quiet, gas, reps, discard, set_range, FWHM_gal, \
-		stellar_moments, gas_moments, degree, mdegree = set_params()
+	quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, gas_moments, \
+		degree, mdegree = set_params()
 	
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
@@ -63,21 +62,21 @@ def errors3(i_gal=None, bin=None):
 
 	c = 299792.458
 
-	if glamdring:
+	if cc.device == 'glamdring':
 		dir = cc.base_dir
 		templatesDirectory = '%s/ppxf/MILES_library/' % (cc.base_dir)	
-
-		import matplotlib # 20160202 JP to stop lack-of X-windows error
-		matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
-		import matplotlib.pyplot as plt # used for plotting
-		from ppxf import ppxf
-		import ppxf_util as util
 	else:
 		dir = '%s/Data/vimos' % (cc.base_dir)
 		templatesDirectory = '%s/models/miles_library/' % (cc.home_dir)
+	
+	if cc.remote:
+		import matplotlib # 20160202 JP to stop lack-of X-windows error
+		matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 		import matplotlib.pyplot as plt # used for plotting
-		from ppxf import ppxf
-		import ppxf_util as util
+	else:
+		import matplotlib.pyplot as plt # used for plotting
+	from ppxf import ppxf
+	import ppxf_util as util
 
 
 
@@ -129,7 +128,7 @@ def errors3(i_gal=None, bin=None):
 
 	## Which templates to use are given in use_templates.pro. This is
 	## transfered to the array templatesToUse.
-	templatesToUse = use_templates(galaxy, glamdring)
+	templatesToUse = use_templates(galaxy, cc.device=='glamdring')
 	nfiles = len(templatesToUse)
 	templates = np.zeros((len(log_temp_template), nfiles))
 

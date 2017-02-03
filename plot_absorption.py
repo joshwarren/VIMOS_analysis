@@ -58,11 +58,11 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 			abmin = limits[line][0]
 			abmax = limits[line][1]
 
-		ax_array[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-			D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
+		ax_array[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, D.absorption_line(line), vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
 			title=line, ax=ax_array[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux)#, signal_noise=D.SNRatio)
+			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, signal_noise_target=30)
 
 		if uncert:
 			abmin, abmax = set_lims(ab_uncert)
@@ -71,10 +71,13 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 				D.bin_num, D.xBar, D.yBar, ab_uncert, vmin=abmin, vmax=abmax,
 				nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
 				title=line, ax=ax_array_uncert[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
-				flux_unbinned=D.unbinned_flux)
+				flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+				signal_noise_target=30)
 
 
 	f.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
+
+	print 'Saving plot'
 
 	saveTo = "%s/absorption_%s.pdf" % (out_plots, wav_range)
 	f.tight_layout()

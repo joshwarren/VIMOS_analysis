@@ -134,8 +134,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
 	xmin, xmax = np.min(x), np.max(x)
 	ymin, ymax = np.min(y), np.max(y)
-	nx = round((xmax - xmin)/pixelSize) + 1
-	ny = round((ymax - ymin)/pixelSize) + 1
+	nx = int(round((xmax - xmin)/pixelSize) + 1)
+	ny = int(round((ymax - ymin)/pixelSize) + 1)
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
 	j = np.round((x - xmin)/pixelSize).astype(int)
 	k = np.round((y - ymin)/pixelSize).astype(int)
@@ -196,17 +196,16 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 	if flux is not None:
-		ax.tricontour(x, y, -2.5*np.log10(flux.ravel()/np.max(flux)),
-					  levels=np.arange(20), colors='k') # 1 mag contours
+		# 1 mag contours
+		ax.contour(-2.5*np.log10(flux/np.max(flux)), levels=np.arange(20), colors='k',
+			extent=[xmin, xmax, ymin, ymax]) 
 
-	# NB: have assumed a square image!!!!
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
-			contours = -2.5*np.log10(flux_unbinned.ravel()/
-									 np.max(flux_unbinned))
+			contours = -2.5*np.log10(flux_unbinned/np.max(flux_unbinned))
 			# 1 mag contours
-			ax.tricontour(x, y, contours, levels=np.arange(20),
-					  colors='k')
+			ax.contour(contours, levels=np.arange(20), colors='k', 
+				extent=[xmin, xmax, ymin, ymax])
 
 		else:
 			ax.contour(np.reshape(x,np.shape(flux_unbinned)),

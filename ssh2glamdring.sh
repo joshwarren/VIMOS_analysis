@@ -10,7 +10,7 @@ p_file=/home/HOME/VIMOS_project/analysis/params.txt
 g_file=/Data/vimos/analysis/galaxies.txt
 
 
-scp $reduced warrenj@glamdring.physics.ox.ac.uk:cubes/
+# scp $reduced warrenj@glamdring.physics.ox.ac.uk:cubes/
 scp -r $analysis1 $analysis2 $analysis3 warrenj@glamdring.physics.ox.ac.uk:analysis/$1/
 scp $p_file warrenj@glamdring.physics.ox.ac.uk:
 scp $g_file warrenj@glamdring.physics.ox.ac.uk:analysis/
