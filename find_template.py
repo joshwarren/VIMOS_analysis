@@ -10,7 +10,8 @@ from astropy.io import fits
 from scipy import ndimage # for gaussian blur
 from ppxf import ppxf
 import ppxf_util as util
-from errors2 import remove_anomalies, use_templates, determine_goodpixels
+from errors2 import remove_anomalies, use_templates, determine_goodpixels, \
+	get_stellar_templates
 from checkcomp import checkcomp
 cc= checkcomp()
 
@@ -33,49 +34,8 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 		   # correct the template continuum shape during the fit 
 
 ## ----------=============== Miles library =================---------
-	# Finding the template files
-	templateFiles = glob.glob(templatesDirectory + '/m0[0-9][0-9][0-9]V') 
-
-	# v1 is wavelength, v2 is spectrum
-	v1, v2 = np.loadtxt(templateFiles[0], unpack='True')
-
-	# Using same keywords as fits headers
-	CRVAL_temp = v1[0]		# starting wavelength
-	NAXIS_temp = np.shape(v2)[0]   # Number of entries
-	# wavelength increments (resolution?)
-	CDELT_temp = (v1[NAXIS_temp-1]-v1[0])/(NAXIS_temp-1)
-
-	lamRange_template = CRVAL_temp + [0, CDELT_temp*(NAXIS_temp-1)]
-
-	log_temp_template, logLam_template, velscale = \
-		util.log_rebin(lamRange_template, v1)
-
-	FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
-	FWHM_dif = np.sqrt(abs(FWHM_gal**2 - FWHM_tem**2))
-
-	if use_all_temp:
-		nfiles = len(templateFiles)
-		templates = np.zeros((len(log_temp_template), nfiles))
-	else:
-		templatesToUse = use_templates(galaxy, cc.device=='glamdring')
-		nfiles = len(templatesToUse)
-		templates = np.zeros((len(log_temp_template), nfiles))
-
-	## Reading the contents of the files into the array templates. 
-	## Including rebinning them.
-	for i in range(nfiles):
-		if use_all_temp:
-			v1, v2 = np.loadtxt(templateFiles[i], unpack='True')
-		else:
-			v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
-		if FWHM_tem < FWHM_gal:
-			sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-			v2 = ndimage.gaussian_filter1d(v2,sigma)
-		## Rebinning templates logarthmically
-		log_temp_template, logLam_template, _ = util.log_rebin(lamRange_template, 
-			v2, velscale=velscale)
-		templates[:,i] = log_temp_template
-
+	templates, logLam_template = get_stellar_templates(galaxy, FWHM_gal, 
+		use_all_temp=use_all_temp)
 ## ----------========= Reading the spectrum  ===============---------
 
 	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.corr.fits" % (dir, galaxy)) 

@@ -591,7 +591,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			saveTo = "%s/lineratio/%s_%s_line_ratio_%s.png" % (out_nointerp, cB, cA, 
 				wav_range)
 			ax.saveTo = saveTo
-			ax.figx, ax.figy = n, n_rows-int(np.ceil(t_num/3))
+			ax.figx, ax.figy = n%3, n_rows-int(np.ceil(t_num/3)) + int(np.ceil(n/3))
 
 
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
@@ -626,6 +626,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		f.delaxes(a.cax)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
+		print a.get_title()
+		print n_rows, 3, a.figy*3+a.figx+1
+		print ''
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 
 	for a in ax_array:

@@ -21,7 +21,7 @@ if cc.device == -1:
 	cc = checkcomp(override='glamdring')
 # import of matplotlib.pyplot is within errors routine
 from errors2 import set_lines, use_templates, determine_goodpixels, \
-	remove_anomalies
+	remove_anomalies, get_stellar_templates
 
 
 #-----------------------------------------------------------------------------
@@ -105,46 +105,7 @@ def errors3(i_gal=None, bin=None):
 ## ----------===============================================---------
 
 ## ----------=============== Miles library =================---------
-	# Finding the template files
-	templateFiles = glob.glob(templatesDirectory + \
-		'm0[0-9][0-9][0-9]V') #****** no longer have nfiles.
-
-	# v1 is wavelength, v2 is spectrum
-	v1, v2 = np.loadtxt(templateFiles[0], unpack='True')
-
-	# Using same keywords as fits headers
-	CRVAL_temp = v1[0]		# starting wavelength
-	NAXIS_temp = np.shape(v2)[0]   # Number of entries
-	# wavelength increments (resolution?)
-	CDELT_temp = (v1[NAXIS_temp-1]-v1[0])/(NAXIS_temp-1)
-
-	lamRange_template = CRVAL_temp + [0, CDELT_temp*(NAXIS_temp-1)]
-
-	log_temp_template, logLam_template, velscale = \
-		util.log_rebin(lamRange_template, v1)
-
-	FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
-	FWHM_dif = np.sqrt(abs(FWHM_gal**2 - FWHM_tem**2))
-
-	## Which templates to use are given in use_templates.pro. This is
-	## transfered to the array templatesToUse.
-	templatesToUse = use_templates(galaxy, cc.device=='glamdring')
-	nfiles = len(templatesToUse)
-	templates = np.zeros((len(log_temp_template), nfiles))
-
-
-	## Reading the contents of the files into the array templates. 
-	## Including rebinning them.
-	for i in range(nfiles):
-		v1, v2 = np.loadtxt(templateFiles[templatesToUse[i]], unpack='True')
-		if FWHM_tem < FWHM_gal:
-			sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-			v2 = ndimage.gaussian_filter1d(v2,sigma)		## Rebinning templates logarthmically
-		log_temp_template, logLam_template, _ = util.log_rebin(lamRange_template, 
-			v2, velscale=velscale)
-		templates[:,i] = log_temp_template
-
-	#templates /= np.median(log_temp_template)
+	templates, logLam_template, s_templatesToUse = get_stellar_templates(galaxy, FWHM_gal)
 ## ----------========= Reading Tessellation  ===============---------
 
 	## Reads the txt file containing the output of the binning_spaxels

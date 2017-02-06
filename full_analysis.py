@@ -25,7 +25,7 @@ def full_analysis(galaxy=None, opt='kin'):
 		'eso443-g024'])
 
 	# an inital guess from quick internet search of redshift.
-	z_gals = [0.01, 0.005, 0.017, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
+	z_gals = [0.01, 0.005, 0.025, 0.01, 0.028, 0.005, 0.01, 0.02, 0.03, 0.015] 
 	gal=6
 	if galaxy is None:
 		galaxy = galaxies[gal]
@@ -59,4 +59,4 @@ if __name__=="__main__":
 		'eso443-g024'
 		]
 	# for g in galaxies: full_analysis(galaxy=g, opt='pop')
-	full_analysis(galaxy='ic1531', opt='kin')
+	full_analysis(galaxy='ic1531', opt='pop')
