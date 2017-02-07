@@ -34,8 +34,9 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 		   # correct the template continuum shape during the fit 
 
 ## ----------=============== Miles library =================---------
-	templates, logLam_template = get_stellar_templates(galaxy, FWHM_gal, 
-		use_all_temp=use_all_temp)
+	stellar_templates = get_stellar_templates(galaxy, FWHM_gal, use_all_temp=True)
+	templates = stellar_templates.templates
+	velscale = stellar_templates.velscale
 ## ----------========= Reading the spectrum  ===============---------
 
 	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.corr.fits" % (dir, galaxy)) 
@@ -81,8 +82,8 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 
 
 	## smooth spectrum to fit with templates resolution
-	if FWHM_gal < FWHM_tem:
-		sigma = FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+	if FWHM_gal < stellar_templates.FWHM_tem:
+		sigma = stellar_templates.FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
 		gal_spec = ndimage.gaussian_filter1d(gal_spec, sigma)
 		gal_noise = np.sqrt(ndimage.gaussian_filter1d(gal_noise**2, sigma))
 
@@ -94,7 +95,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 
 	noise = gal_noise + 0.0000000000001
 
-	dv = (logLam_template[0]-logLam_bin[0])*c # km/s
+	dv = (stellar_templates.logLam_template[0]-logLam_bin[0])*c # km/s
 	# Find the pixels to ignore to avoid being distracted by gas emission
 	#; lines or atmospheric absorbsion line.  
 	goodpixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 

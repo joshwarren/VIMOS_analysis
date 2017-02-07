@@ -103,9 +103,8 @@ def errors3(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------=============== Run analysis  =================---------
 ## ----------===============================================---------
-
-## ----------=============== Miles library =================---------
-	templates, logLam_template, s_templatesToUse = get_stellar_templates(galaxy, FWHM_gal)
+	stellar_templates = get_stellar_templates(galaxy, FWHM_gal)
+	velscale = stellar_templates.velscale
 ## ----------========= Reading Tessellation  ===============---------
 
 	## Reads the txt file containing the output of the binning_spaxels
@@ -164,8 +163,8 @@ def errors3(i_gal=None, bin=None):
 	bin_lin_noise = bin_lin_noise[cut]
 
 	## smooth spectrum to fit with templates resolution
-	if FWHM_gal < FWHM_tem:
-		sigma = FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+	if FWHM_gal < stellar_templates.FWHM_tem:
+		sigma = stellar_templates.FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
 		bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
 		bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(bin_lin_noise**2, sigma))
 	
@@ -175,95 +174,31 @@ def errors3(i_gal=None, bin=None):
 		velscale=velscale)
 	bin_log_noise = np.sqrt(bin_log_noise)
 
-	## Normalis the spectrum
-	#med_bin = np.median(bin_log)
-	#bin_log /= med_bin
-	#bin_log_noise /= med_bin
 	noise = bin_log_noise+0.0000000000001
 
-
-
-	dv = (logLam_template[0]-logLam_bin[0])*c # km/s
-	# Find the pixels to ignore to avoid being distracted by gas emission
-	#; lines or atmospheric absorbsion line.  
-	goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+	dv = (stellar_templates.logLam_template[0]-logLam_bin[0])*c # km/s
 	lambdaq = np.exp(logLam_bin)
-	start = [vel, sig] # starting guess
-	component = [0]*len(templates[0,:])
 
 ## ----------===============================================---------
 ## ----------=============== Emission lines ================---------
 ## ----------===============================================---------
-	moments = stellar_moments
+	e_templates = get_emission_templates(gas, lamRange, 
+		stellar_templates.logLam_template, FWHM_gal)
+
 	if gas:
-		moments = [stellar_moments]
-		start_sav = start
-		element = ['stellar']
+		templates = np.column_stack((stellar_templates.templates, e_templates.templates))
+	else:
+		templates = stellar_templates.templates
+	component = [0]*len(stellar_templates.templatesToUse) + e_templates.component
+	templatesToUse = np.append(stellar_templates.templatesToUse, e_templates.templatesToUse)
+	element = ['stellar'] + e_templates.element
 
-	## ----------============ All lines together ===============---------
-	if gas == 1:
-		emission_lines, line_name, line_wav = util.emission_lines(
-			logLam_template, lamRange, FWHM_gal, quiet=quiet)
+	start = [[vel, sig]] * (max(component) + 1)
+	moments = [stellar_moments] + [gas_moments] * max(component)
 
-		templatesToUse = np.append(templatesToUse, line_name)
 
-		component = component + [1]*len(line_name)
-		templates = np.column_stack((templates, emission_lines))
-	   
-		start = [start_sav,start_sav]
-		moments.append(gas_moments)
-		goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
-			gas=True)
-		element.append('gas')
-	## ----------=============== SF and shocks lines ==============---------
-	if gas == 2:
-		emission_lines, line_name, line_wav = util.emission_lines(
-			logLam_template, lamRange, FWHM_gal, quiet=quiet)
-
-		for i in range(len(line_name)):
-			
-
-			if 'H' in line_name[i]:
-				templatesToUse = np.append(templatesToUse, line_name[i])
-				templates = np.column_stack((templates, emission_lines[:,i]))
-				component = component + [1]
-				element.append['SF']
-			else:
-				templatesToUse = np.append(templatesToUse, line_name[i])
-				templates = np.column_stack((templates, emission_lines[:,i]))
-				component = component + [2] 
-				element.append['shocks']      
-
-		start = [start, start_sav, start_sav]
-		moments = [stellar_moments, gas_moments, gas_moments]
-		goodPixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z, 
-			gas=True)
-	## ----------=========== All lines inderpendantly ==============---------
-	if gas == 3:
-		emission_lines, line_name, line_wav = util.emission_lines(
-			logLam_template, lamRange, FWHM_gal, quiet=quiet)
-
-		# for i in range(len(line_name)):
-		#     if '[' in line_name[i]:
-		#         j = line_name[i]
-		#         j = j[j.find('[')+len('['):j.rfind(']')]
-		#         line_name[i] = j
-
-		aph_lin = np.sort(line_name)
-
-		for i in range(len(line_name)):
-			templatesToUse = np.append(templatesToUse, line_name[i])
-
-			# line listed alphabetically
-			component = component + [np.where(line_name[i] == aph_lin)[0][0]+1]
-			templates = np.column_stack((templates, emission_lines[:,i]))
-			moments.append(gas_moments)
-			element.append(aph_lin[i])
-		# Bit of a fudge for start (limits ability to set different start for gas)
-		start = [start_sav]*(len(line_name)+1)
-		goodPixels = determine_goodpixels(logLam_bin,lamRange_template,
-			vel, z, gas=True)
-
+	goodPixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template,
+		vel, z, gas=gas!=0)
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
