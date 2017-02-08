@@ -174,6 +174,7 @@ class get_emission_templates(object):
 				self.element.append(aph_lin[i])
 
 		self.templates = np.array(self.templates).T
+		self.ntemp = self.templates.shape[1]
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------

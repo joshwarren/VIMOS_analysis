@@ -13,6 +13,7 @@
 # unc_spec:		None	Unconcolved spectum
 # conv_spec:	None	Convolved spectrum i.e. pPXF bestfit
 # noise:		None	Observed noise from reduction pipeline
+# lick:			False	Return corrected indices to LICK resolution
 ##############################################################################
 from spectools import *
 from tools import length as len
@@ -23,7 +24,7 @@ c = 299792.458 # speed of light in km/s
 
 
 def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
-	noise=None):
+	noise=None, lick=False):
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
 	elif line_name=='Mg_b':
@@ -46,8 +47,11 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		# Calculate correction for velocity dispersion spreading
 		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
 			# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
-			sig_pix = 200*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
-			lick_spec = gaussian_filter1d(unc_spec, sig_pix)
+			if lick:
+				sig_pix = 200*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
+				# unc_spec becomes convolved to 200km/s dispersion (as required for LICK 
+				#	indices)
+				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
 			spectra = spectrum(unc_lam, unc_spec)
 			unc_index_value, unc_index_va, _, _ = spectra.irindex(0.71, line_name)
 			# Line strength of convolved spectrum (bestfit - emission lines)

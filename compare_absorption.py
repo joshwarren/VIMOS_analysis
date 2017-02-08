@@ -14,18 +14,19 @@ import ppxf_util as util
 from ppxf import ppxf
 from scipy import ndimage # for gaussian blur
 from absorption import absorption
+from tools import funccontains
+
 
 c = 299792.458 # km/s
 
 stellar_moments = 4 
 gas_moments = 2
 quiet = True
-gas = 0
+gas = 3
 
 
-def compare_absorption(galaxy):
-
-	from tools import funccontains
+def compare_absorption(galaxy, debug=False):
+	print galaxy
 ## ----------============== Load galaxy info ================---------
 	data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 	# different data types need to be read separetly
@@ -50,8 +51,10 @@ def compare_absorption(galaxy):
 	slit_x, slit_y = get_slit(galaxy, 10, 0.9, 30)
 
 	frac_image = np.zeros((f[0].header['NAXIS1'], f[0].header['NAXIS2']))
-	# frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).astype(int)#, fraction=True)
-	frac = funccontains(slit, (slit_x,slit_y), x=x, y=y, fraction=True)
+	if debug:
+		frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).astype(int)
+	else:
+		frac = funccontains(slit, (slit_x,slit_y), x=x, y=y, fraction=True)
 	frac_image[np.arange(f[0].header['NAXIS1']).repeat(f[0].header['NAXIS2']),np.tile(
 		np.arange(f[0].header['NAXIS2']),f[0].header['NAXIS1'])] = frac
 
@@ -115,27 +118,41 @@ def compare_absorption(galaxy):
 		vel, z, gas=gas!=0) 
 	lambdaq = np.exp(logLam_bin)
 ## ----------=================== pPXF =======================---------
+
 	pp = ppxf(templates, gal_spec_log, gal_noise_log, velscale, start, 
 		goodpixels=goodPixels, moments=moments, degree=-1, vsyst=dv, 
-		component=component, lam=lambdaq, plot=True, 
-		quiet=quiet, mdegree=10)
+		component=component, lam=lambdaq, plot=not quiet, quiet=quiet, mdegree=10)
+
+	# Only use stellar templates (Remove emission lines)
+	stellar_spec = gal_spec_log - \
+		pp.matrix[:, -e_templates.ntemp:].dot(pp.weights[-e_templates.ntemp:])
+	conv_spec = pp.matrix[:, :-e_templates.ntemp].dot(pp.weights[:-e_templates.ntemp])
+
+	# Overlap in wavelength range of templates and observations
+	a = [min(np.where(stellar_templates.wav >= lam[0])[0]), 
+		max(np.where(stellar_templates.wav <= lam[-1])[0])]
+
+	# Generate the unconvolved spectra ('0 km/s' resolution)
+	unc_lam = stellar_templates.wav[a[0]:a[1]]
+	unc_spec = stellar_templates.templates.dot(
+		pp.weights[:stellar_templates.ntemp])[a[0]:a[1]]
+	unc_spec *= np.polynomial.legendre.legval(np.linspace(-1,1,
+		len(unc_spec)), np.append(1, pp.mpolyweights))
 ## ----------============== Absorption Line =================---------
-	
+
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
-	results = {}
+	result = {}
 	uncert = {}
-	for line in lines:
-		### NEED TO REMOVE EMISSION LINES
-		ab, uncert = absorbsion(line, lam, gal_spec_log, unc_lam=stellar_templates.wav,
-			unc_spec=stellar_templates.templates.dot(
-			pp.weights[:stellar_templates.ntemp]), conv_spec=pp.bestfit, 
-			noise=gal_noise_log)
+	for line in lines:		
+		ab, ab_uncert = absorption(line, lambdaq, stellar_spec, 
+			unc_lam=unc_lam, unc_spec=unc_spec,	conv_spec=conv_spec, noise=gal_noise_log, 
+			lick=True)
 
 		result[line] = ab
-		uncert[line] = uncert
+		uncert[line] = ab_uncert
 
 	for line in lines:
-		print '%s: %f +/- %f' % (line, result[line], round(uncert[line],2))
+		print '%s:	%.3f +/- %.3f' % (line, result[line], uncert[line])
 
 
 
@@ -230,4 +247,4 @@ if __name__ == '__main__':
 	# print a
 	galaxy = 'ngc3557'
 	# galaxy = 'ic1459'
-	compare_absorption(galaxy)
+	compare_absorption(galaxy, debug=True)
