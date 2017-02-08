@@ -100,25 +100,28 @@ class get_stellar_templates(object):
 		
 		if use_all_temp:
 			self.ntemp = len(templateFiles)
-			self.templates = np.zeros((len(log_temp_template), self.ntemp))
+			self.templatesToUse = np.arange(1, self.ntemp + 1)
 		else:
 			self.templatesToUse = use_templates(galaxy, cc.device=='glamdring')
 			self.ntemp = len(self.templatesToUse)
-			self.templates = np.zeros((len(log_temp_template), self.ntemp))
+		self.templates = np.zeros((len(log_temp_template), self.ntemp))
+		self.lin_templates = np.zeros((len(log_temp_template), self.ntemp))
 
 		## Reading the contents of the files into the array templates. 
 		## Including rebinning them.
 		for i in range(self.ntemp):
 			if use_all_temp:
-				self.wav, v2 = np.loadtxt(templateFiles[i], unpack='True')
+				_, self.lin_templates[:,i] = np.loadtxt(templateFiles[i], unpack='True')
 			else:
-				self.wav, v2 = np.loadtxt(templateFiles[self.templatesToUse[i]], unpack='True')
+				_, self.lin_templates[:,i] = np.loadtxt(templateFiles[self.templatesToUse[i]], unpack='True')
 			if self.FWHM_tem < FWHM_gal:
 				sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-				v2 = ndimage.gaussian_filter1d(v2,sigma)
+				conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],sigma)
+			else:
+				conv_temp = self.lin_templates[:,i]
 			## Rebinning templates logarthmically
 			log_temp_template, self.logLam_template, _ = util.log_rebin(
-				self.lamRange_template, v2, velscale=self.velscale)
+				self.lamRange_template, conv_temp, velscale=self.velscale)
 			self.templates[:,i] = log_temp_template
 #-----------------------------------------------------------------------------
 
@@ -157,7 +160,7 @@ class get_emission_templates(object):
 					self.templatesToUse = np.append(self.templatesToUse, line_name[i])
 					self.templates.append(emission_lines[:,i])
 					self.component = self.component + [2] 
-					self.element.append['shocks']
+					self.element.append['Shocks']
 		## ----------=========== All lines inderpendantly ==============---------
 		if gas == 3:
 			emission_lines, line_name, line_wav = util.emission_lines(
@@ -169,12 +172,14 @@ class get_emission_templates(object):
 				self.templatesToUse = np.append(self.templatesToUse, line_name[i])
 
 				# line listed alphabetically
-				self.component = self.component + [np.where(line_name[i] == aph_lin)[0][0]+1]
+				self.component = self.component + \
+					[np.where(line_name[i] == aph_lin)[0][0]+1]
 				self.templates.append(emission_lines[:,i])
 				self.element.append(aph_lin[i])
 
 		self.templates = np.array(self.templates).T
-		self.ntemp = self.templates.shape[1]
+		if gas:	self.ntemp = self.templates.shape[1]
+		else: self.ntemp = 0
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -364,9 +369,10 @@ def errors2(i_gal=None, bin=None):
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)
 
-	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]],axis=1)
-	bin_lin_noise = np.nansum(galaxy_noise[:,x[spaxels_in_bin],y[spaxels_in_bin]]**2,
+	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]],
 		axis=1)
+	bin_lin_noise = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
+		y[spaxels_in_bin]]**2, axis=1)
 	bin_lin_noise = np.sqrt(bin_lin_noise)
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
@@ -377,12 +383,14 @@ def errors2(i_gal=None, bin=None):
 
 	## smooth spectrum to fit with templates resolution
 	if FWHM_gal < stellar_templates.FWHM_tem:
-		sigma = stellar_templates.FWHM_dif/2.355/CDELT_spec # Sigma difference in pixels
+		sigma = stellar_templates.FWHM_dif/2.355/CDELT_spec # Change in px
 		bin_lin = ndimage.gaussian_filter1d(bin_lin, sigma)
-		bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(bin_lin_noise**2, sigma))
+		bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(bin_lin_noise**2, 
+			sigma))
 	
 	## rebin spectrum logarthmically
-	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, velscale=velscale)
+	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, 
+		velscale=velscale)
 	bin_log_noise, logLam_bin, _ = util.log_rebin(lamRange, bin_lin_noise**2, 
 		velscale=velscale)
 	bin_log_noise = np.sqrt(bin_log_noise)
@@ -399,19 +407,22 @@ def errors2(i_gal=None, bin=None):
 		stellar_templates.logLam_template, FWHM_gal)
 
 	if gas:
-		templates = np.column_stack((stellar_templates.templates, e_templates.templates))
+		templates = np.column_stack((stellar_templates.templates, 
+			e_templates.templates))
 	else:
 		templates = stellar_templates.templates
-	component = [0]*len(stellar_templates.templatesToUse) + e_templates.component
-	templatesToUse = np.append(stellar_templates.templatesToUse, e_templates.templatesToUse)
+	component = [0]*len(stellar_templates.templatesToUse) + \
+		e_templates.component
+	templatesToUse = np.append(stellar_templates.templatesToUse, 
+		e_templates.templatesToUse)
 	element = ['stellar'] + e_templates.element
 
 	start = [[vel, sig]] * (max(component) + 1)
 	moments = [stellar_moments] + [gas_moments] * max(component)
 
 
-	goodPixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template,
-		vel, z, gas=gas!=0)
+	goodPixels = determine_goodpixels(logLam_bin,
+		stellar_templates.lamRange_template, vel, z, gas=gas!=0)
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
@@ -469,9 +480,7 @@ def errors2(i_gal=None, bin=None):
 
 	# gas MC results
 	gas_dir=[]
-	if gas == 1: gas_dir  = ["gas"]
-	if gas == 2: gas_dir  = ["SF", "Shocks"]
-	if gas == 3: gas_dir  = line_name
+	if gas != 0: gas_dir = e_templates.element
 	for d in range(len(gas_dir)):
 		if not os.path.exists("%s/analysis/%s/gas_MC/gas/%s/errors" % (dir,
 			galaxy, gas_dir[d])):

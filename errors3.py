@@ -21,7 +21,7 @@ if cc.device == -1:
 	cc = checkcomp(override='glamdring')
 # import of matplotlib.pyplot is within errors routine
 from errors2 import set_lines, use_templates, determine_goodpixels, \
-	remove_anomalies, get_stellar_templates
+	remove_anomalies, get_stellar_templates, get_emission_templates
 
 
 #-----------------------------------------------------------------------------
@@ -260,9 +260,7 @@ def errors3(i_gal=None, bin=None):
 
 	# gas MC results
 	gas_dir=[]
-	if gas == 1: gas_dir  = ["gas"]
-	if gas == 2: gas_dir  = ["SF", "Shocks"]
-	if gas == 3: gas_dir  = line_name
+	if gas != 0: gas_dir = e_templates.element
 	for d in range(len(gas_dir)):
 		if not os.path.exists("%s/analysis/%s/pop_MC/gas/%s/errors" % (dir,
 			galaxy, gas_dir[d])):
@@ -327,7 +325,7 @@ def errors3(i_gal=None, bin=None):
 	else: b.write("stellar " + str(pp.sol[0]) + "   " + str(pp.sol[1]) + 
 		"   " + str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
 
-	## save input
+	## save chi2
 	if not os.path.exists("%s/analysis/%s/pop_MC/chi2" % (dir, galaxy)):
 		os.makedirs("%s/analysis/%s/pop_MC/chi2" % (dir, galaxy)) 
 	chi2_file = "%s/analysis/%s/pop_MC/chi2/%s.dat" % (dir, galaxy, str(bin))

@@ -17,7 +17,6 @@
 ##############################################################################
 from spectools import *
 from tools import length as len
-from scipy.ndimage.filters import gaussian_filter1d
 import numpy as np 
 
 c = 299792.458 # speed of light in km/s
@@ -48,6 +47,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
 			# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
 			if lick:
+				from scipy.ndimage.filters import gaussian_filter1d
 				sig_pix = 200*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
 				# unc_spec becomes convolved to 200km/s dispersion (as required for LICK 
 				#	indices)

@@ -480,50 +480,6 @@ class Bin(object):
 		return len(self.xspaxels)
 
 
-	# @property
-	# def unconvolved_spectrum(self):
-	# 	# Load template files on the fly.
-	# 	files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-	# 	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
-	# 	templates = {}
-	# 	for template in self.temp_weight.keys():
-	# 		if template.isdigit():
-	# 			templates[template] = np.loadtxt(files[int(template)], usecols=(1,), 
-	# 				unpack=True) 
-
-	# 	# ***** NB: spec is binned as the stellar templates are binned, NOT as 
-	# 	# self.spectrum, bestfit etc i.e. wav != self.lam  *****
-	# 	a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
-	# 	spec = np.zeros(a[1]-a[0])
-
-	# 	for key in self.temp_weight.keys():
-	# 		if key.isdigit():
-	# 			#wav, template = np.loadtxt(files[int(key)], unpack=True)
-	# 			spec += templates[key][a[0]:a[1]] * self.temp_weight[key]
-	# 	if len(self.mpweight)!=0:
-	# 		spec *= np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-	# 			np.append(1, self.mpweight))
-	# 	if len(self.apweight)!=0:
-	# 		spec += np.polynomial.legendre.legval(np.linspace(-1,1,len(spec)), 
-	# 			self.apweight)
-	# 	return wav[a[0]:a[1]], spec
-	
-	# def set_emission_lines(self, FWHM_gal):#, temp_wav):
-	# # Sets emission lines
-	# 	self.FWHM_gal = float(FWHM_gal)
-	# 	# NB: Additional 0.8A to make up for the difference between the log 
-	# 	#	and linear wavelengths from util.log_rebin
-	# 	line_spectrums, line_names, line_wavs = util.emission_lines(
-	# 		self.loglam, np.array([self.lamLimits[0],self.lamLimits[1]+0.8]), 
-	# 		FWHM_gal, quiet=True)
-
-	# 	for i in range(len(line_wavs)):
-	# 		line = emission_line(self, line_names[i], line_wavs[i], 
-	# 			line_spectrums[:,i].flatten())
-	# 		self.components[line_names[i]] = line
-	# 		#if line_names[i] not in self.__parent__.e_components:
-	# 		self.__parent__.add_e_line(line_names[i], line_wavs[i])
-
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
 		## Solving an error in the Uni system with loading large numbers of files from 
