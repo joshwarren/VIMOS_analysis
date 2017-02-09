@@ -29,7 +29,7 @@ gas = 3
 
 
 class compare_absorption(object):
-	def __init__(self, galaxy, slit_h=4.5, slit_w=2, slit_pa=30, debug=False):
+	def __init__(self, galaxy, slit_h=4.5, slit_w=2, slit_pa=30, method=None, debug=False):
 		print galaxy
 ## ----------============== Load galaxy info ================---------
 		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
@@ -69,20 +69,16 @@ class compare_absorption(object):
 		cube[~np.isfinite(noise_cube)] = 0
 		noise_cube[~np.isfinite(noise_cube)] = 0.000000001
 
-
-		gal_spec = np.einsum('ijk,jk->i', cube, frac_image)
-
-
-
-
-
-
-
-
-
-
-
-		gal_noise = np.sqrt(np.einsum('ijk,jk->i', noise_cube**2, frac_image**2))
+		if method == 'Rampazzo':
+			# The Rampazzo paper uses some method to simulate elliptical galaxy within a 
+			# circular aperture by assuming the spectra on the semi-major axis (the pa of
+			# the slit) is representative of the spectra along the semi-ellipse (down to
+			# the semi-minor axis). A circular aperture is then placed over this. See 
+			# eq (1,2)
+			pass
+		else:
+			gal_spec = np.einsum('ijk,jk->i', cube, frac_image)
+			gal_noise = np.sqrt(np.einsum('ijk,jk->i', noise_cube**2, frac_image**2))
 
 
 
@@ -147,6 +143,7 @@ class compare_absorption(object):
 		pp = ppxf(templates, gal_spec_log, gal_noise_log, velscale, start, 
 			goodpixels=goodPixels, moments=moments, degree=-1, vsyst=dv, 
 			component=component, lam=lambdaq, plot=not quiet, quiet=quiet, mdegree=10)
+		self.pp = pp
 
 		# Only use stellar templates (Remove emission lines)
 		stellar_spec = gal_spec_log - \
@@ -163,40 +160,46 @@ class compare_absorption(object):
 		lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		self.result = {}
 		self.uncert = {}
-		# if debug:
-		# 	fig, ax = plt.subplots()
-		# 	ax.plot(lambdaq, stellar_spec, 'b',zorder=10)
-		# 	ax.plot(lambdaq, conv_spec, 'r',zorder=9)
-		# 	ax.plot(unc_lam, unc_spec, 'g',zorder=8)
 		for line in lines:		
 			ab, ab_uncert = absorption(line, lambdaq, stellar_spec, noise=gal_noise_log, 
 				unc_lam=unc_lam, unc_spec=unc_spec,	conv_spec=conv_spec, 
 				lick=True)
 
+			if method == 'Ogando':
+				# Aperture 
+				ab_file = '%s/Documents/useful_files/ab_linelist.dat' % (cc.home_dir)
+				i1, i2, b1, b2, r1, r2, units = np.genfromtxt(ab_file, unpack=True, 
+					usecols=(1,2,3,4,5,6,7), skip_header=2, skip_footer=2)
+				ls = np.genfromtxt(ab_file, unpack=True, dtype=str, usecols=(8), 
+					skip_header=2, skip_footer=2)
+				l = np.where(ls == line)[0][0]
+				index = [i1[l], i2[l]]
+
+				# Convert to mag
+				ab = -2.5 * np.log(1 - ab/(index[1]-index[0]))
+
+				# Aperture Correction: beta values taken from paper
+				beta = {'H_beta':0.002, 'Fe5015':-0.012, 'Mg_b':-0.031} 
+				# If line is not observed by Ogando
+				if line not in beta.keys():
+					self.result[line] = np.nan
+					self.uncert[line] = np.nan
+					continue
+				H = 70.0 # value used by Bolonga group.
+				r_ab = np.degrees(1.19/1000 * H/(c * z)) * 60 * 60 # 1.19 kpc -> arcsec
+				# Correction is def in eq (9) with r_ab and r_norm def in eq (1) - not 
+				#	100% sure if I've got them correct.
+				ab = ab - beta[line] * np.log(1.025 * np.sqrt(slit_w*r_ab/np.pi)/slit_h)
+
+				# Back to Angstroms
+				ab = (index[1]-index[0]) * (1 - np.exp(ab/-2.5))
+
 			self.result[line] = ab
 			self.uncert[line] = ab_uncert
 
-			# if debug:
-			# 	ab_file = '%s/Documents/useful_files/ab_linelist.dat' % (cc.home_dir)
-			# 	i1, i2, b1, b2, r1, r2, units = np.genfromtxt(ab_file, unpack=True, 
-			# 		usecols=(1,2,3,4,5,6,7), skip_header=2, skip_footer=2)
-			# 	ls = np.genfromtxt(ab_file, unpack=True, dtype=str, usecols=(8), 
-			# 		skip_header=2, skip_footer=2)
-			# 	l = np.where(ls == line)[0][0]
-			# 	index = [i1[l], i2[l]]
-			# 	blue = [b1[l], b2[l]]
-			# 	red =[r1[l], r2[l]]
-
-			# 	for i in index:	ax.axvline(i, color='g',zorder=1)
-			# 	for i in blue: ax.axvline(i, color='b')
-			# 	for i in red: ax.axvline(i, color='r')
-
+		
 		for line in lines:
 			print '%s:	%.3f +/- %.3f' % (line, self.result[line], self.uncert[line])
-
-		# if debug:
-		# 	ax.set_xlim([min(lambdaq),max(lambdaq)])
-		# 	plt.show()
 
 
 
@@ -283,32 +286,53 @@ def get_slit(galaxy,h,w,pa):
 	return rotx,roty
 
 
+def run(galaxy='ic1459', method=None):
+	if method == 'Rampazzo':
+		line = 'H_beta'
+
+		R_e = get_R_e(galaxy)
+		h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
+		f,ax=plt.subplots()
+		r = []
+		u = []
+		for i in h:
+			print i
+			comp_ab = compare_absorption(galaxy, slit_h=i, slit_w=2, slit_pa=30,
+				method=method, debug=True)
+			r.append(comp_ab.result[line])
+			u.append(comp_ab.uncert[line])
+		h = np.array(h)
+		r = np.array(r)
+		u = np.array(u)
+		s = np.argsort(h)
+		# ax.plot(h[s]/R_e,r[s])
+		ax.errorbar(h[s]/R_e,r[s],yerr=u[s])
+
+		rampazzo = np.array([1.28,1.14,1.16,1.15,1.12,1.16,1.21])
+		ax.plot(h[s]/R_e, rampazzo[s], '--')
+		plt.show()
+	elif method == 'Ogando':
+
+		comp_ab = compare_absorption(galaxy, slit_h=4.1, slit_w=2.5, slit_pa=30,
+			method=method, debug=True)
+		data_file = '%s/Data/lit_absorption/Ogando.txt'
+		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+		i_gal = np.where(galaxy_gals==galaxy)[0][0]
+		H_beta, H_beta_uncert, Fe5015, Fe5015_uncert, Mg_b, Mg_b_uncert = np.loadtxt(
+			data_file, skiprows=1, usecols=(1,2,3,4,5,6))
+
+		Ogando_obs = {'H_beta':H_beta, 'Fe5015':Fe5015, 'Mg_b':Mg_b}
+		Ogando_unc = {'H_beta':H_beta_uncert, 'Fe5015':Fe5015_uncert, 'Mg_b':Mg_b_uncert}
+		fig, ax = plt.subplots()
+		for line in Ogando_obs.keys():
+			ax.errorbar(comp_ab.pp.sol[0][1], comp_ab.result[line], 
+				yerr=comp_ab.uncert[line], fmt='x')
+
+
 
 
 if __name__ == '__main__':
-	# a=slit([3.,4.,10.,1.5],([1.,3.,4.,2.],[3.,5.,3.,2.]))
-	# print a
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
-	line = 'H_beta'
-
-	R_e = get_R_e(galaxy)
-	h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
-	f,ax=plt.subplots()
-	r = []
-	u = []
-	for i in h:
-		print i
-		comp_ab = compare_absorption(galaxy, slit_h=i, slit_w=2, slit_pa=30,debug=True)
-		r.append(comp_ab.result[line])
-		u.append(comp_ab.uncert[line])
-	h = np.array(h)
-	r = np.array(r)
-	u = np.array(u)
-	s = np.argsort(h)
-	# ax.plot(h[s]/R_e,r[s])
-	ax.errorbar(h[s]/R_e,r[s],yerr=u[s])
-
-	rampazzo = np.array([1.28,1.14,1.16,1.15,1.12,1.16,1.21])
-	ax.plot(h[s]/R_e, rampazzo[s], '--')
-	plt.show()
+	galaxy = 'ic4296'
+	run(galaxy, method = 'Ogando')
