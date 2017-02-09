@@ -22,7 +22,7 @@ from classify import classify
 galaxies = [#'ic1459',
 			# 'ic1531', 
 			# 'ic4296',
-			# 'ngc0612', # Segmentation error
+			'ngc0612', # Segmentation error
 			'ngc1399',
 			'ngc3100',
 			'ngc3557',
@@ -59,16 +59,16 @@ for galaxy in galaxies:
 		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
-		kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
+		# kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# use_kinemetry(galaxy)
 		# classify(galaxy)
 		
-		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-		# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
-		# D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
+		D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
+		D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

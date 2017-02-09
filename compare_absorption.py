@@ -3,7 +3,8 @@
 ## ==================================================================
 ## warrenj 20170206 A routine to return absorption line strengths for a 
 ##	given appature
-
+# import matplotlib # 20160202 JP to stop lack-of X-windows error
+# matplotlib.use('Agg')
 import numpy as np
 from astropy.io import fits
 from checkcomp import checkcomp
@@ -14,9 +15,10 @@ import ppxf_util as util
 from ppxf import ppxf
 from scipy import ndimage # for gaussian blur
 from absorption import absorption
-from tools import funccontains
+from tools import funccontains, slit, get_slit
 from classify import get_R_e
 import matplotlib.pyplot as plt 
+from label_line import *
 
 
 
@@ -59,8 +61,8 @@ class compare_absorption(object):
 			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).astype(int)
 		else:
 			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y, fraction=True)
-		frac_image[np.arange(f[0].header['NAXIS1']).repeat(f[0].header['NAXIS2']),np.tile(
-			np.arange(f[0].header['NAXIS2']),f[0].header['NAXIS1'])] = frac
+		frac_image[np.arange(f[0].header['NAXIS1']).repeat(f[0].header['NAXIS2']),
+			np.tile(np.arange(f[0].header['NAXIS2']),f[0].header['NAXIS1'])] = frac
 
 		cube = f[0].data
 		cube[f[3].data==1] = 0
@@ -208,86 +210,12 @@ class compare_absorption(object):
 
 
 
-## is actually an arbitary quadrilateral
-## NB: not sure how this would perform with a concave shape
-def slit(x, args):
-	from tools import length as len
-	x_points,y_points = args
-	result = np.zeros((len(x),2))
-
-	x_points = np.asarray(x_points).astype(float)
-	y_points = np.asarray(y_points).astype(float)
-	x = np.asarray(x).astype(float)
-
-	# Bin is inside slit
-	above = x_points < np.outer(x, np.ones(4))
-	inside = (0 < np.sum(above, axis=1)) * (4 > np.sum(above, axis=1))
-
-	# A Reference Index array
-	ref = np.outer(np.ones(len(x)),np.arange(4))
-	ref[above] = np.nan
-	ref[~inside,:] = np.nan # If outside of the quadrilateral.
-
-
-	# Lines which are interected by vertical lines at x
-	# NB: use_lines is only transfered to int type later in order to retain the nan's for
-	#	as long as possible
-	use_lines = np.dstack([np.vstack([np.nanmax(ref, axis=1), np.nanmin(ref, axis=1)]).T,
-		np.vstack([np.nanmax(ref, axis=1)+1, np.nanmin(ref,axis=1)-1]).T])
-	use_lines[use_lines==4] = 0 # Cyclic boundary
-	use_lines[use_lines==-1] = 3
-
-	# Calc
-	x0 = np.full((len(x),2),np.nan)
-	x0[~np.isnan(use_lines[:,0,0]),:] = np.asarray(
-		x_points[use_lines[:,:,0][~np.isnan(use_lines[:,0,:])].astype(int)]).reshape(
-		(np.sum(inside),2))
-	x1 = np.full((len(x),2),np.nan)
-	x1[~np.isnan(use_lines[:,0,1]),:] = np.asarray(
-		x_points[use_lines[:,:,1][~np.isnan(use_lines[:,1,:])].astype(int)]).reshape(
-		(np.sum(inside),2))
-
-	y0 = np.full((len(x),2),np.nan)
-	y0[~np.isnan(use_lines[:,0,0]),:] = np.asarray(
-		y_points[use_lines[:,:,0][~np.isnan(use_lines[:,0,:])].astype(int)]).reshape(
-		(np.sum(inside),2))
-	y1 = np.full((len(x),2),np.nan)
-	y1[~np.isnan(use_lines[:,0,1]),:] = np.asarray(
-		y_points[use_lines[:,:,1][~np.isnan(use_lines[:,1,:])].astype(int)]).reshape(
-		(np.sum(inside),2))
-
-	result = y0 + (y1 - y0)/(x1 - x0) * (np.outer(x, np.ones(2)) - x0)
-
-	return result[:,0], result[:,1]
-
-
-
-# warrenj 20170206 Routine to get the coordinates of a slit from hight (h), width(w) 
-#	and postion angle (pa). NB: pa must be in degrees
-def get_slit(galaxy,h,w,pa):
-	pa = np.radians(pa)
-	data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
-	# different data types need to be read separetly
-	z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, 
-		unpack=True, skiprows=1, usecols=(1,2,3,4,5))
-	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-	i_gal = np.where(galaxy_gals==galaxy)[0][0]
-
-	res=0.67
-	x_cent, y_cent = x_gals[i_gal]*res, y_gals[i_gal]*res
-
-	# NB: RA (x) is increasing right to left
-	x = [x_cent + w/2, x_cent - w/2, x_cent - w/2, x_cent + w/2]
-	y = [y_cent + h/2, y_cent + h/2, y_cent - h/2, y_cent - h/2]
-	# Apply pa (angle N to E or top to left)
-	rotx = x_cent + np.cos(pa) * (x - x_cent) - np.sin(pa) * (y - y_cent)
-	roty = y_cent + np.sin(pa) * (x - x_cent) + np.cos(pa) * (y - y_cent)
-
-	return rotx,roty
-
 
 def run(galaxy='ic1459', method=None):
 	if method == 'Rampazzo':
+		pa = {'ic1459':40, 'ic4296':40, 'ngc3557':30}
+
+		####*********CHECK PAs*****************
 		line = 'H_beta'
 
 		R_e = get_R_e(galaxy)
@@ -297,7 +225,7 @@ def run(galaxy='ic1459', method=None):
 		u = []
 		for i in h:
 			print i
-			comp_ab = compare_absorption(galaxy, slit_h=i, slit_w=2, slit_pa=30,
+			comp_ab = compare_absorption(galaxy, slit_h=i, slit_w=2, slit_pa=pa[galaxy],
 				method=method, debug=True)
 			r.append(comp_ab.result[line])
 			u.append(comp_ab.uncert[line])
@@ -312,21 +240,52 @@ def run(galaxy='ic1459', method=None):
 		ax.plot(h[s]/R_e, rampazzo[s], '--')
 		plt.show()
 	elif method == 'Ogando':
+		####*********CHECK PAs*****************
 
-		comp_ab = compare_absorption(galaxy, slit_h=4.1, slit_w=2.5, slit_pa=30,
-			method=method, debug=True)
-		data_file = '%s/Data/lit_absorption/Ogando.txt'
-		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-		i_gal = np.where(galaxy_gals==galaxy)[0][0]
-		H_beta, H_beta_uncert, Fe5015, Fe5015_uncert, Mg_b, Mg_b_uncert = np.loadtxt(
-			data_file, skiprows=1, usecols=(1,2,3,4,5,6))
+		## NEED TO ADD PA TO KINEMATICS.PY - CURRENTLY ONLY SAVE THE MISALIGNMENTS
 
-		Ogando_obs = {'H_beta':H_beta, 'Fe5015':Fe5015, 'Mg_b':Mg_b}
-		Ogando_unc = {'H_beta':H_beta_uncert, 'Fe5015':Fe5015_uncert, 'Mg_b':Mg_b_uncert}
+
+		gals = ['ic1459', 'ic4296','ngc1399','ngc3100','ngc3557','ngc7075']
 		fig, ax = plt.subplots()
-		for line in Ogando_obs.keys():
-			ax.errorbar(comp_ab.pp.sol[0][1], comp_ab.result[line], 
-				yerr=comp_ab.uncert[line], fmt='x')
+
+		for i, galaxy in enumerate(gals):
+			comp_ab = compare_absorption(galaxy, slit_h=4.1, slit_w=2.5, slit_pa=30,
+				method=method, debug=True)
+			data_file = '%s/Data/lit_absorption/Ogando.txt' % (cc.base_dir)
+			galaxy_gals = np.loadtxt(data_file, skiprows=2, usecols=(0,),dtype=str,
+				unpack=True)
+			i_gal = np.where(galaxy_gals==galaxy)[0][0]
+			Ogando_sig, Ogando_sig_unc, H_beta, H_beta_uncert, Fe5015, Fe5015_uncert, \
+				Mg_b, Mg_b_uncert = np.loadtxt(data_file, skiprows=2, unpack=True, 
+				usecols=(1,2,4,5,6,7,8,9))
+
+			Ogando_obs = {'H_beta':H_beta[i_gal], 'Fe5015':Fe5015[i_gal], 
+				'Mg_b':Mg_b[i_gal]}
+			Ogando_unc = {'H_beta':H_beta_uncert[i_gal], 'Fe5015':Fe5015_uncert[i_gal], 
+				'Mg_b':Mg_b_uncert[i_gal]}
+			c = {'H_beta':'r', 'Fe5015':'b', 'Mg_b':'g'}
+			a = []
+			for line in Ogando_obs.keys():
+				# Only set one label in legend for each line
+				if i==0:
+					a.append(ax.errorbar(np.log10(comp_ab.pp.sol[0][1]), 
+						comp_ab.result[line], yerr=comp_ab.uncert[line], fmt='x', 
+						color=c[line], label=line))
+				else:
+					ax.errorbar(np.log10(comp_ab.pp.sol[0][1]), comp_ab.result[line], 
+						yerr=comp_ab.uncert[line], fmt='x', color=c[line])
+				ax.errorbar(Ogando_sig[i_gal], Ogando_obs[line], 
+					xerr=Ogando_sig_unc[i_gal], yerr=Ogando_unc[line], fmt='o', 
+					color=c[line])
+				l = ax.plot([np.log10(comp_ab.pp.sol[0][1]), Ogando_sig[i_gal]],
+					[comp_ab.result[line], Ogando_obs[line]], '--', c=c[line])#,
+				# 	label=galaxy)
+				# labelLines(l)
+			ax.legend(handles = a)
+			ax.set_xlabel('log(sigma (km/s))')
+			ax.set_ylabel('Index Strength (A)')
+		plt.show()
+				
 
 
 
@@ -335,4 +294,4 @@ if __name__ == '__main__':
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
-	run(galaxy, method = 'Ogando')
+	run(galaxy = galaxy, method = 'Ogando')
