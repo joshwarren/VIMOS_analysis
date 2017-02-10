@@ -6,7 +6,6 @@
 # import matplotlib # 20160202 JP to stop lack-of X-windows error
 # matplotlib.use('Agg')
 import numpy as np
-from astropy.io import fits
 from checkcomp import checkcomp
 cc = checkcomp()
 from errors2 import determine_goodpixels, remove_anomalies, get_stellar_templates, \
@@ -15,11 +14,10 @@ import ppxf_util as util
 from ppxf import ppxf
 from scipy import ndimage # for gaussian blur
 from absorption import absorption
-from tools import funccontains, slit, get_slit
 from classify import get_R_e
 import matplotlib.pyplot as plt 
 from label_line import *
-
+from Rampazzo import rampazzo
 
 
 c = 299792.458 # km/s
@@ -31,63 +29,17 @@ gas = 3
 
 
 class compare_absorption(object):
-	def __init__(self, galaxy, slit_h=4.5, slit_w=2, slit_pa=30, method=None, debug=False):
+	def __init__(self, galaxy, slit_h=4.5, slit_w=2, slit_pa=30, method=None, r1=0, 
+		r2=None, debug=False):
 		print galaxy
-## ----------============== Load galaxy info ================---------
-		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
-		# different data types need to be read separetly
-		z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, 
-			unpack=True, skiprows=1, usecols=(1,2,3,4,5))
-		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-		i_gal = np.where(galaxy_gals==galaxy)[0][0]
-		vel = vel_gals[i_gal]
-		sig = sig_gals[i_gal]
-		z = z_gals[i_gal]
-
-		f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (cc.base_dir, 
-			galaxy))
-		lam = np.arange(f[0].header['NAXIS3'])*f[0].header['CDELT3'] + f[0].header['CRVAL3']
-## ----------============ Find data within slit =============---------
-
-		x = (np.arange(f[0].header['NAXIS1']) * f[0].header['CDELT1']).repeat(
-			f[0].header['NAXIS2'])
-		y = np.tile(np.arange(f[0].header['NAXIS2']) * f[0].header['CDELT2'],
-			f[0].header['NAXIS1'])
-
-		slit_x, slit_y = get_slit(galaxy, slit_h, slit_w, slit_pa)
-
-		frac_image = np.zeros((f[0].header['NAXIS1'], f[0].header['NAXIS2']))
-		if debug:
-			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).astype(int)
-		else:
-			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y, fraction=True)
-		frac_image[np.arange(f[0].header['NAXIS1']).repeat(f[0].header['NAXIS2']),
-			np.tile(np.arange(f[0].header['NAXIS2']),f[0].header['NAXIS1'])] = frac
-
-		cube = f[0].data
-		cube[f[3].data==1] = 0
-		noise_cube = f[1].data
-		noise_cube[f[3].data==1] = 0.000000001
-		cube[~np.isfinite(noise_cube)] = 0
-		noise_cube[~np.isfinite(noise_cube)] = 0.000000001
-
 		if method == 'Rampazzo':
-			# The Rampazzo paper uses some method to simulate elliptical galaxy within a 
-			# circular aperture by assuming the spectra on the semi-major axis (the pa of
-			# the slit) is representative of the spectra along the semi-ellipse (down to
-			# the semi-minor axis). A circular aperture is then placed over this. See 
-			# eq (1,2)
-			pass
-		else:
-			gal_spec = np.einsum('ijk,jk->i', cube, frac_image)
-			gal_noise = np.sqrt(np.einsum('ijk,jk->i', noise_cube**2, frac_image**2))
-
-
-
-
-
-
-
+			# Default is nuclear region: 0<r<R_e/16
+			if r2 is None:
+				r2 = get_R_e(galaxy)/16
+			data = rampazzo(galaxy, method='gradient', r1=r1, r2=r2, debug=debug)
+		elif method == 'Orgamdo':
+			data = orgando(galaxy, debug=debug)
+		gal_spec, gal_noise = data.get_spec()
 
 
 
@@ -95,10 +47,10 @@ class compare_absorption(object):
 		gal_spec, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, 
 			lam=lam, set_range=np.array([4200,10000]), return_cuts=True)
 		gal_noise = gal_noise[cut]
-		lamRange = np.array([lam[0],lam[-1]])/(1+z)
+		lamRange = np.array([lam[0],lam[-1]])/(1+data.z)
 ## ----------================= Templates ====================---------
 		FWHM_gal = 2.5 # VIMOS documentation (and fits header)
-		FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
+		FWHM_gal = FWHM_gal/(1+data.z) # Adjust resolution in Angstrom
 
 		stellar_templates = get_stellar_templates(galaxy, FWHM_gal)
 		velscale = stellar_templates.velscale
@@ -115,12 +67,12 @@ class compare_absorption(object):
 			e_templates.templatesToUse)
 		element = ['stellar'] + e_templates.element
 
-		start = [[vel, sig]] * (max(component) + 1)
+		start = [[data.vel, data.sig]] * (max(component) + 1)
 		moments = [stellar_moments] + [gas_moments] * max(component)
 ## ----------============== Final calibrations ==============---------
 		## smooth spectrum to fit with templates resolution
 		if FWHM_gal < stellar_templates.FWHM_tem:
-			sigma = stellar_templates.FWHM_dif/2.355/f[0].header['CDELT3']
+			sigma = stellar_templates.FWHM_dif/2.355/data.f[0].header['CDELT3']
 			gal_spec = ndimage.gaussian_filter1d(gal_spec, sigma)
 			gal_noise = np.sqrt(ndimage.gaussian_filter1d(gal_noise**2, sigma))
 		
@@ -138,7 +90,7 @@ class compare_absorption(object):
 		# Find the pixels to ignore to avoid being distracted by gas emission
 		#; lines or atmospheric absorbsion line.  
 		goodPixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template,
-			vel, z, gas=gas!=0) 
+			data.vel, data.z, gas=gas!=0) 
 		lambdaq = np.exp(logLam_bin)
 ## ----------=================== pPXF =======================---------
 
