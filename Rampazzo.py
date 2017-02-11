@@ -74,7 +74,7 @@ class rampazzo(object):
 
 
 
-
+	# Sets the slit to be the box r1 < r < r2 and finds the contribution to that slit
 	def gradient(self, r1, r2):
 		slit_x_cent = ((r2 - r1)/2 + r1) * np.sin(np.radians(self.slit_pa)) + (
 			self.x_cent * f[0].header['CDELT1'])
@@ -95,7 +95,7 @@ class rampazzo(object):
 			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
 			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
-		frac_image *= np.sqrt(x*y)
+		frac_image *= np.sqrt(x**2 + y**2)
 
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
 		noise = np.sqrt(np.einsum('ijk,jk->ijk', self.noise_cube**2, 
@@ -129,7 +129,7 @@ class rampazzo(object):
 			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
 			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
-		frac_image *= np.sqrt(x*y)
+		frac_image *= np.sqrt(x**2 + y**2)
 			
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
 		noise = np.sqrt(np.einsum('ijk,jk->ijk', self.noise_cube**2, 
@@ -146,6 +146,38 @@ class rampazzo(object):
 
 
 
+	# Finds the contribution to the entire slit and then sets any pixel outside 
+	# of r1 < r < r2 to zero.
+	def gradient_2(self, r1, r2):
+		slit_corners = get_slit2(self.galaxy, self.slit_h, 2, self.slit_pa)
+		frac = funccontains(slit, (slit_corners), x=self.x, y=self.y, 
+			fraction=not self.debug).astype(float)
+
+		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
+		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
+			self.f[0].header['NAXIS2']),
+			np.tile(np.arange(self.f[0].header['NAXIS2']),self.f[0].
+			header['NAXIS1'])] = frac
+
+		# Multiply by r for integral (eq (3))
+		x = np.outer((np.arange(self.f[0].header['NAXIS1']) - self.x_cent) * 
+			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
+		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
+			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
+		r = np.sqrt(x**2 + y**2)
+		r[(r > r2) + (r < r1)] = 0
+		frac_image *= r
+
+		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
+		noise = np.sqrt(np.einsum('ijk,jk->ijk', self.noise_cube**2, 
+				frac_image**2))
+
+		half_int = np.trapz(cube, dx=self.f[0].header['CDELT2'],axis=2)
+		self.spec = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
+
+		half_int = np.trapz(noise_cube**2, dx=self.f[0].header['CDELT2'],axis=2)
+		# sqrt occurs at end of routine
+		self.noise = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
 
 
 
