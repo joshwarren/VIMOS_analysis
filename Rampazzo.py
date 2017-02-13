@@ -81,8 +81,10 @@ class rampazzo(object):
 		slit_y_cent = ((r2 - r1)/2 + r1) * np.cos(np.radians(self.slit_pa))+ (
 			self.y_cent * f[0].header['CDELT2'])
 		slit_corners = get_slit2(self.slit_h, 2, self.slit_pa, slit_x_cent, slit_y_cent)
-		frac = funccontains(slit, (slit_corners), x=self.x, y=self.y, 
-			fraction=not self.debug).astype(float)
+		if self.debug:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+		else:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction.astype(float)
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
@@ -115,9 +117,10 @@ class rampazzo(object):
 		slit_y_cent = -((r2 - r1)/2 + r1) * np.cos(np.radians(self.slit_pa)) + (
 			self.y_cent * f[0].header['CDELT2'])
 		slit_corners = get_slit2(self.slit_h, 2, self.slit_pa, slit_x_cent, slit_y_cent)
-		frac = funccontains(slit, (slit_corners), x=self.x, y=self.y, 
-			fraction=not self.debug).astype(float)
-
+		if self.debug:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+		else:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)			
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
 			self.f[0].header['NAXIS2']),
@@ -150,8 +153,10 @@ class rampazzo(object):
 	# of r1 < r < r2 to zero.
 	def gradient_2(self, r1, r2):
 		slit_corners = get_slit2(self.galaxy, self.slit_h, 2, self.slit_pa)
-		frac = funccontains(slit, (slit_corners), x=self.x, y=self.y, 
-			fraction=not self.debug).astype(float)
+		if self.debug:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+		else:
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
@@ -189,7 +194,7 @@ class rampazzo(object):
 
 
 
-	def aperture(self):
+	def aperture(self, r2):
 		slit_r = np.arange(-self.slit_h/2 + self.slit_res/2, self.slit_h/2 - 
 			self.slit_res/2, self.slit_res)
 		n_spaxels = len(slit_r)
@@ -205,8 +210,12 @@ class rampazzo(object):
 		self.noise = np.zeros((n_spaxels, self.f[0].header['NAXIS3']))
 
 		for i in xrange(n_spaxels):
-			frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), x=self.x, 
-				y=self.y, fraction=not self.debug).astype(float)
+			if self.debug:
+				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), x=self.x, 
+					y=self.y).contains.astype(float)
+			else:
+				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), x=self.x, 
+					y=self.y).fraction.astype(float)
 			
 			frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 			frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(

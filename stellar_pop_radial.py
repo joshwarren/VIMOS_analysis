@@ -93,7 +93,7 @@ def stellar_pop(galaxy, wav_range="", vLimit=0, D=None):
 		uncerts[l] = []
 
 	for i in np.arange(0,s[1]/2,step_size):
-		a = funccontains(annulus, x_cent ,y_cent, i, step_size, x=x,y=y)
+		a = funccontains(annulus, x_cent ,y_cent, i, step_size, x=x,y=y).contains
 		spec = np.nansum(galaxy_data[:,x[a],y[a]],axis=(1))
 		noise = np.sqrt(np.nansum(galaxy_noise[:,x[a],y[a]]**2,axis=(1)))
 		
