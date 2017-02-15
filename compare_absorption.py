@@ -280,4 +280,5 @@ if __name__ == '__main__':
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
-	run(galaxy = galaxy, method = 'Rampazzo')
+	for galaxy in ['ic1459','ic4296','ngc3557']
+		run(galaxy = galaxy, method = 'Rampazzo')

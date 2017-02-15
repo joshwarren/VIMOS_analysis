@@ -27,7 +27,6 @@ class rampazzo(object):
 		self.vel = vel_gals[self.i_gal]
 		self.sig = sig_gals[self.i_gal]
 		self.z = z_gals[self.i_gal]
-		
 
 
 		data_file = "%s/Data/vimos/analysis/galaxies2.txt" % (cc.base_dir)
@@ -38,10 +37,6 @@ class rampazzo(object):
 		self.ellip = ellip[i_gal2]
 
 
-
-
-
-
 		self.f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (
 			cc.base_dir, galaxy))
 		self.lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + \
@@ -49,8 +44,6 @@ class rampazzo(object):
 
 		self.x_cent = x_gals[self.i_gal] * self.f[0].header['CDELT1'] 
 		self.y_cent = y_gals[self.i_gal] * self.f[0].header['CDELT2']
-
-		print self.x_cent, self.y_cent
 
 		self.cube = self.f[0].data
 		self.cube[self.f[3].data==1] = 0
@@ -217,17 +210,12 @@ class rampazzo(object):
 			y = np.tile(np.linspace(self.y_cent - slit_r[i] - self.slit_res, 
 				self.y_cent + slit_r[i] + self.slit_res, 1000), 1000)
 
-			# if i == 0:
-			# 	in_annulus = in_ellipse(x, y, self.x_cent, 
-			# 		self.y_cent, slit_r[i] + self.slit_res/2, 
-			# 		self.ellip, self.slit_pa) 
-			# else:
 			in_annulus = in_ellipse(x, y, self.x_cent, 
 				self.y_cent, slit_r[i] + self.slit_res/2, 
 				self.ellip, self.slit_pa) ^ in_ellipse(x, y, self.x_cent, self.y_cent, 
 				slit_r[i] - self.slit_res/2, self.ellip, self.slit_pa)
 			
-			# Circular aperture (a=b=self.r2, e=0, pa=0)
+			# Circular aperture (a=b=self.r2 <=> e=0, pa=0)
 			in_aperture = in_ellipse(x, y, self.x_cent, self.y_cent, self.r2, 0, 0)
 
 			# import matplotlib.pyplot as plt 
