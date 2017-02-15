@@ -8,13 +8,15 @@ from tools import get_slit, get_slit2, slit, funccontains
 
 class rampazzo(object):
 	def __init__(self, galaxy, slit_h=4.5*60, slit_w=2, slit_pa=30, method='aperture',
-		debug=False):
-		print galaxy
+		r1=0.0, r2=1.0, debug=False):
 		self.galaxy = galaxy
 		self.slit_w = slit_w
 		self.slit_h = slit_h
 		self.slit_pa = slit_pa
 		self.debug = debug
+		self.method = method
+		self.r1 = r1
+		self.r2 = r2
 ## ----------============== Load galaxy info ================---------
 		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 		# different data types need to be read separetly
@@ -25,8 +27,7 @@ class rampazzo(object):
 		self.vel = vel_gals[self.i_gal]
 		self.sig = sig_gals[self.i_gal]
 		self.z = z_gals[self.i_gal]
-		self.x_cent = x_gals[self.i_gal]
-		self.y_cent = y_gals[self.i_gal]
+		
 
 
 		data_file = "%s/Data/vimos/analysis/galaxies2.txt" % (cc.base_dir)
@@ -46,6 +47,11 @@ class rampazzo(object):
 		self.lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + \
 			self.f[0].header['CRVAL3']
 
+		self.x_cent = x_gals[self.i_gal] * self.f[0].header['CDELT1'] 
+		self.y_cent = y_gals[self.i_gal] * self.f[0].header['CDELT2']
+
+		print self.x_cent, self.y_cent
+
 		self.cube = self.f[0].data
 		self.cube[self.f[3].data==1] = 0
 		self.noise_cube = self.f[1].data
@@ -61,30 +67,24 @@ class rampazzo(object):
 		self.slit_res = 0.82 # "/px
 
 
-		if method == 'aperture':
-			self.aperture()
-		elif method == 'gradient':
-			self.gradient()
-
-
-
 	def get_spec(self):
+		exec('self.'+self.method+'()')
 		return self.spec, self.noise
 
 
-
-
-	# Sets the slit to be the box r1 < r < r2 and finds the contribution to that slit
-	def gradient(self, r1, r2):
-		slit_x_cent = ((r2 - r1)/2 + r1) * np.sin(np.radians(self.slit_pa)) + (
-			self.x_cent * f[0].header['CDELT1'])
-		slit_y_cent = ((r2 - r1)/2 + r1) * np.cos(np.radians(self.slit_pa))+ (
-			self.y_cent * f[0].header['CDELT2'])
+	# Sets the slit to be the box self.r1 < r < self.r2 and finds the contribution to that 
+	# slit
+	def gradient(self):
+		slit_x_cent = ((self.r2 - self.r1)/2 + self.r1) * np.sin(np.radians(self.slit_pa)
+			) + self.x_cent
+		slit_y_cent = ((self.r2 - self.r1)/2 + self.r1) * np.cos(np.radians(self.slit_pa)
+			)+ self.y_cent
 		slit_corners = get_slit2(self.slit_h, 2, self.slit_pa, slit_x_cent, slit_y_cent)
 		if self.debug:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
+				float)
 		else:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction.astype(float)
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
@@ -93,10 +93,10 @@ class rampazzo(object):
 			header['NAXIS1'])] = frac
 
 		# Multiply by r for integral (eq (3))
-		x = np.outer((np.arange(self.f[0].header['NAXIS1']) - self.x_cent) * 
-			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
+		x = np.outer((np.arange(self.f[0].header['NAXIS1'])* f[0].header['CDELT1'] - 
+			self.x_cent), np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
-			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
+			(np.arange(self.f[0].header['NAXIS2'])* f[0].header['CDELT2'] - self.y_cent) )
 		frac_image *= np.sqrt(x**2 + y**2)
 
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
@@ -112,15 +112,16 @@ class rampazzo(object):
 
 
 		# Other half of the slit
-		slit_x_cent = -((r2 - r1)/2 + r1) * np.sin(np.radians(self.slit_pa)) + (
-			self.x_cent * f[0].header['CDELT1'])
-		slit_y_cent = -((r2 - r1)/2 + r1) * np.cos(np.radians(self.slit_pa)) + (
-			self.y_cent * f[0].header['CDELT2'])
+		slit_x_cent = -((self.r2 - self.r1)/2 + self.r1) * np.sin(np.radians(self.slit_pa)
+			) + self.x_cent
+		slit_y_cent = -((self.r2 - self.r1)/2 + self.r1) * np.cos(np.radians(self.slit_pa)
+			) + self.y_cent
 		slit_corners = get_slit2(self.slit_h, 2, self.slit_pa, slit_x_cent, slit_y_cent)
 		if self.debug:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
+				float)
 		else:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)			
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction			
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
 			self.f[0].header['NAXIS2']),
@@ -128,10 +129,10 @@ class rampazzo(object):
 			header['NAXIS1'])] = frac
 
 		# Multiply by r for integral (eq (3))
-		x = np.outer((np.arange(self.f[0].header['NAXIS1']) - self.x_cent) * 
-			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
+		x = np.outer((np.arange(self.f[0].header['NAXIS1'])* f[0].header['CDELT1'] - 
+			self.x_cent), np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
-			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
+			(np.arange(self.f[0].header['NAXIS2'])* f[0].header['CDELT2'] - self.y_cent))
 		frac_image *= np.sqrt(x**2 + y**2)
 			
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
@@ -146,17 +147,15 @@ class rampazzo(object):
 		self.noise = np.sqrt(self.noise)
 
 
-
-
-
 	# Finds the contribution to the entire slit and then sets any pixel outside 
-	# of r1 < r < r2 to zero.
-	def gradient_2(self, r1, r2):
+	# of self.r1 < r < self.r2 to zero.
+	def gradient2(self):
 		slit_corners = get_slit2(self.galaxy, self.slit_h, 2, self.slit_pa)
 		if self.debug:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
+				float)
 		else:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(float)
+			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
@@ -165,12 +164,12 @@ class rampazzo(object):
 			header['NAXIS1'])] = frac
 
 		# Multiply by r for integral (eq (3))
-		x = np.outer((np.arange(self.f[0].header['NAXIS1']) - self.x_cent) * 
-			f[0].header['CDELT1'], np.ones(self.f[0].header['NAXIS2']))
+		x = np.outer((np.arange(self.f[0].header['NAXIS1'])* f[0].header['CDELT1'] - 
+			self.x_cent), np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
-			(np.arange(self.f[0].header['NAXIS2']) - self.y_cent) * f[0].header['CDELT2'])
+			(np.arange(self.f[0].header['NAXIS2'])* f[0].header['CDELT2'] - self.y_cent))
 		r = np.sqrt(x**2 + y**2)
-		r[(r > r2) + (r < r1)] = 0
+		r[(r > self.r2) + (r < self.r1)] = 0
 		frac_image *= r
 
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
@@ -181,27 +180,17 @@ class rampazzo(object):
 		self.spec = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
 
 		half_int = np.trapz(noise_cube**2, dx=self.f[0].header['CDELT2'],axis=2)
-		# sqrt occurs at end of routine
-		self.noise = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
+		self.noise = np.sqrt(np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1))
 
 
 
 
-
-
-
-
-
-
-
-	def aperture(self, r2):
+	def aperture(self):
 		slit_r = np.arange(-self.slit_h/2 + self.slit_res/2, self.slit_h/2 - 
 			self.slit_res/2, self.slit_res)
 		n_spaxels = len(slit_r)
-		slit_x_cent = slit_r * np.sin(np.radians(self.slit_pa)) + (
-			self.x_cent * f[0].header['CDELT1'])
-		slit_y_cent = slit_r * np.cos(np.radians(self.slit_pa)) + (
-			self.y_cent * f[0].header['CDELT2'])
+		slit_x_cent = slit_r * np.sin(np.radians(self.slit_pa)) + self.x_cent
+		slit_y_cent = slit_r * np.cos(np.radians(self.slit_pa)) + self.y_cent
 
 		
 		slit_pixels = get_slit2(self.slit_res, 2, self.slit_pa, slit_x_cent, slit_y_cent)
@@ -211,39 +200,85 @@ class rampazzo(object):
 
 		for i in xrange(n_spaxels):
 			if self.debug:
-				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), x=self.x, 
-					y=self.y).contains.astype(float)
+				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), 
+					x=self.x, y=self.y).contains.astype(float)
 			else:
-				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), x=self.x, 
-					y=self.y).fraction.astype(float)
+				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), 
+					x=self.x, y=self.y).fraction
 			
 			frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 			frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
 				self.f[0].header['NAXIS2']),
 				np.tile(np.arange(self.f[0].header['NAXIS2']),
 				self.f[0].header['NAXIS1'])] = frac
+
+			x = np.linspace(self.x_cent - slit_r[i] - self.slit_res, 
+				self.x_cent + slit_r[i] + self.slit_res, 1000).repeat(1000)
+			y = np.tile(np.linspace(self.y_cent - slit_r[i] - self.slit_res, 
+				self.y_cent + slit_r[i] + self.slit_res, 1000), 1000)
+
+			# if i == 0:
+			# 	in_annulus = in_ellipse(x, y, self.x_cent, 
+			# 		self.y_cent, slit_r[i] + self.slit_res/2, 
+			# 		self.ellip, self.slit_pa) 
+			# else:
+			in_annulus = in_ellipse(x, y, self.x_cent, 
+				self.y_cent, slit_r[i] + self.slit_res/2, 
+				self.ellip, self.slit_pa) ^ in_ellipse(x, y, self.x_cent, self.y_cent, 
+				slit_r[i] - self.slit_res/2, self.ellip, self.slit_pa)
 			
-			scaling_factor = np.pi * np.sqrt(1 - self.ellip) * (
+			# Circular aperture (a=b=self.r2, e=0, pa=0)
+			in_aperture = in_ellipse(x, y, self.x_cent, self.y_cent, self.r2, 0, 0)
+
+			# import matplotlib.pyplot as plt 
+			# f,ax = plt.subplots()
+			# ax.scatter(x[in_aperture],y[in_aperture])
+			# ax.scatter(x[~in_aperture],y[~in_aperture], color='r')
+			# ax.scatter(x[in_annulus], y[in_annulus], color='g')
+			# ax.scatter(x[in_annulus*in_aperture], y[in_annulus*in_aperture], color='y')			
+			# ax.set_aspect('equal')
+			# plt.show()
+
+			# Fraction of area of elliptical annulus that is within the aperture
+			if np.sum(in_annulus) != 0:
+				area_frac = float(np.sum(in_annulus*in_aperture))/np.sum(in_annulus)
+			else: area_frac = 0
+
+			scaling_factor = area_frac * np.pi * np.sqrt(1 - self.ellip) * abs(
 				(slit_r[i] + self.slit_res/2)**2 - (slit_r[i] - self.slit_res/2)**2)/(
-				self.slit_res * self.slit_w) 
+				self.slit_res * self.slit_w) / 2
 
-			self.spec[i,:] = np.einsum('ijk,jk->i', self.cube, frac_image) * scaling_factor
-			self.noise[i,:] = np.sqrt(np.einsum('ijk,jk->i', self.noise_cube**2, 
-				frac_image**2)) * scaling_factor
-
-
-
+			self.spec[i,:] += np.einsum('ijk,jk->i', self.cube, frac_image) * \
+				scaling_factor
+			self.noise[i,:] += np.einsum('ijk,jk->i', (self.noise_cube * 
+				scaling_factor)**2, frac_image**2)
 
 
 
+		# Taking the mean is not in the paper, but otherwise <r> is wavelength dependent...
+		self.r = np.mean((np.einsum('ij,i->j', self.spec, np.abs(slit_r)) /
+			scaling_factor) / np.sum(self.spec, axis=0))
+		self.spec = np.sum(self.spec, axis=0) / np.pi * self.r2**2
+		self.noise = np.sqrt(np.sum(self.noise, axis=0)) / (np.pi * self.r2**2)
 
 
 
 
 
 
+# Much faster and simpler than using funccontains for aperture method
+def in_ellipse(xp, yp, x0, y0, a, e, pa):
 
-		
+	cosa=np.cos(pa)
+	sina=np.sin(pa)
+	b = a * np.sqrt(1 - e**2)
+
+	x_prime = cosa * (xp - x0) + sina * (yp - y0)
+	y_prime = sina * (xp - x0) - cosa * (yp - y0)
+	ellipse = (x_prime/a)**2 + (y_prime/b)**2
+
+	return ellipse <= 1
+
 
 
 if __name__=='__main__':

@@ -29,14 +29,15 @@ gas = 3
 
 
 class compare_absorption(object):
-	def __init__(self, galaxy, slit_h=4.5, slit_w=2, slit_pa=30, method=None, r1=0, 
-		r2=None, debug=False):
+	def __init__(self, galaxy='ngc3557', slit_h=4.5, slit_w=2, slit_pa=30, 
+		method='Rampazzo', r1=0, r2=None, debug=False):
 		print galaxy
 		if method == 'Rampazzo':
 			# Default is nuclear region: 0<r<R_e/16
 			if r2 is None:
 				r2 = get_R_e(galaxy)/16
-			data = rampazzo(galaxy, method='gradient', r1=r1, r2=r2, debug=debug)
+			data = rampazzo(galaxy, method='aperture', slit_h=slit_h, r1=r1, r2=r2, 
+				debug=debug)
 		elif method == 'Orgamdo':
 			data = orgando(galaxy, debug=debug)
 		gal_spec, gal_noise = data.get_spec()
@@ -45,7 +46,7 @@ class compare_absorption(object):
 
 
 		gal_spec, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, 
-			lam=lam, set_range=np.array([4200,10000]), return_cuts=True)
+			lam=data.lam, set_range=np.array([4200,10000]), return_cuts=True)
 		gal_noise = gal_noise[cut]
 		lamRange = np.array([lam[0],lam[-1]])/(1+data.z)
 ## ----------================= Templates ====================---------
@@ -93,7 +94,6 @@ class compare_absorption(object):
 			data.vel, data.z, gas=gas!=0) 
 		lambdaq = np.exp(logLam_bin)
 ## ----------=================== pPXF =======================---------
-
 		pp = ppxf(templates, gal_spec_log, gal_noise_log, velscale, start, 
 			goodpixels=goodPixels, moments=moments, degree=-1, vsyst=dv, 
 			component=component, lam=lambdaq, plot=not quiet, quiet=quiet, mdegree=10)
@@ -148,12 +148,14 @@ class compare_absorption(object):
 				# Back to Angstroms
 				ab = (index[1]-index[0]) * (1 - np.exp(ab/-2.5))
 
+			if method == 'Rampazzo':
+				self.r = data.r
 			self.result[line] = ab
 			self.uncert[line] = ab_uncert
 
-		
-		for line in lines:
-			print '%s:	%.3f +/- %.3f' % (line, self.result[line], self.uncert[line])
+		if debug:
+			for line in lines:
+				print '%s:	%.3f +/- %.3f' % (line, self.result[line], self.uncert[line])
 
 
 
@@ -167,30 +169,62 @@ def run(galaxy='ic1459', method=None):
 	if method == 'Rampazzo':
 		pa = {'ic1459':40, 'ic4296':40, 'ngc3557':30}
 
-		####*********CHECK PAs*****************
+		# lines measured by Rampazzo
+		lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
+		f, ax = plt.subplots(len(lines), sharex=True)
+		
 		line = 'H_beta'
 
 		R_e = get_R_e(galaxy)
 		h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
-		f,ax=plt.subplots()
+		result = {}
+		uncert = {}
+		for line in lines:
+			result[line] = []
+			uncert[line] = []
 		r = []
-		u = []
 		for i in h:
 			print i
-			comp_ab = compare_absorption(galaxy, slit_h=i, slit_w=2, slit_pa=pa[galaxy],
-				method=method, debug=True)
-			r.append(comp_ab.result[line])
-			u.append(comp_ab.uncert[line])
-		h = np.array(h)
+			comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
+				slit_pa=pa[galaxy], method='Rampazzo', r1=0, r2 = i, debug=True)
+			for line in lines:
+				result[line].append(comp_ab.result[line])
+				uncert[line].append(comp_ab.uncert[line])
+			r.append(r)
 		r = np.array(r)
-		u = np.array(u)
-		s = np.argsort(h)
-		# ax.plot(h[s]/R_e,r[s])
-		ax.errorbar(h[s]/R_e,r[s],yerr=u[s])
+		s = np.argsort(r)
+		for line in lines:
+			result[line] = np.array(result[line])
+			uncert[line] = np.array(uncert[line])
 
-		rampazzo = np.array([1.28,1.14,1.16,1.15,1.12,1.16,1.21])
-		ax.plot(h[s]/R_e, rampazzo[s], '--')
-		plt.show()
+		gals = np.loadtxt('%s/Data/lit_absorption/Rampazzo.txt' % (cc.base_dir), 
+			unpack=True, usecols=(0,), skiprows=1, dtype=str)
+		i_gal = np.where(gals == galaxy)[0]
+		lit_r, G4300, Fe4383, Ca4455, Fe4531, Fe4668, H_beta, Fe5015, Mg_b, e_G4300, \
+			e_Fe4383, e_Ca4455, e_Fe4531, e_Fe4668, e_H_beta, e_Fe5015, e_Mg_b = \
+			np.genfromtxt('%s/Data/lit_absorption/Rampazzo.txt' % (cc.base_dir), 
+			unpack=True, usecols=(4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21), 
+			skip_header=min(i_gal)+1, max_rows=len(i_gal))
+
+		lit_result = {'G4300':G4300, 'Fe4383':Fe4383, 'Ca4455':Ca4455, 'Fe4531':Fe4531, 
+			'Fe4668':Fe4668, 'H_beta':H_beta, 'Fe5015':Fe5015, 'Mg_b':Mg_b}
+		lit_uncert = {'G4300':e_G4300, 'Fe4383':e_Fe4383, 'Ca4455':e_Ca4455, 
+			'Fe4531':e_Fe4531, 'Fe4668':e_Fe4668, 'H_beta':e_H_beta, 'Fe5015':e_Fe5015, 
+			'Mg_b':e_Mg_b}
+		lit_s = np.argsort(lit_r)
+		for i, line in enumerate(lines):
+			# Plot my results
+			ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s])
+			ax[i].set_title(line)
+
+			# Plot Rampazzo results
+			ax[i].errorbar(lit_r[lit_s], lit_result[line][lit_s], 
+				yerr=lit_uncert[line][lit_s], fmt='--')
+
+		f.savefig('%s/Data/vimos/analysis/%s/results/4200-/plots/Rampazzo_compare.png' % (
+			cc.base_dir, galaxy), bbox_inches="tight")
+
+		# plt.show()
 	elif method == 'Ogando':
 		####*********CHECK PAs*****************
 
@@ -246,4 +280,4 @@ if __name__ == '__main__':
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
-	run(galaxy = galaxy, method = 'Ogando')
+	run(galaxy = galaxy, method = 'Rampazzo')
