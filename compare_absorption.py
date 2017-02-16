@@ -30,14 +30,19 @@ gas = 3
 
 class compare_absorption(object):
 	def __init__(self, galaxy='ngc3557', slit_h=4.5, slit_w=2, slit_pa=30, 
-		method='Rampazzo', r1=0, r2=None, debug=False):
+		method='Rampazzo_aperture', r1=0, r2=None, debug=False):
 		print galaxy
-		if method == 'Rampazzo':
+		if 'Rampazzo' in method:
 			# Default is nuclear region: 0<r<R_e/16
 			if r2 is None:
 				r2 = get_R_e(galaxy)/16
 			data = rampazzo(galaxy, method='aperture', slit_h=slit_h, r1=r1, r2=r2, 
 				debug=debug)
+
+			if 'gradient' in method:
+				if '2' in method: data.method = 'gradient2'
+				else: data.method = 'gradient'
+
 		elif method == 'Orgamdo':
 			data = orgando(galaxy, debug=debug)
 		gal_spec, gal_noise = data.get_spec()
@@ -148,7 +153,7 @@ class compare_absorption(object):
 				# Back to Angstroms
 				ab = (index[1]-index[0]) * (1 - np.exp(ab/-2.5))
 
-			if method == 'Rampazzo':
+			if 'Rampazzo' in method:
 				self.r = data.r
 			self.result[line] = ab
 			self.uncert[line] = ab_uncert
@@ -166,47 +171,58 @@ class compare_absorption(object):
 
 
 def run(galaxy='ic1459', method=None):
-	if method == 'Rampazzo':
+	if 'Rampazzo' in method:
 		pa = {'ic1459':40, 'ic4296':40, 'ngc3557':30}
 
 		# lines measured by Rampazzo
 		lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		f, ax = plt.subplots(len(lines), sharex=True)
-		
-		line = 'H_beta'
-
-		R_e = get_R_e(galaxy)
-		h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
 		result = {}
 		uncert = {}
 		for line in lines:
 			result[line] = []
 			uncert[line] = []
 		r = []
-		for i in h:
-			print i
-			comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
-				slit_pa=pa[galaxy], method='Rampazzo', r1=0, r2 = i, debug=True)
-			for line in lines:
-				result[line].append(comp_ab.result[line])
-				uncert[line].append(comp_ab.uncert[line])
-				# result[line].append(5)
-				# uncert[line].append(5)
-			r.append(comp_ab.r)
-			# r.append(4)
+		R_e = get_R_e(galaxy)
+		
+		if 'aperture' in method:
+			h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
+			for i in h:
+				print 'Aperture: %.3f arcsec' %(i)
+				comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
+					slit_pa=pa[galaxy], method=method, r1=0, r2 = i, debug=True)
+				for line in lines:
+					result[line].append(comp_ab.result[line])
+					uncert[line].append(comp_ab.uncert[line])
+				r.append(comp_ab.r)
+		else: 
+			h = [0,R_e/16, R_e/8, R_e/4, R_e/2]
+			for i in xrange(len(h)-1):
+				print 'Gradient between %.3f and %.3f' % (h[i], h[i+1])
+				comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
+					slit_pa=pa[galaxy], method=method, r1=h[i], r2 = h[i+1], debug=True)
+				for line in lines:
+					result[line].append(comp_ab.result[line])
+					uncert[line].append(comp_ab.uncert[line])
+				r.append(comp_ab.r)
+		
+		
 		r = np.array(r)
 		s = np.argsort(r)
 		for line in lines:
 			result[line] = np.array(result[line])
 			uncert[line] = np.array(uncert[line])
 
-		gals = np.loadtxt('%s/Data/lit_absorption/Rampazzo.txt' % (cc.base_dir), 
-			unpack=True, usecols=(0,), skiprows=1, dtype=str)
+		if 'aperture' in method:
+			R_file = '%s/Data/lit_absorption/Rampazzo_aperture.txt' % (cc.base_dir)
+		elif 'gradient' in method:
+			R_file = '%s/Data/lit_absorption/Rampazzo_gradient.txt' % (cc.base_dir)
+		gals = np.loadtxt(R_file, unpack=True, usecols=(0,), skiprows=1, dtype=str)
 		i_gal = np.where(gals == galaxy)[0]
 		lit_r, G4300, Fe4383, Ca4455, Fe4531, Fe4668, H_beta, Fe5015, Mg_b, e_G4300, \
 			e_Fe4383, e_Ca4455, e_Fe4531, e_Fe4668, e_H_beta, e_Fe5015, e_Mg_b = \
-			np.genfromtxt('%s/Data/lit_absorption/Rampazzo.txt' % (cc.base_dir), 
-			unpack=True, usecols=(4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21), 
+			np.genfromtxt(R_file, unpack=True, 
+			usecols=(4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21), 
 			skip_header=min(i_gal)+1, max_rows=len(i_gal))
 
 		lit_result = {'G4300':G4300, 'Fe4383':Fe4383, 'Ca4455':Ca4455, 'Fe4531':Fe4531, 
@@ -217,13 +233,21 @@ def run(galaxy='ic1459', method=None):
 		lit_s = np.argsort(lit_r)
 		for i, line in enumerate(lines):
 			# Plot my results
-			ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s])
-			ax[i].set_title(line)
-
+			# Waiting for clarification regarding <r_l> in paper. Use their values in 
+			# meantime
+			# ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s])
+			ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
+				color='k')
 			# Plot Rampazzo results
 			ax[i].errorbar(lit_r[lit_s], lit_result[line][lit_s], 
-				yerr=lit_uncert[line][lit_s], fmt='--')
-		print 'here'
+				yerr=lit_uncert[line][lit_s], fmt='--', color='m')
+
+			# Remove underscores as matplotlib is currently automatically calling latex...
+			if line == 'H_beta':
+				line = 'Hbeta'
+			elif line =='Mg_b':
+				line = 'Mgb'
+			ax[i].set_title(line)
 
 		f.savefig('%s/Data/vimos/analysis/%s/results/4200-/plots/Rampazzo_compare.png' % (
 			cc.base_dir, galaxy), bbox_inches="tight")
@@ -284,5 +308,8 @@ if __name__ == '__main__':
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
-	#for galaxy in ['ic1459','ic4296','ngc3557']:
-	run(galaxy = galaxy, method = 'Rampazzo')
+	import subprocess
+	# for galaxy in ['ic1459','ic4296','ngc3557']:
+
+	run(galaxy = galaxy, method = 'Rampazzo_gradient2')
+	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])

@@ -143,7 +143,7 @@ class rampazzo(object):
 	# Finds the contribution to the entire slit and then sets any pixel outside 
 	# of self.r1 < r < self.r2 to zero.
 	def gradient2(self):
-		slit_corners = get_slit2(self.galaxy, self.slit_h, 2, self.slit_pa)
+		slit_corners = get_slit(self.galaxy, self.slit_h, 2, self.slit_pa)
 		if self.debug:
 			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
 				float)
@@ -156,24 +156,39 @@ class rampazzo(object):
 			np.tile(np.arange(self.f[0].header['NAXIS2']),self.f[0].
 			header['NAXIS1'])] = frac
 
+		eff_r = frac_image * self.f[0].header['CDELT1'] * self.f[0].header['CDELT2'] / \
+			self.slit_w
+
 		# Multiply by r for integral (eq (3))
-		x = np.outer((np.arange(self.f[0].header['NAXIS1'])* f[0].header['CDELT1'] - 
+		x = np.outer((np.arange(self.f[0].header['NAXIS1'])* self.f[0].header['CDELT1'] - 
 			self.x_cent), np.ones(self.f[0].header['NAXIS2']))
 		y = np.outer(np.ones(self.f[0].header['NAXIS1']), 
-			(np.arange(self.f[0].header['NAXIS2'])* f[0].header['CDELT2'] - self.y_cent))
+			(np.arange(self.f[0].header['NAXIS2'])* self.f[0].header['CDELT2'] - 
+			self.y_cent))
 		r = np.sqrt(x**2 + y**2)
 		r[(r > self.r2) + (r < self.r1)] = 0
-		frac_image *= r
+		set_r = np.array(r)
+		set_r[set_r != 0] = 1
+		frac_image *= set_r
 
-		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image)
+		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image*eff_r)
 		noise = np.sqrt(np.einsum('ijk,jk->ijk', self.noise_cube**2, 
-				frac_image**2))
+				frac_image**2*eff_r))
 
-		half_int = np.trapz(cube, dx=self.f[0].header['CDELT2'],axis=2)
-		self.spec = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
+		self.spec = np.sum(cube, axis=(1,2))
+		self.noise = np.sqrt(np.sum(noise**2, axis=(1,2)))
 
-		half_int = np.trapz(noise_cube**2, dx=self.f[0].header['CDELT2'],axis=2)
-		self.noise = np.sqrt(np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1))
+		# half_int = np.trapz(cube, dx=self.f[0].header['CDELT2'],axis=2)
+		# self.spec = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
+
+		# half_int = np.trapz(noise_cube**2, dx=self.f[0].header['CDELT2'],axis=2)
+		# self.noise = np.sqrt(np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1))
+
+		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image*eff_r*r)
+		self.r = np.mean(np.sum(cube, axis=(1,2))/self.spec)
+
+		self.spec /= abs(self.r2-self.r1)
+		self.noise /= abs(self.r2-self.r1)
 
 
 
@@ -190,6 +205,7 @@ class rampazzo(object):
 
 		self.spec = np.zeros((n_spaxels, self.f[0].header['NAXIS3']))
 		self.noise = np.zeros((n_spaxels, self.f[0].header['NAXIS3']))
+		self.r = np.zeros((n_spaxels, self.f[0].header['NAXIS3']))
 
 		for i in xrange(n_spaxels):
 			if self.debug:
@@ -236,16 +252,18 @@ class rampazzo(object):
 				(slit_r[i] + self.slit_res/2)**2 - (slit_r[i] - self.slit_res/2)**2)/(
 				self.slit_res * self.slit_w) / 2
 
-			self.spec[i,:] += np.einsum('ijk,jk->i', self.cube, frac_image) * \
+			self.spec[i,:] = np.einsum('ijk,jk->i', self.cube, frac_image) * \
 				scaling_factor
-			self.noise[i,:] += np.einsum('ijk,jk->i', (self.noise_cube * 
+			self.noise[i,:] = np.einsum('ijk,jk->i', (self.noise_cube * 
 				scaling_factor)**2, frac_image**2)
+
+			self.r[i,:] = np.einsum('ijk,jk->i', self.cube, frac_image) * \
+				scaling_factor * abs(slit_r[i])
 
 
 
 		# Taking the mean is not in the paper, but otherwise <r> is wavelength dependent...
-		self.r = np.mean((np.einsum('ij,i->j', self.spec, np.abs(slit_r)) /
-			scaling_factor) / np.sum(self.spec, axis=0))
+		self.r = np.mean(np.sum(self.r, axis=0) / np.sum(self.spec, axis=0))
 		self.spec = np.sum(self.spec, axis=0) / np.pi * self.r2**2
 		self.noise = np.sqrt(np.sum(self.noise, axis=0)) / (np.pi * self.r2**2)
 
@@ -268,7 +286,46 @@ def in_ellipse(xp, yp, x0, y0, a, e, pa):
 	return ellipse <= 1
 
 
+def fake_galaxy():
+	#cube = np.zeros((5,1000,1000))
+	x = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 200**2))
+	y = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 150**2))
+	cube = np.outer(x,y)
+	import matplotlib.pyplot as plt 
+	# plt.imshow(cube)
+	# plt.show()
+
+	cube = np.array([cube,cube,cube,cube,cube])
+	fits_cube = np.zeros((5,40,40))
+	res = 1000/40
+	for i in xrange(40):
+		for j in xrange(40):
+			fits_cube[:, i, j] = np.sum(cube[:, i*res:(i+1)*res, j*res:(j+1)*res], 
+				axis=(1,2))
+
+	data=rampazzo('ngc3557', slit_pa=0)
+	data.f[0].data=fits_cube
+	data.f[0].header['NAXIS3'] = 5
+
+	fits_s, _ = data.get_spec()
+
+
+
+	slit_r = np.arange(-(20*0.67) + data.slit_res/2, (20*0.67) - data.slit_res/2, 
+		data.slit_res)
+	n_spaxels = len(slit_r)
+	slit_x_cent = slit_r * np.sin(np.radians(0)) + (20*0.67) # half the size of IFU FoV
+	slit_y_cent = slit_r * np.cos(np.radians(0)) + (20*0.67)
+
+
+
+
+
+
+
 
 if __name__=='__main__':
-	rampazzo('ic1459', method='gradient1',debug=True)
+	#rampazzo('ic1459', method='gradient1',debug=True)
+	fake_galaxy()
+
 

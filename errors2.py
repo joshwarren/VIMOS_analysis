@@ -78,8 +78,15 @@ class get_stellar_templates(object):
 	def __init__(self, galaxy, FWHM_gal, use_all_temp=False):
 		import glob # for searching for files
 		# Finding the template files
-		templateFiles = glob.glob('%s/models/miles_library/m0[0-9][0-9][0-9]V' % (
-			cc.home_dir)) 
+		# There is some issue with the memory structure of the university macs (HFS+),
+		# meaning these templates can only be loaded once if located on the home directory,
+		# but more if on the Data partition...
+		if cc.device != 'uni':
+			templateFiles = glob.glob('%s/models/miles_library/m0[0-9][0-9][0-9]V' % (
+				cc.home_dir))
+		else:
+			templateFiles = glob.glob('%s/Data/idl_libraries/ppxf/' % (cc.base_dir) +
+				'MILES_library/m0[0-9][0-9][0-9]V')
 
 		# self.wav is wavelength, v2 is spectrum
 		self.wav, v2 = np.loadtxt(templateFiles[0], unpack='True')
