@@ -190,7 +190,10 @@ def run(galaxy='ic1459', method=None):
 			for line in lines:
 				result[line].append(comp_ab.result[line])
 				uncert[line].append(comp_ab.uncert[line])
-			r.append(r)
+				# result[line].append(5)
+				# uncert[line].append(5)
+			r.append(comp_ab.r)
+			# r.append(4)
 		r = np.array(r)
 		s = np.argsort(r)
 		for line in lines:
@@ -220,6 +223,7 @@ def run(galaxy='ic1459', method=None):
 			# Plot Rampazzo results
 			ax[i].errorbar(lit_r[lit_s], lit_result[line][lit_s], 
 				yerr=lit_uncert[line][lit_s], fmt='--')
+		print 'here'
 
 		f.savefig('%s/Data/vimos/analysis/%s/results/4200-/plots/Rampazzo_compare.png' % (
 			cc.base_dir, galaxy), bbox_inches="tight")
@@ -280,5 +284,5 @@ if __name__ == '__main__':
 	# galaxy = 'ngc3557'
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
-	for galaxy in ['ic1459','ic4296','ngc3557']
-		run(galaxy = galaxy, method = 'Rampazzo')
+	#for galaxy in ['ic1459','ic4296','ngc3557']:
+	run(galaxy = galaxy, method = 'Rampazzo')
