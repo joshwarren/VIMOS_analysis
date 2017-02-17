@@ -17,7 +17,6 @@ from absorption import absorption
 from classify import get_R_e
 import matplotlib.pyplot as plt 
 from label_line import *
-from Rampazzo import rampazzo
 
 
 c = 299792.458 # km/s
@@ -33,6 +32,7 @@ class compare_absorption(object):
 		method='Rampazzo_aperture', r1=0, r2=None, debug=False):
 		print galaxy
 		if 'Rampazzo' in method:
+			from Rampazzo import rampazzo
 			# Default is nuclear region: 0<r<R_e/16
 			if r2 is None:
 				r2 = get_R_e(galaxy)/16
@@ -43,8 +43,10 @@ class compare_absorption(object):
 				if '2' in method: data.method = 'gradient2'
 				else: data.method = 'gradient'
 
-		elif method == 'Orgamdo':
-			data = orgando(galaxy, debug=debug)
+		elif method == 'Ogando':
+			from Ogando import ogando
+			data = ogando(galaxy, debug=debug, slit_h=slit_h, slit_w=slit_w, 
+				slit_pa=slit_pa)
 		gal_spec, gal_noise = data.get_spec()
 
 
@@ -145,7 +147,7 @@ class compare_absorption(object):
 					self.uncert[line] = np.nan
 					continue
 				H = 70.0 # value used by Bolonga group.
-				r_ab = np.degrees(1.19/1000 * H/(c * z)) * 60 * 60 # 1.19 kpc -> arcsec
+				r_ab = np.degrees(1.19/1000 * H/(c * data.z)) * 60 * 60 # 1.19 kpc -> arcsec
 				# Correction is def in eq (9) with r_ab and r_norm def in eq (1) - not 
 				#	100% sure if I've got them correct.
 				ab = ab - beta[line] * np.log(1.025 * np.sqrt(slit_w*r_ab/np.pi)/slit_h)
@@ -170,7 +172,7 @@ class compare_absorption(object):
 
 
 
-def run(galaxy='ic1459', method=None):
+def run(galaxy='ic1459', method=None, debug=False):
 	if 'Rampazzo' in method:
 		pa = {'ic1459':40, 'ic4296':40, 'ngc3557':30}
 
@@ -190,7 +192,7 @@ def run(galaxy='ic1459', method=None):
 			for i in h:
 				print 'Aperture: %.3f arcsec' %(i)
 				comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
-					slit_pa=pa[galaxy], method=method, r1=0, r2 = i, debug=True)
+					slit_pa=pa[galaxy], method=method, r1=0, r2 = i, debug=debug)
 				for line in lines:
 					result[line].append(comp_ab.result[line])
 					uncert[line].append(comp_ab.uncert[line])
@@ -200,7 +202,7 @@ def run(galaxy='ic1459', method=None):
 			for i in xrange(len(h)-1):
 				print 'Gradient between %.3f and %.3f' % (h[i], h[i+1])
 				comp_ab = compare_absorption(galaxy, slit_h=R_e, slit_w=2, 
-					slit_pa=pa[galaxy], method=method, r1=h[i], r2 = h[i+1], debug=True)
+					slit_pa=pa[galaxy], method=method, r1=h[i], r2 = h[i+1], debug=debug)
 				for line in lines:
 					result[line].append(comp_ab.result[line])
 					uncert[line].append(comp_ab.uncert[line])
@@ -264,7 +266,7 @@ def run(galaxy='ic1459', method=None):
 
 		for i, galaxy in enumerate(gals):
 			comp_ab = compare_absorption(galaxy, slit_h=4.1, slit_w=2.5, slit_pa=30,
-				method=method, debug=True)
+				method=method, debug=debug)
 			data_file = '%s/Data/lit_absorption/Ogando.txt' % (cc.base_dir)
 			galaxy_gals = np.loadtxt(data_file, skiprows=2, usecols=(0,),dtype=str,
 				unpack=True)
@@ -278,26 +280,22 @@ def run(galaxy='ic1459', method=None):
 			Ogando_unc = {'H_beta':H_beta_uncert[i_gal], 'Fe5015':Fe5015_uncert[i_gal], 
 				'Mg_b':Mg_b_uncert[i_gal]}
 			c = {'H_beta':'r', 'Fe5015':'b', 'Mg_b':'g'}
-			a = []
 			for line in Ogando_obs.keys():
-				# Only set one label in legend for each line
-				if i==0:
-					a.append(ax.errorbar(np.log10(comp_ab.pp.sol[0][1]), 
-						comp_ab.result[line], yerr=comp_ab.uncert[line], fmt='x', 
-						color=c[line], label=line))
-				else:
-					ax.errorbar(np.log10(comp_ab.pp.sol[0][1]), comp_ab.result[line], 
-						yerr=comp_ab.uncert[line], fmt='x', color=c[line])
+				ax.errorbar(np.log10(comp_ab.pp.sol[0][1]), comp_ab.result[line], 
+					yerr=comp_ab.uncert[line], fmt='x', color=c[line])
 				ax.errorbar(Ogando_sig[i_gal], Ogando_obs[line], 
 					xerr=Ogando_sig_unc[i_gal], yerr=Ogando_unc[line], fmt='o', 
 					color=c[line])
 				l = ax.plot([np.log10(comp_ab.pp.sol[0][1]), Ogando_sig[i_gal]],
-					[comp_ab.result[line], Ogando_obs[line]], '--', c=c[line])#,
-				# 	label=galaxy)
-				# labelLines(l)
-			ax.legend(handles = a)
+					[comp_ab.result[line], Ogando_obs[line]], '--', c=c[line])
+				if line == 'H_beta':
+					ax.annotate(galaxy, xy=(Ogando_sig[i_gal], Ogando_obs[line]), 
+						textcoords='data')
+
+			ax.legend(c)
 			ax.set_xlabel('log(sigma (km/s))')
 			ax.set_ylabel('Index Strength (A)')
+		fig.savefig('/Data/lit_absorption/Ogando.png', bbox_inches='tight')
 		plt.show()
 				
 
@@ -311,5 +309,7 @@ if __name__ == '__main__':
 	import subprocess
 	# for galaxy in ['ic1459','ic4296','ngc3557']:
 
-	run(galaxy = galaxy, method = 'Rampazzo_gradient2')
+	run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+	# run(method = 'Ogando', debug=False)
+
 	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])

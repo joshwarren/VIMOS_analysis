@@ -47,6 +47,9 @@ class funccontains(object):
 	@property
 	def contains(self):
 		result = []
+		yf = self.func(self.points[:,0], *self.args)
+
+
 		for p in self.points:
 			yf = self.func(p[0], *self.args)
 			yf = np.array(yf)[~np.isnan(yf)]
@@ -72,8 +75,8 @@ class funccontains(object):
 		ydelt = np.subtract.outer(y_sample,self.y)
 		sample_ownership = np.argmin(xdelt**2+ydelt**2, axis=1)
 		
-		contained = funccontains(func, *self.args, x=x_sample, y=y_sample, **self.kwargs
-			).contains
+		contained = funccontains(self.func, *self.args, x=x_sample, y=y_sample, 
+			**self.kwargs).contains
 
 		# Find fraction
 		inside, counts_in = np.unique(sample_ownership[contained], return_counts=True)

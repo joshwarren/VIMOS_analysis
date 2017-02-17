@@ -1,5 +1,5 @@
 ## warrenj 20170209
-## Routine to move Orgando methods into.
+## Routine to move Ogando methods into.
 from checkcomp import checkcomp
 cc = checkcomp()
 from astropy.io import fits
@@ -7,8 +7,9 @@ import numpy as np
 from tools import funccontains, slit, get_slit
 
 
-class orgando(object):
-	def __init__(self, galaxy, debug=False):
+class ogando(object):
+	def __init__(self, galaxy, slit_h=4.1, slit_w=2.5, slit_pa=30, debug=False):
+		self.debug = debug
 ## ----------============== Load galaxy info ================---------
 		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 		# different data types need to be read separetly
@@ -22,7 +23,7 @@ class orgando(object):
 
 		self.f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (cc.base_dir, 
 			galaxy))
-		lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + self.f[0].header['CRVAL3']
+		self.lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + self.f[0].header['CRVAL3']
 ## ----------============ Find data within slit =============---------
 
 		x = (np.arange(self.f[0].header['NAXIS1']) * self.f[0].header['CDELT1']).repeat(
@@ -33,7 +34,7 @@ class orgando(object):
 		slit_x, slit_y = get_slit(galaxy, slit_h, slit_w, slit_pa)
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
-		if debug:
+		if self.debug:
 			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).contains.astype(int)
 		else:
 			frac = funccontains(slit, (slit_x,slit_y), x=x, y=y).fraction

@@ -10,13 +10,13 @@ class rampazzo(object):
 	def __init__(self, galaxy, slit_h=4.5*60, slit_w=2, slit_pa=30, method='aperture',
 		r1=0.0, r2=1.0, debug=False):
 		self.galaxy = galaxy
-		self.slit_w = slit_w
-		self.slit_h = slit_h
-		self.slit_pa = slit_pa
+		self.slit_w = float(slit_w)
+		self.slit_h = float(slit_h)
+		self.slit_pa = float(slit_pa)
 		self.debug = debug
 		self.method = method
-		self.r1 = r1
-		self.r2 = r2
+		self.r1 = float(r1)
+		self.r2 = float(r2)
 ## ----------============== Load galaxy info ================---------
 		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 		# different data types need to be read separetly
@@ -74,8 +74,7 @@ class rampazzo(object):
 			)+ self.y_cent
 		slit_corners = get_slit2(self.slit_h, 2, self.slit_pa, slit_x_cent, slit_y_cent)
 		if self.debug:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
-				float)
+			frac = in_slit(self.x, self.y, slit_corners).contains.astype(float)
 		else:
 			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction
 
@@ -143,12 +142,14 @@ class rampazzo(object):
 	# Finds the contribution to the entire slit and then sets any pixel outside 
 	# of self.r1 < r < self.r2 to zero.
 	def gradient2(self):
-		slit_corners = get_slit(self.galaxy, self.slit_h, 2, self.slit_pa)
+		# slit_corners = get_slit(self.galaxy, self.slit_h, self.slit_w, self.slit_pa)
+		self.slit_corners = get_slit2(self.slit_h, self.slit_w, self.slit_pa, self.x_cent, 
+			self.y_cent)
 		if self.debug:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).contains.astype(
-				float)
+			frac = in_slit(self.x, self.y, self.slit_corners).contains.astype(float)
 		else:
-			frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction
+			# frac = funccontains(slit, (slit_corners), x=self.x, y=self.y).fraction
+			frac = in_slit(self.x, self.y, self.slit_corners).fraction
 
 		frac_image = np.zeros((self.f[0].header['NAXIS1'], self.f[0].header['NAXIS2']))
 		frac_image[np.arange(self.f[0].header['NAXIS1']).repeat(
@@ -169,6 +170,7 @@ class rampazzo(object):
 		r[(r > self.r2) + (r < self.r1)] = 0
 		set_r = np.array(r)
 		set_r[set_r != 0] = 1
+		self.set_r = set_r
 		frac_image *= set_r
 
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image*eff_r)
@@ -178,12 +180,7 @@ class rampazzo(object):
 		self.spec = np.sum(cube, axis=(1,2))
 		self.noise = np.sqrt(np.sum(noise**2, axis=(1,2)))
 
-		# half_int = np.trapz(cube, dx=self.f[0].header['CDELT2'],axis=2)
-		# self.spec = np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1)
-
-		# half_int = np.trapz(noise_cube**2, dx=self.f[0].header['CDELT2'],axis=2)
-		# self.noise = np.sqrt(np.trapz(half_int, dx=self.f[0].header['CDELT1'],axis=1))
-
+		# Find <r_l>
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image*eff_r*r)
 		self.r = np.mean(np.sum(cube, axis=(1,2))/self.spec)
 
@@ -209,6 +206,7 @@ class rampazzo(object):
 
 		for i in xrange(n_spaxels):
 			if self.debug:
+				# frac = in_slit(self.x, self.y, slit_corners).contains.astype(float)
 				frac = funccontains(slit, (slit_pixels[0][:,i], slit_pixels[1][:,i]), 
 					x=self.x, y=self.y).contains.astype(float)
 			else:
@@ -269,6 +267,41 @@ class rampazzo(object):
 
 
 
+# Much faster than funccontains
+class in_slit(object):
+	def __init__(self, x, y, corners):
+		self.x = x
+		self.y = y
+		self.corners = np.array(corners)
+
+	@property
+	def contains(self):
+		import matplotlib.path as mplPath
+		slit = mplPath.Path([self.corners[:,0], self.corners[:,1], self.corners[:,2], 
+			self.corners[:,3]])
+		return slit.contains_points(zip(self.x,self.y))
+
+	@property
+	def fraction(self):
+		x_sample= np.linspace(min(self.x), max(self.x), np.sqrt(len(self.x))*10).repeat(
+			np.sqrt(len(self.y))*10)
+		y_sample= np.tile(np.linspace(min(self.y), max(self.y), np.sqrt(len(self.y))*10),
+			np.sqrt(len(self.x))*10)
+
+		xdelt = np.subtract.outer(x_sample,self.x)
+		ydelt = np.subtract.outer(y_sample,self.y)
+		sample_ownership = np.argmin(xdelt**2+ydelt**2, axis=1)
+
+		contained = in_slit(x_sample, y_sample, self.corners).contains
+
+		inside, counts_in = np.unique(sample_ownership[contained], return_counts=True)
+		total, counts_tot = np.unique(sample_ownership, return_counts=True)
+
+		frac = np.zeros(len(self.x))
+		frac[inside] = counts_in
+		frac /= counts_tot
+		
+		return frac
 
 
 
@@ -286,37 +319,103 @@ def in_ellipse(xp, yp, x0, y0, a, e, pa):
 	return ellipse <= 1
 
 
-def fake_galaxy():
+
+# Method to produce a fake galaxy, 'observe' it with VIMOS and with Rampazzo's slit 
+# and compare results.
+def fake_galaxy(method='aperture', debug = False):
 	#cube = np.zeros((5,1000,1000))
 	x = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 200**2))
 	y = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 150**2))
 	cube = np.outer(x,y)
 	import matplotlib.pyplot as plt 
-	# plt.imshow(cube)
-	# plt.show()
 
 	cube = np.array([cube,cube,cube,cube,cube])
-	fits_cube = np.zeros((5,40,40))
+	VIMOS_cube = np.zeros((5,40,40))
 	res = 1000/40
+	# bin into VIMOS-like cube
 	for i in xrange(40):
 		for j in xrange(40):
-			fits_cube[:, i, j] = np.sum(cube[:, i*res:(i+1)*res, j*res:(j+1)*res], 
-				axis=(1,2))
+			VIMOS_cube[:, i, j] = np.sum(cube[:, i*res:(i+1)*res, j*res:(j+1)*res], 
+				axis=(1,2))/(res**2)
 
-	data=rampazzo('ngc3557', slit_pa=0)
-	data.f[0].data=fits_cube
+	VIMOS_data=rampazzo('ngc3557', slit_pa=0, debug=False)
+	VIMOS_data.cube=VIMOS_cube
+	VIMOS_data.noise_cube = VIMOS_cube
+	VIMOS_data.f[0].header['NAXIS3'] = 5
+	VIMOS_data.x_cent = 20 * VIMOS_data.f[0].header['CDELT1']
+	VIMOS_data.y_cent = 20 * VIMOS_data.f[0].header['CDELT2']
+
+
+	# No binning
+	data = rampazzo('ngc3557', slit_pa=0, debug=True)
+	data.cube = cube
+	data.noise_cube = cube
 	data.f[0].header['NAXIS3'] = 5
+	data.f[0].header['NAXIS1'] = 1000
+	data.f[0].header['CDELT1'] = data.f[0].header['CDELT1'] * 40 / 1000.
+	data.f[0].header['NAXIS2'] = 1000
+	data.f[0].header['CDELT2'] = data.f[0].header['CDELT2'] * 40 / 1000.
+	data.x_cent = 500 * data.f[0].header['CDELT1']
+	data.y_cent = 500 * data.f[0].header['CDELT2']
+	x = np.arange(data.f[0].header['NAXIS1']).repeat(data.f[0].header['NAXIS2'])
+	y = np.tile(np.arange(data.f[0].header['NAXIS2']), data.f[0].header['NAXIS1'])
+	data.x = x * data.f[0].header['CDELT1']
+	data.y = y * data.f[0].header['CDELT2']
 
-	fits_s, _ = data.get_spec()
+	d = []
+	d_r = []
+	V = []
+	V_r = []
+	from classify import get_R_e
+	R_e = get_R_e('ngc3557')
+	image = np.array(cube[0,:,:])
+	VIMOS_image = np.array(cube[0,:,:])
+	if method == 'aperture':
+		h = [1.5,2.5,10.0, R_e/10,R_e/8,R_e/4,R_e/2]
+		for i in h:
+			VIMOS_data.r2 = i
+			data.r2 = i 
+		
+			s, _ = data.get_spec()
+			d.append(np.sum(s))
+			d_r.append(data.r)
+			VIMOS_s, _ = VIMOS_data.get_spec()
+			V.append(np.sum(VIMOS_s))
+			V_r.append(VIMOS_data.r)
+	else: 
+		h = [0,R_e/16, R_e/8, R_e/4, R_e/2]
+		VIMOS_data.method = method
+		data.method = method
+		
+		for i in xrange(len(h)-1):
+			VIMOS_data.r1 = h[i]
+			data.r1 = h[i]
+			VIMOS_data.r2 = h[i+1]
+			data.r2 = h[i+1]
+			
+			s, _ = data.get_spec()
+			d.append(np.sum(s))
+			d_r.append(data.r)
+			VIMOS_s, _ = VIMOS_data.get_spec()
+			V.append(np.sum(VIMOS_s))
+			V_r.append(VIMOS_data.r)
+
+			p = in_slit(data.x, data.y, data.slit_corners).contains * \
+				data.set_r.flatten().astype(bool)
+			image[x[p], y[p]] = s[0]
+			VIMOS_image[x[p], y[p]] = VIMOS_s[0]
 
 
+	f,ax=plt.subplots()
+	ax.plot(d_r, d)
+	ax.plot(V_r, V, color='r')
 
-	slit_r = np.arange(-(20*0.67) + data.slit_res/2, (20*0.67) - data.slit_res/2, 
-		data.slit_res)
-	n_spaxels = len(slit_r)
-	slit_x_cent = slit_r * np.sin(np.radians(0)) + (20*0.67) # half the size of IFU FoV
-	slit_y_cent = slit_r * np.cos(np.radians(0)) + (20*0.67)
 
+	f2,ax2=plt.subplots(2)
+	ax2[0].imshow(VIMOS_image)
+	ax2[1].imshow(image)
+
+	plt.show()
 
 
 
@@ -326,6 +425,6 @@ def fake_galaxy():
 
 if __name__=='__main__':
 	#rampazzo('ic1459', method='gradient1',debug=True)
-	fake_galaxy()
+	fake_galaxy(method='gradient2', debug=False)
 
 
