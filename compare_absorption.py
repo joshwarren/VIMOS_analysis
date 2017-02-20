@@ -251,8 +251,8 @@ def run(galaxy='ic1459', method=None, debug=False):
 				line = 'Mgb'
 			ax[i].set_title(line)
 
-		f.savefig('%s/Data/vimos/analysis/%s/results/4200-/plots/Rampazzo_compare.png' % (
-			cc.base_dir, galaxy), bbox_inches="tight")
+		f.savefig('%s/Data/lit_absorption/%s_%s.png' % (cc.base_dir, method, galaxy), 
+			bbox_inches="tight")
 
 		# plt.show()
 	elif method == 'Ogando':
@@ -296,7 +296,7 @@ def run(galaxy='ic1459', method=None, debug=False):
 			ax.set_xlabel('log(sigma (km/s))')
 			ax.set_ylabel('Index Strength (A)')
 		fig.savefig('/Data/lit_absorption/Ogando.png', bbox_inches='tight')
-		plt.show()
+		# plt.show()
 				
 
 
@@ -307,9 +307,9 @@ if __name__ == '__main__':
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
 	import subprocess
-	# for galaxy in ['ic1459','ic4296','ngc3557']:
+	for galaxy in ['ic1459','ic4296','ngc3557']:
 
-	run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+		run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
 	# run(method = 'Ogando', debug=False)
 
-	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])
+		subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])

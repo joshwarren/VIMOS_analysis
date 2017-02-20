@@ -65,15 +65,14 @@ class funccontains(object):
 
 	@property
 	def fraction(self):
-		## sampling with n**2 * 100 points, where n is the number of points supplied
-		x_sample = np.linspace(min(self.x), max(self.x), np.sqrt(len(self.x))*10).repeat(
-			np.sqrt(len(self.y))*10)
-		y_sample = np.tile(np.linspace(min(self.y), max(self.y), np.sqrt(len(self.y))*10), 
-			np.sqrt(len(self.x))*10)
+		## sampling with n * 100 points, where n is the number of points supplied
+		x_sample = np.linspace(min(self.x), max(self.x), 
+			np.ceil(np.sqrt(len(self.x))*10)).repeat(np.ceil(np.sqrt(len(self.y))*10))
+		y_sample = np.tile(np.linspace(min(self.y), max(self.y), 
+			np.ceil(np.sqrt(len(self.y))*10)), int(np.ceil(np.sqrt(len(self.x))*10)))
 
-		xdelt = np.subtract.outer(x_sample,self.x)
-		ydelt = np.subtract.outer(y_sample,self.y)
-		sample_ownership = np.argmin(xdelt**2+ydelt**2, axis=1)
+		sample_ownership = np.argmin(np.subtract.outer(x_sample,self.x)**2 + 
+			np.subtract.outer(y_sample,self.y)**2, axis=1)
 		
 		contained = funccontains(self.func, *self.args, x=x_sample, y=y_sample, 
 			**self.kwargs).contains

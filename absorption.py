@@ -48,7 +48,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
 			if lick:
 				from scipy.ndimage.filters import gaussian_filter1d
-				sig_pix = 200*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
+				sig_pix = np.sqrt(200**2 - 64**2)*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
 				# unc_spec becomes convolved to 200km/s dispersion (as required for LICK 
 				#	indices)
 				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
@@ -69,11 +69,13 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		if noise is not None: 
 			variance = spectrum(lam=lam, lamspec=noise**2)
 		else: variance = None
-		index_value, index_va, con_band, index_band = spectra.irindex(0.71, line_name, varSED=variance, verbose=False)
+		index_value, index_va, con_band, index_band = spectra.irindex(0.71, line_name, 
+			varSED=variance, verbose=False)
 
 		# Apply correction
 		index_va = np.sqrt(index_va)
-		index_va = np.sqrt((index_va/index_value)**2 + (corr_var/corr)**2)*(index_value*corr)
+		index_va = np.sqrt((index_va/index_value)**2 + (corr_var/corr)**2)*(
+			index_value*corr)
 		index_value *= corr
 	
 	except IndexError:

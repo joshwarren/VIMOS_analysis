@@ -283,10 +283,10 @@ class in_slit(object):
 
 	@property
 	def fraction(self):
-		x_sample= np.linspace(min(self.x), max(self.x), np.sqrt(len(self.x))*10).repeat(
-			np.sqrt(len(self.y))*10)
-		y_sample= np.tile(np.linspace(min(self.y), max(self.y), np.sqrt(len(self.y))*10),
-			np.sqrt(len(self.x))*10)
+		x_sample= np.linspace(min(self.x), max(self.x), 
+			np.ceil(np.sqrt(len(self.x))*10)).repeat(np.ceil(np.sqrt(len(self.y))*10))
+		y_sample= np.tile(np.linspace(min(self.y), max(self.y), 
+			np.ceil(np.sqrt(len(self.y))*10)), int(np.ceil(np.sqrt(len(self.x))*10)))
 
 		xdelt = np.subtract.outer(x_sample,self.x)
 		ydelt = np.subtract.outer(y_sample,self.y)
@@ -301,6 +301,13 @@ class in_slit(object):
 		frac[inside] = counts_in
 		frac /= counts_tot
 		
+
+		# import matplotlib.pyplot as plt
+		# import matplotlib.cm as cm
+		# c = cm.rainbow(frac)
+		# plt.scatter(self.x,self.y, color=c)
+		# plt.show()
+
 		return frac
 
 
@@ -323,11 +330,13 @@ def in_ellipse(xp, yp, x0, y0, a, e, pa):
 # Method to produce a fake galaxy, 'observe' it with VIMOS and with Rampazzo's slit 
 # and compare results.
 def fake_galaxy(method='aperture', debug = False):
+	import matplotlib.pyplot as plt 
+	pa = 30
+
 	#cube = np.zeros((5,1000,1000))
 	x = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 200**2))
 	y = np.exp(-(np.arange(1000) - 500.0)**2 / (2 * 150**2))
 	cube = np.outer(x,y)
-	import matplotlib.pyplot as plt 
 
 	cube = np.array([cube,cube,cube,cube,cube])
 	VIMOS_cube = np.zeros((5,40,40))
@@ -338,7 +347,7 @@ def fake_galaxy(method='aperture', debug = False):
 			VIMOS_cube[:, i, j] = np.sum(cube[:, i*res:(i+1)*res, j*res:(j+1)*res], 
 				axis=(1,2))/(res**2)
 
-	VIMOS_data=rampazzo('ngc3557', slit_pa=0, debug=False)
+	VIMOS_data=rampazzo('ngc3557', slit_pa=pa, debug=False)
 	VIMOS_data.cube=VIMOS_cube
 	VIMOS_data.noise_cube = VIMOS_cube
 	VIMOS_data.f[0].header['NAXIS3'] = 5
@@ -347,7 +356,7 @@ def fake_galaxy(method='aperture', debug = False):
 
 
 	# No binning
-	data = rampazzo('ngc3557', slit_pa=0, debug=True)
+	data = rampazzo('ngc3557', slit_pa=pa, debug=True)
 	data.cube = cube
 	data.noise_cube = cube
 	data.f[0].header['NAXIS3'] = 5
@@ -382,8 +391,12 @@ def fake_galaxy(method='aperture', debug = False):
 			VIMOS_s, _ = VIMOS_data.get_spec()
 			V.append(np.sum(VIMOS_s))
 			V_r.append(VIMOS_data.r)
+
+
+
 	else: 
 		h = [0,R_e/16, R_e/8, R_e/4, R_e/2]
+		# h = [R_e/16, R_e/8]
 		VIMOS_data.method = method
 		data.method = method
 		
@@ -397,6 +410,7 @@ def fake_galaxy(method='aperture', debug = False):
 			d.append(np.sum(s))
 			d_r.append(data.r)
 			VIMOS_s, _ = VIMOS_data.get_spec()
+
 			V.append(np.sum(VIMOS_s))
 			V_r.append(VIMOS_data.r)
 
@@ -407,18 +421,24 @@ def fake_galaxy(method='aperture', debug = False):
 
 
 	f,ax=plt.subplots()
-	ax.plot(d_r, d)
-	ax.plot(V_r, V, color='r')
+	ax.plot(d_r, d, label='slit')
+	ax.plot(V_r, V, color='g', label='VIMOS')
+	from scipy.interpolate import interp1d
+	interp = interp1d(d_r, d)
+	ax.plot(V_r, abs(V-interp(V_r)), color='r', label='residual')
 
+	ax.legend()
+	f.savefig('%s/Data/lit_absorption/Rampazzo_simulated_comparison.png'%(cc.base_dir),
+		 bbox_inches='tight')
 
-	f2,ax2=plt.subplots(2)
-	ax2[0].imshow(VIMOS_image)
-	ax2[1].imshow(image)
+	if method != 'aperture':
+		f2,ax2=plt.subplots(2)
+		ax2[0].imshow(np.rot90(VIMOS_image))
+		ax2[1].imshow(np.rot90(image))
+		f2.savefig('%s/Data/lit_absorption/Rampazzo_simulated_obs.png' % (cc.base_dir),
+			bbox_inches='tight')
 
-	plt.show()
-
-
-
+	
 
 
 
