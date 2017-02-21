@@ -127,7 +127,7 @@ class compare_absorption(object):
 				lick=True)
 
 			if method == 'Ogando':
-				# Aperture 
+				# Aperture correction
 				ab_file = '%s/Documents/useful_files/ab_linelist.dat' % (cc.home_dir)
 				i1, i2, b1, b2, r1, r2, units = np.genfromtxt(ab_file, unpack=True, 
 					usecols=(1,2,3,4,5,6,7), skip_header=2, skip_footer=2)
@@ -233,6 +233,16 @@ def run(galaxy='ic1459', method=None, debug=False):
 			'Fe4531':e_Fe4531, 'Fe4668':e_Fe4668, 'H_beta':e_H_beta, 'Fe5015':e_Fe5015, 
 			'Mg_b':e_Mg_b}
 		lit_s = np.argsort(lit_r)
+
+		# Used to covert literture results back to flux calibrated from LICK 'calibrated'
+		lit_lick_corr_file = '%s/Data/lit_absorption/Rampazzo_lick_corrections.txt' % (
+			cc.base_dir)
+		lit_lick_corr_lines = np.loadtxt(lit_lick_corr_file, unpack=True, usecols=(0,), 
+			skiprows=1, dtype=str)
+		lit_lick_corr_alpha, lit_lick_corr_beta = np.loadtxt(lit_lick_corr_file, 
+			unpack=True, usecols=(1,2), skiprows=1)
+		print lit_lick_corr_lines
+
 		for i, line in enumerate(lines):
 			# Plot my results
 			# Waiting for clarification regarding <r_l> in paper. Use their values in 
@@ -241,7 +251,9 @@ def run(galaxy='ic1459', method=None, debug=False):
 			ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
 				color='k')
 			# Plot Rampazzo results
-			ax[i].errorbar(lit_r[lit_s], lit_result[line][lit_s], 
+			i_line = np.where(lit_lick_corr_lines == line)[0][0]
+			ax[i].errorbar(lit_r[lit_s], (lit_result[line][lit_s] - 
+				lit_lick_corr_beta[i_line])/lit_lick_corr_alpha[i_line], 
 				yerr=lit_uncert[line][lit_s], fmt='--', color='m')
 
 			# Remove underscores as matplotlib is currently automatically calling latex...
@@ -307,9 +319,9 @@ if __name__ == '__main__':
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
 	import subprocess
-	for galaxy in ['ic1459','ic4296','ngc3557']:
+	# for galaxy in ['ic1459','ic4296','ngc3557']:
 
-		run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
-	# run(method = 'Ogando', debug=False)
+		# run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+	run(method = 'Ogando', debug=False)
 
-		subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])
+	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])
