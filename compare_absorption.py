@@ -241,15 +241,14 @@ def run(galaxy='ic1459', method=None, debug=False):
 			skiprows=1, dtype=str)
 		lit_lick_corr_alpha, lit_lick_corr_beta = np.loadtxt(lit_lick_corr_file, 
 			unpack=True, usecols=(1,2), skiprows=1)
-		print lit_lick_corr_lines
 
 		for i, line in enumerate(lines):
 			# Plot my results
 			# Waiting for clarification regarding <r_l> in paper. Use their values in 
 			# meantime
-			# ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s])
-			ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
-				color='k')
+			ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s], color='k')
+			# ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
+			# 	color='k')
 			# Plot Rampazzo results
 			i_line = np.where(lit_lick_corr_lines == line)[0][0]
 			ax[i].errorbar(lit_r[lit_s], (lit_result[line][lit_s] - 
@@ -319,9 +318,9 @@ if __name__ == '__main__':
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
 	import subprocess
-	# for galaxy in ['ic1459','ic4296','ngc3557']:
+	for galaxy in ['ic1459','ic4296','ngc3557']:
 
-		# run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
-	run(method = 'Ogando', debug=False)
+		run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+	# run(method = 'Ogando', debug=False)
 
-	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])
+		subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])

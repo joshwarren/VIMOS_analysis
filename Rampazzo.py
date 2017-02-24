@@ -182,7 +182,7 @@ class rampazzo(object):
 
 		# Find <r_l>
 		cube = np.einsum('ijk,jk->ijk', self.cube, frac_image*eff_r*r)
-		self.r = np.mean(np.sum(cube, axis=(1,2))/self.spec)
+		self.r = np.sum((np.sum(cube, axis=(1,2))/self.spec) * self.f[0].header['CDELT3'])
 
 		self.spec /= abs(self.r2-self.r1)
 		self.noise /= abs(self.r2-self.r1)
@@ -261,7 +261,8 @@ class rampazzo(object):
 
 
 		# Taking the mean is not in the paper, but otherwise <r> is wavelength dependent...
-		self.r = np.mean(np.sum(self.r, axis=0) / np.sum(self.spec, axis=0))
+		self.r = np.sum(self.r * self.f[0].header['CDELT3'], axis=0) / np.sum(
+			self.spec * self.f[0].header['CDELT3'], axis=0)
 		self.spec = np.sum(self.spec, axis=0) / np.pi * self.r2**2
 		self.noise = np.sqrt(np.sum(self.noise, axis=0)) / (np.pi * self.r2**2)
 
