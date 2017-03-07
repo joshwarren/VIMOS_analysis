@@ -219,7 +219,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
-	out_plots = "%splots" % (output)
+	out_plots = "%s/plots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
 	vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
 	out_pickle = '%s/pickled' % (output)

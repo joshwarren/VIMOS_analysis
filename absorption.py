@@ -75,14 +75,17 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			corr_var = 0
 
 		# Reduce spec to Lick resolution
-		sig_pix = np.sqrt(8.**2 - (lam[1]-lam[0])**2)/(unc_lam[1] - unc_lam[0])
+		Lick_res = get_Lick_res(line_name)
+
+		sig_pix = np.sqrt(Lick_res**2 - (lam[1]-lam[0])**2)/(unc_lam[1] - unc_lam[0])
 		spec = gaussian_filter1d(spec, sig_pix)
 
 		spectra = spectrum(lam=lam, lamspec=spec)
 		if noise is not None: 
+			noise = gaussian_filter1d(noise, sig_pix)
 			variance = spectrum(lam=lam, lamspec=noise**2)
 		else: variance = None
-		index_value, index_va, con_band, index_band = spectra.irindex(lam[1] - lam[0], 
+		index_value, index_va, con_band, index_band = spectra.irindex(Lick_res, 
 			line_name, varSED=variance, verbose=False)
 
 		# Apply correction
@@ -99,3 +102,33 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		return index_value, index_va
 	else:
 		return index_value
+
+
+def get_Lick_res(index):
+	# Find band
+	s = spectrum()	
+	if index=='Mgb' or index=='Mg_b':
+		cont = s.mgbcont; band = s.mgb
+	elif index=='Hb' or index=='Hbeta' or index=='H_beta':
+		cont = s.hbcont; band = s.hb
+	elif index=='G4300':
+		cont = s.G4300cont; band = s.G4300
+	elif index=='Fe4383':
+		cont = s.Fe4383cont; band = s.Fe4383
+	elif index=='Ca4455':
+		cont = s.Ca4455cont; band = s.Ca4455
+	elif index=='Fe4531':
+		cont = s.Fe4531cont; band = s.Fe4531
+	elif index=='Fe4668':
+		cont = s.Fe4668cont; band = s.Fe4668
+	elif index=='Fe5015':
+		cont = s.Fe5015cont; band = s.Fe5015
+
+	# Wavelength of center of band
+	wav = np.median(band)
+
+	from scipy.interpolate import interp1d
+	# From table 8 Worthey, Ottaviani 1997 ApJS 111 (2) 377
+	res_wav_dep = interp1d([4000, 4400, 4900, 5400, 6000], [11.5, 9.2, 8.4, 8.4, 9.8], 
+		fill_value=[11.5, 9.8])
+	return res_wav_dep(wav)

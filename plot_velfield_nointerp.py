@@ -52,7 +52,7 @@
 import numpy as np # for reading files
 from scipy.spatial import distance
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.ticker import MaxNLocator
+from matplotlib import ticker
 # from sauron_colormap2 import sauron2 as sauron
 from sauron_colormap import sauron
 import math
@@ -126,6 +126,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		x_label = "RA"
 		y_label = "Dec"
 
+		tick_formatter = ticker.ScalarFormatter(useOffset=False)
+		ax.xaxis.set_major_formatter(tick_formatter)
+		ax.yaxis.set_major_formatter(tick_formatter)
+
 		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
 		ax.RaDec = True
 
@@ -185,7 +189,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ylim=np.array([ymin_sav, ymax_sav])
 
 	if galaxy is not None:
-		gal_name = plt.text(0.02,0.98, "Galaxy: " + galaxy, color='black',
+		gal_name = plt.text(0.02,0.98, galaxy, color='black',
 			verticalalignment='top',transform=ax.transAxes)
 		ax.gal_name = gal_name
 		if redshift is not None:
@@ -266,7 +270,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax.ax3 = ax3
 
 	if colorbar:
-		ticks = MaxNLocator(nbins=nticks)
+		ticks = ticker.MaxNLocator(nbins=nticks)
 		if hasattr(ax,'ax3'):
 			cbar = plt.colorbar(cs, ax=[ax,ax2,ax3], ticks=ticks)
 		else:
@@ -276,12 +280,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		
 		if label:
 			#cbar.set_label(label, rotation=270, fontsize='small')
-			cbar.ax.text(4.0,0.5, label, rotation=270, fontsize=6,
+			cbar.ax.text(4.0,0.5, label, rotation=270, fontsize=8,
 				verticalalignment='center')
 			
 		ax.cax = cbar.ax
 	
 	if save is not None:
+		ax.saveTo = save
 		if not os.path.exists(os.path.dirname(save)):
 			os.makedirs(os.path.dirname(save))  
 
