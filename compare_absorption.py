@@ -246,9 +246,9 @@ def run(galaxy='ic1459', method=None, debug=False):
 			# Plot my results
 			# Waiting for clarification regarding <r_l> in paper. Use their values in 
 			# meantime
-			ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s], color='k')
-			# ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
-			# 	color='k')
+			# ax[i].errorbar(r[s]/R_e, result[line][s], yerr=uncert[line][s], color='k')
+			ax[i].errorbar(lit_r[lit_s], result[line][lit_s], yerr=uncert[line][lit_s], 
+				color='k')
 			# Plot Rampazzo results
 			i_line = np.where(lit_lick_corr_lines == line)[0][0]
 			ax[i].errorbar(lit_r[lit_s], (lit_result[line][lit_s] - 

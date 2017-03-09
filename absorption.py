@@ -85,7 +85,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			noise = gaussian_filter1d(noise, sig_pix)
 			variance = spectrum(lam=lam, lamspec=noise**2)
 		else: variance = None
-		index_value, index_va, con_band, index_band = spectra.irindex(Lick_res, 
+		index_value, index_va, con_band, index_band = spectra.irindex(lam[1] - lam[0], 
 			line_name, varSED=variance, verbose=False)
 
 		# Apply correction
@@ -105,8 +105,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 
 def get_Lick_res(index):
-	# Find band
-	s = spectrum()	
+	# Find band ; dummy spectra
+	s = spectrum(np.array([100,101,102]),np.array([1,1,1]))	
 	if index=='Mgb' or index=='Mg_b':
 		cont = s.mgbcont; band = s.mgb
 	elif index=='Hb' or index=='Hbeta' or index=='H_beta':
@@ -129,6 +129,6 @@ def get_Lick_res(index):
 
 	from scipy.interpolate import interp1d
 	# From table 8 Worthey, Ottaviani 1997 ApJS 111 (2) 377
-	res_wav_dep = interp1d([4000, 4400, 4900, 5400, 6000], [11.5, 9.2, 8.4, 8.4, 9.8], 
-		fill_value=[11.5, 9.8])
+	res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
+		np.array([11.5, 9.2, 8.4, 8.4, 9.8]), fill_value=(11.5, 9.8))
 	return res_wav_dep(wav)

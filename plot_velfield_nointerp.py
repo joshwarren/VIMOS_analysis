@@ -102,8 +102,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 		x -= max(x)/2
 		y -= max(y)/2
-		x_label = "Position (arcsec)"
-		y_label = x_label
+		x_label = r'$\Delta$ RA (arcsec)'
+		y_label = r'$\Delta Dec (arcsec)'
 
 		# Tells add_CO method in plot_results coords were not supplied
 		ax.RaDec = False
@@ -126,12 +126,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		x_label = "RA"
 		y_label = "Dec"
 
-		tick_formatter = ticker.ScalarFormatter(useOffset=False)
-		ax.xaxis.set_major_formatter(tick_formatter)
-		ax.yaxis.set_major_formatter(tick_formatter)
-
 		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
 		ax.RaDec = True
+
+	tick_formatter = ticker.ScalarFormatter(useOffset=False)
+	ax.xaxis.set_major_formatter(tick_formatter)
+	ax.yaxis.set_major_formatter(tick_formatter)
 
 	bin_num = bin_num.astype(int)
 
@@ -163,6 +163,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				(signal_noise_target/2)).clip(0.05,1)
 	# Set bad pixels grey
 	pic[np.isnan(img),:] = [0.5,0.5,0.5,1]
+	ax.set_axis_bgcolor('grey')
+
 
 	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
 	# 	cmap=cmap, extent=[xmin, xmax, ymin, ymax])
