@@ -2,6 +2,12 @@
 
 echo $1
 
+if [ -z $2 ]
+then
+	echo 'Please enter the command as: check.sh [galaxy] [opt] [opptional dir]'
+	exit	
+fi
+
 if [ $2 = kin ]
 then 
 	cd /Data/vimos/analysis/$1/gas_MC/$3/

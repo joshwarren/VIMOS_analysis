@@ -38,7 +38,7 @@ def set_params():
 	FWHM_gal = 2.5 # VIMOS documentation (and fits header)
 	stellar_moments = 4 # number of componants to calc with ppxf (see 
 						# keyword moments in ppxf.pro for more details)
-	gas_moments = 4
+	gas_moments = 2
 	degree = 4  # order of addative Legendre polynomial used to 
 				#; correct the template continuum shape during the fit
 	return quiet, gas, reps, discard, set_range, FWHM_gal, \
@@ -120,7 +120,8 @@ class get_stellar_templates(object):
 			if use_all_temp:
 				_, self.lin_templates[:,i] = np.loadtxt(templateFiles[i], unpack='True')
 			else:
-				_, self.lin_templates[:,i] = np.loadtxt(templateFiles[self.templatesToUse[i]], unpack='True')
+				_, self.lin_templates[:,i] = np.loadtxt(
+					templateFiles[self.templatesToUse[i]], unpack='True')
 			if self.FWHM_tem < FWHM_gal:
 				sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 				conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],sigma)
@@ -135,7 +136,6 @@ class get_stellar_templates(object):
 #-----------------------------------------------------------------------------
 class get_emission_templates(object):
 	def __init__(self, gas, lamRange, logLam_template, FWHM_gal, quiet=True):
-		import ppxf_util as util
 		self.element = []
 		self.component = []
 		self.templatesToUse = []
@@ -251,6 +251,157 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 	return np.where(flag == 0)[0]
 #-----------------------------------------------------------------------------
 
+def saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
+	noise_sav, element, templatesToUse, gas_output=None, gas_errors=None, opt='kin'):
+	# stellar MC results
+	if cc.device == 'glamdring':
+		dir = '%s/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
+	else:
+		dir = '%s/Data/vimos/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
+
+	if not os.path.exists("%s/stellar/errors" % (dir)):
+		os.makedirs("%s/stellar/errors" % (dir))
+	bin_file = "%s/stellar/%s.dat" % (dir, str(bin))
+	errors_file = "%s/stellar/errors/%s.dat" % (dir, str(bin))
+	with open(bin_file, 'w') as f,  open(errors_file, 'w') as e:
+		for i in range(reps):
+			f.write(str(stellar_output[i,0]) + "   " + \
+				str(stellar_output[i,1]) + "   " + str(stellar_output[i,2]) + \
+				"   " + str(stellar_output[i,3]) + '\n')
+			e.write(str(stellar_errors[i,0]) + "   " + str(stellar_errors[i,1]) + \
+				"   " + str(stellar_errors[i,2]) + "   " + \
+				str(stellar_errors[i,3]) + '\n')
+	
+	# gas MC results
+	gas_dir=[]
+	if gas != 0: gas_dir = e_templates.element
+	for d in range(len(gas_dir)):
+		if not os.path.exists("%s/gas/%s/errors" % (dir,
+			galaxy, opt, gas_dir[d])):
+			os.makedirs("%s/gas/%s/errors" % (dir, gas_dir[d]))
+
+		gas_file = "%s/gas/%s/%s.dat" % (dir, gas_dir[d], str(bin))
+		gas_errors_file = "%s/gas/%s/errors/%s.dat" % (dir, gas_dir[d], str(bin))
+
+		with open(gas_file, 'w') as g, open(gas_errors_file, 'w') as ger:
+			for i in range(reps):
+				if gas_output is not None:
+					g.write(str(gas_output[d,i,0]) + "   " + str(gas_output[d,i,1]) + \
+						"   " + str(gas_output[d,i,2]) + "   " + \
+						str(gas_output[d,i,3]) + '\n')
+				if gas_errors is not None:
+					ger.write(str(gas_errors[d,i,0]) + "   " + \
+						str(gas_errors[d,i,1]) + "   " + str(gas_errors[d,i,2]) + \
+						"   " + str(gas_errors[d,i,3]) + '\n')
+
+	## save bestfit spectrum
+	if not os.path.exists("%s/bestfit" % (dir)):
+		os.makedirs("%s/bestfit" % (dir)) 
+	bestfit_file = "%s/bestfit/%s.dat" % (dir, str(bin))
+   
+	with open(bestfit_file, 'w') as s:
+		for i in range(len(pp.bestfit)):
+			s.write(str(pp.bestfit[i]) + '\n')
+
+	## save input
+	if not os.path.exists("%s/input" % (dir)):
+		os.makedirs("%s/input" % (dir)) 
+	input_file = "%s/input/%s.dat" % (dir, str(bin))
+   
+	with open(input_file, 'w') as inp:
+		for i in range(len(bin_log_sav)):
+			inp.write(str(bin_log_sav[i]) + '\n')
+
+	## save input noise
+	if not os.path.exists("%s/noise_input" % (dir)):
+		os.makedirs("%s/noise_input" % (dir)) 
+	input_file = "%s/noise_input/%s.dat" % (dir, str(bin))
+   
+	with open(input_file, 'w') as inp:
+		for i in range(len(noise_sav)):
+			inp.write(str(noise_sav[i]) + '\n')
+
+	## save bestfit LOSVD output
+	bestfit_file = "%s/%s.dat" % (dir, str(bin))
+	with open(bestfit_file, 'w') as b:
+		if gas:
+			for i in range(np.shape(pp.sol)[0]):
+				b.write(element[i])
+				for j in pp.sol[i]:
+					b.write("   " + str(j)) 
+				b.write('\n')
+		else: 
+			b.write("stellar")
+			for j in range(stellar_moments):
+				b.write("   " + str(j))
+			b.write('\n')
+
+	## save chi2
+	if not os.path.exists("%s/chi2" % (dir)):
+		os.makedirs("%s/chi2" % (dir)) 
+	chi2_file = "%s/chi2/%s.dat" % (dir, str(bin))
+   
+	with open(chi2_file, 'w') as c2:
+		c2.write(str(pp.chi2) + '\n')
+
+	## save weights
+	if not os.path.exists("%s/temp_weights" % (dir)):
+		os.makedirs("%s/temp_weights" % (dir)) 
+	weights_file = "%s/temp_weights/%s.dat" % (dir, str(bin))
+
+	with open(weights_file, 'w') as w:
+		for i in range(len(pp.weights)):
+			w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
+
+	## save indervidual template bestfits
+	if not os.path.exists("%s/bestfit/matrix" % (dir)):
+		os.makedirs("%s/bestfit/matrix" % (dir)) 
+	matrix_file = "%s/bestfit/matrix/%s.dat" % (dir, str(bin))
+
+	## save addative polyweights
+	if hasattr(pp, 'polyweights'):
+		if not os.path.exists("%s/apweights" % (dir)):
+			os.makedirs("%s/apweights" % (dir)) 
+		polyweights_file = "%s/apweights/%s.dat" % (dir, str(bin))
+
+		with open(polyweights_file, 'w') as apw:
+			for i in range(len(pp.polyweights)):
+				apw.write(str(pp.polyweights[i]) + '\n')
+
+		with open(matrix_file, 'w') as l:
+			for i, j in enumerate(range(len(pp.polyweights),pp.matrix.shape[1])):
+				l.write(str(templatesToUse[i]) + "   ")
+				for k in range(pp.matrix.shape[0]):
+					l.write(str(pp.matrix[k,j]) + "   ")
+				l.write('\n')
+	else:
+		with open(matrix_file, 'w') as l:
+			for i in range(pp.matrix.shape[1]):
+				l.write(str(templatesToUse[i]) + "   ")
+				for j in range(pp.matrix.shape[0]):
+					l.write(str(pp.matrix[j,i]) + "   ")
+				l.write('\n')
+
+	## save multiplicative polyweights
+	if hasattr(pp, 'mpolyweights'):
+		if not os.path.exists("%s/mpweights" % (dir)):
+			os.makedirs("%s/mpweights" % (dir)) 
+		mpolyweights_file = "%s/mpweights/%s.dat" % (dir, str(bin))
+
+		with open(mpolyweights_file, 'w') as mpw:
+			for i in range(len(pp.mpolyweights)):
+				mpw.write(str(pp.mpolyweights[i]) + '\n')
+
+	## save lambda input
+	if not os.path.exists("%s/lambda" % (dir)):
+		os.makedirs("%s/lambda" % (dir)) 
+	lambda_file = "%s/lambda/%s.dat" % (dir, str(bin))
+
+	with open(lambda_file, 'w') as l:
+		for i in range(len(lambdaq)):
+			l.write(str(lambdaq[i]) + '\n')
+#-----------------------------------------------------------------------------
+
 #-----------------------------------------------------------------------------
 def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None, 
 	return_cuts=False):
@@ -308,8 +459,8 @@ def errors2(i_gal=None, bin=None):
 
 	data_file = "%s/analysis/galaxies.txt" % (dir)
 	# different data types need to be read separetly
-	z_gals, vel_gals, sig_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, 
-		skiprows=1, usecols=(1,2,3,4,5))
+	z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+		usecols=(1,2,3))
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	vel = vel_gals[i_gal]
@@ -376,8 +527,7 @@ def errors2(i_gal=None, bin=None):
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)
 
-	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]],
-		axis=1)
+	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]], axis=1)
 	bin_lin_noise = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
 		y[spaxels_in_bin]]**2, axis=1)
 	bin_lin_noise = np.sqrt(bin_lin_noise)
@@ -396,8 +546,7 @@ def errors2(i_gal=None, bin=None):
 			sigma))
 	
 	## rebin spectrum logarthmically
-	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, 
-		velscale=velscale)
+	bin_log, logLam_bin, _ = util.log_rebin(lamRange, bin_lin, velscale=velscale)
 	bin_log_noise, logLam_bin, _ = util.log_rebin(lamRange, bin_lin_noise**2, 
 		velscale=velscale)
 	bin_log_noise = np.sqrt(bin_log_noise)
@@ -414,12 +563,10 @@ def errors2(i_gal=None, bin=None):
 		stellar_templates.logLam_template, FWHM_gal)
 
 	if gas:
-		templates = np.column_stack((stellar_templates.templates, 
-			e_templates.templates))
+		templates = np.column_stack((stellar_templates.templates, e_templates.templates))
 	else:
 		templates = stellar_templates.templates
-	component = [0]*len(stellar_templates.templatesToUse) + \
-		e_templates.component
+	component = [0]*len(stellar_templates.templatesToUse) + e_templates.component
 	templatesToUse = np.append(stellar_templates.templatesToUse, 
 		e_templates.templatesToUse)
 	element = ['stellar'] + e_templates.element
@@ -428,8 +575,8 @@ def errors2(i_gal=None, bin=None):
 	moments = [stellar_moments] + [gas_moments] * max(component)
 
 
-	goodPixels = determine_goodpixels(logLam_bin,
-		stellar_templates.lamRange_template, vel, z, gas=gas!=0)
+	goodPixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template, 
+		vel, z, gas=gas!=0)
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
@@ -438,9 +585,9 @@ def errors2(i_gal=None, bin=None):
 	noise_sav = noise
 	saveTo="%s/analysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
 
-	pp = ppxf(templates, bin_log, noise, velscale, start[0], 
+	pp = ppxf(templates, bin_log, noise, velscale, start, 
 			  goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-			  component=component, lam=lambdaq, plot=True,#not quiet, 
+			  component=component, lam=lambdaq, plot=not quiet, 
 			  quiet=quiet, save=saveTo)
 ## ----------===============================================---------
 ## ----------================= The MC part =================---------
@@ -466,160 +613,14 @@ def errors2(i_gal=None, bin=None):
 		stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]
 		for g in range(gas):
 			gas_output[g,rep,:] = ppMC.sol[0:gas_moments][g]
+			gas_errors[g,rep,:] = ppMC.error[0:gas_moments][g]
 
 
 ## ----------============ Write ouputs to file =============---------
-	# stellar MC results
-	if not os.path.exists("%s/analysis/%s/gas_MC/stellar/errors" % (dir,galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/stellar/errors" % (dir, galaxy))
-	bin_file = "%s/analysis/%s/gas_MC/stellar/%s.dat" % (dir, galaxy, str(bin))
-	errors_file = "%s/analysis/%s/gas_MC/stellar/errors/%s.dat" % (dir, galaxy, 
-		str(bin))
-	f = open(bin_file, 'w')
-	e = open(errors_file, 'w')
-	for i in range(reps):
-		f.write(str(stellar_output[i,0]) + "   " + \
-			str(stellar_output[i,1]) + "   " + str(stellar_output[i,2]) + \
-			"   " + str(stellar_output[i,3]) + '\n')
-		e.write(str(stellar_errors[i,0]) + "   " + str(stellar_errors[i,1]) + \
-			"   " + str(stellar_errors[i,2]) + "   " + \
-			str(stellar_errors[i,3]) + '\n')
-
-	# gas MC results
-	gas_dir=[]
-	if gas != 0: gas_dir = e_templates.element
-	for d in range(len(gas_dir)):
-		if not os.path.exists("%s/analysis/%s/gas_MC/gas/%s/errors" % (dir,
-			galaxy, gas_dir[d])):
-			os.makedirs("%s/analysis/%s/gas_MC/gas/%s/errors" % (dir,
-				galaxy, gas_dir[d]))
-
-		gas_file = "%s/analysis/%s/gas_MC/gas/%s/%s.dat" % (dir, galaxy,
-			gas_dir[d], str(bin))
-		gas_errors_file = "%s/analysis/%s/gas_MC/gas/%s/errors/%s.dat" % (
-			dir, galaxy, gas_dir[d], str(bin))
-
-		g = open(gas_file, 'w')
-		ger = open(gas_errors_file, 'w')
-		
-		for i in range(reps):
-
-			g.write(str(gas_output[d,i,0]) + "   " + str(gas_output[d,i,1]) + \
-				"   " + str(gas_output[d,i,2]) + "   " + \
-				str(gas_output[d,i,3]) + '\n')
-			ger.write(str(gas_errors[d,i,0]) + "   " + \
-				str(gas_errors[d,i,1]) + "   " + str(gas_errors[d,i,2]) + \
-				"   " + str(gas_errors[d,i,3]) + '\n')
-
-			
-	## save bestfit spectrum
-	if not os.path.exists("%s/analysis/%s/gas_MC/bestfit" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/bestfit" % (dir, galaxy)) 
-	bestfit_file = "%s/analysis/%s/gas_MC/bestfit/%s.dat" % (dir, galaxy, 
-		str(bin))
-   
-	s = open(bestfit_file, 'w')
-	for i in range(len(pp.bestfit)):
-		s.write(str(pp.bestfit[i]) + '\n')
-
-	## save input
-	if not os.path.exists("%s/analysis/%s/gas_MC/input" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/input" % (dir, galaxy)) 
-	input_file = "%s/analysis/%s/gas_MC/input/%s.dat" % (dir, galaxy, str(bin))
-   
-	inp = open(input_file, 'w')
-	for i in range(len(bin_log_sav)):
-		inp.write(str(bin_log_sav[i]) + '\n')
-	## save input noise
-	if not os.path.exists("%s/analysis/%s/gas_MC/noise_input" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/noise_input" % (dir, galaxy)) 
-	input_file = "%s/analysis/%s/gas_MC/noise_input/%s.dat" % (dir, galaxy, str(bin))
-   
-	inp = open(input_file, 'w')
-	for i in range(len(noise_sav)):
-		inp.write(str(noise_sav[i]) + '\n')
-
-	## save bestfit LOSVD output
-	bestfit_file = "%s/analysis/%s/gas_MC/%s.dat" % (dir, galaxy, str(bin))
-   
-	b = open(bestfit_file, 'w')
-	if gas:
-		for i in range(np.shape(pp.sol)[0]):
-			b.write(element[i] + "   " + str(pp.sol[i][0]) + "   " + 
-				str(pp.sol[i][1]) + "   " + str(pp.sol[i][2]) + "   " + 
-				str(pp.sol[i][3]) + '\n')
-	else: b.write("stellar " + str(pp.sol[0]) + "   " + str(pp.sol[1]) + 
-		"   " + str(pp.sol[2]) + "   " + str(pp.sol[3]) + '\n')
-
-	## save input
-	if not os.path.exists("%s/analysis/%s/gas_MC/chi2" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/chi2" % (dir, galaxy)) 
-	chi2_file = "%s/analysis/%s/gas_MC/chi2/%s.dat" % (dir, galaxy, str(bin))
-   
-	c2 = open(chi2_file, 'w')
-	c2.write(str(pp.chi2) + '\n')
-
-	## save weights
-	if not os.path.exists("%s/analysis/%s/gas_MC/temp_weights" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/temp_weights" % (dir, galaxy)) 
-	weights_file = "%s/analysis/%s/gas_MC/temp_weights/%s.dat" % (dir, galaxy,
-		str(bin))
-
-	w = open(weights_file, 'w')
-	for i in range(len(pp.weights)):
-		w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
-
-
-	## save indervidual template bestfits
-	if not os.path.exists("%s/analysis/%s/gas_MC/bestfit/matrix" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/bestfit/matrix" % (dir, galaxy)) 
-	matrix_file = "%s/analysis/%s/gas_MC/bestfit/matrix/%s.dat" % (dir, galaxy,
-		str(bin))
-	## save addative polyweights
-	if hasattr(pp, 'polyweights'):
-		if not os.path.exists("%s/analysis/%s/gas_MC/apweights" % (dir, galaxy)):
-			os.makedirs("%s/analysis/%s/gas_MC/apweights" % (dir, galaxy)) 
-		polyweights_file = "%s/analysis/%s/gas_MC/apweights/%s.dat" % (dir, galaxy,
-			str(bin))
-
-		apw = open(polyweights_file, 'w')
-		for i in range(len(pp.polyweights)):
-			apw.write(str(pp.polyweights[i]) + '\n')
-
-		l = open(matrix_file, 'w')
-		for i, j in enumerate(range(len(pp.polyweights),pp.matrix.shape[1])):
-			l.write(str(templatesToUse[i]) + "   ")
-			for k in range(pp.matrix.shape[0]):
-				l.write(str(pp.matrix[k,j]) + "   ")
-			l.write('\n')
-	else:
-		l = open(matrix_file, 'w')
-		for i in range(pp.matrix.shape[1]):
-			l.write(str(templatesToUse[i]) + "   ")
-			for j in range(pp.matrix.shape[0]):
-				l.write(str(pp.matrix[j,i]) + "   ")
-			l.write('\n')
-
-	## save multiplicative polyweights
-	if hasattr(pp, 'mpolyweights'):
-		if not os.path.exists("%s/analysis/%s/gas_MC/mpweights" % (dir, galaxy)):
-			os.makedirs("%s/analysis/%s/gas_MC/mpweights" % (dir, galaxy)) 
-		mpolyweights_file = "%s/analysis/%s/gas_MC/mpweights/%s.dat" % (dir, galaxy,
-			str(bin))
-
-		mpw = open(mpolyweights_file, 'w')
-		for i in range(len(pp.mpolyweights)):
-			mpw.write(str(pp.mpolyweights[i]) + '\n')
-	## save lambda input
-	if not os.path.exists("%s/analysis/%s/gas_MC/lambda" % (dir, galaxy)):
-		os.makedirs("%s/analysis/%s/gas_MC/lambda" % (dir, galaxy)) 
-	lambda_file = "%s/analysis/%s/gas_MC/lambda/%s.dat" % (dir, galaxy,
-		str(bin))
-
-	l = open(lambda_file, 'w')
-	for i in range(len(lambdaq)):
-		l.write(str(lambdaq[i]) + '\n')
-
+	saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
+		noise_sav, element, templatesToUse, gas_output=gas_output, 
+		gas_errors=gas_errors, opt='gas')
+	
 ##############################################################################
 
 

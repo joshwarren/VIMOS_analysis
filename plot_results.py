@@ -196,16 +196,14 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	plots=False, residual=False, CO=False, show_bin_num=False,
 	D=None, **kwargs):	
 
-	SN_target = 30
 	data_file =  "%s/galaxies.txt" % (vin_dir)
 	# different data types need to be read separetly
-	z_gals, x_gals, y_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
-		usecols=(1,4,5))
-	#x_gals, y_gals = x_gals.astype(int), y_gals.astype(int)
+	z_gals, SN_target_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+		usecols=(1,6))
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	z = z_gals[i_gal]
-
+	SN_target=SN_target_gals[i_gal]
 
 	if wav_range:
 		wav_range_dir = wav_range + "/"
@@ -265,8 +263,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, title=title, cmap='gist_yarg', ax=ax, header=header,
-		signal_noise=D.SNRatio, signal_noise_target=SN_target)
+		label=CBLabel, title=title, cmap='gist_yarg', ax=ax, header=header)
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)
@@ -455,7 +452,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
 				title=title, ax=ax, header=header, signal_noise=D.SNRatio,
-				signal_noise_target=SN_target, show_vel=True)
+				signal_noise_target=SN_target, show_vel=False)
 			#plots=True
 			if plots:
 				plt.show()
@@ -626,9 +623,6 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		f.delaxes(a.cax)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
-		print a.get_title()
-		print n_rows, 3, a.figy*3+a.figx+1
-		print ''
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 
 	for a in ax_array:

@@ -111,25 +111,28 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 # ------------=========== Read kinematics results ==============----------
 	componants = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
 		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
-	if componants == ['gas']: gas = 1
-	elif componants == ['Shocks','SF']: gas = 2
+	if len(componants) == 0: gas =0
+	elif 'gas' in componants: gas = 1
+	elif 'Shocks' in componants and 'SF' in componants: gas = 2
 	else: gas = 3
 
-	dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
-		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
-		'h4':np.zeros(D.number_of_bins)*np.nan}
-	dynamics_uncert = {'vel':np.zeros(D.number_of_bins)*np.nan, 
-		'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
-		'h4':np.zeros(D.number_of_bins)*np.nan}
+	
 
 	for c in D.list_components:
+		dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
+			'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+			'h4':np.zeros(D.number_of_bins)*np.nan}
+		dynamics_uncert = {'vel':np.zeros(D.number_of_bins)*np.nan, 
+			'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+			'h4':np.zeros(D.number_of_bins)*np.nan}
+
 		for bin in range(D.number_of_bins):
 			# Bestfit values
 			glamdring_file = "%s/%i.dat" % (vin_dir_gasMC, bin)
 			c_in_bin = np.loadtxt(glamdring_file, unpack=True, usecols=(0,), 
 				dtype=str)
-			vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True, 
-				usecols=(1,2,3,4))
+			# vel, sig, h3s, h4s = np.loadtxt(glamdring_file, unpack=True, 
+			# 	usecols=(1,2,3,4))
 
 			if gas == 1 and c != 'stellar':
 				c_type = 'gas'
@@ -144,10 +147,19 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 			# check componant is in bin
 			if c_type in c_in_bin:
 				i = np.where(c_in_bin == c_type)[0][0]
-				dynamics['vel'][bin] = vel[i]
-				dynamics['sigma'][bin] = sig[i]
-				dynamics['h3'][bin] = h3s[i]
-				dynamics['h4'][bin] = h4s[i]
+				with open(glamdring_file, 'r') as g:
+					rows = g.read().splitlines()
+					row = np.array(rows[i].split('   '))
+				for j, d in enumerate(['vel', 'sigma', 'h3', 'h4']):
+					try:
+						dynamics[d][bin] = float(row[j+1])
+					except IndexError:
+						pass
+					# 	dynamics[d][bin] = 0
+				# dynamics['vel'][bin] = vel[i]				
+				# dynamics['sigma'][bin] = sig[i]
+				# dynamics['h3'][bin] = h3s[i]
+				# dynamics['h4'][bin] = h4s[i]
 
 				# Calculating uncertainties
 				if c_type != "stellar": MC_dir = "%s/gas" % (vin_dir_gasMC) 
