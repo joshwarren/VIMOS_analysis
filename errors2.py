@@ -251,6 +251,7 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 	return np.where(flag == 0)[0]
 #-----------------------------------------------------------------------------
 
+#-----------------------------------------------------------------------------
 def saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 	noise_sav, element, templatesToUse, gas_output=None, gas_errors=None, opt='kin'):
 	# stellar MC results
@@ -258,6 +259,9 @@ def saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav,
 		dir = '%s/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
 	else:
 		dir = '%s/Data/vimos/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
+
+	reps = stellar_output.shape[0]
+	gas = len(element) > 1
 
 	if not os.path.exists("%s/stellar/errors" % (dir)):
 		os.makedirs("%s/stellar/errors" % (dir))
@@ -273,11 +277,10 @@ def saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav,
 				str(stellar_errors[i,3]) + '\n')
 	
 	# gas MC results
-	gas_dir=[]
-	if gas != 0: gas_dir = e_templates.element
+	if gas: gas_dir = [e for e in element if e != 'stellar']
+	else: gas_dir=[] 
 	for d in range(len(gas_dir)):
-		if not os.path.exists("%s/gas/%s/errors" % (dir,
-			galaxy, opt, gas_dir[d])):
+		if not os.path.exists("%s/gas/%s/errors" % (dir, gas_dir[d])):
 			os.makedirs("%s/gas/%s/errors" % (dir, gas_dir[d]))
 
 		gas_file = "%s/gas/%s/%s.dat" % (dir, gas_dir[d], str(bin))

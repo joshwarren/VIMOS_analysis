@@ -20,18 +20,19 @@ from use_kinemetry import use_kinemetry
 from classify import classify
 import traceback, sys
 
-galaxies = ['ic1459',
-			'ic1531', 
-			'ic4296',
-			'ngc0612', # Segmentation error
-			# 'ngc1399',
+galaxies = [# 'ic1459',
+			# 'ic1531', 
+			# 'ic4296',
+			# 'ngc0612', # Segmentation error
+			'ngc1399',
 			# 'ngc3100',
-			# 'ngc3557',
-			# 'ngc7075',
+			'ngc3557',
+			'ngc7075',
 			# 'pks0718-34',
-			'eso443-g024']
+			# 'eso443-g024'
+			]
 # galaxies = ['ngc3557']
-galaxies = ['ic1459']
+# galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -56,8 +57,8 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-		# 	CO = False, residual="median", norm=norm, D=D)
+		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+			CO = False, residual="median", norm=norm, D=D)
 		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
