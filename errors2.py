@@ -27,7 +27,7 @@ from rolling_stats import *
 #-----------------------------------------------------------------------------
 def set_params():
 	quiet = True
-	gas = 3 # 0   No gas emission lines
+	gas = 1 # 0   No gas emission lines
 			# 1   Probe ionised gas
 			# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
 			#     (Hb and Hd)
@@ -146,9 +146,10 @@ class get_emission_templates(object):
 			emission_lines, line_name, line_wav = util.emission_lines(
 				logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
-			self.templatesToUse = np.append(self.templatesToUse, line_name)
+			for i in range(len(line_name)):
+				self.templatesToUse = np.append(self.templatesToUse, line_name[i])
+				self.templates.append(emission_lines[:,i])
 			self.component = self.component + [1]*len(line_name)
-			self.templates.append(emission_lines)
 			self.element.append('gas')
 		## ----------=============== SF and shocks lines ==============---------
 		if gas == 2:
@@ -252,7 +253,7 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
+def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 	noise_sav, element, templatesToUse, gas_output=None, gas_errors=None, opt='kin'):
 	# stellar MC results
 	if cc.device == 'glamdring':
@@ -620,7 +621,7 @@ def errors2(i_gal=None, bin=None):
 
 
 ## ----------============ Write ouputs to file =============---------
-	saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
+	saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 		noise_sav, element, templatesToUse, gas_output=gas_output, 
 		gas_errors=gas_errors, opt='gas')
 	

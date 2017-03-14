@@ -20,16 +20,17 @@ from use_kinemetry import use_kinemetry
 from classify import classify
 import traceback, sys
 
-galaxies = [# 'ic1459',
-			# 'ic1531', 
-			# 'ic4296',
-			# 'ngc0612', # Segmentation error
+galaxies = [
+			'ic1459',
+			'ic1531', 
+			'ic4296',
+			'ngc0612', # Segmentation error
 			'ngc1399',
-			# 'ngc3100',
+			'ngc3100',
 			'ngc3557',
 			'ngc7075',
-			# 'pks0718-34',
-			# 'eso443-g024'
+			'pks0718-34',
+			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
 # galaxies = ['ic1459']

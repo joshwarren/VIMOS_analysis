@@ -242,7 +242,7 @@ def errors3(i_gal=None, bin=None):
 			gas_errors[g,rep,:] = ppMC.error[0:gas_moments][g]
 
 ## ----------============ Write ouputs to file =============---------
-	saveAll(galaxy, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
+	saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 		noise_sav, element, templatesToUse, gas_output=gas_output, 
 		gas_errors=gas_errors, opt='pop')
 

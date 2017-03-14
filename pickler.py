@@ -181,9 +181,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 					dynamics_uncert = dynamics
 
 		for kine in dynamics:
-			if c in D.list_components:
-				D.components[c].setkin(kine, dynamics[kine])
-				D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
+			if np.isnan(dynamics[kine]).all():
+				D.components[c].unset(kine)
+			else:
+				if c in D.list_components:
+					D.components[c].setkin(kine, dynamics[kine])
+					D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
 
 	D.find_restFrame()
 # ------------================ Pickling =================----------

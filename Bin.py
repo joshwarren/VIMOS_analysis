@@ -204,18 +204,30 @@ class _data(object):
 # h4 (_uncert): (array)
 	
 	def __init__(self):
-		
-		pass
+		self.moment = 0
 
 	@property
 	def plot(self):
-
-		return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 'h4':self.h4}
+		if self.moment == 1:
+			return {'vel':self.vel}
+		elif self.moment == 2:
+			return {'vel':self.vel, 'sigma':self.sigma}
+		elif self.moment == 3:
+			return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3}
+		elif self.moment == 4:
+			return {'vel':self.vel, 'sigma':self.sigma, 'h3':self.h3, 'h4':self.h4}
 			
+	# If value is unmeasured.
+	def unset(self, attr):
+		for i, bin in enumerate(self.__parent__.bin):
+			del bin.components[self.name].__dict__[attr]
 
 	def setkin(self, attr, value):
 		# Ensures only acts on kinematics
 		if attr in ['vel','sigma','h3','h4']:
+			self.moment = max(self.moment, 
+				np.where(np.array(['vel','sigma','h3','h4'])==attr)[0][0]+1)
+			print self.moment
 			m = self.mask
 			for i, bin in enumerate(self.__parent__.bin):
 				try:
