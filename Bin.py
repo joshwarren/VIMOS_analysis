@@ -38,6 +38,12 @@ class Data(object):
 # galaxy_continuum: array of spectrum of whole galaxy with emission lines 
 #	removed.
 # SNRatio: (array) Signal to Noise Ratio of each bin. 
+# gas_opt: 	0	(default) No emission lines
+#			1	All emission lines set with LOSVD fixed to each other
+#			2	All Balmers lines set with the same LOSVD, and all others set with fixed
+#				LOSVD ([OIII] and [NI])
+#			3	All emission lines set with independant LOSVD
+# independent_components: list components with inderpendant LOSVDs.
 #
 # Methods:
 # add_e_line (line name, line wavelength): adds a new emission line object 
@@ -55,6 +61,7 @@ class Data(object):
 		self.norm_method = 'lwv'
 		self.vel_norm = 0.0
 		self.common_range = np.array([])
+		self._gas = 0
 
 
 	def add_e_line(self, line, wav):
@@ -172,7 +179,28 @@ class Data(object):
 	def SNRatio(self):
 		return np.array([np.nanmedian(bin.spectrum)/np.nanmedian(bin.noise) 
 			for bin in self.bin])
-		
+
+	@property
+	def gas(self):
+		return self._gas
+	@gas.setter
+	def gas(self, gas):
+		if gas not in [0,1,2,3]:
+			raise ValueError('Gas parameter must be an integer between 0 and 3'+
+				' (inclusive)')
+		else:
+			self._gas = gas
+
+	@property
+	def independent_components(self):
+		if self.gas == 0: 
+			return []
+		elif self.gas == 1: 
+			return ['stellar', 'gas']
+		elif self.gas == 2: 
+			return ['stellar', 'SF', 'Shocks']
+		elif self.gas == 3:
+			return self.list_components 
 
 
 
@@ -227,8 +255,6 @@ class _data(object):
 		if attr in ['vel','sigma','h3','h4']:
 			self.moment = max(self.moment, 
 				np.where(np.array(['vel','sigma','h3','h4'])==attr)[0][0]+1)
-			print self.moment
-			m = self.mask
 			for i, bin in enumerate(self.__parent__.bin):
 				try:
 					sav = bin.components[self.name].__dict__[attr].uncert
@@ -245,11 +271,11 @@ class _data(object):
 					bin.components[self.name].__dict__[attr].uncert = value[i]
 				except KeyError:
 					pass
-		
+
 	# __getattr__ only called when attribute is not found by other means. 
 	def __getattr__(self, attr):
 		if attr in ['vel','sigma','h3','h4']:
-			m = self.mask
+			m = self.mask_dynamics
 			# Normalise to rest frame of stars
 			if attr == 'vel':
 				kinematics = myArray([bin.components[self.name].__dict__[attr] 
@@ -290,7 +316,7 @@ class _data(object):
 class stellar_data(_data):
 # Attributes:
 # name: (str) 'stellar'
-# mask: (boolean array) all set to False
+# mask(_dynamics): (boolean array) all set to False
 # Inherited attributes from _data object for reading ppxf fitted stellar kinematics
 	def __init__(self, parent):
 		self.__parent__ = parent
@@ -298,6 +324,9 @@ class stellar_data(_data):
 		_data.__init__(self)
 	@property
 	def mask(self):
+		return np.array([False]*self.__parent__.number_of_bins)
+	@property
+	def mask_dynamics(self):
 		return np.array([False]*self.__parent__.number_of_bins)
 
 
@@ -309,7 +338,10 @@ class emission_data(_data):
 # wav: emission line quoted wavelength
 # equiv_width: array of equivelent width for each bin
 # mask: boolean array of if the emission line is masked in bin
+# mask_dynamics: boolean array of if all emission lines fixed to the same LOSVD are 
+#	masked in bin
 # amp_noise: array of Amplitude to Noise ratio for each bin
+#
 # Inherited attributes from _data object for reading ppxf fitted kinematics
 	def __init__(self, parent, name, wav):
 		self.__parent__ = parent
@@ -342,13 +374,41 @@ class emission_data(_data):
 
 	@property
 	def mask(self):
-		p = []
+		p = np.ones(self.__parent__.number_of_bins).astype(bool) # all masked
+		# if self.__parent__.gas == 3:
 		for bin in self.__parent__.bin:
 			try:
-				p.append(bin.e_line[self._name].mask)
+				p[bin.bin_number] = bin.e_line[self._name].mask
 			except KeyError:
-				p.append(True)
+				p[bin.bin_number] = True
 		return np.array(p)
+		# elif self.__parent__.gas == 2:
+		# 	pass
+		# elif self.__parent__.gas == 1:
+		# 	# Check all emission lines for a detection (i.e. mask = False)
+		# 	for bin in self.__parent__.bin:
+		# 		for c in bin.e_line.keys():
+		# 			if not bin.e_line[c].mask:
+		# 				p[bin.bin_number] = bin.e_line[c].mask
+		# return p
+
+	@property
+	def mask_dynamics(self):
+		p = np.ones(self.__parent__.number_of_bins).astype(bool) # all masked
+		if self.__parent__.gas == 3:
+			p = self.mask
+		elif self.__parent__.gas == 2:
+			pass
+		elif self.__parent__.gas == 1:
+			# Check all emission lines for a detection (i.e. mask = False)
+			# components = self.__parent__.e_components
+			# for bin in self.__parent__.bin:
+			# 	for c in components:
+			# 		if not bin.e_line[c].mask:
+			# 			p[bin.bin_number] = bin.e_line[c].mask
+			for k, i in self.__parent__.e_line.iteritems():
+				p *= i.mask
+		return p
 
 	@property
 	def amp_noise(self):

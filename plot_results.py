@@ -274,7 +274,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		plt.show()
 # ------------========= Plot intensity (& EW) ===========----------
 	print "    gas map(s) and equivalent widths"
-	
+
 	for c in D.e_components:
 		print "        " + c
 

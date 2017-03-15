@@ -111,10 +111,12 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 # ------------=========== Read kinematics results ==============----------
 	componants = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
 		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
+
 	if len(componants) == 0: gas =0
 	elif 'gas' in componants: gas = 1
 	elif 'Shocks' in componants and 'SF' in componants: gas = 2
 	else: gas = 3
+	D.gas = gas
 
 	
 

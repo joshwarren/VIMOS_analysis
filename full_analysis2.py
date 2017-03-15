@@ -33,7 +33,7 @@ galaxies = [
 			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
-# galaxies = ['ic1459']
+galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -57,7 +57,7 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
 		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
 			CO = False, residual="median", norm=norm, D=D)
 		# plt.close("all")
