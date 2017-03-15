@@ -57,9 +57,9 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-			CO = False, residual="median", norm=norm, D=D)
+		D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
+		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+		# 	CO = False, residual="median", norm=norm, D=D)
 		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
