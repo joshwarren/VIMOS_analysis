@@ -98,7 +98,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 	dv = (stellar_templates.logLam_template[0]-logLam_bin[0])*c # km/s
 	# Find the pixels to ignore to avoid being distracted by gas emission
 	#; lines or atmospheric absorbsion line.  
-	goodpixels = determine_goodpixels(logLam_bin,lamRange_template,vel, z) 
+	goodpixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template,vel, z) 
 	lambdaq = np.exp(logLam_bin)
 	start = [vel, sig] # starting guess
 

@@ -31,7 +31,7 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 	for i in range(2):
 		templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, dv, \
-		lambdaq, plot, quiet = setup(galaxy, z=z, vel=vel, sig=sig, discard=discard, 
+			lambdaq, plot, quiet = setup(galaxy, z=z, vel=vel, sig=sig, discard=discard, 
 			set_range=set_range)
 
 		pp = ppxf(templates, bin_log, noise, velscale, start, 
@@ -56,10 +56,14 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 		start = [vel,sig]
 
-
-		pp = ppxf(templates, bin_log, noise, velscale, start, 
-			goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
-			lam=lambdaq, plot=not quiet, quiet=quiet)
+		if i != repeats-1:
+			pp = ppxf(templates, bin_log, noise, velscale, start, 
+				goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
+				lam=lambdaq, plot=not quiet, quiet=quiet)
+		else:
+			pp = ppxf(templates, bin_log, noise, velscale, start, 
+				goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
+				lam=lambdaq, plot=False, quiet=quiet)
 
 		vel = pp.sol[0]
 		sig = pp.sol[1]
