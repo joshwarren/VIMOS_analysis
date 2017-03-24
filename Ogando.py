@@ -42,6 +42,8 @@ class ogando(object):
 			np.tile(np.arange(self.f[0].header['NAXIS2']),self.f[0].header['NAXIS1'])] = frac
 
 		cube = self.f[0].data
+		# Cube cannot be normalised due to removing heavier weighting for brighter 
+		# central bins.
 		cube[self.f[3].data==1] = 0
 		noise_cube = self.f[1].data
 		noise_cube[self.f[3].data==1] = 0.000000001

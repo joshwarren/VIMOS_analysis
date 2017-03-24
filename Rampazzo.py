@@ -46,6 +46,7 @@ class rampazzo(object):
 		self.y_cent = y_gals[self.i_gal] * self.f[0].header['CDELT2']
 
 		self.cube = self.f[0].data
+		self.cube /= np.nanmedian(self.cube, axis=0) # Noramlise cube
 		self.cube[self.f[3].data==1] = 0
 		self.noise_cube = self.f[1].data
 		self.noise_cube[self.f[3].data==1] = 0.000000001

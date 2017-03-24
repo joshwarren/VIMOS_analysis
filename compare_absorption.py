@@ -47,10 +47,12 @@ class compare_absorption(object):
 			from Ogando import ogando
 			data = ogando(galaxy, debug=debug, slit_h=slit_h, slit_w=slit_w, 
 				slit_pa=slit_pa)
+
+		elif method == 'Miles':
+			from Miles import miles
+			data = miles(galaxy)
+
 		gal_spec, gal_noise = data.get_spec()
-
-
-
 
 		gal_spec, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, 
 			lam=data.lam, set_range=np.array([4200,10000]), return_cuts=True)
@@ -155,7 +157,7 @@ class compare_absorption(object):
 				# Back to Angstroms
 				ab = (index[1]-index[0]) * (1 - np.exp(ab/-2.5))
 
-			if 'Rampazzo' in method:
+			elif 'Rampazzo' in method:
 				self.r = data.r
 			self.result[line] = ab
 			self.uncert[line] = ab_uncert
@@ -308,9 +310,45 @@ def run(galaxy='ic1459', method=None, debug=False):
 			ax.set_ylabel('Index Strength (A)')
 		fig.savefig('/Data/lit_absorption/Ogando.png', bbox_inches='tight')
 		# plt.show()
-				
+
+	elif method == 'Miles':
+		fig, ax = plt.subplots()
+
+		gals = ['ic1459', 'ic1531', 'ic4296','ngc0612', 'ngc1399','ngc3100','ngc3557',
+			'ngc7075', 'pks0718-34', 'eso443-g024']
+		lines = np.array(['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
+			'Mg_b'])
+		line_w = [4300, 4383, 4455,4531,4861,5015,5170]
+		c = {'ic1459':'saddlebrown', 'ic1531':'k', 'ic4296':'g','ngc0612':'y', 'ngc1399':'m',
+			'ngc3100':'r','ngc3557':'c','ngc7075':'orange', 'pks0718-34':'darkgreen', 
+			'eso443-g024':'gray'}
 
 
+		models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
+
+		for i, galaxy in enumerate(gals):
+			comp_ab = compare_absorption(galaxy=galaxy, method=method)
+			for j, l in enumerate(lines):
+				ax.errorbar(line_w[j], comp_ab.result[l], yerr=comp_ab.uncert[l],
+					color=c[galaxy], zorder=10, fmt='x')
+
+		titles = np.loadtxt(models_dir, dtype=str)[0]
+		import matplotlib.patches as patches
+
+		for i, l in enumerate(titles):
+			if l in lines:
+				TMJ_index = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
+					skiprows=35)
+				j = np.where(lines == l)[0][0]
+				ax.add_patch(patches.Rectangle((line_w[j] - 20, np.min(TMJ_index)), 40,
+					np.max(TMJ_index)-np.min(TMJ_index), zorder=5))
+
+		ax.set_xlabel('Wavelength (A)')
+		ax.set_ylabel('Index Indicies')
+		ax.set_title('Global index measurements (with TMJ models ranges)')
+#		ax.legend(c)
+
+		fig.savefig('/Data/lit_absorption/Miles.png', bbox_inches='tight')
 
 
 if __name__ == '__main__':
@@ -318,9 +356,12 @@ if __name__ == '__main__':
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
 	import subprocess
-	for galaxy in ['ic1459','ic4296','ngc3557']:
+	# for galaxy in ['ic1459','ic4296','ngc3557']:
 
-		run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+	# 	run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+	# 	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s Rampazzo'" % (galaxy)])
+
 	# run(method = 'Ogando', debug=False)
-
-		subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s'" % (galaxy)])
+	# subprocess.call(['/bin/bash', '-i', '-c', "push 'done Ogando comparison'"])
+	run(method = 'Miles', debug=False)
+	subprocess.call(['/bin/bash', '-i', '-c', "push 'done Miles comparison'"])
