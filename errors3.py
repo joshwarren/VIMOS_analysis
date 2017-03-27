@@ -120,7 +120,11 @@ def errors3(i_gal=None, bin=None):
 	dataCubeDirectory = "%s/cubes/%s.cube.combined.corr.fits" % (dir,galaxy)
 		
 	galaxy_data, header = fits.getdata(dataCubeDirectory, 0, header=True)
+	# Normalise each spaxel for population pipeline
+	norm = np.nanmedian(galaxy_data, axis=0)
+	galaxy_data /= norm
 	galaxy_noise = fits.getdata(dataCubeDirectory, 1)
+	galaxy_noise /= norm
 	galaxy_badpix = fits.getdata(dataCubeDirectory, 3)
 
 	## write key parameters from header - can then be altered in future	
