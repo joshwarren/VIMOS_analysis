@@ -181,7 +181,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
         x, y, signal, noise, targetSN, quiet=True, plot=False,
         saveTo='%s/analysis/%s/binning_%s.png' %(dir,galaxy, opt))
 
-	order = sorted(binNum)
+	order = np.argsort(binNum)
 	xBin = np.zeros(n_spaxels)
 	yBin = np.zeros(n_spaxels)
 

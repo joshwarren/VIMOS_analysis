@@ -20,7 +20,7 @@ max=$( awk '{print $3}' /Data/vimos/analysis/$1/voronoi_2d_binning_output_$2.txt
 
 
 i=0
-while [[ $i -lt $max ]]
+while [[ $i -lt $max+1 ]]
 do 
     ls ${i}.dat &> /dev/null || echo "     "$i / $max
     let i="i+1"

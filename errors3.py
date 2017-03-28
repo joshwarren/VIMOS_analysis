@@ -72,12 +72,8 @@ def errors3(i_gal=None, bin=None):
 
 	if cc.device == 'glamdring':
 		dir = cc.base_dir
-		templatesDirectory = '%s/ppxf/MILES_library/' % (cc.base_dir)	
 	else:
 		dir = '%s/Data/vimos' % (cc.base_dir)
-		templatesDirectory = '%s/models/miles_library/' % (cc.home_dir)
-	
-	
 
 
 	data_file = dir + "/analysis/galaxies.txt"
@@ -94,9 +90,6 @@ def errors3(i_gal=None, bin=None):
 
 	tessellation_File = "%s/analysis/%s/" % (dir, galaxy) +\
 		"voronoi_2d_binning_output_pop.txt"
-	tessellation_File2 = "%s/analysis/%s/" % (dir, galaxy) +\
-		"voronoi_2d_binning_output2_pop.txt"
-
 
 	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
 

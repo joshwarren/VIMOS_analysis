@@ -430,9 +430,15 @@ def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None,
 		raise ValueError('lam keyword must be supplied if set_range keyword'+\
 			' is supplied')
 	elif set_range is None and lam is not None:
-		return spec, lam
+		if return_cuts:
+			return spec, lam, np.ones(len(spec)).astype(bool)
+		else:
+			return spec, lam
 	else:
-		return spec
+		if return_cuts:
+			return spec, np.ones(len(spec)).astype(bool)
+		else:
+			return spec
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -454,11 +460,8 @@ def errors2(i_gal=None, bin=None):
 
 	if cc.device == 'glamdring':
 		dir = cc.base_dir
-		templatesDirectory = '%s/ppxf/MILES_library' % (cc.base_dir)	
 	else:
 		dir = '%s/Data/vimos' % (cc.base_dir)
-		templatesDirectory = '%s/models/miles_library' % (cc.home_dir)
-
 
 
 	data_file = "%s/analysis/galaxies.txt" % (dir)
@@ -475,9 +478,6 @@ def errors2(i_gal=None, bin=None):
 
 	tessellation_File = "%s/analysis/%s/" % (dir, galaxy) + \
 		"voronoi_2d_binning_output_kin.txt"
-	tessellation_File2 = "%s/analysis/%s/" % (dir, galaxy) + \
-		"voronoi_2d_binning_output2_kin.txt"
-
 
 	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
 
