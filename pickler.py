@@ -40,7 +40,7 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	elif opt == "pop":
 		vin_dir_gasMC = "%s/%s/pop_MC" % (vin_dir, galaxy)
 	out_pickle = '%s/pickled' % (output)
-
+	
 	# Check tessellation file is older than pPXF outputs (checks vin_dir_gasMC/0.dat only).
 	if os.path.getmtime(tessellation_File) > os.path.getmtime('%s/0.dat' % (vin_dir_gasMC)
 		): 

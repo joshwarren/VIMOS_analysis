@@ -356,7 +356,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 # ------------=========== Setting titles etc ============----------
 	print '    Kinematics'
 	# for c in ['stellar']: # For debugging
-	for c in D.list_components:
+	for c in D.independent_components:
 		print '        %s' % (c)
 
 		for k in D.components[c].plot.keys():
