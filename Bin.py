@@ -327,7 +327,7 @@ class stellar_data(_data):
 		return np.array([False]*self.__parent__.number_of_bins)
 	@property
 	def mask_dynamics(self):
-		return np.array([False]*self.__parent__.number_of_bins)
+		return self.mask # np.array([False]*self.__parent__.number_of_bins)
 
 
 
@@ -708,4 +708,4 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__threshold__ or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+		return self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
