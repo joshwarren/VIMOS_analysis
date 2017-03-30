@@ -21,9 +21,14 @@ import os
 from glob import glob
 from scipy.interpolate import LinearNDInterpolator
 import emcee
-from absorption import absorption
 from checkcomp import checkcomp
 cc = checkcomp()
+if cc.device == -1:
+	cc = checkcomp(override='glamdring')
+if cc.remote:
+	import matplotlib # 20160202 JP to stop lack-of X-windows error
+	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
+from absorption import absorption
 
 c = 299792.458
 
@@ -32,20 +37,19 @@ else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 class population(object):
 
-	def __init__(self, i_gal=None, bin=None):
+	def __init__(self):#, i_gal=None, bin=None):
 		#ab_lines, uncerts, interp=None, grid_length=40, previous=False, self.galaxy=None):
-		if i_gal is None: i_gal=int(sys.argv[1])
-		if bin is None: self.bin=int(sys.argv[2])
-		else: self.bin = bin
+		self.i_gal=int(sys.argv[1])
+		self.bin=int(sys.argv[2])
 
 		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 
 
 		galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-		self.galaxy = galaxies[i_gal]
+		self.galaxy = galaxies[self.i_gal]
 
-		self.vout_dir = '%s/%s/pop/' % (cc.base_dir, self.galaxy)
+		self.vout_dir = '%s/%s/pop' % (vin_dir, self.galaxy)
 		if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
 
 		grid_length = 40
@@ -216,9 +220,7 @@ class population(object):
 #############################################################################
 
 if __name__=="__main__":
-
-
-	population()
+	p = population()
 
 
 

@@ -40,8 +40,14 @@ class checkcomp(object):
 		elif 'asosx146' in uname or 'asosx134' in uname:
 			d = 'uni'
 		else:
-			d = -1 
-		
+			try:
+				with open('/etc/clustername', 'r') as f:
+					if 'glamdring' in f.read():
+						d = 'glamdring'
+					else:
+						d=-1
+			except IOError:
+				d = -1 
 		return d
 
 	@property
