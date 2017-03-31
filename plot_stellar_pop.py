@@ -14,7 +14,7 @@ import os
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def plot_stellar_pop(galaxy, wav_range="", D=None):
+def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 	print 'Plotting stellar population'
 
 	if cc.device == 'glamdring': vin_dir = '%s/analysis/%s/pop' % (cc.base_dir,galaxy)
@@ -44,80 +44,102 @@ def plot_stellar_pop(galaxy, wav_range="", D=None):
 	unc_met = np.zeros(D.number_of_bins)
 	unc_alp = np.zeros(D.number_of_bins)
 
-	for i in xrange(D.number_of_bins):
-		ag, me, al = np.loadtxt('%s/%i.dat' % (vin_dir, i), unpack=True)
-		
-		age[i] = ag[0]
-		unc_age[i] = ag[1]
-		met[i] = me[0]
-		unc_met[i] = me[1]
-		alp[i] = al[0]
-		unc_alp[i] = al[1]
+	if method == 'median':
+		for i in xrange(D.number_of_bins):
+			ag, me, al = np.loadtxt('%s/%i.dat' % (vin_dir, i), unpack=True)
+			
+			age[i] = ag[0]
+			unc_age[i] = ag[1]
+			met[i] = me[0]
+			unc_met[i] = me[1]
+			alp[i] = al[0]
+			unc_alp[i] = al[1]
 
 
 
-	f, ax_array = plt.subplots(3, 2)
-
-
-
-
-	ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, age, nodots=True, colorbar=True, label='Age (Gyrs)', 
-		vmin=0, vmax=15, title='Age', ax=ax_array[0,0], cmap='gnuplot2', 
-		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=30)
-
-	ax_array[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, met, nodots=True, colorbar=True, label='Metalicity [Z/H]', 
-		vmin=-2.25, vmax=0.67, title='Metalicity', ax=ax_array[1,0], 
-		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=30)
-
-	ax_array[2,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, alp, nodots=True, colorbar=True, 
-		label='Element Ratio [alpha/Fe]', 
-		vmin=-0.3, vmax=0.5, title='Alpha Enhancement', ax=ax_array[2,0], 
-		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=30)
-
-
-	ax_array[0,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, unc_age, nodots=True, colorbar=True, label='Age (Gyrs)', 
-		vmin=0, vmax=15, title='Age Uncertainty', ax=ax_array[0,1], 
-		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=30)
-
-	ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, unc_met, nodots=True, colorbar=True, label='Metalicity', 
-		vmin=-2.25, vmax=0.67, title='Metalicity Uncertainty [Z/H]', 
-		ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-		signal_noise=D.SNRatio, signal_noise_target=30)
-
-	ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, unc_alp, nodots=True, colorbar=True, 
-		label='Element Ratio [alpha/Fe]', 
-		vmin=-0.3, vmax=0.5, title='Alpha Enhancement Uncertainty', 
-		ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-		signal_noise=D.SNRatio, signal_noise_target=30)
+		f, ax_array = plt.subplots(3, 2)
 
 
 
 
-	# f.set_size_inches(8.5,3*1.8)
+		ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, age, nodots=True, colorbar=True, label='Age (Gyrs)', 
+			vmin=0, vmax=15, title='Age', ax=ax_array[0,0], cmap='gnuplot2', 
+			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+			signal_noise_target=30)
 
-	print 'Saving plot'
+		ax_array[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, met, nodots=True, colorbar=True, label='Metalicity [Z/H]', 
+			vmin=-2.25, vmax=0.67, title='Metalicity', ax=ax_array[1,0], 
+			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+			signal_noise_target=30)
 
-	saveTo = "%s/population_%s.pdf" % (out_plots, wav_range)
-	f.tight_layout()
-	ax_array[0,1].set_xlabel('')
-	ax_array[0,0].set_xlabel('')
-	ax_array[1,0].set_xlabel('')
-	ax_array[1,1].set_xlabel('')
-	ax_array[0,1].set_ylabel('')
-	ax_array[1,1].set_ylabel('')
-	ax_array[2,1].set_ylabel('')
-	f.suptitle(galaxy.upper())
-	f.savefig(saveTo, bbox_inches="tight")
+		ax_array[2,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, alp, nodots=True, colorbar=True, 
+			label='Element Ratio [alpha/Fe]', 
+			vmin=-0.3, vmax=0.5, title='Alpha Enhancement', ax=ax_array[2,0], 
+			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+			signal_noise_target=30)
+
+
+		ax_array[0,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, unc_age, nodots=True, colorbar=True, label='Age (Gyrs)', 
+			vmin=0, vmax=15, title='Age Uncertainty', ax=ax_array[0,1], 
+			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+			signal_noise_target=30)
+
+		ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, unc_met, nodots=True, colorbar=True, label='Metalicity', 
+			vmin=-2.25, vmax=0.67, title='Metalicity Uncertainty [Z/H]', 
+			ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+			signal_noise=D.SNRatio, signal_noise_target=30)
+
+		ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+			D.xBar, D.yBar, unc_alp, nodots=True, colorbar=True, 
+			label='Element Ratio [alpha/Fe]', 
+			vmin=-0.3, vmax=0.5, title='Alpha Enhancement Uncertainty', 
+			ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+			signal_noise=D.SNRatio, signal_noise_target=30)
+
+
+
+
+		# f.set_size_inches(8.5,3*1.8)
+
+		print 'Saving plot'
+
+		saveTo = "%s/population_%s.pdf" % (out_plots, wav_range)
+		f.tight_layout()
+		ax_array[0,1].set_xlabel('')
+		ax_array[0,0].set_xlabel('')
+		ax_array[1,0].set_xlabel('')
+		ax_array[1,1].set_xlabel('')
+		ax_array[0,1].set_ylabel('')
+		ax_array[1,1].set_ylabel('')
+		ax_array[2,1].set_ylabel('')
+		f.suptitle(galaxy.upper())
+		f.savefig(saveTo, bbox_inches="tight")
+
+	elif method == 'multipeaks':
+		from peakdetect import peakdetect
+
+		age1 = np.zeros(D.number_of_bins)
+		met1 = np.zeros(D.number_of_bins)
+		alp1 = np.zeros(D.number_of_bins)
+
+		age2 = np.zeros(D.number_of_bins)
+		met2 = np.zeros(D.number_of_bins)
+		alp2 = np.zeros(D.number_of_bins)
+		for i in xrange(D.number_of_bins):
+			ag, me, al = np.loadtxt('%s/distribution/%i.dat' % (vin_dir, i), 
+				unpack=True)
+			age_hist = np.histogram(ag, bins=40)
+			age_x = (age_hist[1][0:-1]+[age_hist[1][1:]])/2
+			age_hist = age_hist[0]
+			age_peaks = peakdetect(age_hist, x_axis=age_x, lookahead=4)[0]
+
+
+			# to be continued
 
 
 
