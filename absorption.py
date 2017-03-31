@@ -95,8 +95,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		index_value *= corr
 	
 	except IndexError:
-		index_value=np.nan
-		index_va = np.nan
+		index_value = np.array([np.nan])
+		index_va = np.array([np.nan])
 
 	if noise is not None:
 		return index_value, index_va

@@ -103,7 +103,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		x -= max(x)/2
 		y -= max(y)/2
 		x_label = r'$\Delta$ RA (arcsec)'
-		y_label = r'$\Delta Dec (arcsec)'
+		y_label = r'$\Delta$ Dec (arcsec)'
 
 		# Tells add_CO method in plot_results coords were not supplied
 		ax.RaDec = False
@@ -163,7 +163,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				(signal_noise_target/2)).clip(0.05,1)
 	# Set bad pixels grey
 	pic[np.isnan(img),:] = [0.5,0.5,0.5,1]
-	ax.set_axis_bgcolor('grey')
+	ax.set_facecolor('grey')
 
 
 	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
@@ -208,7 +208,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
-			contours = -2.5*np.log10(flux_unbinned/np.max(flux_unbinned))
+			contours = -2.5*np.log10(np.rot90(flux_unbinned[:,::-1])/np.max(flux_unbinned))
 			# 1 mag contours
 			ax.contour(contours, levels=np.arange(20), colors='k', 
 				extent=[xmin, xmax, ymin, ymax])

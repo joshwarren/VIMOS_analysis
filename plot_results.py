@@ -263,15 +263,18 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 
 	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.flux, vmin=fmin, 
 		vmax=fmax, nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-		label=CBLabel, title=title, cmap='gist_yarg', ax=ax, header=header)
+		label=CBLabel, title=title, cmap='gist_yarg', ax=ax, header=header,
+		flux_unbinned=D.unbinned_flux)
+
+	if plots:
+		plt.show()
+
 	ax_array.append(ax)
 	f.delaxes(ax)
 	f.delaxes(ax.cax)
 	if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 	if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 	
-	if plots:
-		plt.show()
 # ------------========= Plot intensity (& EW) ===========----------
 	print "    gas map(s) and equivalent widths"
 
@@ -307,7 +310,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 		
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, D.e_line[c].flux, 
 			vmin=f_min, vmax=f_max, colorbar=True, nodots=True, label=fCBtitle, 
-			  title=f_title, cmap = 'gist_yarg', ax=ax, header=header)
+			title=f_title, cmap = 'gist_yarg', ax=ax, header=header)
 		ax_array.append(ax)
 		f.delaxes(ax)
 		f.delaxes(ax.cax)
@@ -358,30 +361,30 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 	# for c in ['stellar']: # For debugging
 	for c in D.independent_components:
 		print '        %s' % (c)
+		im_type = c
+		pl = c
 
-		for k in D.components[c].plot.keys():
-			im_type = c
-			if im_type == "gas":
-				im_type=""
-				ax_y=set_ax_y(c)
-			elif im_type == "SF":
-				im_type=" (Star Forming)"
-				ax_y=set_ax_y(c)
-			elif im_type == "Shocks":
-				im_type=" (Shocking)"
-				ax_y=set_ax_y(c)
-			elif 'Hbeta' in im_type:
-				im_type=" ("+r'H$_\beta$'+")"
-				ax_y=set_ax_y(c)
-			elif 'Hgamma' in im_type:
-				im_type=" ("+r'H$_\gamma$'+")"
-				ax_y=set_ax_y(c)
-			elif 'OIII' in im_type:
-				im_type=" (OIII)"
-				ax_y=set_ax_y(c)
-			else:
-				im_type=" (" + im_type + ")"
-				ax_y=set_ax_y(c)
+		if im_type == "gas":
+			im_type=""
+			pl = 'Hbeta'
+		elif im_type == "SF":
+			im_type=" (Star Forming)"
+			pl = '[OIII]5007d'
+		elif im_type == "Shocks":
+			im_type=" (Shocking)"
+			pl = 'Hbeta'
+		elif 'Hbeta' in im_type:
+			im_type=" ("+r'H$_\beta$'+")"
+		elif 'Hgamma' in im_type:
+			im_type=" ("+r'H$_\gamma$'+")"
+		elif 'OIII' in im_type:
+			im_type=" (OIII)"
+		else:
+			im_type=" (" + im_type + ")"
+
+
+		for k in D.components[pl].plot.keys():
+			ax_y = set_ax_y(c)
 
 			symmetric=False
 			positive=False
@@ -423,9 +426,9 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 					" Histogram"
 				title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
-			vmin, vmax = set_lims(D.components[c].plot[k], positive=positive, 
+			vmin, vmax = set_lims(D.components[pl].plot[k], positive=positive, 
 				symmetric=symmetric)
-			v_uncert_min, v_uncert_max = set_lims(D.components[c].plot[k].uncert, 
+			v_uncert_min, v_uncert_max = set_lims(D.components[pl].plot[k].uncert, 
 				positive=True)
 # # ------------============== Plot Histogram =============----------
 			# Field histogram
@@ -448,12 +451,12 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			ax.saveTo = saveTo
 			ax.figx, ax.figy = ax_x, ax_y
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar,
-				D.yBar, D.components[c].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
+				D.yBar, D.components[pl].plot[k], vmin=vmin, vmax=vmax, #flux_type='notmag',
 				nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 				label=CBLabel,galaxy = galaxy.upper(), redshift = z,
 				title=title, ax=ax, header=header, signal_noise=D.SNRatio,
-				signal_noise_target=SN_target, show_vel=False)
-			#plots=True
+				signal_noise_target=SN_target, flux_unbinned=D.unbinned_flux)
+			# plots=True
 			if plots:
 				plt.show()
 			ax_array.append(ax)
@@ -465,7 +468,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			# Uncertainty plot
 			saveTo = "%s/%s_%s_uncert_field_%s.png" % (out_nointerp, c, k, wav_range)
 			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
-				D.components[c].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
+				D.components[pl].plot[k].uncert, vmin=v_uncert_min, vmax=v_uncert_max,
 				flux_type='notmag', nodots=True, show_bin_num=show_bin_num,
 				colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
 				redshift = z, title=utitle, save=saveTo, close=not CO, header=header)

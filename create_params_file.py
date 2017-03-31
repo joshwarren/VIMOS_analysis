@@ -7,12 +7,12 @@ opt = 'pop' 		# kin, abs or pop
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 	'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-gals=[2]
+gals=[2, 4, 8]
 
 output_file = "params.txt"
 f = open(output_file, 'w')
-# for gal in gals:
-for gal in range(10):
+for gal in gals:
+# for gal in range(10):
 	galaxy = galaxies[gal]
 
 	tessellation_File = '%s/Data/vimos/analysis/%s/voronoi_2d_binning_output_%s.txt' % (

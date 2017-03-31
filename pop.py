@@ -179,8 +179,9 @@ class population(object):
 			os.makedirs("%s/plots/" % (self.vout_dir))
 		file = "%s/plots/%i.png" % (self.vout_dir, self.bin)
 		f.savefig(file)
-		plt.show()
 
+		if not cc.remote:
+			plt.show()
 
 #############################################################################
 
@@ -212,8 +213,9 @@ class population(object):
 		if not os.path.exists(os.path.dirname(file)): 
 			os.makedirs(os.path.dirname(file))
 		s = self.samples.shape
+
 		with open(file, 'w') as f:
-			for j in range(s[1]):
+			for j in range(s[0]):
 				f.write('%f   %f   %f \n' % (self.samples[j,0], self.samples[j,1],
 					self.samples[j,2]))
 
