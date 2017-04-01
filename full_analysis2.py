@@ -74,7 +74,7 @@ for galaxy in galaxies:
 		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 		# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 		# D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-		D = plot_stellar_pop(galaxy, wav_range=wav_range, D=D)
+		D = plot_stellar_pop(galaxy, wav_range=wav_range, method='mostlikely', D=D)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

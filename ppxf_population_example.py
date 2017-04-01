@@ -133,7 +133,7 @@ def ppxf_population_gas_example_sdss(quiet=True):
     output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
     out_plots = "%splots" % (output)
     out_pickle = '%s/pickled' % (output)
-    pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'rb')
+    pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
     #pickleFile = open("%s/dataObj_%s.pkl" % (cc.home_dir, wav_range), 'rb')
 
     D = pickle.load(pickleFile)
@@ -168,8 +168,9 @@ def ppxf_population_gas_example_sdss(quiet=True):
 
 
 
-
+    w=[]
     for bin_number in range(D.number_of_bins):
+        bin_number=32
         print(bin_number,'/',D.number_of_bins)
 
         # Read SDSS DR8 galaxy spectrum taken from here http://www.sdss3.org/dr8/
@@ -256,10 +257,22 @@ def ppxf_population_gas_example_sdss(quiet=True):
         start = [start, start] # adopt the same starting value for both gas and stars
 
         pp = ppxf(templates, galaxy, noise, velscale, start,
-                  plot=False, moments=moments, degree=-1, mdegree=10,
+                  plot=True, moments=moments, degree=-1, mdegree=10,
                   vsyst=dv, clean=False, regul=1./regul_err,
                   reg_dim=reg_dim, component=component, quiet=quiet)
 
+        plt.subplot(212)
+        weights = pp.weights[:np.prod(reg_dim)].reshape(reg_dim)/pp.weights.sum()
+        plt.imshow(np.rot90(weights), interpolation='nearest', 
+                   cmap='gist_heat', aspect='auto', origin='upper',
+                   extent=[np.log10(1), np.log10(17.7828), -1.9, 0.45])
+        plt.colorbar()
+        plt.title("Mass Fraction")
+        plt.xlabel("log$_{10}$ Age (Gyr)")
+        plt.ylabel("[M/H]")
+        plt.tight_layout()
+
+        plt.show()
         # Plot fit results for stars and gas
         weights = pp.weights[:np.prod(reg_dim)].reshape(reg_dim)/pp.weights.sum()
 

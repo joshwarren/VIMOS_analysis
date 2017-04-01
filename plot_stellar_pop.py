@@ -44,6 +44,8 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 	unc_met = np.zeros(D.number_of_bins)
 	unc_alp = np.zeros(D.number_of_bins)
 
+	f, ax_array = plt.subplots(3, 2)
+
 	if method == 'median':
 		for i in xrange(D.number_of_bins):
 			ag, me, al = np.loadtxt('%s/%i.dat' % (vin_dir, i), unpack=True)
@@ -55,72 +57,12 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 			alp[i] = al[0]
 			unc_alp[i] = al[1]
 
+		f.suptitle('%s median and standard deviation' %(galaxy.upper()))
 
 
-		f, ax_array = plt.subplots(3, 2)
+		
 
-
-
-
-		ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, age, nodots=True, colorbar=True, label='Age (Gyrs)', 
-			vmin=0, vmax=15, title='Age', ax=ax_array[0,0], cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=30)
-
-		ax_array[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, met, nodots=True, colorbar=True, label='Metalicity [Z/H]', 
-			vmin=-2.25, vmax=0.67, title='Metalicity', ax=ax_array[1,0], 
-			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=30)
-
-		ax_array[2,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, alp, nodots=True, colorbar=True, 
-			label='Element Ratio [alpha/Fe]', 
-			vmin=-0.3, vmax=0.5, title='Alpha Enhancement', ax=ax_array[2,0], 
-			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=30)
-
-
-		ax_array[0,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, unc_age, nodots=True, colorbar=True, label='Age (Gyrs)', 
-			vmin=0, vmax=15, title='Age Uncertainty', ax=ax_array[0,1], 
-			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=30)
-
-		ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, unc_met, nodots=True, colorbar=True, label='Metalicity', 
-			vmin=-2.25, vmax=0.67, title='Metalicity Uncertainty [Z/H]', 
-			ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-			signal_noise=D.SNRatio, signal_noise_target=30)
-
-		ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, unc_alp, nodots=True, colorbar=True, 
-			label='Element Ratio [alpha/Fe]', 
-			vmin=-0.3, vmax=0.5, title='Alpha Enhancement Uncertainty', 
-			ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-			signal_noise=D.SNRatio, signal_noise_target=30)
-
-
-
-
-		# f.set_size_inches(8.5,3*1.8)
-
-		print 'Saving plot'
-
-		saveTo = "%s/population_%s.pdf" % (out_plots, wav_range)
-		f.tight_layout()
-		ax_array[0,1].set_xlabel('')
-		ax_array[0,0].set_xlabel('')
-		ax_array[1,0].set_xlabel('')
-		ax_array[1,1].set_xlabel('')
-		ax_array[0,1].set_ylabel('')
-		ax_array[1,1].set_ylabel('')
-		ax_array[2,1].set_ylabel('')
-		f.suptitle(galaxy.upper())
-		f.savefig(saveTo, bbox_inches="tight")
-
-	elif method == 'multipeaks':
+	elif method == 'mostlikely':
 		from peakdetect import peakdetect
 
 		age1 = np.zeros(D.number_of_bins)
@@ -133,15 +75,77 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 		for i in xrange(D.number_of_bins):
 			ag, me, al = np.loadtxt('%s/distribution/%i.dat' % (vin_dir, i), 
 				unpack=True)
-			age_hist = np.histogram(ag, bins=40)
-			age_x = (age_hist[1][0:-1]+[age_hist[1][1:]])/2
-			age_hist = age_hist[0]
-			age_peaks = peakdetect(age_hist, x_axis=age_x, lookahead=4)[0]
+
+			for plot, unc_plot, pop in zip([age,met,alp],[unc_age,unc_met,unc_alp],
+				[ag,me,al]):
+				hist = np.histogram(pop, bins=40)
+				x = (hist[1][0:-1]+[hist[1][1:]])/2
+				hist = hist[0]
+				peaks = np.array(peakdetect(hist, x_axis=x, lookahead=4)[0])
+				plot[i] = peaks[np.argmax(peaks[:,1]), 0]
+
+				gt_fwhm = hist >= np.max(peaks[:,1])
+				unc_age[i] = max(x[gt_fwhm]) - min(x[gt_fwhm])
+
+			f.suptitle('%s mostlikely and fwhm' % (galaxy.upper()))
 
 
-			# to be continued
 
 
+	ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, age, nodots=True, colorbar=True, label='Age (Gyrs)', 
+		vmin=0, vmax=15, title='Age', ax=ax_array[0,0], cmap='gnuplot2', 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=30)
+
+	ax_array[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, met, nodots=True, colorbar=True, label='Metalicity [Z/H]', 
+		vmin=-2.25, vmax=0.67, title='Metalicity', ax=ax_array[1,0], 
+		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=30)
+
+	ax_array[2,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, alp, nodots=True, colorbar=True, 
+		label='Element Ratio [alpha/Fe]', 
+		vmin=-0.3, vmax=0.5, title='Alpha Enhancement', ax=ax_array[2,0], 
+		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=30)
+
+
+	ax_array[0,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, unc_age, nodots=True, colorbar=True, label='Age (Gyrs)', 
+		vmin=0, vmax=15, title='Age Uncertainty', ax=ax_array[0,1], 
+		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=30)
+
+	ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, unc_met, nodots=True, colorbar=True, label='Metalicity', 
+		vmin=-2.25, vmax=0.67, title='Metalicity Uncertainty [Z/H]', 
+		ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		signal_noise=D.SNRatio, signal_noise_target=30)
+
+	ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, unc_alp, nodots=True, colorbar=True, 
+		label='Element Ratio [alpha/Fe]', 
+		vmin=-0.3, vmax=0.5, title='Alpha Enhancement Uncertainty', 
+		ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		signal_noise=D.SNRatio, signal_noise_target=30)
+
+
+	# f.set_size_inches(8.5,3*1.8)
+
+	print 'Saving plot'
+
+	saveTo = "%s/population_%s.pdf" % (out_plots, wav_range)
+	f.tight_layout()
+	ax_array[0,1].set_xlabel('')
+	ax_array[0,0].set_xlabel('')
+	ax_array[1,0].set_xlabel('')
+	ax_array[1,1].set_xlabel('')
+	ax_array[0,1].set_ylabel('')
+	ax_array[1,1].set_ylabel('')
+	ax_array[2,1].set_ylabel('')
+	f.savefig(saveTo, bbox_inches="tight")
 
 	return D
 
