@@ -126,6 +126,10 @@ class Data(object):
 			all(v.mask)}
 
 	@property
+	def e_line_no_mask(self):
+		return {k:v for k,v in self._components.iteritems() if k!='stellar'}
+
+	@property
 	def components(self):
 		return {k:v for k,v in self._components.iteritems() if k=='stellar' or not
 			all(v.mask)}
@@ -406,7 +410,7 @@ class emission_data(_data):
 			# 	for c in components:
 			# 		if not bin.e_line[c].mask:
 			# 			p[bin.bin_number] = bin.e_line[c].mask
-			for k, i in self.__parent__.e_line.iteritems():
+			for k, i in self.__parent__.e_line_no_mask.iteritems():
 				p *= i.mask
 		return p
 
@@ -708,4 +712,4 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+		return False #self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)

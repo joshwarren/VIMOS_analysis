@@ -22,22 +22,22 @@ from classify import classify
 import traceback, sys
 
 galaxies = [
-			'ic1459',
-			'ic1531', 
-			'ic4296',
-			'ngc0612', # Segmentation error
+			# 'ic1459',
+			# 'ic1531', 
+			# 'ic4296',
+			# 'ngc0612', # Segmentation error
 			'ngc1399',
 			'ngc3100',
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34',
-			'eso443-g024'
+			# 'eso443-g024'
 			]
 # galaxies = ['ngc3557']
 # galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
-galaxies = ['ngc0612']
+# galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
@@ -73,7 +73,7 @@ for galaxy in galaxies:
 		
 		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 		# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
-		# D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
+		# # D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
 		D = plot_stellar_pop(galaxy, wav_range=wav_range, method='mostlikely', D=D)
 	except Exception as e:
 		gal_err.append(galaxy)

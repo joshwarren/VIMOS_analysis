@@ -63,7 +63,7 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 		
 
 	elif method == 'mostlikely':
-		from peakdetect import peakdetect
+		# from peakdetect import peakdetect
 
 		age1 = np.zeros(D.number_of_bins)
 		met1 = np.zeros(D.number_of_bins)
@@ -79,17 +79,16 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 			for plot, unc_plot, pop in zip([age,met,alp],[unc_age,unc_met,unc_alp],
 				[ag,me,al]):
 				hist = np.histogram(pop, bins=40)
-				x = (hist[1][0:-1]+[hist[1][1:]])/2
+				x = (hist[1][0:-1]+hist[1][1:])/2
 				hist = hist[0]
-				peaks = np.array(peakdetect(hist, x_axis=x, lookahead=4)[0])
-				plot[i] = peaks[np.argmax(peaks[:,1]), 0]
+				# peaks = np.array(peakdetect(hist, x_axis=x, lookahead=4)[0])
+				# plot[i] = peaks[np.argmax(peaks[:,1]), 0]
+				plot[i] = x[np.argmax(hist)]
 
-				gt_fwhm = hist >= np.max(peaks[:,1])
-				unc_age[i] = max(x[gt_fwhm]) - min(x[gt_fwhm])
+				gt_fwhm = hist >= np.max(hist)/2
+				unc_plot[i] = np.max(x[gt_fwhm]) - np.min(x[gt_fwhm])
 
 			f.suptitle('%s mostlikely and fwhm' % (galaxy.upper()))
-
-
 
 
 	ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
@@ -120,14 +119,14 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 
 	ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
 		D.xBar, D.yBar, unc_met, nodots=True, colorbar=True, label='Metalicity', 
-		vmin=-2.25, vmax=0.67, title='Metalicity Uncertainty [Z/H]', 
+		vmin=0, vmax=0.67+2.25, title='Metalicity Uncertainty [Z/H]', 
 		ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
 		signal_noise=D.SNRatio, signal_noise_target=30)
 
 	ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
 		D.xBar, D.yBar, unc_alp, nodots=True, colorbar=True, 
 		label='Element Ratio [alpha/Fe]', 
-		vmin=-0.3, vmax=0.5, title='Alpha Enhancement Uncertainty', 
+		vmin=0, vmax=0.5+0.3, title='Alpha Enhancement Uncertainty', 
 		ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
 		signal_noise=D.SNRatio, signal_noise_target=30)
 
