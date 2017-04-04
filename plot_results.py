@@ -591,7 +591,7 @@ def plot_results(galaxy, discard=0, wav_range="", vLimit=2, norm="lwv",
 			saveTo = "%s/lineratio/%s_%s_line_ratio_%s.png" % (out_nointerp, cB, cA, 
 				wav_range)
 			ax.saveTo = saveTo
-			ax.figx, ax.figy = n%3, n_rows-int(np.ceil(t_num/3)) + int(np.ceil(n/3))
+			ax.figx, ax.figy = n%3, n_rows - int(np.ceil(t_num/3.0)) + int(np.ceil(n/3))
 
 
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,

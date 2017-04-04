@@ -43,6 +43,8 @@
 #                           axes are created if this is not supplied.
 # header 		None 	(Header dictionary) If supplied, plot will be given in 
 #						terms of RA and Dec. Will be in arcsec if not.
+# res 			0.67	(float) Spacial resolution in arcsec. Default is for VIMOS.
+#						Not used if header is supplied.
 # close         False   (Boolean) to close the figure.
 ## ************************************************************** ##
 
@@ -60,6 +62,32 @@ import matplotlib.pyplot as plt # used for plotting
 import matplotlib as mpl
 import os
 
+## Adding the origentation arrows to a plot. 
+## PA is given in degrees
+## NB: currently will give arrow different lengths if image is not square.
+def add_orientation(pa=0):
+	pa = np.radians(pa)
+	ax=plt.gca()
+
+	xlim = ax.get_xlim()
+	xr = xlim[1]-xlim[0]
+	ylim = ax.get_ylim()
+	yr = ylim[1]-ylim[0]
+
+	# East pointing arrow
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(-pa), 0.1*yr*np.sin(-pa), 
+		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
+
+	# North pointing arrow
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(-pa), 0.1*yr*np.cos(-pa), 
+		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
+
+
+	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(-pa), 0.78*yr+ylim[0]+0.1*yr*np.sin(-pa), 'E')
+	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(-pa), 0.805*yr+ylim[0]+0.1*yr*np.cos(-pa), 'N')
+
+
+
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
@@ -67,7 +95,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, header=None, signal_noise=None, 
-	signal_noise_target=None, **kwargs):
+	signal_noise_target=None, res=0.67, pa=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -94,7 +122,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# Plot in arcsecs
 	if header is None:
-		res = 0.67 #arcsec per pixel
 		xBar = xBar_pix*res
 		yBar = yBar_pix*res
 		x = x_pix*res
@@ -258,6 +285,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax2.tick_params(length=5, which='minor')
 		ax2.set_ylim(ylim[0],ylim[1])
 		ax2.set_ylabel(axis_label, rotation=270)
+		ax2.get_yaxis().get_major_formatter().set_useOffset(False)
 
 		ax3 = ax.twiny()
 		#ax3.set_aspect('equal')
@@ -267,6 +295,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax3.tick_params(length=5, which='minor')
 		ax3.set_xlim(xlim[0],xlim[1])
 		ax3.set_xlabel(axis_label)
+		ax3.get_xaxis().get_major_formatter().set_useOffset(False)
 
 		ax.ax2 = ax2
 		ax.ax3 = ax3
@@ -286,6 +315,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				verticalalignment='center')
 			
 		ax.cax = cbar.ax
+	ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	ax.get_xaxis().get_major_formatter().set_useOffset(False)
+
+	if pa is not None:
+		add_orientation(pa)
 	
 	if save is not None:
 		ax.saveTo = save
