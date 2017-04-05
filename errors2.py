@@ -613,11 +613,11 @@ def errors2(i_gal=None, bin=None):
 			lam=lambdaq, plot=not quiet, quiet=quiet, bias=0.1, 
 			component=component)
 
-		stellar_output[rep,:] = ppMC.sol[0:stellar_moments][0]
-		stellar_errors[rep,:] = ppMC.error[0:stellar_moments][0]
-		for g in range(gas):
-			gas_output[g,rep,:] = ppMC.sol[0:gas_moments][g]
-			gas_errors[g,rep,:] = ppMC.error[0:gas_moments][g]
+		stellar_output[rep,:] = ppMC.sol[0][0:stellar_moments]
+		stellar_errors[rep,:] = ppMC.error[0][0:stellar_moments]
+		for g in range(len(element)-1):
+			gas_output[g,rep,:] = ppMC.sol[g+1][0:gas_moments]
+			gas_errors[g,rep,:] = ppMC.error[g+1][0:gas_moments]
 
 
 ## ----------============ Write ouputs to file =============---------
