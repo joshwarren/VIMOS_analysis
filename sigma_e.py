@@ -45,11 +45,10 @@ def set_params():
 	stellar_moments = 4 # number of componants to calc with ppxf (see 
 						# keyword moments in ppxf.pro for more details)
 	gas_moments = 2
-	degree = -1  # order of addative Legendre polynomial used to 
+	degree = 4  # order of addative Legendre polynomial used to 
 				#; correct the template continuum shape during the fit
-	mdegree = 10 # order of multaplicative Legendre polynomials used. 
 	return quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, \
-		gas_moments, degree, mdegree
+		gas_moments, degree
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -59,7 +58,7 @@ def sigma_e(i_gal=None):
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
 	quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, gas_moments, \
-		degree, mdegree = set_params()
+		degree = set_params()
 	
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
@@ -182,7 +181,7 @@ def sigma_e(i_gal=None):
 	pp = ppxf(templates, bin_log, noise, velscale, start, 
 			  goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
 			  component=component, lam=lambdaq, plot=not quiet, 
-			  quiet=quiet, save=saveTo, mdegree=mdegree)
+			  quiet=quiet, save=saveTo)
 
 ## ----------===============================================---------
 ## ----------================= The MC part =================---------
@@ -205,7 +204,7 @@ def sigma_e(i_gal=None):
 		ppMC = ppxf(templates, bin_log, noise, velscale, start, 
 			goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
 			lam=lambdaq, plot=not quiet, quiet=quiet, bias=0.1, 
-			component=component, mdegree=mdegree)
+			component=component)
 
 		stellar_output[rep,:] = ppMC.sol[0][0:stellar_moments]
 		stellar_errors[rep,:] = ppMC.error[0][0:stellar_moments]
@@ -264,7 +263,7 @@ def sigma_e(i_gal=None):
 
 
 if __name__ == '__main__':
-	sigma_e(5) if len(sys.argv)<2 else errors3()
+	sigma_e(5) if len(sys.argv)<2 else sigma_e()
 
 
 

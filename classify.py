@@ -4,7 +4,6 @@
 ## warrenj 20161114 Pull together several calculations from the 
 ## kinematics analysis to classify each galaxy
 
-from pickler import pickler
 import numpy as np # for array handling
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -12,7 +11,10 @@ import re # for regex expressions
 
 
 def get_R_e(galaxy):
-	galaxiesFile_Re =  "%s/Data/galaxies_R_e.txt" % (cc.base_dir)
+	if cc.device != 'glamdring':
+		galaxiesFile_Re =  "%s/Data/galaxies_R_e.txt" % (cc.base_dir)
+	else:
+		galaxiesFile_Re =  "%s/galaxies_R_e.txt" % (cc.base_dir)
 	galaxy_gals = np.loadtxt(galaxiesFile_Re, dtype=str, usecols=(0,), skiprows=1,
 		unpack=True)
 	i_gal = np.where(galaxy_gals==galaxy)[0]
