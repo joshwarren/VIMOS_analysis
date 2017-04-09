@@ -25,7 +25,7 @@ galaxies = [
 			'ic1459',
 			'ic1531', 
 			'ic4296',
-			'ngc0612', # Segmentation error
+			'ngc0612',
 			'ngc1399',
 			'ngc3100',
 			'ngc3557',
@@ -38,7 +38,7 @@ galaxies = [
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
-galaxies = ['ngc1399']
+# galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
@@ -64,7 +64,7 @@ for galaxy in galaxies:
 		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
-		# kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
+		kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
@@ -74,12 +74,11 @@ for galaxy in galaxies:
 		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
 		# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
 		# # D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-		D = plot_stellar_pop(galaxy, wav_range=wav_range, method='mostlikely', D=D)
+		# D = plot_stellar_pop(galaxy, wav_range=wav_range, method='mostlikely', D=D)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)
 		trace.append(sys.exc_info())
-		# traceback.print_exc()
 		 
 #v_vd_ellip(wav_range=wav_range)
 

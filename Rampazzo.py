@@ -285,10 +285,15 @@ class in_slit(object):
 
 	@property
 	def fraction(self):
-		x_sample= np.linspace(min(self.x), max(self.x), 
+		# Assumes linearly spaced
+		self.x_res = x[1]-x[0]
+		self.y_res = y[1]-y[0]
+		
+		x_sample= np.linspace(min(self.x) - self.x_res/2, max(self.x) + self.x_res/2, 
 			np.ceil(np.sqrt(len(self.x))*10)).repeat(np.ceil(np.sqrt(len(self.y))*10))
-		y_sample= np.tile(np.linspace(min(self.y), max(self.y), 
-			np.ceil(np.sqrt(len(self.y))*10)), int(np.ceil(np.sqrt(len(self.x))*10)))
+		y_sample= np.tile(np.linspace(min(self.y) - self.y_res/2, 
+			max(self.y) + self.y_res/2, np.ceil(np.sqrt(len(self.y))*10)), 
+			int(np.ceil(np.sqrt(len(self.x))*10)))
 
 		xdelt = np.subtract.outer(x_sample,self.x)
 		ydelt = np.subtract.outer(y_sample,self.y)

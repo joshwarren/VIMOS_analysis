@@ -57,9 +57,9 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 	z = z_gals[i_gal]
 
 	if os.path.exists(galaxiesFile2):
-		lambda_R, ellip_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
+		lambda_R, ellip_gals, pa_gals, star_mis, OIII_mis, Hbeta_mis, Hdelta_mis, \
 			Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, 
-			usecols=(1,2,3,4,5,6,7))
+			usecols=(1,2,3,4,5,6,7,8))
 		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, usecols=(0,),dtype=str)
 		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
 		if len(i_gal2) == 0:
@@ -67,6 +67,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 			galaxy_gals2 = np.append(galaxy_gals2, galaxy)
 			lambda_R = np.append(lambda_R, np.nan)
 			ellip_gals = np.append(ellip_gals, np.nan)
+			pa_gals = np.append(pa_gals, np.nan)
 			star_mis = np.append(star_mis, np.nan)
 			OIII_mis = np.append(OIII_mis, np.nan)
 			Hbeta_mis = np.append(Hbeta_mis, np.nan)
@@ -78,6 +79,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 			galaxy_gals2 = np.array([galaxy_gals2])
 			lambda_R = np.array([lambda_R])
 			ellip_gals = np.array([ellip_gals])
+			pa_gals = np.array([pa_gals])
 			star_mis = np.array([star_mis])
 			OIII_mis = np.array([OIII_mis])
 			Hbeta_mis = np.array([Hbeta_mis])
@@ -87,6 +89,7 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 		galaxy_gals2 = np.array([galaxy])
 		lambda_R = np.array([np.nan])
 		ellip_gals = np.array([np.nan])
+		pa_gals = np.array([np.nan])
 		star_mis = np.array([np.nan])
 		OIII_mis = np.array([np.nan])
 		Hbeta_mis = np.array([np.nan])
@@ -107,6 +110,8 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 	x_gals[i_gal] = f.xpeak # f.xmed?
 	y_gals[i_gal] = f.ypeak # f.ymed?
 	ellip_gals[i_gal2] = f.eps
+	pa_gals[i_gal2] = f.theta
+
 	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
 	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
 # ------------================ Kinemetry =================----------
@@ -209,13 +214,14 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 		print "Mis-alignment: " + str(gas_mis)
 # ------------============== Save outputs ================----------
 	template = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
-	template2 = "{0:13}{1:9}{2:13}{3:15}{4:8}{5:8}{6:8}{7:8}\n" 
+	template2 = "{0:13}{1:9}{2:13}{3:13}{4:15}{5:8}{6:8}{7:8}{8:8}\n" 
 
 	f = open(galaxiesFile, 'wb')
 	f.write(template.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
 		"Kin SN", "Pop SN"))
 	f2 = open(galaxiesFile2, 'wb')
-	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
+	# f2 = open('/Data/vimos/analysis/test.txt', 'wb')
+	f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 'PA (deg)',
 		'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
 
 	for i in range(len(galaxy_gals)):
@@ -225,9 +231,9 @@ def kinematics(galaxy, discard=0, wav_range="", plots=False, D=None):
 
 	for i in range(len(galaxy_gals2)):
 		f2.write(template2.format(galaxy_gals2[i], str(round(lambda_R[i],3)), 
-			str(round(ellip_gals[i],3)), str(round(star_mis[i],3)), 
-			str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]) ,
-			str(Hgamma_mis[i])))
+			str(round(ellip_gals[i],3)), str(round(pa_gals[i],3)), 
+			str(round(star_mis[i],3)), str(OIII_mis[i]), str(Hbeta_mis[i]), 
+			str(Hdelta_mis[i]) ,str(Hgamma_mis[i])))
 
 	f.close()
 	f2.close()

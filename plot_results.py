@@ -126,6 +126,45 @@ def set_ax_y(plt_title):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
+def add_R_e(ax, galaxy, discard=0):
+	from classify import get_R_e
+	from  matplotlib.patches import Ellipse
+	R_e = get_R_e(galaxy)
+	
+	data_file =  "%s/galaxies.txt" % (vin_dir)
+	x_cent_gals, y_cent_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+		usecols=(4,5), dtype=int)
+	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str, unpack=True)
+	i_gal = np.where(galaxy_gals==galaxy)[0][0]
+	x_cent_pix = x_cent_gals[i_gal]
+	y_cent_pix = y_cent_gals[i_gal]
+
+	xlims = ax.get_xlim()
+	ylims = ax.get_ylim()
+
+	x_cent = xlims[0] + (xlims[1] - xlims[0])/(40-discard*2)*x_cent_pix
+	y_cent = ylims[0] + (ylims[1] - ylims[0])/(40-discard*2)*y_cent_pix
+
+
+
+
+	data_file =  "%s/galaxies2.txt" % (vin_dir)
+	ellip_gals, pa_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+		usecols=(2,3), dtype=float)
+	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str, unpack=True)
+	i_gal = np.where(galaxy_gals==galaxy)[0][0]
+	ellip = ellip_gals[i_gal]
+	pa = pa_gals[i_gal]
+
+	if ax.RaDec:
+		patch = Ellipse([x_cent, y_cent], R_e*(1-ellip)/60/60, R_e/60/60, angle=pa, 
+			fill=False)
+	else:
+		patch = Ellipse([x_cent, y_cent], R_e*(1-ellip), R_e, angle=pa, fill=False)
+	ax.add_patch(patch)
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
 def add_CO(ax, galaxy, header, close=False):
 	CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
 	# Arcsec coords
@@ -138,7 +177,7 @@ def add_CO(ax, galaxy, header, close=False):
 		CO_y = np.arange(alma.header['NAXIS2'])*alma.header['CDELT2']*60*60
 
 		CO_x -= max(CO_x)/2
-		CO_y -= max(CO_y)/2
+		#CO_y -= max(CO_y)/2
 
 		# Coordinates of VIMOS pointing
 		vc = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
@@ -176,19 +215,20 @@ def add_CO(ax, galaxy, header, close=False):
 		CO_image = np.sum(np.sum(alma.data,axis=0), axis=0)
 		cs = ax.contour(CO_x,CO_y,CO_image, colors='r')
 
-		saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
-			os.path.basename(ax.saveTo)
-		if not os.path.exists(os.path.dirname(saveTo)):
-			os.makedirs(os.path.dirname(saveTo))
-		plt.savefig(saveTo, bbox_inches="tight")
+		if hasattr(ax, 'saveTo'):
+			saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
+				os.path.basename(ax.saveTo)
+			if not os.path.exists(os.path.dirname(saveTo)):
+				os.makedirs(os.path.dirname(saveTo))
+			plt.savefig(saveTo, bbox_inches="tight")
 
 		if close:
 			plt.close()
-		else:
-			# Make lines thinner for pdf by finding the line objects
-			for o in ax.get_children():
-				if type(o) is LineCollection:
-					o.set_linewidth(0.3)
+		# else:
+		# 	# Make lines thinner for pdf by finding the line objects
+		# 	for o in ax.get_children():
+		# 		if type(o) is LineCollection:
+		# 			o.set_linewidth(0.3)
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------

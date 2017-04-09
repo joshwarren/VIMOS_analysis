@@ -109,6 +109,21 @@ class Data(object):
 		else:
 			return ab
 
+	# Take output some atttribute and return 2D 'unbinned' versions i.e. that value 
+	# applied to each spaxel within the bin. Norm keyword is for moment-0 quantities
+	def unbin(self, attr, norm=False):
+		if isinstance(attr, str):
+			attr = self.__getattribute__(self, attr)
+		if norm:
+			attr /= self.n_spaxels_in_bin
+
+		out = np.zeros(self.unbinned_flux.shape)
+
+		for bin in self.bin:
+			out[bin.xspaxels, bin.yspaxels] = attr[bin.bin_number]
+		return out
+
+
 	@property
 	def center_bin(self):
 		return np.nanargmax(self.flux)

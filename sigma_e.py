@@ -10,6 +10,7 @@ import numpy as np # for array handling
 import glob # for searching for files
 from astropy.io import fits # reads fits files (is from astropy)
 from scipy import ndimage # for gaussian blur
+from scipy.spatial.distance import cdist
 import os
 import sys
 from checkcomp import checkcomp
@@ -38,7 +39,7 @@ def set_params():
 			# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
 			#     (Hb and Hd)
 			# 3   All gas seperate.
-	reps = 10000 ## number of monte carlo reps per bin.
+	reps = 3 ## number of monte carlo reps per bin.
 	discard = 0
 	set_range = np.array([4200,10000])
 	FWHM_gal = 2.5 # VIMOS documentation (and fits header)
@@ -49,6 +50,48 @@ def set_params():
 				#; correct the template continuum shape during the fit
 	return quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, \
 		gas_moments, degree
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+class in_aperture(object):
+	def __init__(self, x_cent, y_cent, r, x, y):
+		self.x_cent = x_cent
+		self.y_cent = y_cent
+		self.r = r
+
+		self.x = x
+		self.y = y
+
+	@property
+	def contains(self):
+		import matplotlib.path as mplPath
+		aperture = mplPath.Path.circle([self.x_cent, self.y_cent], self.r)
+		return aperture.contains_points(zip(self.x,self.y))
+
+	@property
+	def fraction(self):
+		x_sample= np.linspace(min(self.x)-0.5, max(self.x)+0.5, 
+			np.ceil(np.sqrt(len(self.x))*10)).repeat(np.ceil(np.sqrt(len(self.y))*10))
+		y_sample= np.tile(np.linspace(min(self.y)-0.5, max(self.y)+0.5, 
+			np.ceil(np.sqrt(len(self.y))*10)), int(np.ceil(np.sqrt(len(self.x))*10)))
+
+		xdelt = np.subtract.outer(x_sample,self.x)
+		ydelt = np.subtract.outer(y_sample,self.y)
+		sample_ownership = np.zeros(len(x_sample))
+		# De-vectorised due to MemoryError
+		for i in xrange(len(sample_ownership)):
+			sample_ownership[i] = np.argmin(xdelt[i,:]**2+ydelt[i,:]**2)
+
+		contained = in_aperture(self.x_cent, self.y_cent, self.r, x_sample, 
+			y_sample).contains
+
+		inside, counts_in = np.unique(sample_ownership[contained], return_counts=True)
+		total, counts_tot = np.unique(sample_ownership, return_counts=True)
+
+		frac = np.zeros(len(self.x))
+		frac[inside.astype(int)] = counts_in
+		frac /= counts_tot
+		return frac
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -74,14 +117,17 @@ def sigma_e(i_gal=None):
 
 	data_file = dir + "/analysis/galaxies.txt"
 	# different data types need to be read separetly
-	z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
-		usecols=(1,2,3))
+	z_gals, vel_gals, sig_gals, x_cent_gals, y_cent_gals = np.loadtxt(data_file, 
+		unpack=True, skiprows=1, usecols=(1,2,3,4,5))
 	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 	vel = vel_gals[i_gal]
 	sig = sig_gals[i_gal]
 	z = z_gals[i_gal]
+	x_cent_pix = x_cent_gals[i_gal]
+	y_cent_pix = y_cent_gals[i_gal]
 
+	R_e = get_R_e(galaxy)
 	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
 
 ## ----------===============================================---------
@@ -101,6 +147,7 @@ def sigma_e(i_gal=None):
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']
 	CDELT_spec = header['CDELT3']
+	R_e_pix = R_e/CDELT_spec
 	s = galaxy_data.shape
 
 	rows_to_remove = range(discard)
@@ -122,7 +169,11 @@ def sigma_e(i_gal=None):
 	# galaxy_data[galaxy_badpix==1] = 0
 	# galaxy_noise[galaxy_badpix==1] = 0.000000001
 ## ----------========== Spatially Integrating =============---------
-	bin_lin = np.nansum(galaxy_data, axis=(1,2))
+	frac_in_ap = in_aperture(x_cent_pix, y_cent_pix, R_e, np.arange(s[1]).repeat(s[2]), 
+		np.tile(np.arange(s[2]),s[1])).fraction.reshape(s[1],s[2])
+	galaxy_data = np.einsum('ijk,jk->ijk', galaxy_data, frac_in_ap)
+	galaxy_noise = np.einsum('ijk,jk->ijk', galaxy_noise, frac_in_ap)
+	bin_lin = np.nansum(galaxy_data,axis=(1,2))
 	bin_lin_noise = np.nansum(galaxy_noise**2, axis=(1,2))
 	bin_lin_noise = np.sqrt(bin_lin_noise)
 ## ----------========= Calibrating the spectrum  ===========---------
@@ -213,13 +264,16 @@ def sigma_e(i_gal=None):
 			gas_errors[g,rep,:] = ppMC.error[g+1][0:gas_moments]
 
 
-	R = np.sqrt(0.67**2*s[1]*s[2]/np.pi)
-	R_e = get_R_e(galaxy)
-	sigma_e = pp.sol[0][1] * (R_e/R)**-0.066
-
+	sigma_e = pp.sol[0][1]
 	unc_sigma_r = np.std(stellar_output[:,1])
-	unc_sigma_e = np.sqrt(unc_sigma_r**2 + 
-		((R_e/R)**-0.066 * np.log(R_e/R) * 0.035)**2)
+
+	area = np.sum(frac_in_ap)*0.67**2 
+	if area < 0.97 * np.pi * R_e**2:
+		R = np.sqrt(area/np.pi)
+
+		sigma_e = sigma_e * (R_e/R)**-0.066
+		unc_sigma_e = np.sqrt(unc_sigma_r**2 + 
+			((R_e/R)**-0.066 * np.log(R_e/R) * 0.035)**2)
 ## ----------============ Write ouputs to file =============---------
 	data_file = "%s/analysis/galaxies_sigma_e.txt" % (dir)
 	try:
@@ -236,9 +290,9 @@ def sigma_e(i_gal=None):
 		sigma_e_gals = np.array([sigma_e])
 		unc_sigma_e_gals = np.array([unc_sigma_e])
 
-	i_gal = np.where(galaxy_gals==galaxy)[0][0]
+	i_gal = np.where(galaxy_gals==galaxy)[0]
 
-	if i_gal == -1:
+	if len(i_gal) == 0:
 		galaxy_gals = np.append(galaxy_gals, galaxy)
 		sigma_e_gals = np.append(sigma_e_gals, sigma_e)
 		unc_sigma_e_gals = np.append(unc_sigma_e_gals, unc_sigma_e)
