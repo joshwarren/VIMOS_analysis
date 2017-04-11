@@ -29,8 +29,8 @@ class Data(object):
 #				field is set to 0.
 #		lum: 	velocity of the brightest spaxel is set 
 #				to 0.
-#		sig: 	Noralised to the mean velocity of 5 bins with the
-#				highest velocity dispersion.
+#		sig: 	Noralised to the mean velocity of bins with the
+#				5% highest velocity dispersion.
 # vel_norm: float normalisation factor for finding the rest frame of the galaxy.
 # center_bin: int, bin number of the brightest bin.
 # common_range: array of min and max of common wavelength range
@@ -84,16 +84,25 @@ class Data(object):
 			self.vel_norm = 0.0
 			self.vel_norm = self.components['stellar'].\
 				plot['vel'][self.center_bin]
-		if self.norm_method == "lwv":
+		elif self.norm_method == "lwv":
 			self.vel_norm = 0.0
 			lwv = self.components['stellar'].plot['vel'].unbinned*self.unbinned_flux
 			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin)/ \
 				np.nansum(self.unbinned_flux)
-		if self.norm_method == "sig":
+		elif self.norm_method == "sig":
 			self.vel_norm = 0.0
 			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))
 			c = np.where(self.components['stellar'].plot['sigma'] > s_sort[-6])
-			self.vel_norm = np.mean(D.components['stellar'].plot['velocity'][c])
+			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
+		elif self.norm_method == 'lws':
+			self.vel_norm = 0.0
+			lws = self.components['stellar'].plot['sigma']*self.flux
+			s_sort = sorted(lws)
+			c = np.where(lws > s_sort[int(-np.ceil(self.number_of_bins*0.05))])[0]
+			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
+
+			return self.xBar[c], self.yBar[c]
+
 
 	def absorption_line(self, absorption_line, uncert=False):
 		ab = np.zeros(self.number_of_bins)
@@ -309,21 +318,20 @@ class _data(object):
 				if not m[i] else np.nan 
 				for i, bin in enumerate(self.__parent__.bin)])
 
-			unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
-			uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
+ 			unbinned = self.__parent__.unbin(kinematics)
+ 			uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
 
-			for spaxel in range(len(self.__parent__.x)):
-				unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
-					kinematics[self.__parent__.bin_num[spaxel]]
-				uncert_unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
-					kinematics.uncert[self.__parent__.bin_num[spaxel]]
-			kinematics.unbinned = unbinned
-			kinematics.uncert.unbinned = uncert_unbinned
+			# unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
+			# uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
 
-			# def __getattr__(kinematics, attr):
-			# 	if uncert in attr:
-			# 		uncert.unbinned = property(lambda self:uncert_unbinned)
-			# 		return uncert
+			# for spaxel in range(len(self.__parent__.x)):
+			# 	unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
+			# 		kinematics[self.__parent__.bin_num[spaxel]]
+			# 	uncert_unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
+			# 		kinematics.uncert[self.__parent__.bin_num[spaxel]]
+			# kinematics.unbinned = unbinned
+			# kinematics.uncert.unbinned = uncert_unbinned
+
 			return kinematics
 		else:
 			return object.__getattribute__(self,attr)
