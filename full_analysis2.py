@@ -34,7 +34,7 @@ galaxies = [
 			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
-# galaxies = ['ic1459']
+galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -59,12 +59,12 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		# D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-		# 	CO = False, residual="median", norm=norm, D=D)
+		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
+			CO = False, residual="median", norm=norm, D=D)
 		# plt.close("all")
 		# GH_plots(galaxy, wav_range=wav_range)
 		# plt.close("all")
-		kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
+		# kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 

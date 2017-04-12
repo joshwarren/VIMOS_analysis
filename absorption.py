@@ -15,8 +15,8 @@
 # noise:		None	Observed noise from reduction pipeline
 # lick:			False	Return corrected indices to LICK resolution
 ##############################################################################
-from spectools import *
 from tools import length as len
+from spectools import *
 import numpy as np 
 from scipy.ndimage.filters import gaussian_filter1d
 

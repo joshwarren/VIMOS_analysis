@@ -101,9 +101,6 @@ class Data(object):
 			c = np.where(lws > s_sort[int(-np.ceil(self.number_of_bins*0.05))])[0]
 			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
 
-			return self.xBar[c], self.yBar[c]
-
-
 	def absorption_line(self, absorption_line, uncert=False):
 		ab = np.zeros(self.number_of_bins)
 		ab_uncert = np.zeros(self.number_of_bins)

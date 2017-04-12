@@ -124,11 +124,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if header is None:
 		xBar = xBar_pix*res
 		yBar = yBar_pix*res
+		xBar -= max(xBar)/2
+		yBar -= max(yBar)/2
+
 		x = x_pix*res
 		y = y_pix*res
-
 		x -= max(x)/2
 		y -= max(y)/2
+
 		x_label = r'$\Delta$ RA (arcsec)'
 		y_label = r'$\Delta$ Dec (arcsec)'
 
@@ -250,15 +253,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				markersize=kwargs.get("markersize", 3))
 
 	if show_bin_num and not show_vel:
-		for i in range(len(xBar)):
-			ax.text(xBar[i], yBar[i], str(i), 
-				color='grey', fontsize=5)
+		for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
+			ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
 	if show_vel:
 		for i in range(len(xBar)):
 			if i%5==0:
 				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(vel[i]), 
 					color='grey', fontsize=5)
-		
 
 	if redshift is not None:
 		c = 299792 #km/s
