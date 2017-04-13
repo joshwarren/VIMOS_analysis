@@ -326,8 +326,8 @@ class _data(object):
 			# 		kinematics[self.__parent__.bin_num[spaxel]]
 			# 	uncert_unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
 			# 		kinematics.uncert[self.__parent__.bin_num[spaxel]]
-			# kinematics.unbinned = unbinned
-			# kinematics.uncert.unbinned = uncert_unbinned
+			kinematics.unbinned = unbinned
+			kinematics.uncert.unbinned = uncert_unbinned
 
 			return kinematics
 		else:

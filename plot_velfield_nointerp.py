@@ -184,7 +184,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			cmap = plt.get_cmap(cmap)
 
 	# Change to RGBA 
-	pic = cmap((img-np.nanmin(img))/(np.nanmax(img)-np.nanmin(img)))
+	pic = cmap((img-vmin)/(vmax-vmin))
 	if signal_noise is not None:
 		if signal_noise_target is None:
 			pic[j, k, 3] = (signal_noise[bin_num]/max(signal_noise))*0.5+0.5
