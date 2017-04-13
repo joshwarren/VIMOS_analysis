@@ -408,35 +408,38 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 
 #-----------------------------------------------------------------------------
 def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None, 
-	return_cuts=False):
+	return_cuts=False, n_sigma=3):
+	if set_range is not None and lam is None:
+		raise ValueError('lam keyword must be supplied if set_range keyword'+\
+			' is supplied')
+	elif set_range is not None and lam is not None:
+		lam = np.array(lam)
+		r = (lam > set_range[0]) * (lam < set_range[1])
+	else:
+		r = np.ones(len(spec)).astype(bool)
+	spec = np.array(spec[r])
+	lam = np.array(lam[r])
+
+
 	x=np.arange(len(spec))
 	mask = np.zeros(len(spec)).astype(bool)
-
-	for r in range(repeats):
+	for rep in range(repeats):
 		med = rollmed(spec,window)
 		std = rollstd(spec,window)
 		for i in range(len(mask)):
-			mask[i] += spec[i] > med[i]+3*std[i]
-			mask[i] += spec[i] < med[i]-3*std[i]
+			mask[i] += spec[i] > med[i]+n_sigma*std[i]
+			mask[i] += spec[i] < med[i]-n_sigma*std[i]
 
 		spec[mask] = np.interp(x[mask],x[~mask],spec[~mask])
-	if set_range is not None and lam is not None:
-		r = (lam > set_range[0]) * (lam < set_range[1])
+
+	if lam is not None:
 		if return_cuts:
-			return spec[r], lam[r], r
-		else:
-			return spec[r], lam[r]
-	elif set_range is not None and lam is None:
-		raise ValueError('lam keyword must be supplied if set_range keyword'+\
-			' is supplied')
-	elif set_range is None and lam is not None:
-		if return_cuts:
-			return spec, lam, np.ones(len(spec)).astype(bool)
+			return spec, lam, r
 		else:
 			return spec, lam
 	else:
 		if return_cuts:
-			return spec, np.ones(len(spec)).astype(bool)
+			return spec, r
 		else:
 			return spec
 #-----------------------------------------------------------------------------
