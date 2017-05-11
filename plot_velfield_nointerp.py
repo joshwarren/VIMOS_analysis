@@ -66,7 +66,7 @@ import os
 ## PA is given in degrees
 ## NB: currently will give arrow different lengths if image is not square.
 def add_orientation(pa=0):
-	pa = np.radians(pa)
+	pa = -np.radians(pa)
 	ax=plt.gca()
 
 	xlim = ax.get_xlim()
@@ -75,16 +75,16 @@ def add_orientation(pa=0):
 	yr = ylim[1]-ylim[0]
 
 	# East pointing arrow
-	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(-pa), 0.1*yr*np.sin(-pa), 
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(pa), 0.1*yr*np.sin(pa), 
 		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
 
 	# North pointing arrow
-	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(-pa), 0.1*yr*np.cos(-pa), 
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(pa), 0.1*yr*np.cos(pa), 
 		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
 
 
-	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(-pa), 0.78*yr+ylim[0]+0.1*yr*np.sin(-pa), 'E')
-	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(-pa), 0.805*yr+ylim[0]+0.1*yr*np.cos(-pa), 'N')
+	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(pa), 0.78*yr+ylim[0]+0.1*yr*np.sin(pa), 'E')
+	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(pa), 0.805*yr+ylim[0]+0.1*yr*np.cos(pa), 'N')
 
 
 
@@ -147,7 +147,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			header['HIERARCH CCD1 ESO INS IFU DEC'], 
 			unit=(u.deg, u.deg))
 
-		res = header['CDELT1'] #arcsec per pixel
+		try:
+			res = header['CDELT1'] # VIMOSarcsec per pixel
+		except:
+			res = header['CD1_1'] # MUSE arcsec per pixel
 		xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
 		yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
 		x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
@@ -255,6 +258,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if show_bin_num and not show_vel:
 		for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
 			ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
+		# ax.text(xBar[180], yBar[180], str(180), color='black', fontsize=4)
+
 	if show_vel:
 		for i in range(len(xBar)):
 			if i%5==0:
