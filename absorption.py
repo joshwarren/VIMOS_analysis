@@ -129,6 +129,19 @@ def get_Lick_res(index):
 
 	from scipy.interpolate import interp1d
 	# From table 8 Worthey, Ottaviani 1997 ApJS 111 (2) 377
-	res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
-		np.array([11.5, 9.2, 8.4, 8.4, 9.8]), fill_value=(11.5, 9.8))
-	return res_wav_dep(wav)
+	from scipy import __version__ as scipy_v
+	if scipy_v == '0.19.0':
+		res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
+			np.array([11.5, 9.2, 8.4, 8.4, 9.8]), fill_value=(11.5, 9.8))
+		out = res_wav_dep(wav)
+	else: 
+		# Older versions of SciPy do not have desired fill_value behaviour.
+		if wav < 4000:
+			out = 11.5
+		elif wav > 6000:
+			out = 9.8
+		else:
+			res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
+				np.array([11.5, 9.2, 8.4, 8.4, 9.8]))
+			out = res_wav_dep(wav)
+	return out
