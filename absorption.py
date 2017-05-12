@@ -132,7 +132,8 @@ def get_Lick_res(index):
 	from scipy import __version__ as scipy_v
 	if scipy_v == '0.19.0':
 		res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
-			np.array([11.5, 9.2, 8.4, 8.4, 9.8]), fill_value=(11.5, 9.8))
+			np.array([11.5, 9.2, 8.4, 8.4, 9.8]), bounds_error=False,
+			fill_value=(11.5, 9.8))
 		out = res_wav_dep(wav)
 	else: 
 		# Older versions of SciPy do not have desired fill_value behaviour.
