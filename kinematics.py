@@ -159,10 +159,14 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	vel = D.components['stellar'].plot['vel']
 	vel_lim = set_lims(vel, symmetric=True)
-	vel[vel < vel_lim[0]], vel[vel > vel_lim[1]] = np.nan, np.nan
+	mask = (vel < vel_lim[0]) + (vel > vel_lim[1])
+
 	sigma = D.components['stellar'].plot['sigma']
 	sigma_lim = set_lims(sigma, positive=True)
-	sigma[sigma < sigma_lim[0]], sigma[sigma > sigma_lim[1]] = np.nan, np.nan
+	mask += (sigma < sigma_lim[0]) + (sigma > sigma_lim[1])
+	
+	vel[mask], sigma[mask] = np.nan, np.nan
+
 
 	# NB: numerator and denominator are in R_m order
 	numerator = np.cumsum(D.flux[R_m_sort] * 
