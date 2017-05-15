@@ -10,7 +10,7 @@ from plot_results import set_lims
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
+def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 	# Find lines:
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
@@ -20,20 +20,16 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 
 	print 'Absorption lines'
 
-	if wav_range:
-		wav_range_dir = wav_range + "/"
-	else:
-		wav_range_dir = ""
 
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
-	out_plots = "%splots" % (output)
+	output = "%s/%s/%s" % (out_dir, galaxy)
+	out_plots = "%s/plots" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 	 
 	if D is None:
 		out_pickle = '%s/pickled' % (output)
-		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
+		pickleFile = open("%s/dataObj.pkl" % (out_pickle), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()
 
@@ -79,7 +75,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 
 	print 'Saving plot'
 
-	saveTo = "%s/absorption_%s.pdf" % (out_plots, wav_range)
+	saveTo = "%s/absorption.pdf" % (out_plots)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')
 	ax_array[0,0].set_xlabel('')
@@ -92,7 +88,7 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 	if uncert:
 		f_uncert.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
 
-		saveTo = "%s/absorption_uncert_%s.pdf" % (out_plots, wav_range)
+		saveTo = "%s/absorption_uncert.pdf" % (out_plots)
 		f_uncert.tight_layout()
 		ax_array_uncert[0,1].set_xlabel('')
 		ax_array_uncert[0,0].set_xlabel('')
@@ -115,5 +111,5 @@ def plot_absorption(galaxy, wav_range="", vLimit=0, D=None, uncert=True):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	plot_absorption('ic1531', wav_range='4200-', vLimit=2)
+	plot_absorption('ic1531')
 

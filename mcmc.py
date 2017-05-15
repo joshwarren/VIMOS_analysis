@@ -102,11 +102,12 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 
 	data_file = "%s/analysis/galaxies.txt" % (dir)
-	galaxy_gals = np.loadtxt(data_file, usecols=(0,), unpack=True, 
-		dtype=str, skiprows=1)
-	z_gals, vel_gals, sig_gals, x_gals, y_gals, SN_kin_gals, SN_pop_gals = np.loadtxt(
-		data_file, skiprows=1, usecols=(1,2,3,4,5,6,7), unpack=True,
-		dtype='float,float,float,int,int,float,float')
+	d = np.loadtxt(data_file, unpack=True, dtype=str)
+	galaxy_gals = d[0][1:]
+	z_gals, vel_gals, sig_gals = d[1][1:].astype(float), d[2][1:].astype(float), \
+		d[3][1:].astype(float),
+	x_gals, y_gals = d[4][1:].astype(int), d[5][1:].astype(int)
+	SN_gals = {d[i][0]:d[i][1:].astype(float) for i in range(6,len(d))}
 
 	# If galaxy is already in galaxies.txt file
 	try:
@@ -122,12 +123,15 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 		vel_gals[i_gal] = vel
 		sig_gals[i_gal] = sig
 
-	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}{6:8}{7:8}\n"
+	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(['{%i:%i}'%(i+3,len(t)+1) 
+		for i, t in enumerate(SN_gals.keys())]) + "\n"
+
+	SN_titles = list(SN_gals.keys())
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
-			"Kin SN", "Pop SN"))
+			*(s for s in SN_titles)))
 		for i in range(len(galaxy_gals)):
 			f.write(temp.format(galaxy_gals[i], str(round(z_gals[i],7)), 
 				str(round(vel_gals[i],4)), str(round(sig_gals[i],4)), 
-				str(int(x_gals[i])), str(int(y_gals[i])), str(round(SN_kin_gals[i],2)),
-				str(round(SN_pop_gals[i],2))))
+				str(int(x_gals[i])), str(int(y_gals[i])), 
+				*(str(round(SN_gals[s][i],2)) for s in SN_titles)))

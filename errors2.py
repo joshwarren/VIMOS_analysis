@@ -25,24 +25,28 @@ import ppxf_util as util
 from rolling_stats import *
 
 #-----------------------------------------------------------------------------
-def set_params():
-	quiet = True
-	gas = 1 # 0   No gas emission lines
-			# 1   Probe ionised gas
-			# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
-			#     (Hb and Hd)
-			# 3   All gas seperate.
-	reps = 0 ## number of monte carlo reps per bin.
-	discard = 0
-	set_range = np.array([4200,10000])
-	FWHM_gal = 2.5 # VIMOS documentation (and fits header)
-	stellar_moments = 4 # number of componants to calc with ppxf (see 
-						# keyword moments in ppxf.pro for more details)
-	gas_moments = 2
-	degree = 4  # order of addative Legendre polynomial used to 
-				#; correct the template continuum shape during the fit
-	return quiet, gas, reps, discard, set_range, FWHM_gal, \
-		stellar_moments, gas_moments, degree
+class set_params(object):
+	def __init__(opt='kin'):
+		self.quiet = True
+		self.gas = 1 # 0   No gas emission lines
+				# 1   Probe ionised gas
+				# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
+				#     (Hb and Hd)
+				# 3   All gas seperate.
+		self.reps = 0 ## number of monte carlo reps per bin.
+		self.discard = 0
+		self.set_range = np.array([4200,10000])
+		self.FWHM_gal = 2.5 # VIMOS documentation (and fits header)
+		self.stellar_moments = 4 # number of componants to calc with ppxf (see 
+							# keyword moments in ppxf.pro for more details)
+		self.gas_moments = 2
+		if 'kin' in opt:
+				self.degree = 4  # order of addative Legendre polynomial used to 
+								# correct the template continuum shape during the fit
+				self.mdegree = 0
+			elif 'pop' in opt:
+				self.degree = -1
+				self.mdegree = 10
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -257,15 +261,23 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 	noise_sav, element, templatesToUse, gas_output=None, gas_errors=None, opt='kin'):
 	# stellar MC results
 	if cc.device == 'glamdring':
-		dir = '%s/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
+		dir = '%s/analysis/%s/%s/MC' % (cc.base_dir, galaxy, opt)
 	else:
-		dir = '%s/Data/vimos/analysis/%s/%s_MC' % (cc.base_dir, galaxy, opt)
+		dir = '%s/Data/vimos/analysis/%s/%s/MC' % (cc.base_dir, galaxy, opt)
 
 	reps = stellar_output.shape[0]
 	gas = len(element) > 1
 
-	if not os.path.exists("%s/stellar/errors" % (dir)):
-		os.makedirs("%s/stellar/errors" % (dir))
+	def check_directory(d):
+		if not os.path.exists(d):
+			try:
+				os.makedirs(d)
+			except OSError: 
+				# Another node has created directory in the time that it took for if 
+				# statement above
+				pass
+
+	check_directory("%s/stellar/errors" % (dir))
 	bin_file = "%s/stellar/%s.dat" % (dir, str(bin))
 	errors_file = "%s/stellar/errors/%s.dat" % (dir, str(bin))
 	with open(bin_file, 'w') as f,  open(errors_file, 'w') as e:
@@ -281,9 +293,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 	if gas: gas_dir = [e for e in element if e != 'stellar']
 	else: gas_dir=[] 
 	for d in range(len(gas_dir)):
-		if not os.path.exists("%s/gas/%s/errors" % (dir, gas_dir[d])):
-			os.makedirs("%s/gas/%s/errors" % (dir, gas_dir[d]))
-
+		check_directory("%s/gas/%s/errors" % (dir, gas_dir[d]))
 		gas_file = "%s/gas/%s/%s.dat" % (dir, gas_dir[d], str(bin))
 		gas_errors_file = "%s/gas/%s/errors/%s.dat" % (dir, gas_dir[d], str(bin))
 
@@ -299,8 +309,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 						"   " + str(gas_errors[d,i,3]) + '\n')
 
 	## save bestfit spectrum
-	if not os.path.exists("%s/bestfit" % (dir)):
-		os.makedirs("%s/bestfit" % (dir)) 
+	check_directory("%s/bestfit" % (dir))
 	bestfit_file = "%s/bestfit/%s.dat" % (dir, str(bin))
    
 	with open(bestfit_file, 'w') as s:
@@ -308,8 +317,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 			s.write(str(pp.bestfit[i]) + '\n')
 
 	## save input
-	if not os.path.exists("%s/input" % (dir)):
-		os.makedirs("%s/input" % (dir)) 
+	check_directory("%s/input" % (dir))
 	input_file = "%s/input/%s.dat" % (dir, str(bin))
    
 	with open(input_file, 'w') as inp:
@@ -317,8 +325,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 			inp.write(str(bin_log_sav[i]) + '\n')
 
 	## save input noise
-	if not os.path.exists("%s/noise_input" % (dir)):
-		os.makedirs("%s/noise_input" % (dir)) 
+	check_directory("%s/noise_input" % (dir))
 	input_file = "%s/noise_input/%s.dat" % (dir, str(bin))
    
 	with open(input_file, 'w') as inp:
@@ -341,16 +348,14 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 			b.write('\n')
 
 	## save chi2
-	if not os.path.exists("%s/chi2" % (dir)):
-		os.makedirs("%s/chi2" % (dir)) 
+	check_directory("%s/chi2" % (dir))
 	chi2_file = "%s/chi2/%s.dat" % (dir, str(bin))
    
 	with open(chi2_file, 'w') as c2:
 		c2.write(str(pp.chi2) + '\n')
 
 	## save weights
-	if not os.path.exists("%s/temp_weights" % (dir)):
-		os.makedirs("%s/temp_weights" % (dir)) 
+	check_directory("%s/temp_weights" % (dir))
 	weights_file = "%s/temp_weights/%s.dat" % (dir, str(bin))
 
 	with open(weights_file, 'w') as w:
@@ -358,14 +363,12 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 			w.write(str(templatesToUse[i]) + "   " + str(pp.weights[i]) + '\n') 
 
 	## save indervidual template bestfits
-	if not os.path.exists("%s/bestfit/matrix" % (dir)):
-		os.makedirs("%s/bestfit/matrix" % (dir)) 
+	check_directory("%s/bestfit/matrix" % (dir))
 	matrix_file = "%s/bestfit/matrix/%s.dat" % (dir, str(bin))
 
 	## save addative polyweights
 	if hasattr(pp, 'polyweights'):
-		if not os.path.exists("%s/apweights" % (dir)):
-			os.makedirs("%s/apweights" % (dir)) 
+		check_directory("%s/apweights" % (dir))
 		polyweights_file = "%s/apweights/%s.dat" % (dir, str(bin))
 
 		with open(polyweights_file, 'w') as apw:
@@ -388,8 +391,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 
 	## save multiplicative polyweights
 	if hasattr(pp, 'mpolyweights'):
-		if not os.path.exists("%s/mpweights" % (dir)):
-			os.makedirs("%s/mpweights" % (dir)) 
+		check_directory("%s/mpweights" % (dir))
 		mpolyweights_file = "%s/mpweights/%s.dat" % (dir, str(bin))
 
 		with open(mpolyweights_file, 'w') as mpw:
@@ -397,8 +399,7 @@ def saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sa
 				mpw.write(str(pp.mpolyweights[i]) + '\n')
 
 	## save lambda input
-	if not os.path.exists("%s/lambda" % (dir)):
-		os.makedirs("%s/lambda" % (dir)) 
+	check_directory("%s/lambda" % (dir))
 	lambda_file = "%s/lambda/%s.dat" % (dir, str(bin))
 
 	with open(lambda_file, 'w') as l:
@@ -445,15 +446,15 @@ def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None,
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def errors2(i_gal=None, bin=None):
+def errors2(i_gal=None, opt=None, bin=None):
 	if i_gal is None: i_gal=int(sys.argv[1])
-	if bin is None: bin=int(sys.argv[2])
+	if opt is None: opt=sys.argv[2]
+	if bin is None: bin=int(sys.argv[3])
 	from ppxf import ppxf
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-	quiet, gas, reps, discard, set_range, FWHM_gal, stellar_moments, gas_moments, \
-		degree = set_params()
+	params = set_params()
 	
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
@@ -479,10 +480,10 @@ def errors2(i_gal=None, bin=None):
 
 
 
-	tessellation_File = "%s/analysis/%s/" % (dir, galaxy) + \
-		"voronoi_2d_binning_output_kin.txt"
+	tessellation_File = "%s/analysis/%s/%s/setup/" % (dir, galaxy, opt) + \
+		"voronoi_2d_binning_output.txt"
 
-	FWHM_gal = FWHM_gal/(1+z) # Adjust resolution in Angstrom
+	FWHM_gal = params.FWHM_gal/(1+z) # Adjust resolution in Angstrom
 
 ## ----------===============================================---------
 ## ----------=============== Run analysis  =================---------
@@ -512,10 +513,10 @@ def errors2(i_gal=None, bin=None):
 	CDELT_spec = header['CDELT3']
 	s = galaxy_data.shape
 
-	rows_to_remove = range(discard)
-	rows_to_remove.extend([s[1]-1-i for i in range(discard)])
-	cols_to_remove = range(discard)
-	cols_to_remove.extend([s[2]-1-i for i in range(discard)])
+	rows_to_remove = range(params.discard)
+	rows_to_remove.extend([s[1]-1-i for i in range(params.discard)])
+	cols_to_remove = range(params.discard)
+	cols_to_remove.extend([s[2]-1-i for i in range(params.discard)])
 
 	galaxy_data = np.delete(galaxy_data, rows_to_remove, axis=1)
 	galaxy_data = np.delete(galaxy_data, cols_to_remove, axis=2)
@@ -541,7 +542,7 @@ def errors2(i_gal=None, bin=None):
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
 	bin_lin, lam, cut = remove_anomalies(bin_lin, window=201, repeats=3, 
-		lam=lam, set_range=set_range, return_cuts=True)
+		lam=lam, set_range=params.set_range, return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])/(1+z)
 	bin_lin_noise = bin_lin_noise[cut]
 
@@ -566,10 +567,10 @@ def errors2(i_gal=None, bin=None):
 ## ----------===============================================---------
 ## ----------=============== Emission lines ================---------
 ## ----------===============================================---------
-	e_templates = get_emission_templates(gas, lamRange, 
+	e_templates = get_emission_templates(params.gas, lamRange, 
 		stellar_templates.logLam_template, FWHM_gal)
 
-	if gas:
+	if params.gas:
 		templates = np.column_stack((stellar_templates.templates, e_templates.templates))
 	else:
 		templates = stellar_templates.templates
@@ -579,54 +580,54 @@ def errors2(i_gal=None, bin=None):
 	element = ['stellar'] + e_templates.element
 
 	start = [[vel, sig]] * (max(component) + 1)
-	moments = [stellar_moments] + [gas_moments] * max(component)
+	moments = [params.stellar_moments] + [params.gas_moments] * max(component)
 
 
 	goodPixels = determine_goodpixels(logLam_bin,stellar_templates.lamRange_template, 
-		vel, z, gas=gas!=0)
+		vel, z, gas=params.gas!=0)
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
 	noise = np.abs(noise)
 	bin_log_sav = bin_log
 	noise_sav = noise
-	saveTo="%s/analysis/%s/gas_MC/bestfit/plots/%s.png" % (dir, galaxy, str(bin))
+	saveTo="%s/analysis/%s/%s/MC/bestfit/plots/%s.png" % (dir, galaxy, opt, str(bin))
 
 	pp = ppxf(templates, bin_log, noise, velscale, start, 
-			  goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-			  component=component, lam=lambdaq, plot=not quiet, 
-			  quiet=quiet, save=saveTo)
+			  goodpixels=goodPixels, moments=moments, degree=params.degree, vsyst=dv, 
+			  component=component, lam=lambdaq, plot=not params.quiet, 
+			  quiet=params.quiet, save=saveTo, mdegree=params.mdegree)
 ## ----------===============================================---------
 ## ----------================= The MC part =================---------
 ## ----------===============================================---------
-	stellar_output = np.zeros((reps, stellar_moments))
-	stellar_errors = np.zeros((reps, stellar_moments))
-	if gas:
-		gas_output = np.zeros((gas, reps, gas_moments))
-		gas_errors = np.zeros((gas, reps, gas_moments))
+	stellar_output = np.zeros((params.reps, params.stellar_moments))
+	stellar_errors = np.zeros((params.reps, params.stellar_moments))
+	if params.gas:
+		gas_output = np.zeros((params.gas, params.reps, params.gas_moments))
+		gas_errors = np.zeros((params.gas, params.reps, params.gas_moments))
 
-	for rep in range(reps):
+	for rep in range(params.reps):
 		# print rep
 		random = np.random.randn(len(noise))
 		add_noise = random*np.abs(noise)
 		bin_log = pp.bestfit + add_noise
 	
 		ppMC = ppxf(templates, bin_log, noise, velscale, start, 
-			goodpixels=goodPixels, moments=moments, degree=degree, vsyst=dv, 
-			lam=lambdaq, plot=not quiet, quiet=quiet, bias=0.1, 
-			component=component)
+			goodpixels=goodPixels, moments=moments, degree=params.degree, vsyst=dv, 
+			lam=lambdaq, plot=not params.quiet, quiet=params.quiet, bias=0.1, 
+			component=component, mdegree=params.mdegree)
 
-		stellar_output[rep,:] = ppMC.sol[0][0:stellar_moments]
-		stellar_errors[rep,:] = ppMC.error[0][0:stellar_moments]
+		stellar_output[rep,:] = ppMC.sol[0][0:params.stellar_moments]
+		stellar_errors[rep,:] = ppMC.error[0][0:params.stellar_moments]
 		for g in range(len(element)-1):
-			gas_output[g,rep,:] = ppMC.sol[g+1][0:gas_moments]
-			gas_errors[g,rep,:] = ppMC.error[g+1][0:gas_moments]
+			gas_output[g,rep,:] = ppMC.sol[g+1][0:params.gas_moments]
+			gas_errors[g,rep,:] = ppMC.error[g+1][0:params.gas_moments]
 
 
 ## ----------============ Write ouputs to file =============---------
 	saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 		noise_sav, element, templatesToUse, gas_output=gas_output, 
-		gas_errors=gas_errors, opt='gas')
+		gas_errors=gas_errors, opt=opt)
 	
 ##############################################################################
 
@@ -635,7 +636,7 @@ def errors2(i_gal=None, bin=None):
 
 
 if __name__ == '__main__':
-	errors2(5,29) if len(sys.argv)<3 else errors2()
+	errors2(5,'kin',29) if len(sys.argv)<4 else errors2()
 
 
 

@@ -28,33 +28,34 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 
 #-----------------------------------------------------------------------------
-def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
+def pickler(galaxy, discard=0, norm="lwv", opt="kin", kinemetry=True, override=False):
 	print "    Loading D"
 
-	tessellation_File = "%s/%s/voronoi_2d_binning_output_%s.txt" % (vin_dir, galaxy, opt)
-	tessellation_File2 = "%s/%s/voronoi_2d_binning_output2_%s.txt" %(vin_dir, galaxy, opt)
+	tessellation_File = "%s/%s/%s/setup/voronoi_2d_binning_output.txt" % (vin_dir, 
+		galaxy, opt)
+	tessellation_File2 = "%s/%s/%s/setup/voronoi_2d_binning_output2.txt" %(vin_dir, 
+		galaxy, opt)
 	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
-	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range)
-	if opt == "kin":
-		vin_dir_gasMC = "%s/%s/gas_MC" % (vin_dir, galaxy)
-	elif opt == "pop":
-		vin_dir_gasMC = "%s/%s/pop_MC" % (vin_dir, galaxy)
+	output = "%s/%s/%s" % (out_dir, galaxy, opt)
+	vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	out_pickle = '%s/pickled' % (output)
 	
 	# Check tessellation file is older than pPXF outputs (checks vin_dir_gasMC/0.dat only).
-	if os.path.getmtime(tessellation_File) > os.path.getmtime('%s/0.dat' % (vin_dir_gasMC)
-		): 
-		bin_num = np.loadtxt(tessellation_File, unpack=True, skiprows = 1, usecols=(2,), 
-			dtype=int)
-		if os.path.exists('%s/%i.dat' % (vin_dir_gasMC,max(bin_num))) and not \
-			os.path.exists('%s/%i.dat' % (vin_dir_gasMC, max(bin_num)+1)):
-			# Issue warning, but do not stop.
-			warnings.warn('WANING: The tesselation file '+\
-				'voronoi_2d_binning_output_%s.txt may to have been changed.' % (opt))
-		else:
-			# Stop and raise exception
-			raise UserWarning('WANING: The tesselation file '+\
-				'voronoi_2d_binning_output_%s.txt has been overwritten.' % (opt))
+	if not override:
+		if os.path.getmtime(tessellation_File) > os.path.getmtime('%s/0.dat' % (
+			vin_dir_gasMC)): 
+			bin_num = np.loadtxt(tessellation_File, unpack=True, skiprows = 1, usecols=(2,), 
+				dtype=int)
+			if os.path.exists('%s/%i.dat' % (vin_dir_gasMC,max(bin_num))) and not \
+				os.path.exists('%s/%i.dat' % (vin_dir_gasMC, max(bin_num)+1)):
+				# Issue warning, but do not stop.
+				warnings.warn('WANING: The tesselation file '+\
+					'voronoi_2d_binning_output.txt may to have been changed.')
+			else:
+				# Stop and raise exception
+				raise UserWarning('WANING: The tesselation file '+\
+					'voronoi_2d_binning_output.txt has been overwritten. ' + \
+					"Use the 'override' keyword to run this routine anyway.")
 # ------------======== Reading the spectrum  ============----------
 	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
 			usecols=(0,1,2)))
@@ -72,7 +73,6 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	
 	D.unbinned_flux = np.nansum(galaxy_data, axis=0)
 	
-	FWHM_gal = 4*0.71
 	temp_wav = np.loadtxt('%s/models/miles_library/m0001V' % (cc.home_dir),
 		usecols=(0,), unpack=True)
 	for i in range(D.number_of_bins):
@@ -118,14 +118,14 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	else: gas = 3
 	D.gas = gas
 
-	
-
 	for c in D.list_components:
 		dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
-			'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+			'sigma':np.zeros(D.number_of_bins)*np.nan, 
+			'h3':np.zeros(D.number_of_bins)*np.nan, 
 			'h4':np.zeros(D.number_of_bins)*np.nan}
 		dynamics_uncert = {'vel':np.zeros(D.number_of_bins)*np.nan, 
-			'sigma':np.zeros(D.number_of_bins)*np.nan, 'h3':np.zeros(D.number_of_bins)*np.nan, 
+			'sigma':np.zeros(D.number_of_bins)*np.nan, 
+			'h3':np.zeros(D.number_of_bins)*np.nan, 
 			'h4':np.zeros(D.number_of_bins)*np.nan}
 
 		for bin in range(D.number_of_bins):
@@ -174,21 +174,21 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 					f = np.loadtxt(glamdring_file, unpack=True)
 				# Check if MC has been run.
 				if len(f) != 0:
-					vel, sig, h3s, h4s = f[0,:], f[1,:], f[2,:], f[3,:]
-					dynamics_uncert['vel'][bin] = np.std(vel)
-					dynamics_uncert['sigma'][bin] = np.std(sig)
-					dynamics_uncert['h3'][bin] = np.std(h3s)
-					dynamics_uncert['h4'][bin] = np.std(h4s)
+					for j, d in enumerate(['vel', 'sigma', 'h3', 'h4']):
+						try:
+							dynamics_uncert[d][bin] = np.std(f[j,:])
+						except IndexError:
+							pass
 				else:
 					dynamics_uncert = dynamics
 
-		for kine in dynamics:
+		for kine in dynamics.keys():
 			if np.isnan(dynamics[kine]).all():
 				D.components[c].unset(kine)
 			else:
-				if c in D.list_components:
-					D.components[c].setkin(kine, dynamics[kine])
-					D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
+				# if c in D.list_components:
+				D.components[c].setkin(kine, dynamics[kine])
+				D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
 
 	D.find_restFrame()
 # ------------================ Pickling =================----------
@@ -196,14 +196,11 @@ def pickler(galaxy, discard=0, wav_range="", norm="lwv", opt="kin",	**kwargs):
 	print "    Pickling D"
 	if not os.path.exists(out_pickle):
 		os.makedirs(out_pickle) 
-	if opt == 'kin':
-		pickleFile = open("%s/dataObj_%s.pkl" % (out_pickle, wav_range), 'wb')
-	elif opt == 'pop':
-		pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'wb')
+	pickleFile = open("%s/dataObj.pkl" % (out_pickle), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
 # ------------======== Save flux for KINEMTRY (IDL) =====----------
-	if opt == 'kin':
+	if 'kin' in opt and kinemetry:
 		print "    Saving flux for KINEMETRY (IDL)"
 		with open('%s/flux.dat' % (output), 'wb') as f:
 			for i in range(D.number_of_bins):
@@ -220,8 +217,7 @@ if __name__ == '__main__':
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 	galaxy = galaxies[6]
 
-	wav_range="4200-"
-	discard = 2 # rows of pixels to discard- must have been the same 
+	discard = 0 # rows of pixels to discard- must have been the same 
 			#	for all routines 
 
-	pickler(galaxy, discard=discard, wav_range=wav_range, opt='pop')
+	pickler(galaxy, discard=discard, opt='pop')

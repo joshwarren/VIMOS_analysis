@@ -10,12 +10,11 @@ if 'home' not in cc.device:
 	import matplotlib # 20160202 JP to stop lack-of X-windows error
 	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from pickler import pickler
-from plot_results import plot_results
+from plot_results import plot_results, mapping
 from kinematics import kinematics
-from GH_plots import GH_plots
+# from GH_plots import GH_plots
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
-# from stellar_pop import stellar_pop
 from plot_stellar_pop import plot_stellar_pop
 from use_kinemetry import use_kinemetry
 from classify import classify
@@ -34,7 +33,7 @@ galaxies = [
 			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
-galaxies = ['ic1459']
+# galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -46,9 +45,17 @@ galaxies = ['ic1459']
 
 
 discard = 0
-wav_range = '4200-'
-vLimit = 2
 norm='lwv'
+opt_dir=''
+
+m=mapping()
+# m.SNR = False
+# m.image = False
+# m.equivalent_width = False
+# m.amp_noise = False
+# m.kinematics = False
+# m.plot_resid = False
+# m.line_ratios = False
 
 # Arrays for error catching
 gal_err=[]
@@ -58,23 +65,24 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm)
-		D = plot_results(galaxy, discard=discard, wav_range=wav_range, vLimit=vLimit, 
-			CO = False, residual="median", norm=norm, D=D)
+		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
+		# D = plot_results(galaxy, discard=discard, CO = False, residual="median", 
+		# 	norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
-		# GH_plots(galaxy, wav_range=wav_range)
+		# # GH_plots(galaxy)
 		# plt.close("all")
-		# kinematics(galaxy, discard=discard, wav_range=wav_range, D=D)
+		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# use_kinemetry(galaxy)
 		# classify(galaxy)
+
 		# D = None
-		# D = pickler(galaxy, discard=discard, wav_range=wav_range, norm=norm, opt='pop')
-		# D = plot_absorption(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)#, uncert=False)
-		# # D = stellar_pop(galaxy, wav_range=wav_range, vLimit=vLimit, D=D)
-		# D = plot_stellar_pop(galaxy, wav_range=wav_range, method='mostlikely', D=D)
+		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		# D = plot_absorption(galaxy, vLimit=vLimit, D=D, opt='pop+opt_dir')
+		# # 	uncert=False)
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'opt_dir)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

@@ -1,3 +1,4 @@
+## Routine to plot the output from kinemtry.pro
 import numpy as np
 import matplotlib.pyplot as plt
 from checkcomp import checkcomp

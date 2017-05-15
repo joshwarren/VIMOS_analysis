@@ -14,26 +14,22 @@ import os
 from checkcomp import checkcomp
 cc = checkcomp()
 
-def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
+def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
 	print 'Plotting stellar population'
 
-	if cc.device == 'glamdring': vin_dir = '%s/analysis/%s/pop' % (cc.base_dir,galaxy)
-	else: vin_dir = '%s/Data/vimos/analysis/%s/pop' % (cc.base_dir,galaxy)
-
-	if wav_range:
-		wav_range_dir = wav_range + "/"
-	else:
-		wav_range_dir = ""
+	if cc.device == 'glamdring': vin_dir = '%s/analysis/%s/%s/pop' % (cc.base_dir,
+		galaxy, opt)
+	else: vin_dir = '%s/Data/vimos/analysis/%s/%s/pop' % (cc.base_dir, galaxy, opt)
 
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-	output = "%s/%s/results/%s" % (out_dir, galaxy, wav_range_dir)
-	out_plots = "%splots" % (output)
+	output = "%s/%s/%s" % (out_dir, galaxy, opt)
+	out_plots = "%s/plots" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 	 
 	if D is None:
 		pickle_file = '%s/pickled' % (output)
-		pickleFile = open("%s/dataObj_%s_pop.pkl" % (pickle_file, wav_range), 'rb')
+		pickleFile = open("%s/dataObj.pkl" % (pickle_file), 'rb')
 		D = pickle.load(pickleFile)
 		pickleFile.close()
 
@@ -135,7 +131,7 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 
 	print 'Saving plot'
 
-	saveTo = "%s/population_%s.pdf" % (out_plots, wav_range)
+	saveTo = "%s/population.pdf" % (out_plots)
 	f.tight_layout()
 	ax_array[0,1].set_xlabel('')
 	ax_array[0,0].set_xlabel('')
@@ -160,5 +156,5 @@ def plot_stellar_pop(galaxy, wav_range="", method='median', D=None):
 # Use of plot_stellar_pop.py
 
 if __name__ == '__main__':
-	plot_stellar_pop('eso443-g024', wav_range='4200-')
+	plot_stellar_pop('eso443-g024')
 

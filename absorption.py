@@ -15,8 +15,8 @@
 # noise:		None	Observed noise from reduction pipeline
 # lick:			False	Return corrected indices to LICK resolution
 ##############################################################################
-from tools import length as len
 from spectools import *
+# from tools import length as len
 import numpy as np 
 from scipy.ndimage.filters import gaussian_filter1d
 
@@ -95,8 +95,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		index_value *= corr
 	
 	except IndexError:
-		index_value = np.array([np.nan])
-		index_va = np.array([np.nan])
+		index_value = [np.nan]
+		index_va = [np.nan]
 
 	if noise is not None:
 		return index_value, index_va
@@ -113,6 +113,12 @@ def get_Lick_res(index):
 		cont = s.hbcont; band = s.hb
 	elif index=='G4300':
 		cont = s.G4300cont; band = s.G4300
+	elif index=='NaD':
+		cont = s.nadcont; band = s.nad
+	elif index=='TiO1':
+		cont = s.tio1cont; band = s.tio1
+	elif index=='TiO2':
+		cont = s.tio2cont; band = s.tio2
 	elif index=='Fe4383':
 		cont = s.Fe4383cont; band = s.Fe4383
 	elif index=='Ca4455':
@@ -123,6 +129,17 @@ def get_Lick_res(index):
 		cont = s.Fe4668cont; band = s.Fe4668
 	elif index=='Fe5015':
 		cont = s.Fe5015cont; band = s.Fe5015
+	elif index=='Fe52' or index=='Fe5270':
+		cont = s.fe52cont; band = s.fe52
+	elif index=='Fe53' or index=='Fe5335':
+		cont = s.fe53cont; band = s.fe53
+	elif index=='Fe5406':
+		cont = s.Fe5406cont; band = s.Fe5406
+	elif index=='Fe5709':
+		cont = s.Fe5709cont; band = s.Fe5709
+	elif index=='Fe5782':
+		cont = s.Fe5782cont; band = s.Fe5782
+
 
 	# Wavelength of center of band
 	wav = np.median(band)
@@ -132,11 +149,10 @@ def get_Lick_res(index):
 	from scipy import __version__ as scipy_v
 	if scipy_v == '0.19.0':
 		res_wav_dep = interp1d(np.array([4000, 4400, 4900, 5400, 6000]), 
-			np.array([11.5, 9.2, 8.4, 8.4, 9.8]), bounds_error=False,
+			np.array([11.5, 9.2, 8.4, 8.4, 9.8]), bounds_error=False, 
 			fill_value=(11.5, 9.8))
 		out = res_wav_dep(wav)
 	else: 
-		# Older versions of SciPy do not have desired fill_value behaviour.
 		if wav < 4000:
 			out = 11.5
 		elif wav > 6000:
