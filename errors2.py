@@ -41,12 +41,12 @@ class set_params(object):
 							# keyword moments in ppxf.pro for more details)
 		self.gas_moments = 2
 		if 'kin' in opt:
-				self.degree = 4  # order of addative Legendre polynomial used to 
-								# correct the template continuum shape during the fit
-				self.mdegree = 0
-			elif 'pop' in opt:
-				self.degree = -1
-				self.mdegree = 10
+			self.degree = 4  # order of addative Legendre polynomial used to 
+							# correct the template continuum shape during the fit
+			self.mdegree = 0
+		elif 'pop' in opt:
+			self.degree = -1
+			self.mdegree = 10
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------

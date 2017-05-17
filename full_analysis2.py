@@ -66,8 +66,8 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		# D = plot_results(galaxy, discard=discard, CO = False, residual="median", 
-		# 	norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
+		D = plot_results(galaxy, discard=discard, CO = False, residual="median", 
+			norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
@@ -78,11 +78,10 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy)
 		# classify(galaxy)
 
-		# D = None
+		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
-		# D = plot_absorption(galaxy, vLimit=vLimit, D=D, opt='pop+opt_dir')
-		# # 	uncert=False)
-		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'opt_dir)
+		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True)
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

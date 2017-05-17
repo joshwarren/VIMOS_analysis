@@ -61,6 +61,8 @@ import math
 import matplotlib.pyplot as plt # used for plotting
 import matplotlib as mpl
 import os
+from prefig import Prefig 
+Prefig(transparent=False)
 
 ## Adding the origentation arrows to a plot. 
 ## PA is given in degrees
@@ -107,9 +109,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if ax is None:
 		fig, ax = plt.subplots(nrows=1,ncols=1)
-
-	if title is not None:
-		ax.set_title(title, fontdict={'fontsize':'small'})
 
 	if vmin is None:
 		vmin = np.nanmin(vel)
@@ -218,11 +217,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ax.tick_params(length=5, which='minor')
 
 
-	xmin_sav, xmax_sav = ax.get_xlim()
-	ymin_sav, ymax_sav = ax.get_ylim()
-	xlim=np.array([xmin_sav, xmax_sav])
-	ylim=np.array([ymin_sav, ymax_sav])
-
 	if galaxy is not None:
 		gal_name = plt.text(0.02,0.98, galaxy, color='black',
 			verticalalignment='top',transform=ax.transAxes)
@@ -270,6 +264,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
 		H = 70.0 # value used by Bolonga group.
+		xlim = np.array([-max(xBar_pix)/2, max(xBar_pix)/2])*res
+		ylim = np.array([-max(yBar_pix)/2, max(yBar_pix)/2])*res
 		xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
 		ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
 		xmax = xlim[1]
@@ -306,18 +302,26 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax.ax2 = ax2
 		ax.ax3 = ax3
 
+	if title is not None:
+		if hasattr(ax,'ax3'):
+			ax.set_title(title, y=1.1)
+		else:
+			ax.set_title(title)#, fontdict={'fontsize':'small'})
+
+
 	if colorbar:
 		ticks = ticker.MaxNLocator(nbins=nticks)
 		if hasattr(ax,'ax3'):
-			cbar = plt.colorbar(cs, ax=[ax,ax2,ax3], ticks=ticks)
+			cbar = plt.colorbar(cs, ax=[ax,ax2,ax3], ticks=ticks, pad=0.1, 
+				use_gridspec=True)
 		else:
-			cbar = plt.colorbar(cs, ax=ax, ticks=ticks)
+			cbar = plt.colorbar(cs, ax=ax, ticks=ticks, use_gridspec=True)
 
-		cbar.ax.tick_params(labelsize=6)
+		# cbar.ax.tick_params(labelsize=6)
 		
 		if label:
 			#cbar.set_label(label, rotation=270, fontsize='small')
-			cbar.ax.text(4.0,0.5, label, rotation=270, fontsize=8,
+			cbar.ax.text(4.0,0.5, label, rotation=270, #fontsize=8,
 				verticalalignment='center')
 			
 		ax.cax = cbar.ax

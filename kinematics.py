@@ -169,17 +169,17 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 
 	# NB: numerator and denominator are in R_m order
-	numerator = np.cumsum(D.flux[R_m_sort] * 
+	numerator = np.nancumsum(D.flux[R_m_sort] * 
 		np.sqrt(D.xBar**2 + D.yBar**2)[R_m_sort] * np.abs(vel[R_m_sort]))
 
-	denominator = np.cumsum(D.flux[R_m_sort] * 
+	denominator = np.nancumsum(D.flux[R_m_sort] * 
 		np.sqrt(D.xBar**2 + D.yBar**2)[R_m_sort] * np.sqrt(vel**2 + sigma**2)[R_m_sort])
 
 	lambda_R = numerator[R_m_sort.argsort()]/denominator[R_m_sort.argsort()]
 	lambda_R[np.isnan(R_m)] = np.nan
 
 	lambda_Re = interp1d(R_m[~np.isnan(R_m)], lambda_R[~np.isnan(R_m)],
-		bounds_error=False, fill_value=(np.nan, 
+		bounds_error=False, fill_value=(0, 
 			lambda_R[R_m_sort][~np.isnan(lambda_R[R_m_sort])][-1]))(R_e)
 
 	print 'lambda_Re: ', lambda_Re
@@ -219,7 +219,6 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 		) + "\n"
 
 	SN_titles = list(SN_gals.keys())
-	print SN_titles
 	with open(galaxiesFile, 'w') as f:
 		f.write(template.format("Galaxy", "z", "velocity", "sigma", "x", "y", 
 			*(s for s in SN_titles)))

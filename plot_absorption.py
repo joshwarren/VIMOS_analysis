@@ -23,7 +23,7 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-	output = "%s/%s/%s" % (out_dir, galaxy)
+	output = "%s/%s/%s" % (out_dir, galaxy, opt)
 	out_plots = "%s/plots" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 	 
@@ -71,31 +71,33 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 				signal_noise_target=30)
 
 
-	f.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
+	# f.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
 
 	print 'Saving plot'
 
 	saveTo = "%s/absorption.pdf" % (out_plots)
-	f.tight_layout()
-	ax_array[0,1].set_xlabel('')
-	ax_array[0,0].set_xlabel('')
-	ax_array[0,1].set_ylabel('')
-	ax_array[1,1].set_ylabel('')
+	# f.tight_layout()
+	for i in xrange(ax_array.shape[0]-1):
+		ax_array[i,1].set_xlabel('')
+		ax_array[i,0].set_xlabel('')
+	for i in xrange(ax_array.shape[0]):
+		ax_array[i,1].set_ylabel('')
 	f.suptitle(galaxy.upper())
-	f.savefig(saveTo, bbox_inches="tight")
+	f.savefig(saveTo)#, bbox_inches="tight")
 
 
 	if uncert:
-		f_uncert.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
+		# f_uncert.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
 
 		saveTo = "%s/absorption_uncert.pdf" % (out_plots)
-		f_uncert.tight_layout()
-		ax_array_uncert[0,1].set_xlabel('')
-		ax_array_uncert[0,0].set_xlabel('')
-		ax_array_uncert[0,1].set_ylabel('')
-		ax_array_uncert[1,1].set_ylabel('')
+		# f_uncert.tight_layout()
+		for i in xrange(ax_array_uncert.shape[0]-1):
+			ax_array_uncert[i,1].set_xlabel('')
+			ax_array_uncert[i,0].set_xlabel('')
+		for i in xrange(ax_array_uncert.shape[0]):
+			ax_array_uncert[i,1].set_ylabel('')
 		f_uncert.suptitle(galaxy.upper() + ' Uncertainties')
-		f_uncert.savefig(saveTo, bbox_inches="tight")
+		f_uncert.savefig(saveTo)#, bbox_inches="tight")
 
 	return D
 
@@ -111,5 +113,5 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	plot_absorption('ic1531')
+	plot_absorption('ic1531', uncert=False)
 

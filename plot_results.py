@@ -82,6 +82,9 @@ class mapping(object):
 		self.kinematics = True
 		self.plot_resid = True
 		self.line_ratios = True
+	@property
+	def all(self):
+		return all([self.image, self.equivalent_width, self.kinematics, self.line_ratios])
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -112,25 +115,39 @@ def set_lims(v, positive=False, symmetric=False):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def set_ax_y(plt_title):
-	if "gas" in plt_title:
-		ax_y=2
-	elif "SF" in plt_title:
-		ax_y=2
-	elif "Shocks" in plt_title:
-		ax_y=4
-	elif 'Hbeta' in plt_title:
-		ax_y=4
-	elif 'Hgamma' in plt_title:
-		ax_y=6
-	elif 'OIII' in plt_title:
-		ax_y=2
-	elif 'stellar' in plt_title:
-	   ax_y=0
-	elif 'Hdelta' in plt_title or 'NI' in plt_title:
-		ax_y = 8
-	   
-	return ax_y
+class set_ax_y_object(object):
+	def __init__(self):
+		self.Hd = False
+		self.NI = False
+	def set_ax_y(self, plt_title):
+		if "gas" in plt_title:
+			ax_y=2
+		elif "SF" in plt_title:
+			ax_y=2
+		elif "Shocks" in plt_title:
+			ax_y=4
+		elif 'Hbeta' in plt_title:
+			ax_y=4
+		elif 'Hgamma' in plt_title:
+			ax_y=6
+		elif 'OIII' in plt_title:
+			ax_y=2
+		elif 'stellar' in plt_title:
+		   ax_y=0
+		elif 'Hdelta' in plt_title or 'NI' in plt_title: 
+			if not self.Hd or self.NI: # assessing if NI or Hd have been plotted before.
+				ax_y = 8
+				if 'Hdelta' in plt_title:
+					self.Hd = True
+				else: 
+					self.NI = True
+			else:
+				if 'Hdelta' in plt_title:
+					ax_y = 8 if self.Hd else 10
+				else:
+					ax_y = 8 if self.NI else 10
+		   
+		return ax_y
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -240,9 +257,11 @@ def add_CO(ax, galaxy, header, close=False):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
+# @profile
 def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=False, 
 	show_bin_num=False, D=None, mapping=None, opt='kin'):	
 
+	s = set_ax_y_object()
 	data_file =  "%s/galaxies.txt" % (vin_dir)
 	# different data types need to be read separetly
 	z_gals, SN_target_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
@@ -287,7 +306,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 	# Create figure and array for axes
 	n_rows = 2+2*len(D.e_components) + int(np.ceil(len(D.e_components)*
 		(len(D.e_components)-1)/6.0))
-	f = plt.figure(frameon=False)
+	f = plt.figure()#frameon=False)
 	ax_array = []
 # ------------=============== Plot image ================----------
 	if mapping.image or mapping is None:
@@ -316,7 +335,6 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 		f.delaxes(ax.cax)
 		if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 		if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
-	
 # ------------========= Plot intensity (& EW) ===========----------
 	if mapping.equivalent_width or mapping is None:
 		print "    gas map(s) and equivalent widths"
@@ -344,7 +362,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 				vmin=f_min,vmax=f_max, weights=D.n_spaxels_in_bin, title=fh_title,
 				xaxis=fCBtitle, save=saveTo)
 			
-			ax_y = set_ax_y(c)
+			ax_y = s.set_ax_y(c)
 
 			ax = f.add_subplot(111, aspect='equal')
 			saveTo = "%s/%s_img.png" % (out_nointerp, c)
@@ -389,7 +407,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 			if hasattr(ax,'ax2'): f.delaxes(ax.ax2)
 			if hasattr(ax,'ax3'): f.delaxes(ax.ax3)
 # ------------============ Amplitude/Noise ==============----------
-		if mapping.amp_noise or mapping is None:
+	if mapping.amp_noise or mapping is None:
+		for c in D.e_components:
 			amp_title = '%s Amplitude to Noise ratio' % (c_title)
 			amp_min, amp_max = set_lims(D.e_line[c].amp_noise, positive=True)
 			saveTo = "%s/%s_amp_nosie.png" % (out_nointerp, c)
@@ -401,7 +420,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 				ax1.saveTo = saveTo
 				add_CO(ax1, galaxy, header, close=True)
 # ------------=========== Setting titles etc ============----------
-	if mapping.equivalent_width or mapping is None:
+	if mapping.kinematics or mapping is None:
 		print '    Kinematics'
 		# for c in ['stellar']: # For debugging
 		for c in D.independent_components:
@@ -429,7 +448,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 
 
 			for k in D.components[pl].plot.keys():
-				ax_y = set_ax_y(c)
+				ax_y = s.set_ax_y(c)
 
 				symmetric=False
 				positive=False
@@ -654,6 +673,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 
 	print "    Plotting and saving"
 
+	cbar_position = []
 	for i, a in enumerate(ax_array):
 		f.add_axes(a)
 		#a.axis('tight')
@@ -661,41 +681,50 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 		if hasattr(a,'ax2'): f.add_axes(a.ax2)
 		if hasattr(a,'ax3'): f.add_axes(a.ax3)
 		if not os.path.exists(os.path.dirname(a.saveTo)):
-			os.makedirs(os.path.dirname(a.saveTo))  
-		f.savefig(a.saveTo, bbox_inches="tight")
+			os.makedirs(os.path.dirname(a.saveTo))
+		f.savefig(a.saveTo)#, bbox_inches="tight")
 
 		if CO:
 			add_CO(a, galaxy, header)
 
+		cbar_position.append(a.cax.get_position())
 		f.delaxes(a)
 		f.delaxes(a.cax)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
+	if True:
+	# if mapping.all or mapping is None:
+		for i, a in enumerate(ax_array):
+			if not np.isnan(a.figy):
+				a2 = f.add_axes(a)
+				# cax2 = f.add_axes(a.cax, position=cbar_position[i])
+				p = a2.get_position()
+				c = f.add_axes([p.x1,p.y0, 0.01, p.height])
+				# c = f.add_axes([p.x1,p.y0*1.06-0.004,0.005, p.height*1.05])
+				cb = plt.colorbar(a.images[0], cax=c)
+				cb.outline.set_visible(False)
+				cb.ax.tick_params(labelsize='x-small') 
+				a.set_title(a.get_title(), fontdict={'fontsize':'small'})
 
-	for a in ax_array:
-		if not np.isnan(a.figy):
-			a2 = f.add_axes(a)
-			p = a2.get_position()
-			c = f.add_axes([p.x1,p.y0*1.06-0.004,0.005, p.height*1.05])
-			plt.colorbar(a.images[0], cax=c)
-				
 
-			a.xaxis.set_visible(False)
-			a.yaxis.set_visible(False)
-			a.axis('off')
-			a.autoscale(False)
-			c.autoscale(False)
-			if hasattr(a,'gal_name'): a.gal_name.remove()
-			if hasattr(a, 'gal_z'): a.gal_z.remove()
+					
 
-	f.set_size_inches(8.5,n_rows*1.8)
-	# f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
-	f.subplots_adjust(top=0.94)
-	f.suptitle(galaxy.upper())
+				a.xaxis.set_visible(False)
+				a.yaxis.set_visible(False)
+				a.axis('off')
+				# a.autoscale(False)
+				# c.autoscale(False)
+				if hasattr(a,'gal_name'): a.gal_name.remove()
+				if hasattr(a, 'gal_z'): a.gal_z.remove()
 
-	saveTo = "%s/grid.pdf" % (out_plots)
-	f.savefig(saveTo, bbox_inches="tight",format='pdf')
+		f.set_size_inches(8.5,n_rows*1.8)
+		# f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
+		# f.subplots_adjust(top=0.94)
+		f.suptitle(galaxy.upper())
+
+		saveTo = "%s/grid.pdf" % (out_plots)
+		f.savefig(saveTo)#, bbox_inches="tight",format='pdf')
 
 	return D
 
