@@ -490,8 +490,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 						" Histogram"
 					title = "Ionised" + im_type + " Gas\n" + title + " Map"
 # ------------============ Setting v range ==============----------
-				vmin, vmax = set_lims(D.components[pl].plot[k], positive=positive, 
-					symmetric=symmetric)
+				vmin, vmax = set_lims(D.components[pl].plot[k][D.SNRatio > 
+					0.75*SN_target], positive=positive, symmetric=symmetric)
 				v_uncert_min, v_uncert_max = set_lims(D.components[pl].plot[k].uncert, 
 					positive=True)
 # # ------------============== Plot Histogram =============----------

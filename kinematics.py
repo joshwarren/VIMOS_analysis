@@ -57,9 +57,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 
 	if os.path.exists(galaxiesFile2):
-		lambda_Re_gals, ellip_gals, pa_gals, star_mis, OIII_mis, Hbeta_mis, \
-			Hdelta_mis, Hgamma_mis = np.loadtxt(galaxiesFile2, unpack=True, 
-			skiprows=1, usecols=(1,2,3,4,5,6,7,8))
+		lambda_Re_gals, ellip_gals, pa_gals, star_kine_pa_gals, gas_kine_pa_gals = \
+			np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, usecols=(1,2,3,4,5))
 		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, usecols=(0,),
 			dtype=str)
 		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
@@ -69,11 +68,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 			lambda_Re_gals = np.append(lambda_Re_gals, np.nan)
 			ellip_gals = np.append(ellip_gals, np.nan)
 			pa_gals = np.append(pa_gals, np.nan)
-			star_mis = np.append(star_mis, np.nan)
-			OIII_mis = np.append(OIII_mis, np.nan)
-			Hbeta_mis = np.append(Hbeta_mis, np.nan)
-			Hdelta_mis = np.append(Hdelta_mis, np.nan)
-			Hgamma_mis = np.append(Hgamma_mis, np.nan)
+			star_kine_pa_gals = np.append(star_kine_pa_gals, np.nan)
+			gas_kine_pa_gals = np.append(gas_kine_pa_gals, np.nan)
 		else: i_gal2 = i_gal2[0]
 		if type(lambda_Re_gals) is np.float64:
 			i_gal2 = 0
@@ -81,25 +77,16 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 			lambda_Re_gals = np.array([lambda_Re_gals])
 			ellip_gals = np.array([ellip_gals])
 			pa_gals = np.array([pa_gals])
-			star_mis = np.array([star_mis])
-			OIII_mis = np.array([OIII_mis])
-			Hbeta_mis = np.array([Hbeta_mis])
-			Hdelta_mis = np.array([Hdelta_mis])
-			Hgamma_mis = np.array([Hgamma_mis])
+			star_kine_pa_gals = np.array([star_kine_pa_gals])
+			gas_kine_pa_gals = np.array([gas_kine_pa_gals])
 	else:
 		galaxy_gals2 = np.array([galaxy])
 		lambda_Re_gals = np.array([np.nan])
 		ellip_gals = np.array([np.nan])
 		pa_gals = np.array([np.nan])
-		star_mis = np.array([np.nan])
-		OIII_mis = np.array([np.nan])
-		Hbeta_mis = np.array([np.nan])
-		Hdelta_mis = np.array([np.nan])
-		Hgamma_mis = np.array([np.nan])
+		star_kine_pa_gals = np.array([np.nan])
+		gas_kine_pa_gals = np.array([np.nan])
 		i_gal2 = 0
-
-	gas = {'[OIII]5007d':OIII_mis, 'Hbeta':Hbeta_mis, 'Hdelta':Hdelta_mis, 
-		'Hgamma':Hgamma_mis}
 
 	R_e = get_R_e(galaxy)
 # ------------=============== Photometry =================----------
@@ -114,26 +101,6 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
 	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
-# ------------================ Kinemetry =================----------
-# 	save_to = "%s/%s/results/%s/plots/" % (analysis_dir, galaxy, wav_range_dir
-# 		) + "/stellar_kinematics_%s.png" % (wav_range)
-#  	xBar = np.array(D.xBar)-f.xmed
-#  	yBar = np.array(D.yBar)-f.ymed
-
-
-# 	k = fit_kinematic_pa(xBar, yBar, np.array(D.components['stellar'].plot['vel']), 
-# 		quiet=True, plot=plots, sav_fig=save_to)
-
-# 	print "PA_kin: " + str(k[0]) + "+/-" + str(k[1]/3)
-# ------------============== Misalignment ================----------
-# 	phot = math.radians(90-f.theta)
-# 	kine = math.radians(k[0])
-
-
-# 	mis = math.asin(abs(math.sin(phot-kine)))
-# 	mis = math.degrees(mis)
-# 	star_mis[i_gal2] = mis
-# 	print "Stars misalignment: " + str(mis)
 # ------------================ Lambda_R ==================----------
 
 	beta = np.tan(D.yBar/D.xBar) # Angle between point and center of galaxy and RA 
@@ -195,24 +162,20 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	plt.savefig("%s/plots/lambda_R.png" % (output), bbox_inches="tight")
 	if plots: 
 		plt.show()
-# ------------=================== Gas ====================----------
-# 	for c in D.e_components:
-# 		print c
-# 		save_to = "%s/%s/results/%s/plots/" % (analysis_dir, galaxy, wav_range_dir
-# 			) + "%s_kinematics_%s.png" % (c, wav_range)
-# 		gas_k = fit_kinematic_pa(xBar, yBar, np.array(D.components[c].plot['vel']), 
-# 			quiet=True, plot=plots, sav_fig=save_to)
-
-# 		print "%s_PA_kin: " % (c) + str(gas_k[0]) + "+/-" + str(gas_k[1]/3)
-# # ------------============== Misalignment ================----------
-# 		gas_kine = math.radians(gas_k[0])
-
-# 		gas_mis = math.asin(abs(math.sin(gas_kine-kine)))
-# 		gas_mis = math.degrees(gas_mis)
-
-# 		if 'NI' not in c: gas[c][i_gal2] = gas_mis
-
-# 		print "Mis-alignment: " + str(gas_mis)
+# ------------========= Stellar Kinematics ===============----------
+	save_to = "%s/plots/stellar_kinematics.png" % (output)
+	k = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
+		np.array(D.components['stellar'].plot['vel']), quiet=True, plot=plots, 
+		sav_fig=save_to)
+	star_kine_pa_gals[i_gal2] = k[0]
+# ------------=========== Gas Kinematics =================----------
+# NB: this is not written for gas=2 or gas=3 options. 
+	if D.gas == 1:
+		save_to = "%s/plots/gas_kinematics.png" % (output)
+		kgas = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
+			np.array(D.components['Hbeta'].plot['vel']), quiet=True, plot=plots, 
+			sav_fig=save_to)
+		gas_kine_pa_gals[i_gal2] = kgas[0]
 # ------------============== Save outputs ================----------
 	template = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(
 		['{%i:%i}'%(i+6,len(t)+1) for i, t in enumerate(SN_gals.keys())]
@@ -229,17 +192,16 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 				*(str(round(SN_gals[s][i],2)) for s in SN_titles)))
 
 	
-	template2 = "{0:13}{1:9}{2:13}{3:13}{4:15}{5:8}{6:8}{7:8}{8:8}\n" 
+	template2 = "{0:13}{1:9}{2:13}{3:13}{4:17}{5:8}\n" 
 	with open(galaxiesFile2, 'wb') as f2:
 	# f2 = open('/Data/vimos/analysis/test.txt', 'wb')
 		f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 'PA (deg)',
-			'Misa: Stellar', 'OIII', 'Hbeta', 'Hdelta', 'Hgamma'))
+			'kine_pa: Stellar', 'Gas'))
 		for i in range(len(galaxy_gals2)):
 			f2.write(template2.format(galaxy_gals2[i], 
 				str(round(lambda_Re_gals[i],3)), str(round(ellip_gals[i],3)), 
-				str(round(pa_gals[i],3)), str(round(star_mis[i],3)), 
-				str(OIII_mis[i]), str(Hbeta_mis[i]), str(Hdelta_mis[i]),
-				str(Hgamma_mis[i])))
+				str(round(pa_gals[i],3)), str(round(star_kine_pa_gals[i],3)), 
+				str(gas_kine_pa_gals[i])))
 
 ##############################################################################
 

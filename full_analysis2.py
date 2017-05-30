@@ -13,6 +13,7 @@ from pickler import pickler
 from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
+from rotation_curve import rotation_curve
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from plot_stellar_pop import plot_stellar_pop
@@ -33,7 +34,7 @@ galaxies = [
 			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
-# galaxies = ['ic1459']
+galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -49,13 +50,13 @@ norm='lwv'
 opt_dir=''
 
 m=mapping()
-# m.SNR = False
-# m.image = False
-# m.equivalent_width = False
-# m.amp_noise = False
+m.SNR = False
+m.image = False
+m.equivalent_width = False
+m.amp_noise = False
 # m.kinematics = False
-# m.plot_resid = False
-# m.line_ratios = False
+m.plot_resid = False
+m.line_ratios = False
 
 # Arrays for error catching
 gal_err=[]
@@ -71,7 +72,8 @@ for galaxy in galaxies:
 		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
-		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 

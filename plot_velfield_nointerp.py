@@ -142,14 +142,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		from astropy.coordinates import SkyCoord
 		from astropy import units as u
 
-		coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
-			header['HIERARCH CCD1 ESO INS IFU DEC'], 
-			unit=(u.deg, u.deg))
-
 		try:
-			res = header['CDELT1'] # VIMOSarcsec per pixel
+			coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
+				header['HIERARCH CCD1 ESO INS IFU DEC'], unit=(u.deg, u.deg))
+			res = abs(header['CDELT1']) # VIMOS arcsec per pixel
 		except:
-			res = header['CD1_1'] # MUSE arcsec per pixel
+			coords = SkyCoord(header['CRVAL1'], header['CRVAL2'], unit=(u.deg, u.deg))
+			res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
+			
 		xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
 		yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
 		x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
@@ -238,12 +238,16 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if flux_type == 'mag':
 			contours = -2.5*np.log10(np.rot90(flux_unbinned[:,::-1])/np.max(flux_unbinned))
 			# 1 mag contours
-			ax.contour(contours, levels=np.arange(20), colors='k', 
+			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
+			cont.collections[0].set_label('Flux (mag)')
+
 
 		else:
-			ax.contour(flux_unbinned[:,::-1], colors='k', 
+			cont = ax.contour(flux_unbinned[:,::-1], colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
+			cont.collections[0].set_label('Flux (linear)')
+
 
 	if not nodots and not show_bin_num and not show_vel:
 		ax.plot(xBar, yBar, '.k',
