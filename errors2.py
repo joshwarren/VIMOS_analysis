@@ -447,11 +447,19 @@ def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None,
 
 #-----------------------------------------------------------------------------
 def get_dataCubeDirectory(galaxy):
+	class mystring2(str):
+		def __init__(self, s):
+			str.__init__(s)
+			self.RAoffset = 0 # offset in arcsec
+			self.decoffset = 0
+
+
 	class mystring(str):
 		def __init__(self, s):
 			str.__init__(s)
-			self.radio = ''
-			self.CO = ''
+			self.radio = mystring2('')
+			self.CO = mystring2('')
+
 
 	if cc.device == 'uni':
 		dir = '%s/Data/vimos' % (cc.base_dir)
@@ -461,7 +469,7 @@ def get_dataCubeDirectory(galaxy):
 		dir = '%s/Data/vimos' % (cc.base_dir)
 
 	dataCubeDirectory = mystring('%s/cubes/%s.cube.combined.corr.fits' %  (dir, galaxy))
-	dataCubeDirectory.CO = "%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy)
+	dataCubeDirectory.CO = mystring2("%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy))
 
 	if galaxy == 'eso443-g024':
 		pass
@@ -476,7 +484,12 @@ def get_dataCubeDirectory(galaxy):
 	elif galaxy == 'ngc1399':
 		pass
 	elif galaxy == 'ngc3100':
-		dataCubeDirectory.radio = '%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, galaxy)
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, 
+			galaxy))
+		dataCubeDirectory.radio.RAoffset = 2.6
+		dataCubeDirectory.radio.decoffset = -1.2
+		dataCubeDirectory.CO.RAoffset = 2.6
+		dataCubeDirectory.CO.decoffset = -1.2
 	elif galaxy == 'ngc3557':
 		pass
 	elif galaxy == 'ngc7075':

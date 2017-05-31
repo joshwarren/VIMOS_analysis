@@ -225,6 +225,9 @@ def add_(overplot, color, ax, galaxy, header, close=False):
 			(imcoord.dec.degree +
 			f.header['CRPIX2']*f.header['CDELT2']/(60*60)))*60*60
 
+		x -= image_dir.RAoffset
+		y -= image_dir.decoffset
+
 	#RA and dec coords
 	elif os.path.exists(image_dir):
 		f = fits.open(image_dir)[0]
@@ -233,9 +236,9 @@ def add_(overplot, color, ax, galaxy, header, close=False):
 			unit=(u.deg, u.deg))
 
 		x = (np.arange(f.header['NAXIS1']) - f.header['CRPIX1']) *\
-			f.header['CDELT1'] + imcoord.ra.degree
+			f.header['CDELT1'] + imcoord.ra.degree + image_dir.RAoffset/(60**2)
 		y = (np.arange(f.header['NAXIS2'])-f.header['CRPIX2']) *\
-			f.header['CDELT2'] + imcoord.dec.degree
+			f.header['CDELT2'] + imcoord.dec.degree + image_dir.decoffset/(60**2)
 
 
 	# Plot and save
