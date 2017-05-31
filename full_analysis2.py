@@ -39,7 +39,7 @@ galaxies = ['ic1459']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
-# galaxies = ['ngc3100']
+galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 # galaxies = ['eso443-g024']
@@ -50,13 +50,13 @@ norm='lwv'
 opt_dir=''
 
 m=mapping()
-m.SNR = False
-m.image = False
-m.equivalent_width = False
-m.amp_noise = False
+# m.SNR = False
+# m.image = False
+# m.equivalent_width = False
+# m.amp_noise = False
 # m.kinematics = False
-m.plot_resid = False
-m.line_ratios = False
+# m.plot_resid = False
+# m.line_ratios = False
 
 # Arrays for error catching
 gal_err=[]
@@ -67,8 +67,8 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = plot_results(galaxy, discard=discard, CO = False, residual="median", 
-			norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
+		D = plot_results(galaxy, discard=discard, overplot={'CO':'r'}, 
+			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")

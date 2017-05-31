@@ -13,7 +13,7 @@ import ppxf_util as util
 from voronoi_2d_binning import voronoi_2d_binning
 from checkcomp import checkcomp
 cc=checkcomp()
-from errors2 import remove_anomalies
+from errors2 import remove_anomalies, get_dataCubeDirectory
 import os
 
 
@@ -104,11 +104,11 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 # ----------================ Find S/N ================------------
 # Final wildcard notes that depending on the method used the quadrants
 #may or may not have been flux calibrated. 
-	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.corr.fits" % (dir,galaxy)) 
+	dataCubeDirectory = get_dataCubeDirectory(galaxy) 
 
-	galaxy_data, header = fits.getdata(dataCubeDirectory[0], 0, header=True)
-	galaxy_noise = fits.getdata(dataCubeDirectory[0], 1)
-	galaxy_badpix = fits.getdata(dataCubeDirectory[0], 3)
+	galaxy_data, header = fits.getdata(dataCubeDirectory, 0, header=True)
+	galaxy_noise = fits.getdata(dataCubeDirectory, 1)
+	galaxy_badpix = fits.getdata(dataCubeDirectory, 3)
 
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']

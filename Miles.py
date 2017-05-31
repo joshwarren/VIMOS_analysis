@@ -3,11 +3,11 @@ from astropy.io import fits
 import numpy as np
 from checkcomp import checkcomp
 cc = checkcomp()
+from errors2 import get_dataCubeDirectory
 
 class miles(object):
 	def __init__(self, galaxy):
-		self.f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (
-			cc.base_dir, galaxy))
+		self.f = fits.open(get_dataCubeDirectory(galaxy))
 		s = self.f[0].data.shape
 
 		self.gal_spec = np.nansum(self.f[0].data, axis=(1,2))

@@ -446,6 +446,50 @@ def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None,
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
+def get_dataCubeDirectory(galaxy):
+	class mystring(str):
+		def __init__(self, s):
+			str.__init__(s)
+			self.radio = ''
+			self.CO = ''
+
+	if cc.device == 'uni':
+		dir = '%s/Data/vimos' % (cc.base_dir)
+	elif cc.device == 'glamdring':
+		dir = '%s/cubes' % (cc.base_dir)
+	elif 'home' in cc.device:
+		dir = '%s/Data/vimos' % (cc.base_dir)
+
+	dataCubeDirectory = mystring('%s/cubes/%s.cube.combined.corr.fits' %  (dir, galaxy))
+	dataCubeDirectory.CO = "%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy)
+
+	if galaxy == 'eso443-g024':
+		pass
+	elif galaxy == 'ic1459':
+		pass
+	elif galaxy == 'ic1531':
+		pass
+	elif galaxy == 'ic4296':
+		pass
+	elif galaxy == 'ngc0612':
+		pass
+	elif galaxy == 'ngc1399':
+		pass
+	elif galaxy == 'ngc3100':
+		dataCubeDirectory.radio = '%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, galaxy)
+	elif galaxy == 'ngc3557':
+		pass
+	elif galaxy == 'ngc7075':
+		pass
+	elif galaxy == 'pks0718-34':
+		pass
+	
+	
+
+	return dataCubeDirectory
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
 def errors2(i_gal=None, opt=None, bin=None):
 	if i_gal is None: i_gal=int(sys.argv[1])
 	if opt is None: opt=sys.argv[2]
@@ -502,8 +546,8 @@ def errors2(i_gal=None, opt=None, bin=None):
 	order = np.sort(bin_num)
 ## ----------========= Reading the spectrum  ===============---------
 
-	dataCubeDirectory = "%s/cubes/%s.cube.combined.corr.fits" % (dir,galaxy)
-		
+	dataCubeDirectory = get_dataCubeDirectory(galaxy)
+
 	galaxy_data, header = fits.getdata(dataCubeDirectory, 0, header=True)
 	galaxy_noise = fits.getdata(dataCubeDirectory, 1)
 	galaxy_badpix = fits.getdata(dataCubeDirectory, 3)
@@ -563,7 +607,6 @@ def errors2(i_gal=None, opt=None, bin=None):
 
 	dv = (stellar_templates.logLam_template[0]-logLam_bin[0])*c # km/s	
 	lambdaq = np.exp(logLam_bin)
-
 ## ----------===============================================---------
 ## ----------=============== Emission lines ================---------
 ## ----------===============================================---------
@@ -622,8 +665,6 @@ def errors2(i_gal=None, opt=None, bin=None):
 		for g in range(len(element)-1):
 			gas_output[g,rep,:] = ppMC.sol[g+1][0:params.gas_moments]
 			gas_errors[g,rep,:] = ppMC.error[g+1][0:params.gas_moments]
-
-
 ## ----------============ Write ouputs to file =============---------
 	saveAll(galaxy, bin, pp, lambdaq, stellar_output, stellar_errors, bin_log_sav, 
 		noise_sav, element, templatesToUse, gas_output=gas_output, 

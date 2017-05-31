@@ -5,6 +5,7 @@ from astropy.io import fits
 from checkcomp import checkcomp
 cc = checkcomp()
 from tools import get_slit, get_slit2, slit, funccontains
+from errors2 import get_dataCubeDirectory
 
 class rampazzo(object):
 	def __init__(self, galaxy, slit_h=4.5*60, slit_w=2, slit_pa=30, method='aperture',
@@ -37,8 +38,7 @@ class rampazzo(object):
 		self.ellip = ellip[i_gal2]
 
 
-		self.f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (
-			cc.base_dir, galaxy))
+		self.f = fits.open(get_dataCubeDirectory(galaxy))
 		self.lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + \
 			self.f[0].header['CRVAL3']
 

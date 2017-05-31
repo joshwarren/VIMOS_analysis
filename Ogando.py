@@ -5,6 +5,7 @@ cc = checkcomp()
 from astropy.io import fits
 import numpy as np
 from tools import funccontains, slit, get_slit
+from errors2 import get_dataCubeDirectory
 
 
 class ogando(object):
@@ -21,8 +22,7 @@ class ogando(object):
 		self.sig = sig_gals[i_gal]
 		self.z = z_gals[i_gal]
 
-		self.f = fits.open('%s/Data/vimos/cubes/%s.cube.combined.corr.fits' % (cc.base_dir, 
-			galaxy))
+		self.f = fits.open(get_dataCubeDirectory(galaxy))
 		self.lam = np.arange(self.f[0].header['NAXIS3'])*self.f[0].header['CDELT3'] + self.f[0].header['CRVAL3']
 ## ----------============ Find data within slit =============---------
 

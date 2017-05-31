@@ -37,7 +37,9 @@
 #				each bin.
 #			False: do not calculate and produce plot of 
 #				residuals.
-# CO	   False	Boolean to show ALMA CO plots overlaied (if they exist)
+# overplot  {}	Dictionary with keys with plots to be overplotted on the map, such 
+#				as CO or radio, with the associated values being the matplotlib colors
+#				that the contours are to be plotted in.
 # D 		None Option to pass in the Data object instead of loading it.
 ## ************************************************************** ##
 
@@ -50,6 +52,7 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt # used for plotting
 from plot_velfield_nointerp import plot_velfield_nointerp 
 from plot_histogram import plot_histogram
+from errors2 import get_dataCubeDirectory
 import os
 from sauron_colormap2 import sauron2 as sauron
 import cPickle as pickle
@@ -68,7 +71,6 @@ plt.axes.ax2 = property(lambda self:plt.axes())
 plt.axes.ax3 = property(lambda self:plt.axes())
 
 vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
-vin_dir_cube = '%s/Data/vimos/cubes' % (cc.base_dir)
 ain_dir = '%s/Data/alma' % (cc.base_dir)
 out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
@@ -120,6 +122,8 @@ class set_ax_y_object(object):
 		self.Hd = False
 		self.NI = False
 	def set_ax_y(self, plt_title):
+		if "stellar" in plt_title:
+			ax_y=0
 		if "gas" in plt_title:
 			ax_y=2
 		elif "SF" in plt_title:
@@ -145,8 +149,7 @@ class set_ax_y_object(object):
 				if 'Hdelta' in plt_title:
 					ax_y = 8 if self.Hd else 10
 				else:
-					ax_y = 8 if self.NI else 10
-		   
+					ax_y = 8 if self.NI else 10		   
 		return ax_y
 #-----------------------------------------------------------------------------
 
@@ -190,75 +193,94 @@ def add_R_e(ax, galaxy, discard=0):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def add_CO(ax, galaxy, header, close=False):
-	CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
+def add_(overplot, color, ax, galaxy, header, close=False):
+	image_dir=getattr(get_dataCubeDirectory(galaxy), overplot)
 	# Arcsec coords
-	if os.path.exists(CO_image_dir) and not ax.RaDec:
+	if os.path.exists(image_dir) and not ax.RaDec:
 		## *** This option doesn't seem to be working correctly and I don't understand 
 		##	why... *******************************************************************
-		alma = fits.open(CO_image_dir)[0]
+		f = fits.open(image_dir)[0]
 
-		CO_x = np.arange(alma.header['NAXIS1'])*alma.header['CDELT1']*60*60
-		CO_y = np.arange(alma.header['NAXIS2'])*alma.header['CDELT2']*60*60
+		x = np.arange(f.header['NAXIS1'])*abs(f.header['CDELT1'])*60*60
+		y = np.arange(f.header['NAXIS2'])*abs(f.header['CDELT2'])*60*60
 
-		CO_x -= max(CO_x)/2
-		#CO_y -= max(CO_y)/2
+		x -= max(x)/2
+		y -= max(y)/2
 
 		# Coordinates of VIMOS pointing
-		vc = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
+		vcoord = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
 			header['HIERARCH CCD1 ESO INS IFU DEC'], 
 			unit=(u.deg, u.deg))
 
-		# Coordinates of ALMA pointing
-		ac = SkyCoord(alma.header['CRVAL1'], alma.header['CRVAL2'],
+		# Coordinates of overplot pointing
+		imcoord = SkyCoord(f.header['CRVAL1'], f.header['CRVAL2'],
 			unit=(u.deg, u.deg))
 
 		# Offset between the two pointings
-		CO_x -= ((vc.ra.degree - header['CRPIX1']*header['CDELT1']/(60*60)) -
-			(ac.ra.degree +
-			alma.header['CRPIX1']*alma.header['CDELT1']/(60*60)))*60*60
+		x -= ((vcoord.ra.degree - header['CRPIX1']*header['CD1_1']/(60*60)) -
+			(imcoord.ra.degree +
+			f.header['CRPIX1']*f.header['CDELT1']/(60*60)))*60*60
 				
-		CO_y += ((vc.dec.degree - header['CRPIX2']*header['CDELT2']/(60*60)) -
-			(ac.dec.degree +
-			alma.header['CRPIX2']*alma.header['CDELT2']/(60*60)))*60*60
+		y += ((vcoord.dec.degree - header['CRPIX2']*header['CD2_2']/(60*60)) -
+			(imcoord.dec.degree +
+			f.header['CRPIX2']*f.header['CDELT2']/(60*60)))*60*60
 
 	#RA and dec coords
-	elif os.path.exists(CO_image_dir):
-		alma = fits.open(CO_image_dir)[0]
+	elif os.path.exists(image_dir):
+		f = fits.open(image_dir)[0]
 
-		ac = SkyCoord(alma.header['CRVAL1'], alma.header['CRVAL2'],
+		imcoord = SkyCoord(f.header['CRVAL1'], f.header['CRVAL2'],
 			unit=(u.deg, u.deg))
 
-		CO_x = (np.arange(alma.header['NAXIS1']) - alma.header['CRPIX1']) *\
-			alma.header['CDELT1'] + ac.ra.degree
-		CO_y = (np.arange(alma.header['NAXIS2'])-alma.header['CRPIX2']) *\
-			alma.header['CDELT2'] + ac.dec.degree
+		x = (np.arange(f.header['NAXIS1']) - f.header['CRPIX1']) *\
+			f.header['CDELT1'] + imcoord.ra.degree
+		y = (np.arange(f.header['NAXIS2'])-f.header['CRPIX2']) *\
+			f.header['CDELT2'] + imcoord.dec.degree
+
 
 	# Plot and save
-	if os.path.exists(CO_image_dir):
+	if os.path.exists(image_dir):
 		#remove random extra dimenisons.
-		CO_image = np.sum(np.sum(alma.data,axis=0), axis=0)
-		cs = ax.contour(CO_x,CO_y,CO_image, colors='r')
+		s = np.array(f.data.shape)
+		if any(s==1):
+			image = np.sum(f.data, axis=tuple(np.where(s==1)[0]))
+		else:
+			image = f.data
+		xlim = ax.get_xlim()
+		ylim = ax.get_ylim()
 
-		if hasattr(ax, 'saveTo'):
-			saveTo = os.path.dirname(ax.saveTo)+"/withCO/" + \
-				os.path.basename(ax.saveTo)
-			if not os.path.exists(os.path.dirname(saveTo)):
-				os.makedirs(os.path.dirname(saveTo))
-			plt.savefig(saveTo, bbox_inches="tight")
+		# Discard noise from outer parts of the galaxy -  for radio
+		if overplot == 'radio':
+			lim = np.nanmean(image) + np.nanstd(image)
+			image[image < lim] = lim
+		image = np.log(image)
+
+		cs = ax.contour(x, y, image, colors=color, linestyles='solid', linewidth=1)
+		cs.collections[0].set_label(overplot)
+
+		ax.set_xlim(xlim)
+		ax.set_ylim(ylim)
+
+		ax.legend(facecolor='w')
+
+		saveTo = os.path.dirname(ax.saveTo)+"/Overplot/" + \
+			os.path.basename(ax.saveTo)
+		if not os.path.exists(os.path.dirname(saveTo)):
+			os.makedirs(os.path.dirname(saveTo))
+		plt.savefig(saveTo, bbox_inches="tight")
 
 		if close:
 			plt.close()
-		# else:
-		# 	# Make lines thinner for pdf by finding the line objects
-		# 	for o in ax.get_children():
-		# 		if type(o) is LineCollection:
-		# 			o.set_linewidth(0.3)
+		else:
+			# Make lines thinner for pdf by finding the line objects
+			for o in ax.get_children():
+				if type(o) is LineCollection:
+					o.set_linewidth(0.3)
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
 # @profile
-def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=False, 
+def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, overplot={}, 
 	show_bin_num=False, D=None, mapping=None, opt='kin'):	
 
 	s = set_ax_y_object()
@@ -271,20 +293,13 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 	z = z_gals[i_gal]
 	SN_target=SN_target_gals[i_gal]
 
-	# Return CO to False if ALMA file does not exist.
-	if CO:
-		CO_image_dir="%s/%s-mom0.fits" % (ain_dir, galaxy)
-		if not os.path.exists(CO_image_dir): CO = False
-
-	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
 	output = "%s/%s/%s" % (out_dir, galaxy, opt)
 	out_plots = "%s/plots" % (output)
 	out_nointerp = "%s/notinterpolated" % (out_plots)
 	vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	out_pickle = '%s/pickled' % (output)
 
-	# Used for CO plotting
-	cubeFile = fits.open(dataCubeDirectory)
+	cubeFile = fits.open(get_dataCubeDirectory(galaxy))
 	header = cubeFile[0].header
 	cubeFile.close()
 # ------------== Reading pickle file and create plot  ===----------
@@ -415,10 +430,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 
 			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 				D.e_line[c].amp_noise, vmin=amp_min, vmax=amp_max, colorbar=True, 
-				nodots=True, title=amp_title, save=saveTo, close=not CO, header=header)
-			if CO:
-				ax1.saveTo = saveTo
-				add_CO(ax1, galaxy, header, close=True)
+				nodots=True, title=amp_title, save=saveTo, close=overplot, header=header)
 # ------------=========== Setting titles etc ============----------
 	if mapping.kinematics or mapping is None:
 		print '    Kinematics'
@@ -536,16 +548,11 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 					D.components[pl].plot[k].uncert, vmin=v_uncert_min, 
 					vmax=v_uncert_max, nodots=True, show_bin_num=show_bin_num,
 					colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-					redshift = z, title=utitle, save=saveTo, close=not CO, header=header)
-				if CO:
-					ax1.saveTo = saveTo
-					add_CO(ax1, galaxy, header, close=True)
+					redshift = z, title=utitle, save=saveTo, close=overplot, header=header)
 					
 				#plots=False
 				if plots:
 					plt.show()
-				#if CO:
-				#	D.unbinned_flux = D.unbinned_flux_sav
 # ------------============= Plot residuals ==============----------
 	if residual and (mapping.plot_resid or mapping is None):
 		print "    " + residual + " residuals"
@@ -578,12 +585,9 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 			nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 			label=CBLabel, #flux_unbinned=D.unbinned_flux, 
 			galaxy = galaxy.upper(), redshift = z, title=title, 
-			save=saveTo, close=not CO, header=header)
+			save=saveTo, close=overplot, header=header)
 		if plots:
 			plt.show()
-		if CO:
-			ax1.saveTo = saveTo
-			add_CO(ax1, galaxy, header, close=True)
 # # ------------=============== Plot Chi2/DOF =============----------
 	# print "    chi2"
 
@@ -602,12 +606,9 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 	# 	nodots=True, show_bin_num=show_bin_num, colorbar=True, 
 	# 	label=CBLabel, flux_unbinned=D.unbinned_flux, 
 	# 	galaxy = galaxy.upper(), redshift = z, title=title, 
-	# 	save=saveTo, close=not CO, header=header)#, cmap=cm.blue)
+	# 	save=saveTo, close=overplot, header=header)#, cmap=cm.blue)
 	# if plots:
 	# 	plt.show()
-	# if CO:
-	# 	ax1.saveTo = saveTo
-	# 	add_CO(ax1, galaxy, header, close=True)
 # ------------============ Line ratio maps ==============----------
 	if len(D.list_components)>2 and (mapping.line_ratios or mapping is None):
 		print "    line ratios"
@@ -684,8 +685,9 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 			os.makedirs(os.path.dirname(a.saveTo))
 		f.savefig(a.saveTo)#, bbox_inches="tight")
 
-		if CO:
-			add_CO(a, galaxy, header)
+		if overplot:
+			for o, color in overplot.iteritems():
+				add_(o, color, a, galaxy, header)
 
 		cbar_position.append(a.cax.get_position())
 		f.delaxes(a)
@@ -693,8 +695,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, CO=
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
-	if True:
-	# if mapping.all or mapping is None:
+	if mapping.all or mapping is None:
 		for i, a in enumerate(ax_array):
 			if not np.isnan(a.figy):
 				a2 = f.add_axes(a)

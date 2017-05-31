@@ -17,6 +17,7 @@ import os
 import cPickle as pickle
 import warnings
 from Bin import Data, emission_line
+from errors2 import get_dataCubeDirectory
 from checkcomp import checkcomp
 cc = checkcomp()
 
@@ -35,7 +36,7 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", kinemetry=True, override=F
 		galaxy, opt)
 	tessellation_File2 = "%s/%s/%s/setup/voronoi_2d_binning_output2.txt" %(vin_dir, 
 		galaxy, opt)
-	dataCubeDirectory = "%s/%s.cube.combined.corr.fits" % (vin_dir_cube, galaxy)
+	dataCubeDirectory = get_dataCubeDirectory(galaxy)
 	output = "%s/%s/%s" % (out_dir, galaxy, opt)
 	vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	out_pickle = '%s/pickled' % (output)

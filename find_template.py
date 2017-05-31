@@ -11,7 +11,7 @@ from scipy import ndimage # for gaussian blur
 from ppxf import ppxf
 import ppxf_util as util
 from errors2 import remove_anomalies, use_templates, determine_goodpixels, \
-	get_stellar_templates
+	get_stellar_templates, get_dataCubeDirectory
 from checkcomp import checkcomp
 cc= checkcomp()
 
@@ -39,9 +39,9 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 	velscale = stellar_templates.velscale
 ## ----------========= Reading the spectrum  ===============---------
 
-	dataCubeDirectory = glob.glob("%s/cubes/%s.cube.combined.corr.fits" % (dir, galaxy)) 
+	dataCubeDirectory = get_dataCubeDirectory(galaxy)
 	
-	f = fits.open(dataCubeDirectory[0])
+	f = fits.open(dataCubeDirectory)
 	galaxy_data, header = f[0].data, f[0].header
 	galaxy_noise = f[1].data
 	galaxy_badpix = f[3].data
