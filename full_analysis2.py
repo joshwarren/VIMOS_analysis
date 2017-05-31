@@ -50,12 +50,12 @@ norm='lwv'
 opt_dir=''
 
 m=mapping()
-# m.SNR = False
+m.SNR = False
 # m.image = False
 # m.equivalent_width = False
-# m.amp_noise = False
+m.amp_noise = False
 # m.kinematics = False
-# m.plot_resid = False
+m.plot_resid = False
 # m.line_ratios = False
 
 # Arrays for error catching
@@ -67,7 +67,7 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = plot_results(galaxy, discard=discard, overplot={'CO':'r'}, 
+		D = plot_results(galaxy, discard=discard, overplot={'CO':'g', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
 		# # GH_plots(galaxy)

@@ -261,7 +261,7 @@ def add_(overplot, color, ax, galaxy, header, close=False):
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 
-		ax.legend(facecolor='w')
+		leg = ax.legend(facecolor='w')
 
 		saveTo = os.path.dirname(ax.saveTo)+"/Overplot/" + \
 			os.path.basename(ax.saveTo)
@@ -272,10 +272,7 @@ def add_(overplot, color, ax, galaxy, header, close=False):
 		if close:
 			plt.close()
 		else:
-			# Make lines thinner for pdf by finding the line objects
-			for o in ax.get_children():
-				if type(o) is LineCollection:
-					o.set_linewidth(0.3)
+			leg.remove()
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -386,7 +383,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 			
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 				D.e_line[c].flux, vmin=f_min, vmax=f_max, colorbar=True, nodots=True, 
-				label=fCBtitle, title=f_title, cmap = 'gist_yarg', ax=ax, header=header)
+				label=fCBtitle, title=f_title, cmap = 'gist_yarg', ax=ax, header=header,
+				flux_unbinned=D.unbinned_flux)
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
@@ -415,7 +413,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 
 			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 				D.e_line[c].equiv_width, vmin=eq_min, vmax=eq_max, colorbar=True, 
-				nodots=True, label=eqCBtitle, title=eq_title, ax=ax, header=header)
+				nodots=True, label=eqCBtitle, title=eq_title, ax=ax, header=header,
+				flux_unbinned=D.unbinned_flux)
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
@@ -430,7 +429,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 
 			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 				D.e_line[c].amp_noise, vmin=amp_min, vmax=amp_max, colorbar=True, 
-				nodots=True, title=amp_title, save=saveTo, close=overplot, header=header)
+				nodots=True, title=amp_title, save=saveTo, close=overplot, header=header,
+				flux_unbinned=D.unbinned_flux)
 # ------------=========== Setting titles etc ============----------
 	if mapping.kinematics or mapping is None:
 		print '    Kinematics'
@@ -548,7 +548,8 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 					D.components[pl].plot[k].uncert, vmin=v_uncert_min, 
 					vmax=v_uncert_max, nodots=True, show_bin_num=show_bin_num,
 					colorbar=True, label=CBLabel, galaxy = galaxy.upper(),
-					redshift = z, title=utitle, save=saveTo, close=overplot, header=header)
+					redshift = z, title=utitle, save=saveTo, close=overplot, header=header,
+					flux_unbinned=D.unbinned_flux)
 					
 				#plots=False
 				if plots:
@@ -583,7 +584,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar,
 			average_residuals, vmin=minres, vmax=maxres, flux_type='notmag',
 			nodots=True, show_bin_num=show_bin_num, colorbar=True, 
-			label=CBLabel, #flux_unbinned=D.unbinned_flux, 
+			label=CBLabel, flux_unbinned=D.unbinned_flux, 
 			galaxy = galaxy.upper(), redshift = z, title=title, 
 			save=saveTo, close=overplot, header=header)
 		if plots:
@@ -663,7 +664,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 				line_ratio, vmin=lr_min, vmax=lr_max, colorbar=True,
 				nodots=True, title=lr_title, label=lrCBtitle, ax=ax,
 				show_bin_num=show_bin_num, galaxy = galaxy.upper(), redshift = z,
-				header=header)
+				header=header, flux_unbinned=D.unbinned_flux)
 
 			ax_array.append(ax)
 			f.delaxes(ax)
@@ -688,6 +689,11 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		if overplot:
 			for o, color in overplot.iteritems():
 				add_(o, color, a, galaxy, header)
+
+			# Make lines thinner for pdf by finding the line objects
+			for o in a.get_children():
+				if type(o) is LineCollection:
+					o.set_linewidth(0.3)
 
 		cbar_position.append(a.cax.get_position())
 		f.delaxes(a)
