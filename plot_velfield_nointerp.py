@@ -62,7 +62,6 @@ import matplotlib.pyplot as plt # used for plotting
 import matplotlib as mpl
 import os
 from prefig import Prefig 
-Prefig(transparent=False)
 
 ## Adding the origentation arrows to a plot. 
 ## PA is given in degrees
@@ -101,6 +100,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	kwg = {}
 	kwg.update(kwargs)
+	# Scale the plot size to VIMOS.
+	Prefig(size=(16*(max(x_pix)+1)*res/26.8,12*(max(y_pix)+1)*res/26.8), transparent=False)
+	# mpl.rcParams['figure.figsize'] = 16*(max(x_pix)+1)*res/30.0,12*(max(y_pix)+1)*res/30.0
 
 	
 	if len(vel) != max(bin_num)+1:

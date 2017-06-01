@@ -52,11 +52,11 @@ opt_dir=''
 m=mapping()
 m.SNR = False
 # m.image = False
-# m.equivalent_width = False
+m.equivalent_width = False
 m.amp_noise = False
-# m.kinematics = False
+m.kinematics = False
 m.plot_resid = False
-# m.line_ratios = False
+m.line_ratios = False
 
 # Arrays for error catching
 gal_err=[]
