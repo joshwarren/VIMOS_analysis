@@ -34,12 +34,12 @@ galaxies = [
 			'eso443-g024'
 			]
 # galaxies = ['ngc3557']
-galaxies = ['ic1459']
+# galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
-galaxies = ['ngc3100']
+# galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 # galaxies = ['eso443-g024']
@@ -67,14 +67,14 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = plot_results(galaxy, discard=discard, overplot={'CO':'g', 'radio':'r'}, 
+		D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
-		# plt.close("all")
+		plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
-		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
-		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
-		# plt.close("all")
+		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
+		plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# use_kinemetry(galaxy)
@@ -82,8 +82,8 @@ for galaxy in galaxies:
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
-		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True)
-		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir)
+		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True)
+		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

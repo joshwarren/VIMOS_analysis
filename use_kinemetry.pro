@@ -41,7 +41,7 @@ PRO do_work, gal, type
 	; kinemetry on maps
 	t=systime(1)
 	KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0[i_gal]-x_cent, $
-		y0=y0[i_gal]-y_cent, ntrm=6, scale=0.33, name=gal,er_cf=er_cf, $
+		y0=y0[i_gal]-y_cent, ntrm=6, scale=0.67, name=gal,er_cf=er_cf, $
 		er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, /verbose
 	;catch, caught_error
 	;if caught_error ne 0 then catch, /cancel
