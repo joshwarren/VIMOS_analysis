@@ -459,6 +459,7 @@ def get_dataCubeDirectory(galaxy):
 			str.__init__(s)
 			self.radio = mystring2('')
 			self.CO = mystring2('')
+			self.xray = mystring2('')
 
 
 	if cc.device == 'uni':
@@ -472,17 +473,17 @@ def get_dataCubeDirectory(galaxy):
 	dataCubeDirectory.CO = mystring2("%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy))
 
 	if galaxy == 'eso443-g024':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/ESO443_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1459':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1531':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic4296':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
 	elif galaxy == 'ngc0612':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
 	elif galaxy == 'ngc1399':
-		pass
+		dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
 	elif galaxy == 'ngc3100':
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, 
 			galaxy))
