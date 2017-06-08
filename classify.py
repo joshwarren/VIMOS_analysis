@@ -30,10 +30,30 @@ def get_R_e(galaxy):
 def classify(galaxy, opt='kin'):
 	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
 	classify_file = "%s/galaxies_classify.txt" % (analysis_dir)
+	
+	try:
+		galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
+			unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
+		i_gal = np.where(galaxy_gals==galaxy)[0]
+		if len(i_gal) == 0:
+			galaxy_gals = np.append(galaxy_gals, [galaxy])
+			i_gal = np.where(galaxy_gals==galaxy)[0]
+			RR = np.append(RR, ['-'])
+			NF = np.append(NF, ['-'])
+			NR = np.append(NR, ['-'])
+			KT = np.append(KT, ['-'])
+			M2 = np.append(M2, ['-'])
+			KDC = np.append(KDC, ['-'])
+	except:
+		galaxy_gals = np.array([galaxy])
+		RR = np.array(['-'], dtype='S3')
+		NF = np.array(['-'], dtype='S3')
+		NR = np.array(['-'], dtype='S3')
+		KT = np.array(['-'], dtype='S3')
+		M2 = np.array(['-'], dtype='S3')
+		KDC = np.array(['-'], dtype='S5')
+		i_gal = np.array([0])
 
-	galaxy_gals, RR, NF, NR, KT, M2, KDC = np.loadtxt(classify_file, skiprows=1, 
-		unpack=True, usecols=(0,1,2,3,4,5,6), dtype=str)
-	i_gal = np.where(galaxy_gals==galaxy)[0]
 
 	R_e = get_R_e(galaxy)
 # ------------================= RR/NRR ===================----------

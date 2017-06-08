@@ -14,7 +14,7 @@ from sav_for_kinemetry import sav_for_kinemetry
 from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
-from rotation_curve import rotation_curve
+# from rotation_curve import rotation_curve
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from plot_stellar_pop import plot_stellar_pop
@@ -23,7 +23,7 @@ from classify import classify
 import traceback, sys
 
 galaxies = [
-			'ic1459',
+			#'ic1459',
 			'ic1531', 
 			'ic4296',
 			'ngc0612',
@@ -68,7 +68,7 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
+		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		# D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
 		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
@@ -79,8 +79,8 @@ for galaxy in galaxies:
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
-		# use_kinemetry(galaxy, opt='kin'+MC_dir)
-		# classify(galaxy, opt='kin'+MC_dir)
+		use_kinemetry(galaxy, opt='kin'+opt_dir)
+		# classify(galaxy, opt='kin'+opt_dir)
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)

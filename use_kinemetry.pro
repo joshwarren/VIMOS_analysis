@@ -11,16 +11,16 @@ PRO do_work, gal, opt, type
 
 	print, 'Have you got the most recent files for '+gal+'?'
 	; Select correct file
-	file = '/Data/ vimos/analysis/'+gal+'/'+opt+'/kinemetry/'+type+'.dat'
+	file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/'+type+'.dat'
 	; read in field
 	rdfloat, file, velbin, er_velbin
 	if type eq 'flux' then er_velbin = SQRT(velbin)
 
 	; Read in binning
-	file = '/Data/ vimos/analysis/'+gal+'/'+opt+'/setup/voronoi_2d_binning_output.txt'
+	file = '/Data/vimos/analysis/'+gal+'/'+opt+'/setup/voronoi_2d_binning_output.txt'
 	rdfloat, file, _,_,bin_num, xbin, ybin, skipline=1
 
-	file = '/Data/ vimos/analysis/galaxies.txt'
+	file = '/Data/vimos/analysis/galaxies.txt'
 	readcol, file, galaxy_gals,x0,y0, skipline=1,format='A,D,D,D,I,I,I,I'
 	i_gal = where(galaxy_gals eq gal)
 
@@ -54,7 +54,7 @@ PRO do_work, gal, opt, type
 	erk5 = (SQRT( (cf[*,5]*er_cf[*,5])^2 + (cf[*,6]*er_cf[*,6])^2 ))/k5
 	erk51 = ( SQRT( ((k5/k1) * erk1)^2 + erk5^2  ) )/k1 
 
-	file = '/Data/ vimos/analysis/'+gal+'/'+opt+'/kinemtry/kinemetry_'+type+'.txt'
+	file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
 	forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
 		/SILENT, comment='  radius(pix)      pa(deg)        err         ellip        err           k1           err          k51         err'
 
