@@ -8,7 +8,7 @@ import numpy as np # for array handling
 from checkcomp import checkcomp
 cc = checkcomp()
 import re # for regex expressions
-
+from rolling_stats import rollmed
 
 def get_R_e(galaxy):
 	if cc.device != 'glamdring':
@@ -27,7 +27,7 @@ def get_R_e(galaxy):
 	return np.nanmean([R_e_RC3,R_e_2MASS])
 
 
-def classify(galaxy):
+def classify(galaxy, opt='kin'):
 	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
 	classify_file = "%s/galaxies_classify.txt" % (analysis_dir)
 
@@ -37,10 +37,11 @@ def classify(galaxy):
 
 	R_e = get_R_e(galaxy)
 # ------------================= RR/NRR ===================----------
-	file = '%s/%s/kinemetry_vel.txt' % (analysis_dir,galaxy)
+	file = '%s/%s/%s/kinemetry/kinemetry_vel.txt' % (analysis_dir, galaxy, opt)
 	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)
 	rad *= 0.67 # Pix to arcsec
-
+	pa = rollmed(pa, 5)
+	k1 = rollmed(k1, 5)
 
 	# Finding smoothest pa by add or subtracting 360 deg	
 	for j in range(1,len(pa)):
@@ -92,12 +93,12 @@ def classify(galaxy):
 	sharp = np.abs(difference) > 30
 	kdc_location = np.logical_and(sharp, k1 < 0.15*max(k1))
 	if any(kdc_location) and any(difference[0:np.median(np.where(kdc_location)[0])]<3):
-		KDC[i_gal] = 'KDC'
+		KDC[i_gal] = str(round(np.median(rad[kdc_location]), 3))
 		feature = True
 	else: KDC[i_gal] = '-'
 
 	# Double maximum (M2)
-	k1_change = np.append(pa[1:-1]-pa[0:-2], 0) > 0
+	k1_change = np.append(k1[1:-1]-k1[0:-2], 0) > 0
 	k1_change = str(k1_change.astype(int))
 	# at least 3 True's followed by at least 2 False' followed by at least 3 True's
 	if re.search('1 1( 1)+ 0( 0)+ 1 1( 1)+', k1_change) is not None:
@@ -111,10 +112,10 @@ def classify(galaxy):
 
 
 # ------------============== Save outputs ================----------
-	template3 = "{0:13}{1:7}{2:5}{3:5}{4:5}{5:5}{6:5}\n"
+	template3 = "{0:13}{1:7}{2:5}{3:5}{4:5}{5:5}{6:13}\n"
 
 	f3 = open(classify_file, 'wb')
-	f3.write(template3.format('Galaxy', 'RR/NRR', 'NF', 'NR', 'KT', '2M', 'KDC'))
+	f3.write(template3.format('Galaxy', 'RR/NRR', 'NF', 'NR', 'KT', '2M', 'KDC (arcsec)'))
 
 	for i in range(len(galaxy_gals)):
 		f3.write(template3.format(galaxy_gals[i], RR[i], NF[i], NR[i], KT[i], 

@@ -10,6 +10,7 @@ if 'home' not in cc.device:
 	import matplotlib # 20160202 JP to stop lack-of X-windows error
 	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from pickler import pickler
+from sav_for_kinemetry import sav_for_kinemetry
 from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
@@ -67,23 +68,24 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
-			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
-		plt.close("all")
+		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
+		# D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
+		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
+		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
-		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
-		rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
-		plt.close("all")
+		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
+		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
-		# use_kinemetry(galaxy)
-		# classify(galaxy)
+		# use_kinemetry(galaxy, opt='kin'+MC_dir)
+		# classify(galaxy, opt='kin'+MC_dir)
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
-		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True)
-		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir)
+		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True)
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir)
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

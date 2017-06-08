@@ -3,10 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from checkcomp import checkcomp
 import os
+from rolling_stats import rollmed
 cc=checkcomp()
 
-def use_kinemetry(gal):
-	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+def use_kinemetry(gal, opt='kin'):
+	out_dir = '%s/Data/vimos/analysis/%s/%s/kinemetry' % (cc.base_dir, gal, opt)
 	colors=['b','y','g']
 	fig, ax = plt.subplots()
 	pl_ob=[] # array for the plot objects
@@ -14,11 +15,14 @@ def use_kinemetry(gal):
 
 	# Plot all avaliable types
 	for i, type in enumerate(['flux','vel','sigma']):
-		f = '%s/%s/kinemetry_%s.txt' % (out_dir, gal, type)
+		f = '%s/kinemetry_%s.txt' % (out_dir, type)
 		if os.path.exists(f):
 			rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
 				skiprows=1)
 			rad*=0.33 # Change to arcsec
+			pa = rollmed(pa, 5) # smooth with rolling median
+			k1 = rollmed(k1, 5)
+
 
 			# Align pa[0] as closely as possible with flux pa[0] by +/- 360 deg
 			if type == 'flux': pa0 = pa[0]
@@ -71,7 +75,7 @@ def use_kinemetry(gal):
 	# If not all missing
 	if missing != 3:
 		# Get redshift of galaxy from data_file
-		data_file =  "%s/galaxies.txt" % (out_dir)
+		data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
 		# different data types need to be read separetly
 		z_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,))
 		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
@@ -105,9 +109,9 @@ def use_kinemetry(gal):
 
 		# Moves title clear of upper x axis
 		plt.subplots_adjust(top=0.85)
-		ax.set_title('KINEMETRY output', y=1.12)
+		ax.set_title('KINEMETRY output (Smoothed)', y=1.12)
 
-		fig.savefig('%s/%s/kinemetry.png'%(out_dir,gal))
+		fig.savefig('%s/kinemetry.png'%(out_dir))
 	
 ##############################################################################
 
