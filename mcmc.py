@@ -128,7 +128,7 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 	SN_titles = list(SN_gals.keys())
 	with open(data_file, 'w') as f:
-		f.write(temp.format("Galaxy", "z", "velocity", "vel dispersion", "x", "y", 
+		f.write(temp.format("Galaxy", "z", "velocity", "sigma", "x", "y", 
 			*(s for s in SN_titles)))
 		for i in range(len(galaxy_gals)):
 			f.write(temp.format(galaxy_gals[i], str(round(z_gals[i],7)), 

@@ -88,7 +88,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 # ----------================= Save SN_used ===============---------
 	SN_gals['SN_%s' % (opt)] = SN_used_gals
 
-	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(['{%i:%i}'%(i+3,len(t)+1) 
+	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(['{%i:%i}'%(i+6,len(t)+1) 
 		for i, t in enumerate(SN_gals.keys())]) + "\n"
 
 	SN_titles = list(SN_gals.keys())
@@ -130,8 +130,8 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 	s = galaxy_data.shape
 
 	
-	x = np.zeros(s[1]*s[2])
-	y = np.zeros(s[1]*s[2])
+	x = np.zeros(s[1]*s[2], dtype=int)
+	y = np.zeros(s[1]*s[2], dtype=int)
 
 
 # collapsing the spectrum for each spaxel.
@@ -150,7 +150,6 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 	x = x[mask]
 	y = y[mask]
 	n_spaxels = np.sum(mask)
-
 
 	if not os.path.exists("%s/analysis/%s/%s/setup" % (dir, galaxy, opt)):
 		os.makedirs("%s/analysis/%s/%s/setup" % (dir, galaxy, opt))
