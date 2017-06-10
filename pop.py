@@ -37,38 +37,59 @@ else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 class population(object):
 
-	def __init__(self):#, i_gal=None, bin=None):
-		#ab_lines, uncerts, interp=None, grid_length=40, previous=False, self.galaxy=None):
-		self.i_gal=int(sys.argv[1])
-		self.bin=int(sys.argv[2])
+	def __init__(self, pp=None, galaxy=None, opt='pop'):
+		self.pp = pp
+		self.galaxy = galaxy
 
 		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
-
-
-		galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
-		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-		self.galaxy = galaxies[self.i_gal]
-
-		self.vout_dir = '%s/%s/pop' % (vin_dir, self.galaxy)
-		if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
-
 		grid_length = 40
 
-		vin_dir_gasMC = "%s/%s/pop_MC" % (vin_dir, self.galaxy)
+		if self.pp is None:
+			self.i_gal=int(sys.argv[1])
+			self.opt=str(sys.argv[2])
+			self.bin=int(sys.argv[3])
+
+			galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
+				'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+			self.galaxy = galaxies[self.i_gal]
+
+			self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
+			if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
+
+			vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, self.galaxy, self.opt)
 		
-		lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, self.bin))
-		spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, self.bin))
-		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, self.bin), 
-			dtype=str)
-		e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
-		e_line_spec = matrix[e_lines,1:].astype(float)
-		temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, self.bin), 
-			unpack=True, usecols=(1,))
+			lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, self.bin))
+			spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, self.bin))
+			matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, self.bin), 
+				dtype=str)
+			temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, self.bin), 
+				unpack=True, usecols=(1,))
+			noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, self.bin))
+			bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, self.bin))
+			mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, self.bin))
+			e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
+			e_line_spec = matrix[e_lines,1:].astype(float)
+			stellar_temps = matrix[~e_lines,0]
+
+		else:
+			self.opt = opt
+			lam = self.pp.lam
+			spectrum = self.pp.galaxy
+			matrix = self.pp.matrix.T.astype(str)
+			temp_weights = self.pp.weights
+			noise = self.pp.noise 
+			bestfit = self.pp.bestfit
+			mpweight = self.pp.mpolyweights
+
+			e_lines = self.pp.component != 0
+			e_line_spec =  matrix[e_lines,:].astype(float)
+
+			stellar_temps = self.pp.templatesToUse[~e_lines]
+
 		e_line_spec = np.einsum('ij,i->ij',e_line_spec,temp_weights[e_lines])
+
 		continuum = spectrum - np.nansum(e_line_spec,axis=0)
-		noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, self.bin))
-		bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, self.bin))
-		convolved = bestfit - np.nansum(e_line_spec, axis=0) 
+		convolved = bestfit - np.nansum(e_line_spec, axis=0)
 
 		if cc.getDevice() == 'uni':
 			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
@@ -80,10 +101,9 @@ class population(object):
 		a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
 		unconvolved_spectrum = np.zeros(a[1]-a[0])
 
-		for i, n in enumerate(matrix[~e_lines,0]):
+		for i, n in enumerate(stellar_temps):
 			template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
 			unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
-		mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, self.bin))
 		unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
 				len(unconvolved_spectrum)), np.append(1, mpweight))
 		unconvolved_lam =  wav[a[0]:a[1]]
@@ -142,46 +162,61 @@ class population(object):
 		self.alpha = np.nanmean(self.samples[:,2])
 		self.unc_alp = np.nanstd(self.samples[:,2])
 		
-		self.save()
-		self.plot_probability_distribution()
-
+		if self.pp is None:
+			self.save()
+			self.plot_probability_distribution(
+				saveTo="%s/plots/%i.png" % (self.vout_dir, self.bin))
+		else:
+			print 'Age: ', self.age, '+/-', self.unc_age
+			print 'Metallicity: ', self.metallicity, '+/-', self.unc_met
+			print 'Alpha-enhancement: ', self.alpha, '+/-', self.unc_alp
 
 #############################################################################
 
-	def plot_probability_distribution(self):
+	def plot_probability_distribution(self, saveTo=None, f=None, ax_array=None):
 		import matplotlib.pyplot as plt
 
-		f, ax_array = plt.subplots(2,2)
+		if f is None:
+			f, ax_array = plt.subplots(2,2)
+			alpha = 1
+		else: alpha = 0.5
+
 		if self.galaxy is not None:
 			f.suptitle('%s Probability Distribution' % (self.galaxy.upper()))
 		else:
 			f.suptitle('Probability Distribution')
-		ax_array[0,0].hist(self.samples[:,0],bins=40,histtype='step',normed=True)
-		ax_array[0,1].hist(self.samples[:,1],bins=40,histtype='step',normed=True)
-		ax_array[1,0].hist(self.samples[:,2],bins=40,histtype='step',normed=True)
+		ax_array[0,0].hist(self.samples[:,0],bins=40,histtype='step',normed=True, 
+			alpha=alpha)
+		ax_array[0,1].hist(self.samples[:,1],bins=40,histtype='step',normed=True, 
+			alpha=alpha)
+		ax_array[1,0].hist(self.samples[:,2],bins=40,histtype='step',normed=True, 
+			alpha=alpha)
 
-		ax_array[0,0].axvline(self.age - self.unc_age, color='r')
-		ax_array[0,0].axvline(self.age + self.unc_age, color='r')
-		ax_array[0,0].axvline(self.age)
-		ax_array[0,1].axvline(self.metallicity - self.unc_met, color='r')
-		ax_array[0,1].axvline(self.metallicity + self.unc_met, color='r')
-		ax_array[0,1].axvline(self.metallicity)
-		ax_array[1,0].axvline(self.alpha - self.unc_alp, color='r')
-		ax_array[1,0].axvline(self.alpha + self.unc_alp, color='r')
-		ax_array[1,0].axvline(self.alpha)
+		ax_array[0,0].axvline(self.age - self.unc_age, color='r', alpha=alpha)
+		ax_array[0,0].axvline(self.age + self.unc_age, color='r', alpha=alpha)
+		ax_array[0,0].axvline(self.age, alpha=alpha)
+		ax_array[0,1].axvline(self.metallicity - self.unc_met, color='r', alpha=alpha)
+		ax_array[0,1].axvline(self.metallicity + self.unc_met, color='r', alpha=alpha)
+		ax_array[0,1].axvline(self.metallicity, alpha=alpha)
+		ax_array[1,0].axvline(self.alpha - self.unc_alp, color='r', alpha=alpha)
+		ax_array[1,0].axvline(self.alpha + self.unc_alp, color='r', alpha=alpha)
+		ax_array[1,0].axvline(self.alpha, alpha=alpha)
 		ax_array[0,0].set_title('Age')
 		ax_array[0,1].set_title('Metallicity')
 		ax_array[1,0].set_title('Alpha/Fe ratio')
 		ax_array[1,1].axis('off')
 		plt.tight_layout()
 
-		if not os.path.exists("%s/plots/" % (self.vout_dir)):
-			os.makedirs("%s/plots/" % (self.vout_dir))
-		file = "%s/plots/%i.png" % (self.vout_dir, self.bin)
-		f.savefig(file)
+		if saveTo is not None and self.pp is None:
+			if not os.path.exists(saveTo):
+				os.makedirs(saveTo)
+			f.savefig(saveTo)
 
-		if not cc.remote:
-			plt.show()
+		self.fig = f
+		self.ax = ax_array
+
+		# if not cc.remote:
+		# 	plt.show()
 
 #############################################################################
 
@@ -203,6 +238,9 @@ class population(object):
 
 
 	def save(self):
+		if self.pp is not None:
+			raise('population was run using the ppxf output object and therefore has no' +
+				' obvious place to save the output')
 		file = "%s/%i.dat" % (self.vout_dir, self.bin)
 		with open(file, 'w') as f:
 			f.write('%f   %f   %f \n' % (self.age, self.metallicity, self.alpha))
@@ -223,29 +261,3 @@ class population(object):
 
 if __name__=="__main__":
 	p = population()
-
-
-
-	# import cPickle as pickle
-
-	# gal='ngc3100'
-	# self.bin=25
-	# wav_range='4200-'
-
-	# out_pickle = '%s/Data/vimos/analysis/%s/results/%s/pickled' % (cc.base_dir,gal,
-	# wav_range)
-	# pickleFile = open("%s/dataObj_%s_pop.pkl" % (out_pickle, wav_range), 'rb')
-	# D = pickle.load(pickleFile)
-	# pickleFile.close()
-
-	# lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
-	# 	'Mg_b']
-
-	# line_dir = {}
-	# uncert_dir = {}
-	# for l in lines:
-	# 	ab, uncert = D.absorption_line(l, uncert=True)
-	# 	line_dir[l] = np.array([ab[self.bin]])
-	# 	uncert_dir[l] = np.array([uncert[self.bin]])
-
-	# pop = population(line_dir, uncert_dir, grid_length=40)
