@@ -60,8 +60,9 @@ def classify(galaxy, opt='kin'):
 	file = '%s/%s/%s/kinemetry/kinemetry_vel.txt' % (analysis_dir, galaxy, opt)
 	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)
 	rad *= 0.67 # Pix to arcsec
-	pa = rollmed(pa, 5)
-	k1 = rollmed(k1, 5)
+	pa = rollmed(pa, 7)
+	k1 = rollmed(k1, 7)
+	k51 = rollmed(k51, 7)
 
 	# Finding smoothest pa by add or subtracting 360 deg	
 	for j in range(1,len(pa)):
@@ -112,7 +113,7 @@ def classify(galaxy, opt='kin'):
 	# CRC not included yet
 	sharp = np.abs(difference) > 30
 	kdc_location = np.logical_and(sharp, k1 < 0.15*max(k1))
-	if any(kdc_location) and any(difference[0:np.median(np.where(kdc_location)[0])]<3):
+	if any(kdc_location) and any(difference[0:int(np.median(np.where(kdc_location)[0]))]<3):
 		KDC[i_gal] = str(round(np.median(rad[kdc_location]), 3))
 		feature = True
 	else: KDC[i_gal] = '-'
@@ -149,6 +150,6 @@ def classify(galaxy, opt='kin'):
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	galaxy = 'ngc3557'
+	galaxy = 'ngc1399'
 
 	classify(galaxy)

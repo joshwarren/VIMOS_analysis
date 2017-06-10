@@ -19,9 +19,9 @@ def use_kinemetry(gal, opt='kin'):
 		if os.path.exists(f):
 			rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
 				skiprows=1)
-			rad*=0.33 # Change to arcsec
-			pa = rollmed(pa, 5) # smooth with rolling median
-			k1 = rollmed(k1, 5)
+			rad*=0.67 # Change to arcsec
+			pa = rollmed(pa, 7) # smooth with rolling median
+			k1 = rollmed(k1, 7)
 
 
 			# Align pa[0] as closely as possible with flux pa[0] by +/- 360 deg
@@ -30,9 +30,7 @@ def use_kinemetry(gal, opt='kin'):
 				a = np.argmin(np.abs(pa[0]-pa0+[-360,0,360]))
 				if a == 0:
 					pa -= 360
-					print '-%s'%(type)
 				elif a == 2:
-					print '+%s'%(type)
 					pa += 360
 
 			# Optimizing PA
@@ -76,6 +74,8 @@ def use_kinemetry(gal, opt='kin'):
 	if missing != 3:
 		# Get redshift of galaxy from data_file
 		data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+		classify_file = "%s/Data/vimos/analysis/galaxies_classify.txt" % (cc.base_dir)
+
 		# different data types need to be read separetly
 		z_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,))
 		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
@@ -90,6 +90,16 @@ def use_kinemetry(gal, opt='kin'):
 		r_kpc = np.radians(rad/(60.0*60.0)) * z*c/H *1000
 		ax3.set_xlim(r_kpc[0],r_kpc[-1])
 		ax3.set_xlabel('Radius (kpc)')
+
+
+		galaxy_gals2, KDC_size = np.loadtxt(classify_file, unpack=True, usecols=(0,6), 
+		dtype=str, skiprows=1)
+		has_KDC = KDC_size!='-'
+		galaxy_gals2 = galaxy_gals2[has_KDC]
+		KDC_size = KDC_size[has_KDC].astype(float)
+
+		if gal in galaxy_gals2:
+			ax.axvline(KDC_size[galaxy_gals2==gal][0])
 
 		#ax.yaxis.label.set_color('blue')
 		#ax.tick_params(axis='y', colors='blue')
@@ -109,7 +119,7 @@ def use_kinemetry(gal, opt='kin'):
 
 		# Moves title clear of upper x axis
 		plt.subplots_adjust(top=0.85)
-		ax.set_title('KINEMETRY output (Smoothed)', y=1.12)
+		ax.set_title('%s: KINEMETRY output (Smoothed)' % (gal), y=1.12)
 
 		fig.savefig('%s/kinemetry.png'%(out_dir))
 	
@@ -118,4 +128,4 @@ def use_kinemetry(gal, opt='kin'):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	use_kinemetry('ic1459')
+	use_kinemetry('ngc1399')

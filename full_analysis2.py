@@ -23,7 +23,7 @@ from classify import classify
 import traceback, sys
 
 galaxies = [
-			#'ic1459',
+			'ic1459',
 			'ic1531', 
 			'ic4296',
 			'ngc0612',
@@ -79,8 +79,8 @@ for galaxy in galaxies:
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
+		classify(galaxy, opt='kin'+opt_dir)
 		use_kinemetry(galaxy, opt='kin'+opt_dir)
-		# classify(galaxy, opt='kin'+opt_dir)
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
