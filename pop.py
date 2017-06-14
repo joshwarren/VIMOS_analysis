@@ -29,6 +29,8 @@ if cc.remote:
 	import matplotlib # 20160202 JP to stop lack-of X-windows error
 	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from absorption import absorption
+from prefig import Prefig 
+Prefig()
 
 c = 299792.458
 
@@ -86,10 +88,10 @@ class population(object):
 
 			stellar_temps = self.pp.templatesToUse[~e_lines]
 
-		e_line_spec = np.einsum('ij,i->ij',e_line_spec,temp_weights[e_lines])
+		self.e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
 
-		continuum = spectrum - np.nansum(e_line_spec,axis=0)
-		convolved = bestfit - np.nansum(e_line_spec, axis=0)
+		self.continuum = spectrum - self.e_line_spec # np.nansum(self.e_line_spec,axis=0)
+		convolved = bestfit - self.e_line_spec # np.nansum(self.e_line_spec, axis=0)
 
 		if cc.getDevice() == 'uni':
 			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
@@ -111,7 +113,7 @@ class population(object):
 		self.ab_lines = {}
 		self.uncerts = {}
 		for l in self.lines:
-			ab, uncert = absorption(l, lam, continuum, noise=noise,
+			ab, uncert = absorption(l, lam, self.continuum, noise=noise,
 				unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
 				conv_spec=convolved)
 			self.ab_lines[l], self.uncerts[l] = ab[0], uncert[0]
@@ -173,7 +175,8 @@ class population(object):
 
 #############################################################################
 
-	def plot_probability_distribution(self, saveTo=None, f=None, ax_array=None):
+	def plot_probability_distribution(self, saveTo=None, f=None, ax_array=None,
+		label=''):
 		import matplotlib.pyplot as plt
 
 		if f is None:
@@ -186,15 +189,17 @@ class population(object):
 		else:
 			f.suptitle('Probability Distribution')
 		ax_array[0,0].hist(self.samples[:,0],bins=40,histtype='step',normed=True, 
-			alpha=alpha)
+			alpha=alpha, label='Probability Distribution%s' % (label))
 		ax_array[0,1].hist(self.samples[:,1],bins=40,histtype='step',normed=True, 
 			alpha=alpha)
 		ax_array[1,0].hist(self.samples[:,2],bins=40,histtype='step',normed=True, 
 			alpha=alpha)
 
 		ax_array[0,0].axvline(self.age - self.unc_age, color='r', alpha=alpha)
-		ax_array[0,0].axvline(self.age + self.unc_age, color='r', alpha=alpha)
-		ax_array[0,0].axvline(self.age, alpha=alpha)
+		ax_array[0,0].axvline(self.age + self.unc_age, color='r', alpha=alpha,
+			label='Uncertainty of population fit%s' % (label))
+		ax_array[0,0].axvline(self.age, alpha=alpha,
+			label='Bestfitting population%s' % (label))
 		ax_array[0,1].axvline(self.metallicity - self.unc_met, color='r', alpha=alpha)
 		ax_array[0,1].axvline(self.metallicity + self.unc_met, color='r', alpha=alpha)
 		ax_array[0,1].axvline(self.metallicity, alpha=alpha)
@@ -205,7 +210,11 @@ class population(object):
 		ax_array[0,1].set_title('Metallicity')
 		ax_array[1,0].set_title('Alpha/Fe ratio')
 		ax_array[1,1].axis('off')
-		plt.tight_layout()
+		# plt.tight_layout()
+
+		if self.pp is None:
+			h, l = ax_array[0,0].get_legend_handle_labels()
+			ax_array[1,1].legend(h,l)
 
 		if saveTo is not None and self.pp is None:
 			if not os.path.exists(saveTo):

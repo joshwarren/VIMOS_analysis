@@ -10,6 +10,8 @@ import numpy as np
 from astropy.io import fits
 from errors2 import get_dataCubeDirectory, run_ppxf, set_params, remove_anomalies
 from pop import population
+from prefig import Prefig 
+Prefig()
 
 # In pixel units (Except d - in units of app_size)
 def get_areaInAperture(x_len,y_len,x_cent,y_cent,app_size):
@@ -83,12 +85,15 @@ def get_specFromAperture(galaxy, app_size=1.0, inside=True, res=0.67):
 
 	area = get_areaInAperture(s[1], s[2], x_cent, y_cent, app_size/res)
 	
+	if not inside:
+		area = 1 - area
+
 	# Deal with NaN
 	d = f[0].data
 	d[np.isnan(d)] = 0
 	n = f[1].data
 	n[np.isnan(n)] = 0
-	return np.einsum('ijk,jk->i', d, area), np.einsum('ijk,jk->i', n, area), \
+	return np.einsum('ijk,jk->i', d, area), np.sqrt(np.einsum('ijk,jk->i', n**2, area)), \
 		np.arange(s[0])*f[0].header['CDELT3'] + f[0].header['CRVAL3']
 
 
@@ -116,13 +121,13 @@ def KDC_pop(galaxy):
 		produce_plot=False)
 
 	pop = population(pp=pp, galaxy=galaxy)
-	pop.plot_probability_distribution()
+	pop.plot_probability_distribution(label=' of core region')
 
 	data_file = "%s/Data/vimos/analysis/galaxies_core.txt" % (cc.base_dir)
-	age_gals, age_unc_gals, met_gals, met_unc_gals, alp_gals, alp_unc_gals, \
+	age_gals, age_unc_gals, met_gals, met_unc_gals, alp_gals, alp_unc_gals, OIII_eqw_gals,\
 		age_gals_outer, age_unc_gals_outer, met_gals_outer, met_unc_gals_outer, \
 		alp_gals_outer, alp_unc_gals_outer = np.loadtxt(data_file, unpack=True, 
-		skiprows=2, usecols=(1,2,3,4,5,6,7,8,9,10,11,12))
+		skiprows=2, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13))
 	galaxy_gals = np.loadtxt(data_file, skiprows=2, usecols=(0,),dtype=str)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 
@@ -136,6 +141,8 @@ def KDC_pop(galaxy):
 	# Save plot from pop before clearing from memory
 	f = pop.fig
 	ax = pop.ax
+	OIII_pos = np.argmin(np.abs(pp.lam - 5007))
+	OIII_eqw_gals[i_gal] = pop.continuum[OIII_pos]/pop.e_line_spec[OIII_pos]
 	del pop
 
 	# Outside apperture
@@ -151,10 +158,12 @@ def KDC_pop(galaxy):
 	pp_outside = run_ppxf(galaxy, spec, noise, lamRange, CD, vel, sig, z, 'kin', params,
 		produce_plot=False)
 	pop_outside = population(pp=pp_outside, galaxy=galaxy)
-	pop_outside.plot_probability_distribution(f=f, ax_array=ax)
+	pop_outside.plot_probability_distribution(f=f, ax_array=ax, label=' of outer region')
 
 	pop_outside.fig.suptitle('%s Probability Distribution within inner 1 arcsec' % (
-		galaxy.upper()))
+		galaxy.upper()), y=0.985)
+	h, l = pop_outside.ax[0,0].get_legend_handles_labels()
+	pop_outside.ax[1,1].legend(h, l, loc=1)
 	pop_outside.fig.savefig('%s/Data/vimos/analysis/%s/pop_1arcsec.png' % (cc.base_dir, 
 		galaxy))
 
@@ -166,19 +175,19 @@ def KDC_pop(galaxy):
 	alp_unc_gals_outer[i_gal] = pop_outside.unc_alp
 	del pop_outside
 
-	temp = "{0:13}{1:6}{2:6}{3:6}{4:6}{5:6}{6:9}{7:6}{8:6}{9:6}{10:6}{11:6}{12:6}\n"
+	temp = "{0:13}{1:6}{2:6}{3:6}{4:6}{5:6}{6:6}{7:10}{8:6}{9:6}{10:6}{11:6}{12:6}{13:6}\n"
 	with open(data_file, 'w') as f:
-		f.write('             Core (inner 1arcsec)                   Outer \n')
+		f.write('             Core (inner 1arcsec)                              Outer \n')
 		f.write(temp.format('Galaxy', 'Age', 'error', 'Metal', 'error', 'Alpha', 'error', 
-			'Age', 'error', 'Metal', 'error', 'Alpha', 'error'))
+			'OIII_eqw', 'Age', 'error', 'Metal', 'error', 'Alpha', 'error'))
 		for i in range(len(galaxy_gals)):
 			f.write(temp.format(galaxy_gals[i], str(round(age_gals[i],2)), 
 				str(round(age_unc_gals[i],2)), str(round(met_gals[i],2)), 
 				str(round(met_unc_gals[i],2)), str(round(alp_gals[i],2)), 
-				str(round(alp_unc_gals[i],2)), str(round(age_gals_outer[i],2)), 
-				str(round(age_unc_gals_outer[i],2)), str(round(met_gals_outer[i],2)), 
-				str(round(met_unc_gals_outer[i],2)), str(round(alp_gals_outer[i],2)), 
-				str(round(alp_unc_gals_outer[i],2))))
+				str(round(alp_unc_gals[i],2)), str(round(OIII_eqw_gals[i],4)),
+				str(round(age_gals_outer[i],2)), str(round(age_unc_gals_outer[i],2)), 
+				str(round(met_gals_outer[i],2)), str(round(met_unc_gals_outer[i],2)), 
+				str(round(alp_gals_outer[i],2)), str(round(alp_unc_gals_outer[i],2))))
 
 
 
