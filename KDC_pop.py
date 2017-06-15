@@ -142,7 +142,10 @@ def KDC_pop(galaxy):
 	f = pop.fig
 	ax = pop.ax
 	OIII_pos = np.argmin(np.abs(pp.lam - 5007))
-	OIII_eqw_gals[i_gal] = pop.continuum[OIII_pos]/pop.e_line_spec[OIII_pos]
+	peak_width = 15
+	OIII_eqw_gals[i_gal] = np.trapz(pop.e_line_spec[OIII_pos - peak_width:OIII_pos + 
+		peak_width], x=pp.lam[OIII_pos - peak_width:OIII_pos + peak_width])/\
+		pop.continuum[OIII_pos]
 	del pop
 
 	# Outside apperture

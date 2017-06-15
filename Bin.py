@@ -556,7 +556,7 @@ class Bin(object):
 		a = [min(np.where(self.lam > self.__parent__.common_range[0])[0]),
 			max(np.where(self.lam < self.__parent__.common_range[1])[0])]
 		return np.trapz(self.spectrum[a[0]:a[1]], x=self.lam[a[0]:a[1]]
-			)/self.n_spaxels_in_bin
+			)#/self.n_spaxels_in_bin
 
 	@property
 	def xBar(self):
