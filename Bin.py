@@ -422,7 +422,9 @@ class emission_data(_data):
 		if self.__parent__.gas == 3:
 			p = self.mask
 		elif self.__parent__.gas == 2:
-			pass
+			for k, i in self.__parent__.e_line_no_mask.iteritems():
+				if ('H' in k) ^ ('H' in self.name):
+					p *= i.mask
 		elif self.__parent__.gas == 1:
 			# Check all emission lines for a detection (i.e. mask = False)
 			# components = self.__parent__.e_components
