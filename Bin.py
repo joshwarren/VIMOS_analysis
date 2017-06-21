@@ -227,6 +227,10 @@ class Data(object):
 		elif self.gas == 3:
 			return self.list_components 
 
+	@property
+	def gas_dynamics_SN(self):
+		return np.max([l.amp_noise for l in self.e_line], axis=0)
+
 
 
 # taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
