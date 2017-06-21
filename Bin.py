@@ -229,7 +229,7 @@ class Data(object):
 
 	@property
 	def gas_dynamics_SN(self):
-		return np.max([l.amp_noise for l in self.e_line], axis=0)
+		return np.max([l.amp_noise for k, l in self.e_line.iteritems()], axis=0)
 
 
 

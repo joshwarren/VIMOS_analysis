@@ -428,7 +428,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		for c in D.e_components:
 			amp_title = '%s Amplitude to Noise ratio' % (c_title)
 			amp_min, amp_max = set_lims(D.e_line[c].amp_noise, positive=True)
-			saveTo = "%s/%s_amp_nosie.png" % (out_nointerp, c)
+			saveTo = "%s/%s_amp_noise.png" % (out_nointerp, c)
 
 			ax1 = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 				D.e_line[c].amp_noise, vmin=amp_min, vmax=amp_max, colorbar=True, 
