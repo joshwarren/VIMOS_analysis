@@ -380,12 +380,18 @@ class emission_data(_data):
 	@property	
 	def flux(self):
 		p = []
+		p_uncert = []
 		for bin in self.__parent__.bin:
 			try:
-				p.append(bin.e_line[self._name].flux)
+				f = bin.e_line[self._name].flux
+				p.append(f)
+				p_uncert.append(f.uncert)
 			except KeyError:
 				p.append(np.nan)
-		return np.array(p)
+				p_uncert.append(np.nan)
+		p = myArray(p)
+		p.uncert = np.array(p_uncert)
+		return p
 
 	@property
 	def name(self):
@@ -397,8 +403,16 @@ class emission_data(_data):
 
 	@property
 	def equiv_width(self):
-		return np.array(self.flux/[bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] 
+
+		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] 
 			for bin in self.__parent__.bin])
+		e = myArray(self.flux/cont)
+		cont_uncert = np.array([
+			bin.continuum.uncert[np.argmin(np.abs(bin.lam-self.wav))] 
+			for bin in self.__parent__.bin])
+		e.uncert = np.sqrt(e**2 * ((self.flux.uncert/self.flux)**2 + 
+			(cont_uncert/cont)**2))
+		return e
 
 	@property
 	def mask(self):
@@ -550,8 +564,11 @@ class Bin(object):
 	@property
 	def continuum(self):
 		# NB: Masks not used
-		return np.array(self.spectrum - np.nansum([line.spectrum_nomask 
+		c = myArray(self.spectrum - np.nansum([line.spectrum_nomask 
 			for key, line in self.e_line.iteritems()],axis=0))
+		c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
+			for key, line in self.e_line.iteritems()],axis=0))
+		return c
 
 
 	@property
@@ -634,7 +651,8 @@ class myFloat(float):
 	#pass
 	def __init__(self, value):
 		float.__init__(self)
-		self._uncert = np.nan
+		# self._uncert = np.nan
+		self.uncert = np.nan
 
 class _bin_data(object):
 # Attributes:
@@ -695,6 +713,7 @@ class emission_line(_bin_data):
 		self.name = str(name)
 		self.weight = 0.0
 		self._spectrum = np.array(_spectrum)
+		self.uncert_spectrum = np.zeros(len(self._spectrum))*np.nan
 		self.wav = wav
 		self.__threshold__ = 4.0
 		_bin_data.__init__(self, self.__parent__)
@@ -703,9 +722,11 @@ class emission_line(_bin_data):
 	@property
 	def flux(self):
 		if not self.mask:
-			return np.trapz(self.spectrum, x=self.__parent__.lam)
+			f = myFloat(np.trapz(self.spectrum, x=self.__parent__.lam))
+			f.uncert = trapz_uncert(self.uncert_spectrum, x=self.__parent__.lam)
+			return f
 		else:
-			return np.nan
+			return myFloat(np.nan)
 
 	# @flux.setter
 	# def flux(self,no_mask=False):
@@ -738,4 +759,12 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return False #self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+		return self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+
+
+# Find the propergated uncertainty from numpy.trapz().
+def trapz_uncert(uncert, x=None):
+	if x is None:
+		x = np.arange(len(uncert))
+	return np.sqrt(np.nansum([(x[i+1]-x[i])**2 * (uncert[i+1]**2 + uncert[i]**2)
+		 for i in range(len(uncert)-1)]))/2

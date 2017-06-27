@@ -96,13 +96,20 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, header=None, signal_noise=None, 
-	signal_noise_target=None, res=0.67, pa=None, **kwargs):
+	signal_noise_target=None, res=0.67, pa=None, center=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
+	x_pix = np.array(x_pix)
+	y_pix = np.array(y_pix)
+	bin_num = np.array(bin_num)
+	xBar_pix = np.array(xBar_pix)
+	yBar_pix = np.array(yBar_pix)
+	vel = np.array(vel)
+
 	# Scale the plot size to VIMOS.
-	Prefig(size=(16*(max(x_pix)+1)*res/26.8,12*(max(y_pix)+1)*res/26.8), transparent=False)
-	# mpl.rcParams['figure.figsize'] = 16*(max(x_pix)+1)*res/30.0,12*(max(y_pix)+1)*res/30.0
+	Prefig(transparent=False)#size=(16*(max(x_pix)+1)*res/26.8,12*(max(y_pix)+1)
+		# *res/26.8), transparent=False)
 
 	
 	if len(vel) != max(bin_num)+1:
@@ -118,50 +125,78 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if vmax is None:
 		vmax = np.nanmax(vel)
 
+	# Flattens all arrays - I think
 	xBar_pix, yBar_pix, vel = map(np.ravel, [xBar_pix, yBar_pix, vel])
+	# Steps in color scale
 	levels = np.linspace(vmin, vmax, ncolors)
 
 	# Plot in arcsecs
-	if header is None:
-		xBar = xBar_pix*res
-		yBar = yBar_pix*res
-		xBar -= max(xBar)/2
-		yBar -= max(yBar)/2
+	# if header is None:
+	if center is not None:
+		xBar_pix -= center[0]
+		x_pix -= center[0]
 
-		x = x_pix*res
-		y = y_pix*res
-		x -= max(x)/2
-		y -= max(y)/2
+		yBar_pix -= center[1]
+		y_pix -= center[1]
+	else:
+		xBar_pix -= max(xBar_pix)/2
+		x_pix -= max(x_pix)/2
 
-		x_label = r'$\Delta$ RA (arcsec)'
-		y_label = r'$\Delta$ Dec (arcsec)'
+		yBar_pix -= max(yBar_pix)/2
+		y_pix -= max(y_pix)/2
 
-		# Tells add_CO method in plot_results coords were not supplied
-		ax.RaDec = False
+	xBar = xBar_pix*res
+	yBar = yBar_pix*res
+	# xBar -= max(xBar)/2
+	# yBar -= max(yBar)/2
+
+	x = x_pix*res
+	y = y_pix*res
+	# x -= max(x)/2
+	# y -= max(y)/2
+
+	x_label = r'$\Delta$ RA (arcsec)'
+	y_label = r'$\Delta$ Dec (arcsec)'
+	xmin, xmax = np.min(x), np.max(x)
+	ymin, ymax = np.min(y), np.max(y)
+
+	# Tells add_CO method in plot_results coords were not supplied
+	ax.RaDec = False
 
 	# Plot in RA and Dec
-	else:
-		from astropy.coordinates import SkyCoord
-		from astropy import units as u
+	if header is not None:
+		# from astropy.coordinates import SkyCoord
+		# from astropy import units as u
 
 		try:
-			coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
-				header['HIERARCH CCD1 ESO INS IFU DEC'], unit=(u.deg, u.deg))
+		# 	coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
+		# 		header['HIERARCH CCD1 ESO INS IFU DEC'], unit=(u.deg, u.deg))
+			header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
+			header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
+			header['CTYPE1'] = 'RA---TAN'
+			header['CTYPE2'] = 'DEC--TAN'
 			res = abs(header['CDELT1']) # VIMOS arcsec per pixel
 		except:
-			coords = SkyCoord(header['CRVAL1'], header['CRVAL2'], unit=(u.deg, u.deg))
+		# 	coords = SkyCoord(header['CRVAL1'], header['CRVAL2'], unit=(u.deg, u.deg))
 			res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
 			
-		xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
-		yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
-		x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
-		y = (y_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
+		# xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
+		# yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
+		# x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
+		# y = (y_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
 		
 		x_label = "RA"
 		y_label = "Dec"
 
 		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
 		ax.RaDec = True
+
+		from astropy.wcs import WCS 
+
+		wcs = WCS(header).celestial
+		print wcs
+		ax = plt.axes(projection=wcs)
+
 
 	tick_formatter = ticker.ScalarFormatter(useOffset=False)
 	ax.xaxis.set_major_formatter(tick_formatter)
@@ -170,8 +205,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	bin_num = bin_num.astype(int)
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
-	xmin, xmax = np.min(x), np.max(x)
-	ymin, ymax = np.min(y), np.max(y)
+	# xmin, xmax = np.min(x), np.max(x)
+	# ymin, ymax = np.min(y), np.max(y)
 	nx = int(round((xmax - xmin)/pixelSize) + 1)
 	ny = int(round((ymax - ymin)/pixelSize) + 1)
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
@@ -270,14 +305,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
 		H = 70.0 # value used by Bolonga group.
-		xlim = np.array([-max(xBar_pix)/2, max(xBar_pix)/2])*res
-		ylim = np.array([-max(yBar_pix)/2, max(yBar_pix)/2])*res
+		xlim = np.array([max(x_pix), min(x_pix)])*res
+		ylim = np.array([min(y_pix), max(y_pix)])*res
 		xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
 		ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
 		xmax = xlim[1]
 		ymax = ylim[1]
-		#xlim -= xmax/2
-		#ylim -= ymax/2
 		axis_label = "Distance (Mpc)"
 		if max(xlim) < 1.0:
 			xlim *= 1000
