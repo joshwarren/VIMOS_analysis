@@ -132,18 +132,15 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# Plot in arcsecs
 	# if header is None:
-	if center is not None:
-		xBar_pix -= center[0]
-		x_pix -= center[0]
+	if center is None:
+		center = (max(x_pix)/2, max(y_pix)/2)
+		
+	ax.center=center
+	xBar_pix -= center[0]
+	x_pix -= center[0]
 
-		yBar_pix -= center[1]
-		y_pix -= center[1]
-	else:
-		xBar_pix -= max(xBar_pix)/2
-		x_pix -= max(x_pix)/2
-
-		yBar_pix -= max(yBar_pix)/2
-		y_pix -= max(y_pix)/2
+	yBar_pix -= center[1]
+	y_pix -= center[1]
 
 	xBar = xBar_pix*res
 	yBar = yBar_pix*res
