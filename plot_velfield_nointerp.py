@@ -130,80 +130,72 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	# Steps in color scale
 	levels = np.linspace(vmin, vmax, ncolors)
 
-	# Plot in arcsecs
-	# if header is None:
+
+	try:
+		# VIMOS parameters
+		header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
+		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
+		header['CTYPE1'] = 'RA---TAN'
+		header['CTYPE2'] = 'DEC--TAN'
+		header['CD1_1'] = header['CDELT1']
+		header['CD2_2'] = header['CDELT2']
+		res = abs(header['CDELT1']) # VIMOS arcsec per pixel
+	except:
+		res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
+
+	x = (x_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
+	y = (y_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
+
+	xBar = (xBar_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
+	yBar = (yBar_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
+
 	if center is None:
 		center = (max(x_pix)/2, max(y_pix)/2)
-		
-	ax.center=center
-	xBar_pix -= center[0]
-	x_pix -= center[0]
-
-	yBar_pix -= center[1]
-	y_pix -= center[1]
-
-	xBar = xBar_pix*res
-	yBar = yBar_pix*res
-	# xBar -= max(xBar)/2
-	# yBar -= max(yBar)/2
-
-	x = x_pix*res
-	y = y_pix*res
-	# x -= max(x)/2
-	# y -= max(y)/2
 
 	x_label = r'$\Delta$ RA (arcsec)'
 	y_label = r'$\Delta$ Dec (arcsec)'
-	xmin, xmax = np.min(x), np.max(x)
-	ymin, ymax = np.min(y), np.max(y)
 
-	# Tells add_CO method in plot_results coords were not supplied
-	ax.RaDec = False
+	# Create display axis
+	ax_dis_x = ax.twiny()
+	ax_dis_y = ax.twinx()
+	if True:
+		ax_dis_x.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*header['CD1_1']*60*60)
+		ax_dis_y.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*header['CD2_2']*60*60)
 
-	# Plot in RA and Dec
-	if header is not None:
-		# from astropy.coordinates import SkyCoord
-		# from astropy import units as u
+		ax_dis_x.set_xlabel(x_label)
+		ax_dis_x.xaxis.tick_bottom()
+		ax_dis_x.xaxis.set_label_position('bottom')	
+		ax_dis_y.set_ylabel(y_label)
+		ax_dis_y.yaxis.tick_left()
+		ax_dis_y.yaxis.set_label_position('left')
 
-		try:
-		# 	coords = SkyCoord(header['HIERARCH CCD1 ESO INS IFU RA'], 
-		# 		header['HIERARCH CCD1 ESO INS IFU DEC'], unit=(u.deg, u.deg))
-			header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
-			header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
-			header['CTYPE1'] = 'RA---TAN'
-			header['CTYPE2'] = 'DEC--TAN'
-			res = abs(header['CDELT1']) # VIMOS arcsec per pixel
-		except:
-		# 	coords = SkyCoord(header['CRVAL1'], header['CRVAL2'], unit=(u.deg, u.deg))
-			res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
-			
-		# xBar = (xBar_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
-		# yBar = (yBar_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
-		# x = (x_pix-header['CRPIX1']-1)*res/(60**2) + coords.ra.degree
-		# y = (y_pix-header['CRPIX2']-1)*res/(60**2) + coords.dec.degree
-		
-		x_label = "RA"
-		y_label = "Dec"
+		ax_dis_x.minorticks_on()
+		ax_dis_x.tick_params(length=10, which='major')
+		ax_dis_x.tick_params(length=5, which='minor')
+		ax_dis_y.minorticks_on()
+		ax_dis_y.tick_params(length=10, which='major')
+		ax_dis_y.tick_params(length=5, which='minor')
 
-		# Tells add_CO in plot_results.py that plot is in terms of RA and Dec
-		ax.RaDec = True
+		tick_formatter = ticker.ScalarFormatter(useOffset=False)
+		ax_dis_x.xaxis.set_major_formatter(tick_formatter)
+		ax_dis_y.yaxis.set_major_formatter(tick_formatter)
 
+		# Setting for image axis
+		ax.set_aspect('equal')
+		ax.autoscale(tight=True)
+
+		ax.xaxis.set_visible(False)
+		ax.yaxis.set_visible(False)
+	else:
 		from astropy.wcs import WCS 
-
 		wcs = WCS(header).celestial
-		print wcs
 		ax = plt.axes(projection=wcs)
-
-
-	tick_formatter = ticker.ScalarFormatter(useOffset=False)
-	ax.xaxis.set_major_formatter(tick_formatter)
-	ax.yaxis.set_major_formatter(tick_formatter)
-
+	
 	bin_num = bin_num.astype(int)
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
-	# xmin, xmax = np.min(x), np.max(x)
-	# ymin, ymax = np.min(y), np.max(y)
+	xmin, xmax = np.min(x), np.max(x)
+	ymin, ymax = np.min(y), np.max(y)
 	nx = int(round((xmax - xmin)/pixelSize) + 1)
 	ny = int(round((ymax - ymin)/pixelSize) + 1)
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
@@ -239,16 +231,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
 
 	# RA increases right to left
-	ax.invert_xaxis()
-
-
-	ax.set_ylabel(y_label)
-	ax.set_xlabel(x_label)
-	ax.set_aspect('equal')
-	ax.autoscale(tight=True)
-	ax.minorticks_on()
-	ax.tick_params(length=10, which='major')
-	ax.tick_params(length=5, which='minor')
+	# ax.invert_xaxis()
 
 
 	if galaxy is not None:
@@ -270,7 +253,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
-			contours = -2.5*np.log10(np.rot90(flux_unbinned[:,::-1])/np.max(flux_unbinned))
+			contours = -2.5*np.log10(np.rot90(flux_unbinned[::-1,::-1])/np.max(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
@@ -278,7 +261,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 		else:
-			cont = ax.contour(flux_unbinned[:,::-1], colors='k', 
+			cont = ax.contour(flux_unbinned[::-1,::-1], colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
 			cont.collections[0].set_label('Flux (linear)')
 
@@ -348,10 +331,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if colorbar:
 		ticks = ticker.MaxNLocator(nbins=nticks)
 		if hasattr(ax,'ax3'):
-			cbar = plt.colorbar(cs, ax=[ax,ax2,ax3], ticks=ticks, pad=0.1, 
+			cbar = plt.colorbar(cs, ax=[ax,ax_dis_x, ax2,ax3], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
 		else:
-			cbar = plt.colorbar(cs, ax=ax, ticks=ticks, use_gridspec=True)
+			cbar = plt.colorbar(cs, ax=[ax, ax_dis_x], ticks=ticks, pad=0.1, 
+				use_gridspec=True)
 
 		# cbar.ax.tick_params(labelsize=6)
 		
