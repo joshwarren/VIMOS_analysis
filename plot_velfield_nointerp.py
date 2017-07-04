@@ -77,11 +77,13 @@ def add_orientation(pa=0):
 
 	# East pointing arrow
 	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(pa), 0.1*yr*np.sin(pa), 
-		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
+		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', 
+		ec='k')
 
 	# North pointing arrow
 	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(pa), 0.1*yr*np.cos(pa), 
-		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', ec='k')
+		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', 
+		ec='k')
 
 
 	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(pa), 0.78*yr+ylim[0]+0.1*yr*np.sin(pa), 'E')
@@ -92,10 +94,10 @@ def add_orientation(pa=0):
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
-	vmin=None, vmax=None, nodots=True, colorbar=False, label=None, flux=None, 
-	flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
+	header, vmin=None, vmax=None, nodots=True, colorbar=False, label=None, 
+	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, header=None, signal_noise=None, 
+	ax = None, close=False, show_vel=False, signal_noise=None, 
 	signal_noise_target=None, res=0.67, pa=None, center=None, **kwargs):
 
 	kwg = {}
@@ -159,8 +161,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ax_dis_x = ax.twiny()
 	ax_dis_y = ax.twinx()
 	if True:
-		ax_dis_x.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*header['CD1_1']*60*60)
-		ax_dis_y.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*header['CD2_2']*60*60)
+		ax_dis_x.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*
+			header['CD1_1']*60*60)
+		ax_dis_y.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*
+			header['CD2_2']*60*60)
 
 		ax_dis_x.set_xlabel(x_label)
 		ax_dis_x.xaxis.tick_bottom()
@@ -253,7 +257,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
-			contours = -2.5*np.log10(np.rot90(flux_unbinned[::-1,::-1])/np.max(flux_unbinned))
+			contours = -2.5*np.log10(np.rot90(flux_unbinned[::-1,::-1])/
+				np.max(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
