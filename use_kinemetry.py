@@ -1,10 +1,18 @@
 ## Routine to plot the output from kinemtry.pro
+from checkcomp import checkcomp
+cc=checkcomp()
+if 'home' not in cc.device:
+	import matplotlib # 20160202 JP to stop lack-of X-windows error
+	matplotlib.use('Agg')
+from prefig import Prefig
+Prefig(transparent=False)
 import numpy as np
 import matplotlib.pyplot as plt
-from checkcomp import checkcomp
 import os
 from rolling_stats import rollmed
-cc=checkcomp()
+from plot_velfield_nointerp import plot_velfield_nointerp
+from astropy.io import fits
+from errors2_muse import get_dataCubeDirectory
 
 def use_kinemetry(gal, opt='kin'):
 	out_dir = '%s/Data/vimos/analysis/%s/%s/kinemetry' % (cc.base_dir, gal, opt)
@@ -92,6 +100,7 @@ def use_kinemetry(gal, opt='kin'):
 		ax3.set_xlabel('Radius (kpc)')
 
 
+		# Mark extent of KDC
 		galaxy_gals2, KDC_size = np.loadtxt(classify_file, unpack=True, usecols=(0,6), 
 		dtype=str, skiprows=1)
 		has_KDC = KDC_size!='-'
@@ -122,6 +131,49 @@ def use_kinemetry(gal, opt='kin'):
 		ax.set_title('%s: KINEMETRY output (Smoothed)' % (gal), y=1.12)
 
 		fig.savefig('%s/kinemetry.png'%(out_dir))
+	plt.close()
+
+
+	tessellation_File = "%s/%s/%s/setup/voronoi_2d_binning_output.txt" % (out_dir, 
+		gal, opt)
+	x,y,bin_num = np.loadtxt(tessellation_File, usecols=(0,1,2), 
+		unpack=True, skiprows=1, dtype=int)
+
+	for i, type in enumerate(['flux','vel','sigma']):
+		f = '%s/%s/%s/kinemetry/kinemetry_%s_2Dmodel.txt' % (out_dir, gal, opt, type)
+		xbin, ybin, velkin, velcirc  = np.loadtxt(f, unpack=True, skiprows=1)
+
+		f = '%s/%s/%s/kinemetry/%s.dat' % (out_dir, gal, opt, type)
+		vel = np.loadtxt(f, usecols=(0,), unpack=True)
+
+		velkin[velkin==max(velkin)] = np.nan
+		velcirc[velcirc==max(velcirc)] = np.nan
+
+		f = '%s/%s/%s/kinemetry/flux.dat' % (out_dir, gal, opt)
+		flux = np.loadtxt(f)
+
+		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
+			vel, header, nodots=True, title='%s Data'%(type), 
+			colorbar=True, ax=ax[0,i])#, flux=flux)
+		vmin, vmax = min(vel), max(vel)
+
+		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
+			velkin, header, vmin=vmin, vmax=vmax, nodots=True, title='KINEMETRY %s model'
+			% (type), colorbar=True, ax=ax[1,i])#, flux=flux)
+
+		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
+			vel-velkin, header, nodots=True, 
+			title='KINEMETRY %s residuals'%(type), 
+			colorbar=True, ax=ax[2,i])#, flux=flux)
+
+		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
+			velcirc, header, vmin=vmin, vmax=vmax, nodots=True, 
+			title='KINEMETRY circluar %s'
+			% (type), colorbar=True, ax=ax[3,i])#, flux=flux)
+
+
+	fig.savefig('%s/%s/%s/kinemetry/kinemetry_models.png'%(out_dir, gal, opt))
+
 	
 ##############################################################################
 
