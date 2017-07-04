@@ -139,10 +139,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
 		header['CTYPE1'] = 'RA---TAN'
 		header['CTYPE2'] = 'DEC--TAN'
-		header['CD1_1'] = header['CDELT1']
+		header['CD1_1'] = -header['CDELT1']
 		header['CD2_2'] = header['CDELT2']
 		res = abs(header['CDELT1']) # VIMOS arcsec per pixel
-	except:
+	except KeyError:
 		res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
 
 	x = (x_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']

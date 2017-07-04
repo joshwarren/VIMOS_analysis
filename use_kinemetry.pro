@@ -50,21 +50,21 @@ PRO do_work, gal, opt, type
 
 
 	; kinemetry parameters as defined in Krajnovic et al. (2006)
-	; KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0[i_gal]-x_cent, $
-	; 	y0=y0[i_gal]-y_cent, ntrm=6, scale=0.67, name=gal,er_cf=er_cf, $
-	; 	er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, $;/verbose, $
-	; 	velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05;, /FIXCEN 
-	; k0 = cf[*,0]
-	; k1 = SQRT(cf[*,1]^2 + cf[*,2]^2)
-	; k5 = SQRT(cf[*,5]^2 + cf[*,6]^2)
-	; k51 = k5/k1
-	; erk1 = (SQRT( (cf[*,1]*er_cf[*,1])^2 + (cf[*,2]*er_cf[*,2])^2 ))/k1
-	; erk5 = (SQRT( (cf[*,5]*er_cf[*,5])^2 + (cf[*,6]*er_cf[*,6])^2 ))/k5
-	; erk51 = ( SQRT( ((k5/k1) * erk1)^2 + erk5^2  ) )/k1 
+	KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0[i_gal]-x_cent, $
+		y0=y0[i_gal]-y_cent, ntrm=6, scale=0.67, name=gal,er_cf=er_cf, $
+		er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, $;/verbose, $
+		velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, /FIXCEN 
+	k0 = cf[*,0]
+	k1 = SQRT(cf[*,1]^2 + cf[*,2]^2)
+	k5 = SQRT(cf[*,5]^2 + cf[*,6]^2)
+	k51 = k5/k1
+	erk1 = (SQRT( (cf[*,1]*er_cf[*,1])^2 + (cf[*,2]*er_cf[*,2])^2 ))/k1
+	erk5 = (SQRT( (cf[*,5]*er_cf[*,5])^2 + (cf[*,6]*er_cf[*,6])^2 ))/k5
+	erk51 = ( SQRT( ((k5/k1) * erk1)^2 + erk5^2  ) )/k1 
 
-	; file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
-	; forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
-	; 	/SILENT, comment='  radius(pix)      pa(deg)        err         ellip        err           k1           err          k51         err'
+	file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
+	forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
+		/SILENT, comment='  radius(pix)      pa(deg)        err         ellip        err           k1           err          k51         err'
 
 
 	; if keyword_set(plot) then begin

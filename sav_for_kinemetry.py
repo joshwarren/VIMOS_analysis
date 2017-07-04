@@ -22,17 +22,18 @@ def sav_for_kinemetry(galaxy, opt='kin', D=None):
 
 		print "    Saving flux for KINEMETRY (IDL)"
 		with open('%s/kinemetry/flux.dat' % (output), 'wb') as f:
+			flux  = D.flux
 			for i in range(D.number_of_bins):
-				f.write(str(D.flux[i]) + '\n')
+				f.write(str(flux[i]) + '\n')
 
 		with open('%s/kinemetry/vel.dat' % (output), 'wb') as f:
+			vel = D.components['stellar'].plot['vel']
 			for i in range(D.number_of_bins):
-				f.write(str(D.components['stellar'].plot['vel'][i]) + '  ' + 
-					str(D.components['stellar'].plot['vel'].uncert[i]) + '\n')
+				f.write(str(vel[i]) + '  ' + str(vel.uncert[i]) + '\n')
 
 		with open('%s/kinemetry/sigma.dat' % (output), 'wb') as f:
+			sig = D.components['stellar'].plot['sigma']
 			for i in range(D.number_of_bins):
-				f.write(str(D.components['stellar'].plot['sigma'][i]) + '  ' + 
-					str(D.components['stellar'].plot['sigma'].uncert[i]) + '\n')
+				f.write(str(sig[i]) + '  ' + str(sig.uncert[i]) + '\n')
 
 		return D

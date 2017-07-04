@@ -12,10 +12,11 @@ import os
 from rolling_stats import rollmed
 from plot_velfield_nointerp import plot_velfield_nointerp
 from astropy.io import fits
-from errors2_muse import get_dataCubeDirectory
+from errors2 import get_dataCubeDirectory
+from plot_results import set_lims
 
 def use_kinemetry(gal, opt='kin'):
-	out_dir = '%s/Data/vimos/analysis/%s/%s/kinemetry' % (cc.base_dir, gal, opt)
+	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	colors=['b','y','g']
 	fig, ax = plt.subplots()
 	pl_ob=[] # array for the plot objects
@@ -23,7 +24,7 @@ def use_kinemetry(gal, opt='kin'):
 
 	# Plot all avaliable types
 	for i, type in enumerate(['flux','vel','sigma']):
-		f = '%s/kinemetry_%s.txt' % (out_dir, type)
+		f = '%s/%s/%s/kinemetry/kinemetry_%s.txt' % (out_dir, gal, opt, type)
 		if os.path.exists(f):
 			rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
 				skiprows=1)
@@ -81,8 +82,8 @@ def use_kinemetry(gal, opt='kin'):
 	# If not all missing
 	if missing != 3:
 		# Get redshift of galaxy from data_file
-		data_file =  "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
-		classify_file = "%s/Data/vimos/analysis/galaxies_classify.txt" % (cc.base_dir)
+		data_file =  "%s/galaxies.txt" % (out_dir)
+		classify_file = "%s/galaxies_classify.txt" % (out_dir)
 
 		# different data types need to be read separetly
 		z_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,))
@@ -130,9 +131,14 @@ def use_kinemetry(gal, opt='kin'):
 		plt.subplots_adjust(top=0.85)
 		ax.set_title('%s: KINEMETRY output (Smoothed)' % (gal), y=1.12)
 
-		fig.savefig('%s/kinemetry.png'%(out_dir))
+		fig.savefig('%s/%s/%s/kinemetry/kinemetry.png'%(out_dir, gal, opt))
 	plt.close()
 
+	Prefig(size=(16*3,12*4), transparent=False)
+	fig, ax = plt.subplots(4,3)
+	f = fits.open(get_dataCubeDirectory(gal))
+	header = f[0].header
+	f.close()
 
 	tessellation_File = "%s/%s/%s/setup/voronoi_2d_binning_output.txt" % (out_dir, 
 		gal, opt)
@@ -152,10 +158,11 @@ def use_kinemetry(gal, opt='kin'):
 		f = '%s/%s/%s/kinemetry/flux.dat' % (out_dir, gal, opt)
 		flux = np.loadtxt(f)
 
+		vmin, vmax = set_lims(vel, symmetric=type=='vel', positive=type!='vel')
+
 		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
-			vel, header, nodots=True, title='%s Data'%(type), 
+			vel, header, vmin=vmin, vmax=vmax, nodots=True, title='%s Data'%(type), 
 			colorbar=True, ax=ax[0,i])#, flux=flux)
-		vmin, vmax = min(vel), max(vel)
 
 		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
 			velkin, header, vmin=vmin, vmax=vmax, nodots=True, title='KINEMETRY %s model'
@@ -180,4 +187,9 @@ def use_kinemetry(gal, opt='kin'):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	use_kinemetry('ngc1399')
+	gals=['ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 
+		'ngc7075', 'pks0718-34', 'eso443-g024']
+	for g in gals:
+		print g
+		use_kinemetry(g)
+	# use_kinemetry('ngc1399')
