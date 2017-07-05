@@ -68,7 +68,7 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
+		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		# D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
 		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
@@ -79,8 +79,8 @@ for galaxy in galaxies:
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
-		# classify(galaxy, opt='kin'+opt_dir)
-		# use_kinemetry(galaxy, opt='kin'+opt_dir)
+		classify(galaxy, opt='kin'+opt_dir)
+		use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)

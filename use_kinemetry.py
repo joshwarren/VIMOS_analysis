@@ -28,7 +28,7 @@ def use_kinemetry(gal, opt='kin'):
 		if os.path.exists(f):
 			rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
 				skiprows=1)
-			rad*=0.67 # Change to arcsec
+			# rad*=0.67 # Change to arcsec
 			pa = rollmed(pa, 7) # smooth with rolling median
 			k1 = rollmed(k1, 7)
 
