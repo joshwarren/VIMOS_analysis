@@ -58,7 +58,10 @@ def classify(galaxy, opt='kin'):
 	R_e = get_R_e(galaxy)
 # ------------================= RR/NRR ===================----------
 	file = '%s/%s/%s/kinemetry/kinemetry_vel.txt' % (analysis_dir, galaxy, opt)
-	rad, pa, k1, k51 = np.loadtxt(file, usecols=(0,1,5,7), skiprows=1, unpack=True)
+	rad, pa, k1 = np.loadtxt(file, usecols=(0,1,5), skiprows=1, unpack=True)
+	file = '%s/%s/%s/kinemetry/kinemetry_vel_higher_harm.txt' % (analysis_dir,galaxy,
+		opt)
+	k51 = np.loadtxt(file, usecols=(7,), skiprows=1, unpack=True)
 	# rad *= 0.67 # Pix to arcsec
 	pa = rollmed(pa, 7)
 	k1 = rollmed(k1, 7)

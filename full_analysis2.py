@@ -40,7 +40,7 @@ galaxies = [
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
-# galaxies = ['ngc3100']
+galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 # galaxies = ['eso443-g024']
@@ -69,8 +69,8 @@ for galaxy in galaxies:
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
 		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
-		# D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
-		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
+		D = plot_results(galaxy, discard=discard, #overplot={'CO':'g', 'radio':'r'}, 
+			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
 		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
@@ -79,8 +79,8 @@ for galaxy in galaxies:
 		# plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 
-		classify(galaxy, opt='kin'+opt_dir)
-		use_kinemetry(galaxy, opt='kin'+opt_dir)
+		# classify(galaxy, opt='kin'+opt_dir)
+		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)

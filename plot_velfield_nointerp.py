@@ -43,8 +43,6 @@
 #                           axes are created if this is not supplied.
 # header 		None 	(Header dictionary) If supplied, plot will be given in 
 #						terms of RA and Dec. Will be in arcsec if not.
-# res 			0.67	(float) Spacial resolution in arcsec. Default is for VIMOS.
-#						Not used if header is supplied.
 # close         False   (Boolean) to close the figure.
 ## ************************************************************** ##
 
@@ -98,7 +96,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, 
-	signal_noise_target=None, res=0.67, pa=None, center=None, **kwargs):
+	signal_noise_target=None, pa=None, center=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -110,8 +108,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	vel = np.array(vel)
 
 	# Scale the plot size to VIMOS.
-	Prefig(transparent=False)#size=(16*(max(x_pix)+1)*res/26.8,12*(max(y_pix)+1)
-		# *res/26.8), transparent=False)
+	Prefig(transparent=False)
 
 	
 	if len(vel) != max(bin_num)+1:
@@ -139,11 +136,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
 		header['CTYPE1'] = 'RA---TAN'
 		header['CTYPE2'] = 'DEC--TAN'
-		header['CD1_1'] = -header['CDELT1']
-		header['CD2_2'] = header['CDELT2']
-		res = abs(header['CDELT1']) # VIMOS arcsec per pixel
+		header['CD1_1'] = -header['CDELT1']/(60**2)
+		header['CD2_2'] = header['CDELT2']/(60**2)
 	except KeyError:
-		res = abs(header['CD1_1'])*60**2 # MUSE arcsec per pixel
+		pass # MUSE has the correctly labelled headers
 
 	x = (x_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	y = (y_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
@@ -290,8 +286,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
 		H = 70.0 # value used by Bolonga group.
-		xlim = np.array([max(x_pix), min(x_pix)])*res
-		ylim = np.array([min(y_pix), max(y_pix)])*res
+		xlim = np.asarray(ax_dis_x.get_xlim())
+		ylim = np.asarray(ax_dis_y.get_ylim())
 		xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
 		ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
 		xmax = xlim[1]
@@ -303,7 +299,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			axis_label = "Distance (kpc)"
 
 
-		ax2 = ax.twinx()
+		ax2 = ax_dis_y.twinx()
 		#ax2.set_aspect('equal')
 		#ax2.autoscale(tight=True)
 		ax2.minorticks_on()
@@ -313,7 +309,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax2.set_ylabel(axis_label, rotation=270)
 		ax2.get_yaxis().get_major_formatter().set_useOffset(False)
 
-		ax3 = ax.twiny()
+		ax3 = ax_dis_x.twiny()
 		#ax3.set_aspect('equal')
 		#ax3.autoscale(tight=True)
 		ax3.minorticks_on()

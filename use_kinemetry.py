@@ -26,8 +26,7 @@ def use_kinemetry(gal, opt='kin'):
 	for i, type in enumerate(['flux','vel','sigma']):
 		f = '%s/%s/%s/kinemetry/kinemetry_%s.txt' % (out_dir, gal, opt, type)
 		if os.path.exists(f):
-			rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51 = np.loadtxt(f, unpack=True, 
-				skiprows=1)
+			rad, pa, er_pa, q, er_q, k1, erk1 = np.loadtxt(f, unpack=True, skiprows=1)
 			# rad*=0.67 # Change to arcsec
 			pa = rollmed(pa, 7) # smooth with rolling median
 			k1 = rollmed(k1, 7)
