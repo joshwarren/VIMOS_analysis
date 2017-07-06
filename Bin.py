@@ -160,6 +160,16 @@ class Data(object):
 		return np.array([bin.flux for bin in self.bin])
 
 	@property
+	def gas_flux(self):
+		f = myArray(np.zeros(self.number_of_bins))
+		for k,v in self.e_line.iteritems():
+			l_flux  = v.flux
+			f += np.array(l_flux)
+			f.uncert = np.nansum([f.uncert, l_flux.uncert**2], axis=0)
+		f.uncert = np.sqrt(f.uncert)
+		return f
+
+	@property
 	def xBar(self):
 		return np.array([bin.xBar for bin in self.bin])	
 	@xBar.setter
@@ -233,22 +243,19 @@ class Data(object):
 
 
 
-# taken from http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
+# based on example in http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 class myArray(np.ndarray):
-	def __new__(cls, input_array, uncert=None):
-		# Input array is an already formed ndarray instance
+    def __new__(cls, input_array, uncert=None):
 		# We first cast to be our class type
-		obj = np.asarray(input_array).view(cls)
+        obj = np.asarray(input_array).view(cls)
 		# add the new attribute to the created instance
-		obj.uncert = uncert
-		# Finally, we must return the newly created object:
-		return obj
+        if uncert is not None or input_array is None:
+            obj.uncert = uncert
+        return obj
 
-	def __array_finalize__(self, obj):
-		# see InfoArray.__array_finalize__ for comments
-		if obj is None: return
-		self.uncert = getattr(obj, 'uncert', None)
-	#pass
+    def __array_finalize__(self, obj):
+        self.uncert = getattr(obj, 'uncert', np.full(obj.shape, np.nan))
+
 
 class _data(object):
 # To be used with __init__ method within other classes (stellar_data and 
@@ -314,13 +321,13 @@ class _data(object):
 				kinematics = myArray([bin.components[self.name].__dict__[attr] 
 					if not m[i] else np.nan 
 					for i, bin in enumerate(self.__parent__.bin)])
- 			kinematics.uncert = myArray(
+			kinematics.uncert = myArray(
 				[bin.components[self.name].__dict__[attr].uncert 
 				if not m[i] else np.nan 
 				for i, bin in enumerate(self.__parent__.bin)])
 
- 			unbinned = self.__parent__.unbin(kinematics)
- 			uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
+			unbinned = self.__parent__.unbin(kinematics)
+			uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
 
 			# unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
 			# uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
