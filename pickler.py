@@ -29,7 +29,7 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 
 #-----------------------------------------------------------------------------
-def pickler(galaxy, discard=0, norm="lwv", opt="kin", kinemetry=True, override=False):
+def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 	print "    Loading D"
 
 	tessellation_File = "%s/%s/%s/setup/voronoi_2d_binning_output.txt" % (vin_dir, 
@@ -90,8 +90,17 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", kinemetry=True, override=F
 		ms = matrix.shape
 		for j in range(ms[0]):
 			if not matrix[j,0].isdigit():
+				line = matrix[j,0]
 				D.bin[i].components[matrix[j,0]] = emission_line(D.bin[i],
-					matrix[j,0],lines[matrix[j,0]],matrix[j,1:].astype(float))
+					line,lines[line],matrix[j,1:].astype(float))
+				# Skip step if file is empty.
+				with warnings.catch_warnings():
+					warnings.simplefilter('error')
+					try:
+						D.bin[i].components[line].uncert_spectrum = np.loadtxt(
+							'%s/gas_uncert_spectrum/%s/%i.dat' % (vin_dir_gasMC, line, i))
+					except:# Warning:
+						pass
 				D.add_e_line(matrix[j,0],lines[matrix[j,0]])
 		
 		#Setting the weighting given to the gas templates 
@@ -200,12 +209,6 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", kinemetry=True, override=F
 	pickleFile = open("%s/dataObj.pkl" % (out_pickle), 'wb')
 	pickle.dump(D,pickleFile)
 	pickleFile.close()
-# ------------======== Save flux for KINEMTRY (IDL) =====----------
-	if 'kin' in opt and kinemetry:
-		print "    Saving flux for KINEMETRY (IDL)"
-		with open('%s/flux.dat' % (output), 'wb') as f:
-			for i in range(D.number_of_bins):
-				f.write(str(D.flux[i]) + '\n')
 
 	return D
 ##############################################################################
