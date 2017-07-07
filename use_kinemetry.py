@@ -24,7 +24,7 @@ def use_kinemetry(gal, opt='kin'):
 
 	# Plot all avaliable types
 	for i, type in enumerate(['flux','vel','sigma']):
-		f = '%s/%s/%s/kinemetry/kinemetry_%s.txt' % (out_dir, gal, opt, type)
+		f = '%s/%s/%s/kinemetry/kinemetry_gas_%s.txt' % (out_dir, gal, opt, type)
 		if os.path.exists(f):
 			rad, pa, er_pa, q, er_q, k1, erk1 = np.loadtxt(f, unpack=True, skiprows=1)
 			# rad*=0.67 # Change to arcsec
@@ -128,13 +128,15 @@ def use_kinemetry(gal, opt='kin'):
 
 		# Moves title clear of upper x axis
 		plt.subplots_adjust(top=0.85)
-		ax.set_title('%s: KINEMETRY output (Smoothed)' % (gal), y=1.12)
+		ax.set_title('%s: KINEMETRY gas output (Smoothed)' % (gal), y=1.12)
 
 		fig.savefig('%s/%s/%s/kinemetry/kinemetry.png'%(out_dir, gal, opt))
 	plt.close()
 
-	Prefig(size=(16*3,12*4), transparent=False)
-	fig, ax = plt.subplots(4,3)
+	Prefig(size=(16*3,12*5), transparent=False)
+	fig, ax = plt.subplots(5,3)
+	fig.set_suptitle('Kinemetry fit to Ionised gas dynamics')
+
 	f = fits.open(get_dataCubeDirectory(gal))
 	header = f[0].header
 	f.close()
@@ -145,17 +147,17 @@ def use_kinemetry(gal, opt='kin'):
 		unpack=True, skiprows=1, dtype=int)
 
 	for i, type in enumerate(['flux','vel','sigma']):
-		f = '%s/%s/%s/kinemetry/kinemetry_%s_2Dmodel.txt' % (out_dir, gal, opt, type)
+		f = '%s/%s/%s/kinemetry/kinemetry_gas_%s_2Dmodel.txt' % (out_dir, gal, opt, type)
 		xbin, ybin, velkin, velcirc  = np.loadtxt(f, unpack=True, skiprows=1)
 
-		f = '%s/%s/%s/kinemetry/%s.dat' % (out_dir, gal, opt, type)
+		f = '%s/%s/%s/kinemetry/gas_%s.dat' % (out_dir, gal, opt, type)
 		vel = np.loadtxt(f, usecols=(0,), unpack=True)
 
 		velkin[velkin==max(velkin)] = np.nan
 		velcirc[velcirc==max(velcirc)] = np.nan
 
-		f = '%s/%s/%s/kinemetry/flux.dat' % (out_dir, gal, opt)
-		flux = np.loadtxt(f)
+		# f = '%s/%s/%s/kinemetry/flux.dat' % (out_dir, gal, opt)
+		# flux = np.loadtxt(f)
 
 		vmin, vmax = set_lims(vel, symmetric=type=='vel', positive=type!='vel')
 
@@ -172,10 +174,17 @@ def use_kinemetry(gal, opt='kin'):
 			title='KINEMETRY %s residuals'%(type), 
 			colorbar=True, ax=ax[2,i])#, flux=flux)
 
+		vmin, vmax = set_lims(vel-velkin, symmetric=True)
 		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
-			velcirc, header, vmin=vmin, vmax=vmax, nodots=True, 
-			title='KINEMETRY circluar %s'
-			% (type), colorbar=True, ax=ax[3,i])#, flux=flux)
+			vel-velkin, header, vmin=vmin, vmax=vmax, nodots=True, 
+			title='KINEMETRY %s vkin residuals'%(type), 
+			colorbar=True, ax=ax[2,i])#, flux=flux)
+
+		vmin, vmax = set_lims(vel-velcirc, symmetric=True)
+		plot_velfield_nointerp(x, y, bin_num, xbin, ybin, 
+			vel-velcirc, header, vmin=vmin, vmax=vmax, nodots=True, 
+			title='KINEMETRY %s vcirc residuals'%(type), 
+			colorbar=True, ax=ax[4,i])#, flux=flux)
 
 
 	fig.savefig('%s/%s/%s/kinemetry/kinemetry_models.png'%(out_dir, gal, opt))

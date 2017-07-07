@@ -698,6 +698,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		f.delaxes(a.cax)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
+		print n_rows*3, a.figy*3+a.figx+1
 		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
 	if mapping.all or mapping is None:
 		for i, a in enumerate(ax_array):

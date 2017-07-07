@@ -42,7 +42,7 @@ galaxies = [
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
 # galaxies = ['ngc7075']
-# galaxies = ['pks0718-34']
+galaxies = ['pks0718-34']
 # galaxies = ['eso443-g024']
 
 
