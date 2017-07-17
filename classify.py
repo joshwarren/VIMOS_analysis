@@ -9,6 +9,16 @@ from checkcomp import checkcomp
 cc = checkcomp()
 import re # for regex expressions
 from rolling_stats import rollmed
+# from classify_muse import my_loadtxt
+
+def my_loadtxt(filename, skiprows=0, usecols=None, dtype=None):
+	d = np.loadtxt(filename, skiprows=skiprows, usecols=usecols, dtype=dtype, unpack=True)
+	if len(d.shape) == 0:
+		d = d.reshape((1, 1))
+	elif len(d.shape) == 1:
+		d = d.reshape((d.shape[0], 1))
+	return d
+
 
 def get_R_e(galaxy):
 	if cc.device != 'glamdring':
@@ -38,7 +48,6 @@ def classify(galaxy, opt='kin'):
 		i_gal = np.where(galaxy_gals==galaxy)[0]
 		if len(i_gal) == 0:
 			galaxy_gals = np.append(galaxy_gals, [galaxy])
-			print galaxy_gals
 			i_gal = np.where(np.array(galaxy_gals)==galaxy)[0]
 			RR = list(RR) + ['-']
 			NF = list(NF) + ['-']
@@ -184,6 +193,8 @@ def classify(galaxy, opt='kin'):
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	galaxy = 'ngc1399'
+	for galaxy in  ['ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
+		'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34', 'eso443-g024']:
+		print galaxy
 
-	classify(galaxy)
+		classify(galaxy)
