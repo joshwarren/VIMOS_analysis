@@ -151,10 +151,12 @@ def classify(galaxy, opt='kin'):
 
 # No Features
 		if possible_no_features:
-			contant_fit = np.poly1d(np.polyfit(rad[20:], pa[20:], 0, 
-				w=1/pa_err[20:]))(rad[20:])
-			if np.sqrt(np.sum((contant_fit-pa[20:])**2)) < 3 * \
-				np.sqrt(np.sum(pa_err[20:]**2)):
+			start = 20
+			contant_fit = np.poly1d(np.polyfit(rad[start:], pa[start:], 0, 
+				w=1/pa_err[start:]))(rad[start:])
+			print 'here'
+			if np.sqrt(np.sum((contant_fit-pa[start:])**2)) < 3 * \
+				np.sqrt(np.sum(pa_err[start:]**2)):
 				NF[i_gal] = 'NF'
 			else:
 				NF[i_gal] = '-'
@@ -193,8 +195,10 @@ def classify(galaxy, opt='kin'):
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	for galaxy in  ['ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
-		'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34', 'eso443-g024']:
-		print galaxy
+	galaxy = 'ngc7075'
+	classify(galaxy)
+	# for galaxy in  ['ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
+	# 	'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34', 'eso443-g024']:
+	# 	print galaxy
 
-		classify(galaxy)
+	# 	classify(galaxy)
