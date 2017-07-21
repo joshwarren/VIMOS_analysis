@@ -8,7 +8,7 @@
 import numpy as np
 from checkcomp import checkcomp
 cc = checkcomp()
-from errors2 import determine_goodpixels, remove_anomalies, get_stellar_templates, \
+from errors2 import determine_goodpixels, apply_range, get_stellar_templates, \
 	get_emission_templates
 import ppxf_util as util
 from ppxf import ppxf
@@ -54,7 +54,7 @@ class compare_absorption(object):
 
 		gal_spec, gal_noise = data.get_spec()
 
-		gal_spec, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, 
+		gal_spec, lam, cut = apply_range(gal_spec, window=201, repeats=3, 
 			lam=data.lam, set_range=np.array([4200,10000]), return_cuts=True)
 		gal_noise = gal_noise[cut]
 		lamRange = np.array([lam[0],lam[-1]])/(1+data.z)

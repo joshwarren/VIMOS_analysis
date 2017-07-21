@@ -414,7 +414,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None, 
+def apply_range(spec, window=201, repeats=3, lam=None, set_range=None, 
 	return_cuts=False, n_sigma=3):
 	if set_range is not None and lam is None:
 		raise ValueError('lam keyword must be supplied if set_range keyword'+\
@@ -428,16 +428,16 @@ def remove_anomalies(spec, window=201, repeats=3, lam=None, set_range=None,
 	lam = np.array(lam[r])
 
 
-	x=np.arange(len(spec))
-	mask = np.zeros(len(spec)).astype(bool)
-	for rep in range(repeats):
-		med = rollmed(spec,window)
-		std = rollstd(spec,window)
-		for i in range(len(mask)):
-			mask[i] += spec[i] > med[i]+n_sigma*std[i]
-			mask[i] += spec[i] < med[i]-n_sigma*std[i]
+	# x=np.arange(len(spec))
+	# mask = np.zeros(len(spec)).astype(bool)
+	# for rep in range(repeats):
+	# 	med = rollmed(spec,window)
+	# 	std = rollstd(spec,window)
+	# 	for i in range(len(mask)):
+	# 		mask[i] += spec[i] > med[i]+n_sigma*std[i]
+	# 		mask[i] += spec[i] < med[i]-n_sigma*std[i]
 
-		spec[mask] = np.interp(x[mask],x[~mask],spec[~mask])
+	# 	spec[mask] = np.interp(x[mask],x[~mask],spec[~mask])
 
 	if lam is not None:
 		if return_cuts:
@@ -574,13 +574,14 @@ def errors2(i_gal=None, opt=None, bin=None):
 	spaxels_in_bin = np.where(bin_num == bin)[0]
 	n_spaxels_in_bin = len(spaxels_in_bin)
 
-	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]], axis=1)
+	bin_lin = np.nansum(galaxy_data[:,x[spaxels_in_bin],y[spaxels_in_bin]], axis=1)/\
+		n_spaxels_in_bin
 	bin_lin_noise = np.nansum(galaxy_noise[:,x[spaxels_in_bin],
 		y[spaxels_in_bin]]**2, axis=1)
-	bin_lin_noise = np.sqrt(bin_lin_noise)
+	bin_lin_noise = np.sqrt(bin_lin_noise)/n_spaxels_in_bin
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
-	bin_lin, lam, cut = remove_anomalies(bin_lin, window=201, repeats=0, 
+	bin_lin, lam, cut = apply_range(bin_lin, window=201, repeats=0, 
 		lam=lam, set_range=params.set_range, return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])
 	bin_lin_noise = bin_lin_noise[cut]

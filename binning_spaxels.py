@@ -7,13 +7,11 @@
 # warrenj 20160913 Ported to python
 
 import numpy as np
-import glob
 from astropy.io import fits
-import ppxf_util as util
 from voronoi_2d_binning import voronoi_2d_binning
 from checkcomp import checkcomp
 cc=checkcomp()
-from errors2 import remove_anomalies, get_dataCubeDirectory
+from errors2 import get_dataCubeDirectory
 import os
 
 

@@ -8,7 +8,7 @@ from checkcomp import checkcomp
 cc = checkcomp()
 import numpy as np 
 from astropy.io import fits
-from errors2 import get_dataCubeDirectory, run_ppxf, set_params, remove_anomalies
+from errors2 import get_dataCubeDirectory, run_ppxf, set_params, apply_range
 from pop import population
 from prefig import Prefig 
 Prefig()
@@ -112,7 +112,7 @@ def KDC_pop(galaxy):
 
 	spec, noise, lam = get_specFromAperture(galaxy, app_size=1.0)
 	CD = lam[1] - lam[0]
-	spec, lam, cut = remove_anomalies(spec, window=201, repeats=3, 
+	spec, lam, cut = apply_range(spec, window=201, repeats=3, 
 		lam=lam, return_cuts=True, set_range=params.set_range, n_sigma=2)
 	noise = noise[cut]
 	lamRange = np.array([lam[0],lam[-1]])/(1+z)
@@ -151,7 +151,7 @@ def KDC_pop(galaxy):
 	# Outside apperture
 	spec, noise, lam = get_specFromAperture(galaxy, app_size=1.0, inside=False)
 	CD = lam[1] - lam[0]
-	spec, lam, cut = remove_anomalies(spec, window=201, repeats=3, 
+	spec, lam, cut = apply_range(spec, window=201, repeats=3, 
 		lam=lam, return_cuts=True, set_range=params.set_range, n_sigma=2)
 	noise = noise[cut]
 	lamRange = np.array([lam[0],lam[-1]])/(1+z)

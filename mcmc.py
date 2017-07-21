@@ -11,7 +11,7 @@ from astropy.io import fits
 
 from ppxf import ppxf
 import ppxf_util as util
-from errors2 import remove_anomalies, use_templates, determine_goodpixels
+from errors2 import apply_range, use_templates, determine_goodpixels
 from find_template import setup
 from checkcomp import checkcomp
 cc=checkcomp()

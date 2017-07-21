@@ -88,7 +88,7 @@ class Data(object):
 			self.vel_norm = 0.0
 			lwv = self.components['stellar'].plot['vel'].unbinned*self.unbinned_flux
 			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin)/ \
-				np.nansum(self.unbinned_flux)
+				np.nansum(self.unbinned_flux) # average lwv / average flux
 		elif self.norm_method == "sig":
 			self.vel_norm = 0.0
 			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))
@@ -120,8 +120,8 @@ class Data(object):
 	def unbin(self, attr, norm=False):
 		if isinstance(attr, str):
 			attr = self.__getattribute__(self, attr)
-		if norm:
-			attr /= self.n_spaxels_in_bin
+		# if norm:
+		# 	attr /= self.n_spaxels_in_bin
 
 		out = np.zeros(self.unbinned_flux.shape)
 
@@ -583,8 +583,8 @@ class Bin(object):
 		# NB: only calculated for the common wavelength range.
 		a = [min(np.where(self.lam > self.__parent__.common_range[0])[0]),
 			max(np.where(self.lam < self.__parent__.common_range[1])[0])]
-		return np.trapz(self.spectrum[a[0]:a[1]], x=self.lam[a[0]:a[1]]
-			)/self.n_spaxels_in_bin
+		return np.trapz(self.spectrum[a[0]:a[1]], x=self.lam[a[0]:a[1]])
+			# )/self.n_spaxels_in_bin
 
 	@property
 	def xBar(self):
@@ -729,10 +729,11 @@ class emission_line(_bin_data):
 	@property
 	def flux(self):
 		if not self.mask:
-			f = myFloat(np.trapz(self.spectrum, x=self.__parent__.lam)/
-				self.__parent__.n_spaxels_in_bin)
-			f.uncert = trapz_uncert(self.uncert_spectrum/
-				self.__parent__.n_spaxels_in_bin, x=self.__parent__.lam)
+			f = myFloat(np.trapz(self.spectrum, x=self.__parent__.lam))#/
+				# self.__parent__.n_spaxels_in_bin)
+			# f.uncert = trapz_uncert(self.uncert_spectrum/
+			# 	self.__parent__.n_spaxels_in_bin, x=self.__parent__.lam)
+			f.uncert = trapz_uncert(self.uncert_spectrum, x=self.__parent__.lam)
 			return f
 		else:
 			return myFloat(np.nan)

@@ -24,7 +24,7 @@ if cc.remote:
 else:
 	import matplotlib.pyplot as plt # used for plotting
 # import of matplotlib.pyplot is within errors routine
-from errors2 import run_ppxf, set_params, remove_anomalies
+from errors2 import run_ppxf, set_params, apply_range
 from ppxf import ppxf
 import ppxf_util as util
 from classify import get_R_e
@@ -143,7 +143,7 @@ def sigma_e(i_gal=None):
 	bin_lin_noise = np.sqrt(bin_lin_noise)
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
-	bin_lin, lam, cut = remove_anomalies(bin_lin, window=201, repeats=3, 
+	bin_lin, lam, cut = apply_range(bin_lin, window=201, repeats=3, 
 		lam=lam, set_range=params.set_range, return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])
 	bin_lin_noise = bin_lin_noise[cut]

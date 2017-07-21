@@ -10,7 +10,7 @@ from astropy.io import fits
 from scipy import ndimage # for gaussian blur
 from ppxf import ppxf
 import ppxf_util as util
-from errors2 import remove_anomalies, use_templates, determine_goodpixels, \
+from errors2 import apply_range, use_templates, determine_goodpixels, \
 	get_stellar_templates, get_dataCubeDirectory
 from checkcomp import checkcomp
 cc= checkcomp()
@@ -75,7 +75,7 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 	gal_noise = np.sqrt(np.nansum(galaxy_noise**2, axis=(1,2)))
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
-	gal_spec, lam, cut = remove_anomalies(gal_spec, window=201, repeats=3, lam=lam, 
+	gal_spec, lam, cut = apply_range(gal_spec, window=201, repeats=3, lam=lam, 
 		set_range=set_range, return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])/(1+z)
 	gal_noise = gal_noise[cut]
