@@ -730,7 +730,7 @@ class emission_line(_bin_data):
 	def flux(self):
 		if not self.mask:
 			f = myFloat(np.trapz(self.spectrum, x=self.__parent__.lam))#/
-				# self.__parent__.n_spaxels_in_bin)
+			# 	self.__parent__.n_spaxels_in_bin)
 			# f.uncert = trapz_uncert(self.uncert_spectrum/
 			# 	self.__parent__.n_spaxels_in_bin, x=self.__parent__.lam)
 			f.uncert = trapz_uncert(self.uncert_spectrum, x=self.__parent__.lam)

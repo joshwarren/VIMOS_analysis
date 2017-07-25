@@ -278,7 +278,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if show_vel:
 		for i in range(len(xBar)):
-			if i%5==0:
+			# number 100 bins only.
+			if i%int((max(bin_num)+1)/100.0)==0:
 				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(vel[i]), 
 					color='grey', fontsize=5)
 
