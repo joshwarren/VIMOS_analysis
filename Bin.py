@@ -164,7 +164,7 @@ class Data(object):
 		f = myArray(np.zeros(self.number_of_bins))
 		for k,v in self.e_line.iteritems():
 			l_flux  = v.flux
-			f = np.nansum([f, np.array(l_flux)], axis=0)
+			f = np.nansum([f, l_flux], axis=0)
 			f.uncert = np.nansum([f.uncert, l_flux.uncert**2], axis=0)
 		f.uncert = np.sqrt(f.uncert)
 		return f
