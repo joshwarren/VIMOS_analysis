@@ -161,13 +161,14 @@ class Data(object):
 
 	@property
 	def gas_flux(self):
-		f = myArray(np.zeros(self.number_of_bins))
+		f = np.zeros(self.number_of_bins)
+		u = np.zeros(self.number_of_bins)
 		for k,v in self.e_line.iteritems():
 			l_flux  = v.flux
 			f = np.nansum([f, l_flux], axis=0)
-			f.uncert = np.nansum([f.uncert, l_flux.uncert**2], axis=0)
-		f.uncert = np.sqrt(f.uncert)
-		return f
+			u = np.nansum([u, l_flux.uncert**2], axis=0)
+		u = np.sqrt(u)
+		return myArray(f, uncert=u)
 
 	@property
 	def xBar(self):
@@ -245,16 +246,16 @@ class Data(object):
 
 # based on example in http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 class myArray(np.ndarray):
-    def __new__(cls, input_array, uncert=None):
+	def __new__(cls, input_array, uncert=None):
 		# We first cast to be our class type
-        obj = np.asarray(input_array).view(cls)
+		obj = np.asarray(input_array).view(cls)
 		# add the new attribute to the created instance
-        if uncert is not None or input_array is None:
-            obj.uncert = uncert
-        return obj
+		if uncert is not None or input_array is None:
+			obj.uncert = uncert
+		return obj
 
-    def __array_finalize__(self, obj):
-        self.uncert = getattr(obj, 'uncert', np.full(obj.shape, np.nan))
+	def __array_finalize__(self, obj):
+		self.uncert = getattr(obj, 'uncert', np.full(obj.shape, np.nan))
 
 
 class _data(object):

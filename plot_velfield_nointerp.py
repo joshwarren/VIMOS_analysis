@@ -96,7 +96,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, 
-	signal_noise_target=None, pa=None, center=None, **kwargs):
+	signal_noise_target=None, pa=None, center=None, alpha=None, **kwargs):
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -222,6 +222,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	# Set bad pixels grey
 	pic[np.isnan(img),:] = [0.5,0.5,0.5,1]
 	ax.set_facecolor('grey')
+
+	if alpha is not None:
+		pic[j, k, 3] = alpha[bin_num]
 
 
 	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
