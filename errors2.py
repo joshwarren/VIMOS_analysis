@@ -266,7 +266,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 	else:
 		dir = '%s/Data/vimos/analysis/%s/%s/MC' % (cc.base_dir, galaxy, opt)
 
-	reps = pp.stellar_output.shape[0]
+	reps = pp.MCstellar_kin.shape[0]
 	gas = len(pp.element) > 1
 
 	def check_directory(d):
@@ -278,39 +278,41 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 				# statement above
 				pass
 
+	# stellar MC results
 	check_directory("%s/stellar/errors" % (dir))
 	bin_file = "%s/stellar/%s.dat" % (dir, str(bin))
 	errors_file = "%s/stellar/errors/%s.dat" % (dir, str(bin))
 	with open(bin_file, 'w') as f,  open(errors_file, 'w') as e:
 		for i in range(reps):
-			f.write(str(pp.stellar_output[i,0]) + "   " + \
-				str(pp.stellar_output[i,1]) + "   " + str(pp.stellar_output[i,2]) + \
-				"   " + str(pp.stellar_output[i,3]) + '\n')
-			e.write(str(pp.stellar_errors[i,0]) + "   " + str(pp.stellar_errors[i,1]) + \
-				"   " + str(pp.stellar_errors[i,2]) + "   " + \
-				str(pp.stellar_errors[i,3]) + '\n')
-	
-	# gas MC results
-	if gas: gas_dir = [e for e in pp.element if e != 'stellar']
-	else: gas_dir=[] 
-	for d in range(len(gas_dir)):
-		check_directory("%s/gas/%s/errors" % (dir, gas_dir[d]))
-		gas_file = "%s/gas/%s/%s.dat" % (dir, gas_dir[d], str(bin))
-		gas_errors_file = "%s/gas/%s/errors/%s.dat" % (dir, gas_dir[d], str(bin))
+			f.write("   ".join([str(s) for s in pp.MCstellar_kin[i,:]]) + '\n')
+			e.write("   ".join([str(s) for s in pp.MCstellar_kin_err[i,:]]) + '\n')
 
-		with open(gas_file, 'w') as g, open(gas_errors_file, 'w') as ger:
+	
+	# gas MC kinematics results
+	for d, gas_dir in enumerate([e for e in pp.element if e != 'stellar']):
+		check_directory("%s/gas/%s/errors" % (dir, gas_dir))
+
+		gas_file = "%s/gas/%s/%s.dat" % (dir, gas_dir, str(bin))
+		gas_error_file = "%s/gas/%s/errors/%s.dat" % (dir, gas_dir, str(bin))
+
+		with open(gas_file, 'w') as g, open(gas_error_file, 'w') as ger:
 			for i in range(reps):
-				if pp.gas_output is not None:
-					g.write(str(pp.gas_output[d,i,0]) + "   " + str(pp.gas_output[d,i,1]) + \
-						"   " + str(pp.gas_output[d,i,2]) + "   " + \
-						str(pp.gas_output[d,i,3]) + '\n')
-				if pp.gas_errors is not None:
-					ger.write(str(pp.gas_errors[d,i,0]) + "   " + \
-						str(pp.gas_errors[d,i,1]) + "   " + str(pp.gas_errors[d,i,2]) + \
-						"   " + str(pp.gas_errors[d,i,3]) + '\n')
+				if pp.MCgas_kin is not None:
+					g.write("   ".join([str(s) for s in pp.MCgas_kin[d,i,:]]) + '\n')
+				if pp.MCgas_kin_err is not None:
+					ger.write("   ".join([str(s) for s in pp.MCgas_kin_err[d,i,:]]) + '\n')
+
+	# gas MC uncertainty spectrum
+	for d, gas_dir in enumerate([e for e in pp.templatesToUse if e != 'stellar' and 
+		not e.isdigit()]):
+		check_directory("%s/gas_uncert_spectrum/%s" %(dir, gas_dir))
+		gas_uncert_file = "%s/gas_uncert_spectrum/%s/%s.dat" % (dir, gas_dir, str(bin))
+		with open(gas_uncert_file, 'w') as u:
+			for i in pp.MCgas_uncert_spec[d,:]:
+				u.write(str(i) + '\n')
 
 	## save bestfit spectrum
-	check_directory("%s/bestfit" % (dir))
+	check_directory("%s/bestfit" % (dir)) 
 	bestfit_file = "%s/bestfit/%s.dat" % (dir, str(bin))
    
 	with open(bestfit_file, 'w') as s:
@@ -336,16 +338,14 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 	## save bestfit LOSVD output
 	bestfit_file = "%s/%s.dat" % (dir, str(bin))
 	with open(bestfit_file, 'w') as b:
-		if gas:
-			for i in range(np.shape(pp.sol)[0]):
-				b.write(pp.element[i])
+		for i in range(len(pp.element)):
+			b.write(pp.element[i])
+			if gas:
 				for j in pp.sol[i]:
-					b.write("   " + str(j)) 
-				b.write('\n')
-		else: 
-			b.write("stellar")
-			for j in range(pp.stellar_moments):
-				b.write("   " + str(j))
+					b.write("   " + str(j))
+			else: # gas = 0 
+				for j in pp.sol:
+					b.write("   " + str(j))
 			b.write('\n')
 
 	## save chi2
@@ -369,7 +369,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 
 	## save addative polyweights
 	if hasattr(pp, 'polyweights'):
-		check_directory("%s/apweights" % (dir))
+		check_directory("%s/apweights" % (dir)) 
 		polyweights_file = "%s/apweights/%s.dat" % (dir, str(bin))
 
 		with open(polyweights_file, 'w') as apw:
@@ -392,7 +392,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 
 	## save multiplicative polyweights
 	if hasattr(pp, 'mpolyweights'):
-		check_directory("%s/mpweights" % (dir))
+		check_directory("%s/mpweights" % (dir)) 
 		mpolyweights_file = "%s/mpweights/%s.dat" % (dir, str(bin))
 
 		with open(mpolyweights_file, 'w') as mpw:
@@ -400,7 +400,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 				mpw.write(str(pp.mpolyweights[i]) + '\n')
 
 	## save lambda input
-	check_directory("%s/lambda" % (dir))
+	check_directory("%s/lambda" % (dir)) 
 	lambda_file = "%s/lambda/%s.dat" % (dir, str(bin))
 
 	with open(lambda_file, 'w') as l:
@@ -665,15 +665,16 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 
 	if produce_plot:
 		# Add noise to plot
-		pp.ax.plot(lambdaq, noise+np.min(pp.bestfit[pp.goodpixels]), 'purple')
-		pp.ax.axhline(np.min(pp.bestfit[goodPixels]), linestyle='--', color='k', 
-			dashes=(5,5),zorder=10)
-
 		ax2 = pp.ax.twinx()
 		ax2.set_ylabel('Residuals, emission lines and Noise',rotation=270,labelpad=12)
 		r = pp.ax.get_ylim()[1] - pp.ax.get_ylim()[0]
 		mn = np.min(pp.bestfit[goodPixels]) - pp.ax.get_ylim()[0]
+
+		ax2.plot(pp.lam, pp.noise, 'purple')
+		pp.ax.plot(np.nan, 'purple', label='Noise') # Proxy for legend
+		ax2.axhline(0, linestyle='--', color='k', dashes=(5,5),zorder=10)
 		ax2.set_ylim([-mn, -mn+r])
+		pp.ax2 = ax2
 
 	pp.templatesToUse = templatesToUse
 	pp.element = element
@@ -681,14 +682,26 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 ## ----------===============================================---------
 ## ----------================= The MC part =================---------
 ## ----------===============================================---------
-	stellar_output = np.zeros((params.reps, params.stellar_moments))
-	stellar_errors = np.zeros((params.reps, params.stellar_moments))
-	if params.gas:
-		gas_output = np.zeros((params.gas, params.reps, params.gas_moments))
-		gas_errors = np.zeros((params.gas, params.reps, params.gas_moments))
+	pp.MCstellar_kin = np.zeros((params.reps, params.stellar_moments))
+	pp.MCstellar_kin_err = np.zeros((params.reps, params.stellar_moments))
+	pp.MCbestfit_uncert = np.zeros((3, len(pp.galaxy)))
+	MCbestfit_mean = np.zeros(len(pp.galaxy))
 
-	if params.reps != 0:
-		pp.ppMC = []
+	if params.gas:
+		pp.MCgas_kin = np.zeros((max(component), params.reps, params.gas_moments))
+		pp.MCgas_kin_err = np.zeros((max(component), params.reps, params.gas_moments))
+
+		n_lines = len(e_templates.templatesToUse)
+		# pp.MCgas_weights = np.zeros((n_lines, params.reps))
+
+		pp.MCgas_uncert_spec = np.zeros((n_lines, 3, len(pp.galaxy)))
+		MCgas_mean_spec = np.zeros((n_lines, len(pp.galaxy)))
+
+	else:
+		pp.MCgas_kin = None
+		pp.MCgas_kin_err = None
+		# pp.MCgas_weights = None
+
 	for rep in range(params.reps):
 		random = np.random.randn(len(noise))
 		add_noise = random*np.abs(noise)
@@ -698,22 +711,53 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 			goodpixels=goodPixels, moments=moments, degree=params.degree, vsyst=dv, 
 			lam=lambdaq, plot=not params.quiet, quiet=params.quiet, bias=0.1, 
 			component=component, mdegree=params.mdegree)
-		pp.ppMC.append(ppMC)
 
-		stellar_output[rep,:] = ppMC.sol[0][0:params.stellar_moments]
-		stellar_errors[rep,:] = ppMC.error[0][0:params.stellar_moments]
-		for g in range(len(pp.element)-1):
-			gas_output[g,rep,:] = ppMC.sol[g+1][0:params.gas_moments]
-			gas_errors[g,rep,:] = ppMC.error[g+1][0:params.gas_moments]
+		pp.MCstellar_kin[rep,:] = ppMC.sol[0][0:params.stellar_moments]
+		pp.MCstellar_kin_err[rep,:] = ppMC.error[0][0:params.stellar_moments]
 
-	pp.stellar_output = stellar_output
-	pp.stellar_errors = stellar_errors
-	if params.gas:
-		pp.gas_output = gas_output
-		pp.gas_errors = gas_errors
-	else:
-		pp.gas_output = None
-		pp.gas_errors = None
+		# Find uncertainty in bestfit
+		new_mean_bestfit_spec = ((rep + 1) * MCbestfit_mean + ppMC.bestfit)/(
+			rep + 2)
+		if rep < 3:
+			# Save spec until 3 reps have been completed
+			pp.MCbestfit_uncert[rep, :] = ppMC.bestfit
+		else:
+			# Finding sigma_N from x_N, mean_N, mean_(N-1) and sigma_(N-1)
+			# NB: rep = N-1 due to being zero-based
+			pp.MCbestfit_uncert = np.sqrt(((ppMC.bestfit - new_mean_bestfit_spec) * (
+				ppMC.bestfit - MCbestfit_mean) + rep * pp.MCbestfit_uncert**2)/\
+				(rep + 1))
+		MCbestfit_mean = np.array(new_mean_bestfit_spec)
+		if rep == 2:
+			# Calc std at 3rd rep
+			pp.MCbestfit_uncert = np.std(pp.MCbestfit_uncert, axis=0)
+
+		# Gas kinematics from all reps
+		for g in range(len(element)-1):
+			pp.MCgas_kin[g,rep,:] = ppMC.sol[g+1][0:params.gas_moments]
+			pp.MCgas_kin_err[g,rep,:] = ppMC.error[g+1][0:params.gas_moments]
+
+		# Find uncertainty in fitted emission lines
+		for i, n in enumerate(e_templates.templatesToUse):
+			e_line_spec = ppMC.matrix[:, -n_lines + i] * ppMC.weights[-n_lines + i]
+			new_mean_gas_spec = ((rep + 1) * MCgas_mean_spec[i, :] + e_line_spec)/(
+				rep + 2)
+
+			if rep < 3:
+				pp.MCgas_uncert_spec[i, rep, :] = e_line_spec
+			else:
+				pp.MCgas_uncert_spec[i,:] = np.sqrt(((e_line_spec - new_mean_gas_spec) * (
+					e_line_spec - MCgas_mean_spec[i,:]) + 
+					rep * pp.MCgas_uncert_spec[i,:]**2)/(rep + 1))
+			MCgas_mean_spec[i, :] = np.array(new_mean_gas_spec)
+
+		if rep == 2:
+			pp.MCgas_uncert_spec = np.std(pp.MCgas_uncert_spec, axis=1)
+
+			# pp.MCgas_weights = [i,rep] = ppMC.weights[np.where(templatesToUse==n)[0][0]]
+		if (rep == params.reps-1) and params.gas and produce_plot:
+			ax2.plot(lambdaq, np.nansum(pp.MCgas_uncert_spec,axis=0), 'c')
+			pp.ax.plot(np.nan, 'c', label='Emission Line Uncertainty') # Proxy for legend
 
 	return pp
 ##############################################################################
