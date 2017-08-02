@@ -12,7 +12,7 @@ from errors2 import get_dataCubeDirectory, run_ppxf, set_params, apply_range
 from pop import population
 from Bin import trapz_uncert
 from prefig import Prefig 
-Prefig()
+Prefig(transparent=False)
 
 # In pixel units (Except d - in units of app_size)
 def get_areaInAperture(x_len,y_len,x_cent,y_cent,app_size):
