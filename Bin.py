@@ -62,6 +62,7 @@ class Data(object):
 		self.vel_norm = 0.0
 		self.common_range = np.array([])
 		self._gas = 0
+		self.__threshold__ = 4.0
 
 
 	def add_e_line(self, line, wav):
@@ -723,7 +724,6 @@ class emission_line(_bin_data):
 		self._spectrum = np.array(_spectrum)
 		self.uncert_spectrum = np.zeros(len(self._spectrum))*np.nan
 		self.wav = wav
-		self.__threshold__ = 4.0
 		_bin_data.__init__(self, self.__parent__)
 
 		
@@ -770,7 +770,7 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+		return self.AmpNoi < self.__parent__.__parent__.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
 
 
 # Find the propergated uncertainty from numpy.trapz().
