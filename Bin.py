@@ -471,7 +471,7 @@ class emission_data(_data):
 			p = np.zeros(self.__parent__.number_of_bins)
 			for k, i in self.__parent__.e_line_no_mask.iteritems():
 				p += (~i.mask).astype(int)
-			p = p >= 2
+			p = p < 2
 		return p
 
 	@property
