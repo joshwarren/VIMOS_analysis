@@ -217,8 +217,8 @@ class population(object):
 			ax_array[1,1].legend(h,l)
 
 		if saveTo is not None and self.pp is None:
-			if not os.path.exists(saveTo):
-				os.makedirs(saveTo)
+			if not os.path.exists(os.path.dirname(saveTo)):
+				os.makedirs(os.path.dirname(saveTo))
 			f.savefig(saveTo)
 
 		self.fig = f
