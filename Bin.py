@@ -62,7 +62,7 @@ class Data(object):
 		self.vel_norm = 0.0
 		self.common_range = np.array([])
 		self._gas = 0
-		self.__threshold__ = 4.0
+		self.__threshold__ = 3.0
 
 
 	def add_e_line(self, line, wav):
@@ -241,7 +241,7 @@ class Data(object):
 
 	@property
 	def gas_dynamics_SN(self):
-		return np.max([l.amp_noise for k, l in self.e_line.iteritems()], axis=0)
+		return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],axis=0)[-2,:]
 
 
 
@@ -453,14 +453,25 @@ class emission_data(_data):
 				if ('H' in k) ^ ('H' in self.name):
 					p *= i.mask
 		elif self.__parent__.gas == 1:
-			# Check all emission lines for a detection (i.e. mask = False)
-			# components = self.__parent__.e_components
-			# for bin in self.__parent__.bin:
-			# 	for c in components:
-			# 		if not bin.e_line[c].mask:
-			# 			p[bin.bin_number] = bin.e_line[c].mask
+			# # mask if less than 2 Balmer or forbidden lines
+			# n_Balmer = np.zeros(self.__parent__.number_of_bins, dtype=int)
+			# n_forbidden = np.zeros(self.__parent__.number_of_bins, dtype=int)
+			# for k, i in self.__parent__.e_line_no_mask.iteritems():
+			# 	if 'H' in k:
+			# 		n_Balmer += (~i.mask).astype(int)
+			# 	else:
+			# 		n_forbidden += (~i.mask).astype(int)
+			# p = (n_Balmer < 2) + (n_forbidden < 2) 
+
+			# Check all emission lines for at least one detection (i.e. mask = False)
+			# for k, i in self.__parent__.e_line_no_mask.iteritems():
+			# 	p *= i.mask
+
+			# Check at least 2 detections in emission lines. 
+			p = np.zeros(self.__parent__.number_of_bins)
 			for k, i in self.__parent__.e_line_no_mask.iteritems():
-				p *= i.mask
+				p += (~i.mask).astype(int)
+			p = p >= 2
 		return p
 
 	@property
@@ -503,13 +514,13 @@ class Bin(object):
 #	(see above)
 #
 # Methods:
-# **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. Uses ppxf
-#	utilites to determine which lines are within the observed spectrum.
+# **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. 
+# 	Uses ppxf utilites to determine which lines are within the observed spectrum.
 # set_templates (template name, ppxf fitted weighting): Sets the template weights
 #	particularly in the emission_line objects. Also now loads the unconvolved 
 #	spectrum instead of method below.
-# **DEPRECATED** Unconvolved spectrum (wavelength of templates, templates used in dictionary): 
-# 	(array) Returns the unconvolved templates. NB: this are not in the same 
+# **DEPRECATED** Unconvolved spectrum (wavelength of templates, templates used in 
+# 	dictionary): (array) Returns the unconvolved templates. NB: this are not in the same 
 #	wavelength bins as spectrum, bestfit, lam etc, but are binned as the stellar 
 #	templates.
 # absorption_line (line name): returns absorption line strength (of LICK style 
@@ -770,7 +781,7 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__parent__.__parent__.__threshold__ #or self.AmpNoi > 10**3 #and np.isnan(self.vel)
+		return self.AmpNoi < self.__parent__.__parent__.__threshold__
 
 
 # Find the propergated uncertainty from numpy.trapz().
