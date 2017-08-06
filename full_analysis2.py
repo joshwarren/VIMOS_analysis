@@ -23,31 +23,31 @@ from classify import classify
 import traceback, sys
 
 galaxies = [
-			# 'ic1459',
-			# 'ic1531', 
-			# 'ic4296',
-			# 'ngc0612',
+			'eso443-g024',
+			'ic1459',
+			'ic1531', 
+			'ic4296',
+			'ngc0612',
 			'ngc1399',
 			'ngc3100',
 			'ngc3557',
 			'ngc7075',
-			'pks0718-34',
-			'eso443-g024'
+			'pks0718-34'
 			]
-# galaxies = ['ngc3557']
 # galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
+# galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
-galaxies = ['pks0718-34']
+# galaxies = ['pks0718-34']
 # galaxies = ['eso443-g024']
 
 
 discard = 0
-norm='lwv'
+norm='lws' # 'lwv'
 opt_dir=''
 
 m=mapping()
@@ -67,15 +67,18 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
+		if galaxy == 'pks0718-34':
+			norm = None # Normalisation contaminated by star
 		D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
+		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
-			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir)
+			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
+			show_bin_num=True)
 		plt.close("all")
 		# # GH_plots(galaxy)
 		plt.close("all")
 		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
-		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
+		rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
 		plt.close("all")
 
 		# Requires the IDL kinemetry routine to have been run. 

@@ -63,6 +63,7 @@ class Data(object):
 		self.common_range = np.array([])
 		self._gas = 0
 		self.__threshold__ = 3.0
+		self.center = (max(x)/2, max(y)/2)
 
 
 	def add_e_line(self, line, wav):
@@ -97,10 +98,15 @@ class Data(object):
 			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
 		elif self.norm_method == 'lws':
 			self.vel_norm = 0.0
+			d = np.sqrt((self.xBar-self.bin[self.center[0]].xBar)**2 +
+				(self.yBar-self.bin[self.center[1]].yBar)**2)
 			lws = self.components['stellar'].plot['sigma']*self.flux
+			lws[d > 7] = 0
 			s_sort = sorted(lws)
 			c = np.where(lws > s_sort[int(-np.ceil(self.number_of_bins*0.05))])[0]
 			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
+		elif self.norm_method is None:
+			self.vel_norm = 0.0
 
 	def absorption_line(self, absorption_line, uncert=False):
 		ab = np.zeros(self.number_of_bins)
@@ -133,7 +139,8 @@ class Data(object):
 
 	@property
 	def center_bin(self):
-		return np.nanargmax(self.flux)
+		# return np.nanargmax(self.flux)
+		return np.where((self.xBar == self.center[0])*(self.yBar == self.center[1]))[0][0]
 	
 	@property
 	def e_components(self):

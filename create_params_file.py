@@ -3,12 +3,12 @@ from checkcomp import checkcomp
 cc = checkcomp()
 
 code = "python" 	# python or IDL
-opt = 'pop' 		# kin, pop
+opt = 'kin' 		# kin, pop
 
 galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 	'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 gals=[2, 4, 8]
-
+gals=range(10)
 
 output_file = "%s/VIMOS_project/analysis/params.txt" % (cc.home_dir)
 f = open(output_file, 'w')

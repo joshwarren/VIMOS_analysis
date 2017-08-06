@@ -211,6 +211,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if isinstance(cmap, str):
 			cmap = plt.get_cmap(cmap)
 
+	if vmin>=0: # Assume even moment
+		vmin -= (vmax/vmin)*0.05
+
 	# Change to RGBA 
 	pic = cmap((img-vmin)/(vmax-vmin))
 	if signal_noise is not None:
@@ -238,11 +241,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 	if galaxy is not None:
-		gal_name = plt.text(0.02,0.98, galaxy, color='black',
+		gal_name = ax.text(0.02,0.98, galaxy, color='black',
 			verticalalignment='top',transform=ax.transAxes)
 		ax.gal_name = gal_name
 		if redshift is not None:
-			gal_z = plt.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
+			gal_z = ax.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
 				color = 'black',verticalalignment='top',
 				transform=ax.transAxes)
 			ax.gal_z = gal_z
@@ -265,7 +268,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 		else:
-			cont = ax.contour(flux_unbinned[::-1,::-1], colors='k', 
+			cont = ax.contour(np.rot90(flux_unbinned[::-1,::-1]), colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
 			cont.collections[0].set_label('Flux (linear)')
 
