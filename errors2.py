@@ -37,7 +37,7 @@ class set_params(object):
 				# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
 				#     (Hb and Hd)
 				# 3   All gas seperate.
-		self.reps = 0 ## number of monte carlo reps per bin.
+		self.reps = 1000 ## number of monte carlo reps per bin.
 		self.discard = 0
 		self.set_range = np.array([4200,10000])
 		self.FWHM_gal = 2.5 # VIMOS documentation (and fits header)
@@ -471,7 +471,7 @@ def get_dataCubeDirectory(galaxy):
 	if cc.device == 'uni':
 		dir = '%s/Data/vimos' % (cc.base_dir)
 	elif cc.device == 'glamdring':
-		dir = '%s/cubes' % (cc.base_dir)
+		dir = '%s' % (cc.base_dir)
 	elif 'home' in cc.device:
 		dir = '%s/Data/vimos' % (cc.base_dir)
 
@@ -484,10 +484,13 @@ def get_dataCubeDirectory(galaxy):
 		dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1531':
 		dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
+		dataCubeDirectory.CO.RAoffset = 6.0
+		dataCubeDirectory.CO.decoffset = 0.5
 	elif galaxy == 'ic4296':
 		dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
 	elif galaxy == 'ngc0612':
 		dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
+		dataCubeDirectory.CO = mystring2("%s/Data/alma/ngc612-mom0.fits" % (cc.base_dir))
 	elif galaxy == 'ngc1399':
 		dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
 	elif galaxy == 'ngc3100':
@@ -498,9 +501,11 @@ def get_dataCubeDirectory(galaxy):
 		dataCubeDirectory.CO.RAoffset = 2.6
 		dataCubeDirectory.CO.decoffset = -1.2
 	elif galaxy == 'ngc3557':
-		pass
+		dataCubeDirectory.CO.RAoffset = 3.0
+		dataCubeDirectory.CO.decoffset = -0.5
 	elif galaxy == 'ngc7075':
-		pass
+		dataCubeDirectory.CO.RAoffset = 4.5
+		dataCubeDirectory.CO.decoffset = 0.6
 	elif galaxy == 'pks0718-34':
 		pass
 	
@@ -612,7 +617,7 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 	sig = sig_gals[i_gal]
 	z = z_gals[i_gal]
 
-	lamRange /= (1+z)
+	lamRange = lamRange/(1+z)
 	FWHM_gal = params.FWHM_gal/(1+z) # Adjust resolution in Angstrom
 ## ----------============= Stellar templates ===============---------
 	stellar_templates = get_stellar_templates(galaxy, FWHM_gal, 
