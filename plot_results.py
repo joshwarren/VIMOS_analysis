@@ -623,6 +623,9 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 			cA = D.e_components[len(D.e_components)-i-1]
 			cB = D.e_components[len(D.e_components)-i+n-m]
 
+			if ('[' in cA) and ('H' in cB):
+				cA, cB = cB, cA
+
 			line_ratio = np.log10(D.e_line[cB].flux/D.e_line[cA].flux)
 			if 'OIII' in cA:
 				cA_title = '[OIII]'
