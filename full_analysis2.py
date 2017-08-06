@@ -14,7 +14,7 @@ from sav_for_kinemetry import sav_for_kinemetry
 from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
-# from rotation_curve import rotation_curve
+from rotation_curve import rotation_curve
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
 from plot_stellar_pop import plot_stellar_pop
@@ -34,7 +34,7 @@ galaxies = [
 			'ngc7075',
 			'pks0718-34'
 			]
-# galaxies = ['ic1459']
+galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -67,9 +67,8 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		if galaxy == 'pks0718-34':
-			norm = None # Normalisation contaminated by star
-		D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
+		if galaxy in ['ngc3100', 'ngc3557', 'ngc7075','pks0718-34']:
+			D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
 		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,

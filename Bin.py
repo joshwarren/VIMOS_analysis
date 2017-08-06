@@ -63,7 +63,7 @@ class Data(object):
 		self.common_range = np.array([])
 		self._gas = 0
 		self.__threshold__ = 3.0
-		self.center = (max(x)/2, max(y)/2)
+		self.center = (int(max(x)/2.0), int(max(y)/2.0))
 
 
 	def add_e_line(self, line, wav):
