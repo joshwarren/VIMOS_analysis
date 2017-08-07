@@ -24,7 +24,7 @@ import traceback, sys
 
 galaxies = [
 			'eso443-g024',
-			'ic1459',
+			# 'ic1459',
 			'ic1531', 
 			'ic4296',
 			'ngc0612',
@@ -34,7 +34,7 @@ galaxies = [
 			'ngc7075',
 			'pks0718-34'
 			]
-galaxies = ['ic1459']
+# galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -67,8 +67,7 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		if galaxy in ['ngc3100', 'ngc3557', 'ngc7075','pks0718-34']:
-			D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
+		D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
 		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,

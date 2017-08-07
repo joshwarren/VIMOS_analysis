@@ -212,7 +212,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			cmap = plt.get_cmap(cmap)
 
 	if vmin>=0: # Assume even moment
-		vmin -= (vmax/vmin)*0.05
+		vmin -= (vmax-vmin)*0.05
 
 	# Change to RGBA 
 	pic = cmap((img-vmin)/(vmax-vmin))
