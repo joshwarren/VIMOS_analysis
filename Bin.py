@@ -134,7 +134,14 @@ class Data(object):
 
 		for bin in self.bin:
 			out[bin.xspaxels, bin.yspaxels] = attr[bin.bin_number]
+		out = np.rot90(out[::-1,:])
 		return out
+
+	def rebin(self, field):
+		new = np.zeros(self.number_of_bins)
+		for i in range(self.number_of_bins):
+			new[i] = np.mean(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
+		return new
 
 
 	@property

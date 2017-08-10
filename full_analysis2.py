@@ -34,7 +34,7 @@ galaxies = [
 			'ngc7075',
 			'pks0718-34'
 			]
-# galaxies = ['ic1459']
+galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
