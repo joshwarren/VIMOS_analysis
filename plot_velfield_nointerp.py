@@ -190,6 +190,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		from astropy.wcs import WCS 
 		wcs = WCS(header).celestial
 		ax = plt.axes(projection=wcs)
+
 	
 	bin_num = bin_num.astype(int)
 

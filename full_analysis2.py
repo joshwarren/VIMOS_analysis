@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt # used for plotting
 from plot_stellar_pop import plot_stellar_pop
 from use_kinemetry import use_kinemetry
 from classify import classify
+from fit_disk import fit_disk
 import traceback, sys
 
 galaxies = [
@@ -68,16 +69,17 @@ for galaxy in galaxies:
 	print galaxy
 	try:
 		D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
-		D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
+		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
 			show_bin_num=True)
 		plt.close("all")
 		# # GH_plots(galaxy)
-		plt.close("all")
-		kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
-		rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
-		plt.close("all")
+		# plt.close("all")
+		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
+		# plt.close("all")
+		fit_disk(galaxy, opt='kin'+opt_dir, D=D)
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# classify(galaxy, opt='kin'+opt_dir)

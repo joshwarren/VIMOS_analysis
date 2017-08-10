@@ -100,11 +100,11 @@ class Data(object):
 			self.vel_norm = 0.0
 			d = np.sqrt((self.xBar-self.bin[self.center[0]].xBar)**2 +
 				(self.yBar-self.bin[self.center[1]].yBar)**2)
-			lws = self.components['stellar'].plot['sigma']*self.flux
+			lws = self.components['stellar'].plot['sigma']*self.flux*self.n_spaxels_in_bin
 			lws[d > 7] = 0
 			s_sort = sorted(lws)
 			c = np.where(lws > s_sort[int(-np.ceil(self.number_of_bins*0.05))])[0]
-			self.vel_norm = np.mean(self.components['stellar'].plot['vel'][c])
+			self.vel_norm = np.nanmean(self.components['stellar'].plot['vel'][c])
 		elif self.norm_method is None:
 			self.vel_norm = 0.0
 
@@ -140,7 +140,9 @@ class Data(object):
 	def rebin(self, field):
 		new = np.zeros(self.number_of_bins)
 		for i in range(self.number_of_bins):
-			new[i] = np.mean(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
+			m = ~np.isnan(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
+			new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m], 
+				weights=self.unbinned_flux[self.bin[i].xspaxels, self.bin[i].yspaxels][m])
 		return new
 
 
