@@ -77,6 +77,20 @@ def SED(galaxy):
 	for r in np.unique(ref):
 		ax.errorbar(freq[ref==r], flux[ref==r], yerr=flux_err[ref==r], fmt='o')
 
+	if galaxy == 'ic1459':
+		fig2, ax2 = plt.subplots()
+		for r in np.unique(ref):
+			ax2.errorbar(freq[ref==r], flux[ref==r], yerr=flux_err[ref==r], fmt='o')
+		ax2.set_ylim([0.1,2])
+		ax2.set_xscale('log')
+		ax2.set_xlabel('Freq (GHz)')
+		ax2.set_yscale('log')
+		ax2.set_ylabel('Flux Density (Jy)')
+
+		ax2.set_title('Radio spectrum for %s' % (galaxy))
+		fig2.savefig('%s/Data/SED/%s/index_detailed.png' % (cc.base_dir, galaxy))
+
+
 	params, cov = np.polyfit(np.log10(freq), np.log10(flux), 1, cov=True)
 	alpha, alpha_err = params[0], np.sqrt(np.diag(cov))[0]
 	fit = 10**(np.poly1d(params)(np.log10(line_x)))

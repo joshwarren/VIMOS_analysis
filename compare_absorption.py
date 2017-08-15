@@ -356,12 +356,13 @@ if __name__ == '__main__':
 	galaxy = 'ic1459'
 	galaxy = 'ic4296'
 	import subprocess
-	# for galaxy in ['ic1459','ic4296','ngc3557']:
+	for galaxy in ['ic1459','ic4296','ngc3557']:
 
-	# 	run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
+		run(galaxy = galaxy, method = 'Rampazzo_aperture', debug=True)
+		# run(galaxy = galaxy, method = 'Rampazzo_gradient2', debug=True)
 	# 	subprocess.call(['/bin/bash', '-i', '-c', "push 'done %s Rampazzo'" % (galaxy)])
 
 	# run(method = 'Ogando', debug=False)
 	# subprocess.call(['/bin/bash', '-i', '-c', "push 'done Ogando comparison'"])
-	run(method = 'Miles', debug=False)
-	subprocess.call(['/bin/bash', '-i', '-c', "push 'done Miles comparison'"])
+	# run(method = 'Miles', debug=False)
+	# subprocess.call(['/bin/bash', '-i', '-c', "push 'done Miles comparison'"])

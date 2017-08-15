@@ -97,6 +97,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, 
 	signal_noise_target=None, pa=None, center=None, alpha=None, **kwargs):
+	Prefig()
 
 	kwg = {}
 	kwg.update(kwargs)
@@ -106,10 +107,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	xBar_pix = np.array(xBar_pix)
 	yBar_pix = np.array(yBar_pix)
 	vel = np.array(vel)
-
-	# Scale the plot size to VIMOS.
-	Prefig(transparent=False)
-
 	
 	if len(vel) != max(bin_num)+1:
 		print "Not enough bins provided to vel keyword"
@@ -182,7 +179,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 		# Setting for image axis
 		ax.set_aspect('equal')
-		ax.autoscale(tight=True)
+		# ax.autoscale(tight=True)
 
 		ax.xaxis.set_visible(False)
 		ax.yaxis.set_visible(False)

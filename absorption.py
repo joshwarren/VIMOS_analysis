@@ -9,7 +9,8 @@
 # line_name: 			Name of line to be found
 # lam:					Wavelngth array of observed spectrum and conv_spec if supplied 
 # spec:					Observed spectrum
-# unc_lam:		None	Wavelength of unconvolved spectrum - from the templates used by pPXF
+# unc_lam:		None	Wavelength of unconvolved spectrum - from the templates used by 
+#						pPXF
 # unc_spec:		None	Unconcolved spectum
 # conv_spec:	None	Convolved spectrum i.e. pPXF bestfit
 # noise:		None	Observed noise from reduction pipeline
@@ -27,8 +28,12 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 	noise=None, lick=False):
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
+		line_name2='hb'
 	elif line_name=='Mg_b':
 		line_name='Mgb'
+		line_name2='mgb'
+	else:
+		line_name2=line_name
 
 	if len(unc_lam) != len(unc_spec):
 		raise ValueError('Length of unconvoled spectrum and corresponding '+\
@@ -44,6 +49,25 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 	# Catch if index is not in wavelenght range.
 	try:
+		# Reduce spec to Lick resolution
+		if lick:
+			Lick_res = get_Lick_res(line_name)
+
+			sig_pix = np.sqrt(Lick_res**2 - disp**2)/(disp)
+			spec = gaussian_filter1d(spec, sig_pix)
+
+		spectra = spectrum(lam=lam, lamspec=spec)
+		if noise is not None: 
+			if lick:
+				noise = gaussian_filter1d(noise, sig_pix)
+			variance = spectrum(lam=lam, lamspec=noise**2)
+		else: 
+			variance = None
+	
+		disp = np.diff(lam)[np.argmin(np.abs(lam-np.mean(getattr(spectra,line_name2))))]
+		index_value, index_va, con_band, index_band = spectra.irindex(disp, line_name, 
+			varSED=variance, verbose=False)
+
 		# Calculate correction for velocity dispersion spreading
 		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
 			# Bring unc_spec and conv_spec to the same resolution
@@ -64,34 +88,19 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 				line_name)
 			# Line strength of convolved spectrum (bestfit - emission lines)
 			spectra = spectrum(lam, conv_spec)
-			conv_index_value, conv_index_va, _, _ = spectra.irindex(lam[1] - lam[0],
-				line_name)
+			conv_index_value, conv_index_va, _, _ = spectra.irindex(disp, line_name)
 			# LOSVD correction (From SAURON VI: Section 4.2.2)
 			corr = unc_index_value/conv_index_value
-			corr_var = np.sqrt((conv_index_va/conv_index_value)**2 + 
-				(unc_index_va/unc_index_value)**2)*corr
+			# corr_var = np.sqrt((conv_index_va/conv_index_value)**2 + 
+			# 	(unc_index_va/unc_index_value)**2)*corr
 		else:
 			corr = 1
-			corr_var = 0
-
-		# Reduce spec to Lick resolution
-		Lick_res = get_Lick_res(line_name)
-
-		sig_pix = np.sqrt(Lick_res**2 - (lam[1]-lam[0])**2)/(unc_lam[1] - unc_lam[0])
-		spec = gaussian_filter1d(spec, sig_pix)
-
-		spectra = spectrum(lam=lam, lamspec=spec)
-		if noise is not None: 
-			noise = gaussian_filter1d(noise, sig_pix)
-			variance = spectrum(lam=lam, lamspec=noise**2)
-		else: variance = None
-		index_value, index_va, con_band, index_band = spectra.irindex(lam[1] - lam[0], 
-			line_name, varSED=variance, verbose=False)
+			# corr_var = 0		
 
 		# Apply correction
-		index_va = np.sqrt(index_va)
-		index_va = np.sqrt((index_va/index_value)**2 + (corr_var/corr)**2)*(
-			index_value*corr)
+		index_va = np.sqrt(index_va) * corr
+		# index_va = np.sqrt((index_va/index_value)**2 + (corr_var/corr)**2)*(
+		# 	index_value*corr)
 		index_value *= corr
 	
 	except IndexError:
@@ -103,7 +112,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 	else:
 		return index_value
 
-
+# Variable Lick resolution
 def get_Lick_res(index):
 	# Find band ; dummy spectra
 	s = spectrum(np.array([100,101,102]),np.array([1,1,1]))	

@@ -39,84 +39,90 @@ else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 class population(object):
 
-	def __init__(self, pp=None, galaxy=None, opt='pop'):
+	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, ab_uncert=None):
 		self.pp = pp
 		self.galaxy = galaxy
 
 		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		grid_length = 40
 
-		if self.pp is None:
-			self.i_gal=int(sys.argv[1])
-			self.opt=str(sys.argv[2])
-			self.bin=int(sys.argv[3])
-
-			galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
-				'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
-			self.galaxy = galaxies[self.i_gal]
-
-			self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
-			if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
-
-			vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, self.galaxy, self.opt)
-		
-			lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, self.bin))
-			spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, self.bin))
-			matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, self.bin), 
-				dtype=str)
-			temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, self.bin), 
-				unpack=True, usecols=(1,))
-			noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, self.bin))
-			bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, self.bin))
-			mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, self.bin))
-			e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
-			e_line_spec = matrix[e_lines,1:].astype(float)
-			stellar_temps = matrix[~e_lines,0]
-
+		if ab_index is not None:
+			if ab_uncert is None:
+				raise('Uncertainty values must be supplied')
+			self.ab_lines = ab_index
+			self.uncerts = ab_uncert
 		else:
-			self.opt = opt
-			lam = self.pp.lam
-			spectrum = self.pp.galaxy
-			matrix = self.pp.matrix.T.astype(str)
-			temp_weights = self.pp.weights
-			noise = self.pp.noise 
-			bestfit = self.pp.bestfit
-			mpweight = self.pp.mpolyweights
+			if self.pp is None:
+				self.i_gal=int(sys.argv[1])
+				self.opt=str(sys.argv[2])
+				self.bin=int(sys.argv[3])
 
-			e_lines = self.pp.component != 0
-			e_line_spec =  matrix[e_lines,:].astype(float)
+				galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
+					'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+				self.galaxy = galaxies[self.i_gal]
 
-			stellar_temps = self.pp.templatesToUse[~e_lines]
+				self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
+				if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
 
-		self.e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
+				vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, self.galaxy, self.opt)
+			
+				lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, self.bin))
+				spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, self.bin))
+				matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, self.bin), 
+					dtype=str)
+				temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, 
+					self.bin), unpack=True, usecols=(1,))
+				noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, self.bin))
+				bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, self.bin))
+				mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, self.bin))
+				e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
+				e_line_spec = matrix[e_lines,1:].astype(float)
+				stellar_temps = matrix[~e_lines,0]
 
-		self.continuum = spectrum - self.e_line_spec # np.nansum(self.e_line_spec,axis=0)
-		convolved = bestfit - self.e_line_spec # np.nansum(self.e_line_spec, axis=0)
+			else:
+				self.opt = opt
+				lam = self.pp.lam
+				spectrum = self.pp.galaxy
+				matrix = self.pp.matrix.T.astype(str)
+				temp_weights = self.pp.weights
+				noise = self.pp.noise 
+				bestfit = self.pp.bestfit
+				mpweight = self.pp.mpolyweights
 
-		if cc.getDevice() == 'uni':
-			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
-				'm0[0-9][0-9][0-9]V')
-		else:
-			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+				e_lines = self.pp.component != 0
+				e_line_spec =  matrix[e_lines,:].astype(float)
 
-		a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
-		unconvolved_spectrum = np.zeros(a[1]-a[0])
+				stellar_temps = self.pp.templatesToUse[~e_lines]
 
-		for i, n in enumerate(stellar_temps):
-			template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
-			unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
-		unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
-				len(unconvolved_spectrum)), np.append(1, mpweight))
-		unconvolved_lam =  wav[a[0]:a[1]]
+			self.e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
 
-		self.ab_lines = {}
-		self.uncerts = {}
-		for l in self.lines:
-			ab, uncert = absorption(l, lam, self.continuum, noise=noise,
-				unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
-				conv_spec=convolved)
-			self.ab_lines[l], self.uncerts[l] = ab[0], uncert[0]
+			self.continuum = spectrum - self.e_line_spec #np.nansum(self.e_line_spec,axis=0)
+			convolved = bestfit - self.e_line_spec # np.nansum(self.e_line_spec, axis=0)
+
+			if cc.getDevice() == 'uni':
+				files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
+					'm0[0-9][0-9][0-9]V')
+			else:
+				files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+			wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+
+			a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
+			unconvolved_spectrum = np.zeros(a[1]-a[0])
+
+			for i, n in enumerate(stellar_temps):
+				template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
+				unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
+			unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
+					len(unconvolved_spectrum)), np.append(1, mpweight))
+			unconvolved_lam =  wav[a[0]:a[1]]
+
+			self.ab_lines = {}
+			self.uncerts = {}
+			for l in self.lines:
+				ab, uncert = absorption(l, lam, self.continuum, noise=noise,
+					unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
+					conv_spec=convolved)
+				self.ab_lines[l], self.uncerts[l] = ab[0], uncert[0]
 
 
 		s=[grid_length,grid_length,grid_length]
@@ -164,7 +170,7 @@ class population(object):
 		self.alpha = np.nanmean(self.samples[:,2])
 		self.unc_alp = np.nanstd(self.samples[:,2])
 		
-		if self.pp is None:
+		if self.pp is None and ab_index is None:
 			self.save()
 			self.plot_probability_distribution(
 				saveTo="%s/plots/%i.png" % (self.vout_dir, self.bin))
@@ -176,7 +182,7 @@ class population(object):
 #############################################################################
 
 	def plot_probability_distribution(self, saveTo=None, f=None, ax_array=None,
-		label=''):
+		label='', legend =False):
 		import matplotlib.pyplot as plt
 
 		if f is None:
@@ -212,7 +218,7 @@ class population(object):
 		ax_array[1,1].axis('off')
 		# plt.tight_layout()
 
-		if self.pp is None:
+		if legend:
 			h, l = ax_array[0,0].get_legend_handle_labels()
 			ax_array[1,1].legend(h,l)
 
