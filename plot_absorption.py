@@ -7,13 +7,14 @@ from astropy.io import fits
 from plot_velfield_nointerp import plot_velfield_nointerp 
 import numpy as np 
 import os
-from plot_results import set_lims
+from plot_results import set_lims, add_
 from checkcomp import checkcomp
 cc = checkcomp()
-from prefig import Prefig
 from errors2 import get_dataCubeDirectory
+from prefig import Prefig
+Prefig()
 
-def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
+def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={}):
 	# Find lines:
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
 		#'Mg_1', 'Mg_2', 
@@ -27,7 +28,7 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/%s" % (out_dir, galaxy, opt)
-	out_plots = "%s/plots" % (output)
+	out_plots = "%s/plots/absorption" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 	 
 	if D is None:
@@ -51,13 +52,6 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 	SN_target=SN_target_gals[i_gal]
 	center = (x_cent_gals[i_gal], y_cent_gals[i_gal])
 
-	# Set up figure and subplots
-	Prefig(subplots=(int(np.ceil(len(lines))/2.0), 2))
-	f, ax_array = plt.subplots(int(np.ceil(len(lines)/2.0)), 2, sharex='col', 
-		sharey='row')
-	if uncert:
-		f_uncert, ax_array_uncert = plt.subplots(int(np.ceil(len(lines)/2.0)), 2, 
-			sharex='col', sharey='row')
 
 	for i, line in enumerate(lines):
 		print "    " + line
@@ -69,55 +63,32 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop'):
 
 		abmin, abmax = set_lims(ab_line, positive=True)
 
-		if line in limits.keys():
-			abmin = limits[line][0]
-			abmax = limits[line][1]
+		# if line in limits.keys():
+		# 	abmin = limits[line][0]
+		# 	abmax = limits[line][1]
+		
 
-		ax_array[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		saveTo = '%s/%s.png' % (out_plots, line)
+		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
 			D.xBar, D.yBar, D.absorption_line(line), header, vmin=abmin, vmax=abmax,
 			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
-			title=line, ax=ax_array[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
+			title=line, cmap='gnuplot2', redshift=z,
 			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center)
-
+			signal_noise_target=SN_target, center=center, save=saveTo)
+		ax.saveTo = saveTo
+		if overplot:
+			for o, color in overplot.iteritems():
+				add_(o, color, ax, galaxy)
+		
 		if uncert:
 			abmin, abmax = set_lims(ab_uncert)
 
-			ax_array_uncert[int(np.floor(i/2)),i%2] = plot_velfield_nointerp(D.x, D.y, 
-				D.bin_num, D.xBar, D.yBar, ab_uncert, header, vmin=abmin, vmax=abmax,
-				nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
-				title=line, ax=ax_array_uncert[int(np.floor(i/2)),i%2], cmap='gnuplot2', 
+			ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, ab_uncert, 
+				header, vmin=abmin, vmax=abmax, nodots=True, colorbar=True, 
+				label='Index strength ('+r'$\AA$'+')', title=line, cmap='gnuplot2', 
 				flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-				signal_noise_target=SN_target, center=center)
-
-
-	# f.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
-
-	print 'Saving plot'
-
-	saveTo = "%s/absorption.pdf" % (out_plots)
-	# f.tight_layout()
-	for i in xrange(ax_array.shape[0]-1):
-		ax_array[i,1].set_xlabel('')
-		ax_array[i,0].set_xlabel('')
-	for i in xrange(ax_array.shape[0]):
-		ax_array[i,1].set_ylabel('')
-	f.suptitle(galaxy.upper())
-	f.savefig(saveTo)#, bbox_inches="tight")
-
-
-	if uncert:
-		# f_uncert.set_size_inches(8.5,int(np.ceil(len(lines)/2.0))*1.8)
-
-		saveTo = "%s/absorption_uncert.pdf" % (out_plots)
-		# f_uncert.tight_layout()
-		for i in xrange(ax_array_uncert.shape[0]-1):
-			ax_array_uncert[i,1].set_xlabel('')
-			ax_array_uncert[i,0].set_xlabel('')
-		for i in xrange(ax_array_uncert.shape[0]):
-			ax_array_uncert[i,1].set_ylabel('')
-		f_uncert.suptitle(galaxy.upper() + ' Uncertainties')
-		f_uncert.savefig(saveTo)#, bbox_inches="tight")
+				signal_noise_target=SN_target, center=center, 
+				save='%s/%s_uncert.png' % (out_plots, line))
 
 	return D
 

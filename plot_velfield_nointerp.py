@@ -113,7 +113,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		return
 
 	if ax is None:
-		fig, ax = plt.subplots(nrows=1,ncols=1)
+		fig, ax = plt.subplots()#nrows=1,ncols=1)
+	else:
+		fig = plt.gcf()
+	ax.set_aspect('equal')
+
 
 	if vmin is None:
 		vmin = np.nanmin(vel)
@@ -151,36 +155,25 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	y_label = r'$\Delta$ Dec (arcsec)'
 
 	# Create display axis
-	ax_dis_x = ax.twiny()
-	ax_dis_y = ax.twinx()
+	ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
 	if True:
-		ax_dis_x.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*
+		ax_dis.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*
 			header['CD1_1']*60*60)
-		ax_dis_y.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*
+		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*
 			header['CD2_2']*60*60)
 
-		ax_dis_x.set_xlabel(x_label)
-		ax_dis_x.xaxis.tick_bottom()
-		ax_dis_x.xaxis.set_label_position('bottom')	
-		ax_dis_y.set_ylabel(y_label)
-		ax_dis_y.yaxis.tick_left()
-		ax_dis_y.yaxis.set_label_position('left')
+		ax_dis.set_xlabel(x_label)
+		ax_dis.set_ylabel(y_label)
 
-		ax_dis_x.minorticks_on()
-		ax_dis_x.tick_params(length=10, which='major')
-		ax_dis_x.tick_params(length=5, which='minor')
-		ax_dis_y.minorticks_on()
-		ax_dis_y.tick_params(length=10, which='major')
-		ax_dis_y.tick_params(length=5, which='minor')
+		ax_dis.minorticks_on()
+		ax_dis.tick_params(length=10, which='major')
+		ax_dis.tick_params(length=5, which='minor')
 
 		tick_formatter = ticker.ScalarFormatter(useOffset=False)
-		ax_dis_x.xaxis.set_major_formatter(tick_formatter)
-		ax_dis_y.yaxis.set_major_formatter(tick_formatter)
+		ax_dis.xaxis.set_major_formatter(tick_formatter)
+		ax_dis.yaxis.set_major_formatter(tick_formatter)
 
-		# Setting for image axis
-		ax.set_aspect('equal')
-		# ax.autoscale(tight=True)
-
+		# Hide ax
 		ax.xaxis.set_visible(False)
 		ax.yaxis.set_visible(False)
 	else:
@@ -291,8 +284,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
 		H = 70.0 # value used by Bolonga group.
-		xlim = np.asarray(ax_dis_x.get_xlim())
-		ylim = np.asarray(ax_dis_y.get_ylim())
+		xlim = np.asarray(ax_dis.get_xlim())
+		ylim = np.asarray(ax_dis.get_ylim())
 		xlim = np.radians(xlim/(60.0*60.0)) * redshift*c/H
 		ylim = np.radians(ylim/(60.0*60.0)) * redshift*c/H
 		xmax = xlim[1]
@@ -303,32 +296,27 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			ylim *= 1000
 			axis_label = "Distance (kpc)"
 
-
-		ax2 = ax_dis_y.twinx()
-		#ax2.set_aspect('equal')
-		#ax2.autoscale(tight=True)
+		ax2 = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
 		ax2.minorticks_on()
 		ax2.tick_params(length=10, which='major')
 		ax2.tick_params(length=5, which='minor')
+		ax2.tick_params(which='both',bottom=0, top=1, left=0, right=1, 
+			labelbottom=0, labeltop=1, labelleft=0, labelright=1)
+		
 		ax2.set_ylim(ylim[0],ylim[1])
+		ax2.yaxis.set_label_position("right")
 		ax2.set_ylabel(axis_label, rotation=270)
 		ax2.get_yaxis().get_major_formatter().set_useOffset(False)
 
-		ax3 = ax_dis_x.twiny()
-		#ax3.set_aspect('equal')
-		#ax3.autoscale(tight=True)
-		ax3.minorticks_on()
-		ax3.tick_params(length=10, which='major')
-		ax3.tick_params(length=5, which='minor')
-		ax3.set_xlim(xlim[0],xlim[1])
-		ax3.set_xlabel(axis_label)
-		ax3.get_xaxis().get_major_formatter().set_useOffset(False)
+		ax2.set_xlim(xlim[0],xlim[1])
+		ax2.xaxis.set_label_position("top")
+		ax2.set_xlabel(axis_label)
+		ax2.get_xaxis().get_major_formatter().set_useOffset(False)
 
 		ax.ax2 = ax2
-		ax.ax3 = ax3
 
 	if title is not None:
-		if hasattr(ax,'ax3'):
+		if hasattr(ax,'ax2'):
 			ax.set_title(title, y=1.1)
 		else:
 			ax.set_title(title)#, fontdict={'fontsize':'small'})
@@ -336,11 +324,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if colorbar:
 		ticks = ticker.MaxNLocator(nbins=nticks)
-		if hasattr(ax,'ax3'):
-			cbar = plt.colorbar(cs, ax=[ax,ax_dis_x, ax2,ax3], ticks=ticks, pad=0.1, 
+		if hasattr(ax,'ax2'):
+			cbar = plt.colorbar(cs, ax=[ax,ax_dis, ax2], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
 		else:
-			cbar = plt.colorbar(cs, ax=[ax, ax_dis_x], ticks=ticks, pad=0.1, 
+			cbar = plt.colorbar(cs, ax=[ax, ax_dis], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
 
 		# cbar.ax.tick_params(labelsize=6)

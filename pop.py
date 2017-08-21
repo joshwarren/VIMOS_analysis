@@ -37,6 +37,72 @@ c = 299792.458
 if cc.device == 'glamdring': vin_dir = '%s/analysis' % (cc.base_dir)
 else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
+def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None):
+	if (pp is None and galaxy is None) or (pp is not None and galaxy is not None):
+		raise 'Either pp or galaxy must be supplied: one or tother'
+	if galaxy is not None and (bin is None or opt is None):
+		raise 'If galaxy is supplied, so to must bin and opt'
+
+	if pp is None:
+		vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
+	
+		lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, bin))
+		spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, bin))
+		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, bin), 
+			dtype=str)
+		temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, 
+			bin), unpack=True, usecols=(1,))
+		noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, bin))
+		bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, bin))
+		mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, bin))
+		e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
+		e_line_spec = matrix[e_lines,1:].astype(float)
+		stellar_temps = matrix[~e_lines,0]
+	else:
+		lam = pp.lam
+		spectrum = pp.galaxy
+		matrix = pp.matrix.T.astype(str)
+		temp_weights = pp.weights
+		noise = pp.noise 
+		bestfit = pp.bestfit
+		mpweight = pp.mpolyweights
+
+		e_lines = pp.component != 0
+		e_line_spec =  matrix[e_lines,:].astype(float)
+
+		stellar_temps = pp.templatesToUse[~e_lines]
+
+	e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
+
+	continuum = spectrum - e_line_spec #np.nansum(e_line_spec,axis=0)
+	convolved = bestfit - e_line_spec # np.nansum(e_line_spec, axis=0)
+
+	if cc.getDevice() == 'uni':
+		files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
+			'm0[0-9][0-9][0-9]V')
+	else:
+		files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+
+	a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
+	unconvolved_spectrum = np.zeros(a[1]-a[0])
+
+	for i, n in enumerate(stellar_temps):
+		template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
+		unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
+	unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
+			len(unconvolved_spectrum)), np.append(1, mpweight))
+	unconvolved_lam =  wav[a[0]:a[1]]
+
+	ab_lines = {}
+	uncerts = {}
+	for l in lines:
+		ab, uncert = absorption(l, lam, continuum, noise=noise,
+			unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
+			conv_spec=convolved)
+		ab_lines[l], uncerts[l] = ab[0], uncert[0]
+	return ab_lines, uncerts
+
 class population(object):
 
 	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, ab_uncert=None):
@@ -57,72 +123,18 @@ class population(object):
 				self.opt=str(sys.argv[2])
 				self.bin=int(sys.argv[3])
 
+				vout_dir = '%s/%s/%s/pop' % (vin_dir, galaxy, opt)
+				if not os.path.exists(vout_dir): os.makedirs(vout_dir)
+
 				galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 					'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 				self.galaxy = galaxies[self.i_gal]
 
-				self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
-				if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
-
-				vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, self.galaxy, self.opt)
-			
-				lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, self.bin))
-				spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, self.bin))
-				matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, self.bin), 
-					dtype=str)
-				temp_weights =  np.loadtxt("%s/temp_weights/%d.dat" % (vin_dir_gasMC, 
-					self.bin), unpack=True, usecols=(1,))
-				noise = np.loadtxt("%s/noise_input/%d.dat" % (vin_dir_gasMC, self.bin))
-				bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC, self.bin))
-				mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC, self.bin))
-				e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
-				e_line_spec = matrix[e_lines,1:].astype(float)
-				stellar_temps = matrix[~e_lines,0]
-
+				self.ab_lines, self.uncerts = get_absorption(self.lines, galaxy=galaxy, 
+					bin=bin, opt=opt)
 			else:
-				self.opt = opt
-				lam = self.pp.lam
-				spectrum = self.pp.galaxy
-				matrix = self.pp.matrix.T.astype(str)
-				temp_weights = self.pp.weights
-				noise = self.pp.noise 
-				bestfit = self.pp.bestfit
-				mpweight = self.pp.mpolyweights
-
-				e_lines = self.pp.component != 0
-				e_line_spec =  matrix[e_lines,:].astype(float)
-
-				stellar_temps = self.pp.templatesToUse[~e_lines]
-
-			self.e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
-
-			self.continuum = spectrum - self.e_line_spec #np.nansum(self.e_line_spec,axis=0)
-			convolved = bestfit - self.e_line_spec # np.nansum(self.e_line_spec, axis=0)
-
-			if cc.getDevice() == 'uni':
-				files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
-					'm0[0-9][0-9][0-9]V')
-			else:
-				files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-			wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
-
-			a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
-			unconvolved_spectrum = np.zeros(a[1]-a[0])
-
-			for i, n in enumerate(stellar_temps):
-				template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
-				unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
-			unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
-					len(unconvolved_spectrum)), np.append(1, mpweight))
-			unconvolved_lam =  wav[a[0]:a[1]]
-
-			self.ab_lines = {}
-			self.uncerts = {}
-			for l in self.lines:
-				ab, uncert = absorption(l, lam, self.continuum, noise=noise,
-					unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
-					conv_spec=convolved)
-				self.ab_lines[l], self.uncerts[l] = ab[0], uncert[0]
+				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=pp)
+				
 
 
 		s=[grid_length,grid_length,grid_length]

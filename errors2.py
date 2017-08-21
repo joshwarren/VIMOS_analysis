@@ -30,14 +30,14 @@ c = 299792.458 # speed of light in km/s
 
 #-----------------------------------------------------------------------------
 class set_params(object):
-	def __init__(self, opt='kin'):
+	def __init__(self, opt='kin', reps=1000):
 		self.quiet = True
 		self.gas = 1 # 0   No gas emission lines
 				# 1   Probe ionised gas
 				# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
 				#     (Hb and Hd)
 				# 3   All gas seperate.
-		self.reps = 1000 ## number of monte carlo reps per bin.
+		self.reps = reps ## number of monte carlo reps per bin.
 		self.discard = 0
 		self.set_range = np.array([4200,10000])
 		self.FWHM_gal = 2.5 # VIMOS documentation (and fits header)

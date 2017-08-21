@@ -15,27 +15,27 @@ from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
 from rotation_curve import rotation_curve
-from plot_absorption2 import plot_absorption
+from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
-from plot_stellar_pop2 import plot_stellar_pop
+from plot_stellar_pop import plot_stellar_pop
 from use_kinemetry import use_kinemetry
 from classify import classify
 from fit_disk import fit_disk
 import traceback, sys
 
 galaxies = [
-			'eso443-g024',
-			'ic1459',
-			'ic1531', 
-			'ic4296',
-			'ngc0612',
-			'ngc1399',
+			# 'eso443-g024',
+			# 'ic1459',
+			# 'ic1531', 
+			# 'ic4296',
+			# 'ngc0612',
+			# 'ngc1399',
 			'ngc3100',
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34'
 			]
-galaxies = ['ic1459']
+# galaxies = ['ic1459']
 # galaxies = ['ic1531']
 # galaxies = ['ic4296']
 # galaxies = ['ngc0612']
@@ -86,11 +86,11 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
-		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
 		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
 			overplot={'CO':'c', 'radio':'r'})
-		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-		# 	overplot={'CO':'c', 'radio':'r'})
+		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+			overplot={'CO':'c', 'radio':'r'})
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

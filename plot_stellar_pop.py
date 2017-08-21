@@ -4,21 +4,20 @@
 ## warrenj 20170331 Routine to plot the stellar populations found by pop.py
 ## on Glamdring. 
 
-
 import cPickle as pickle
 import matplotlib.pyplot as plt 
-from plot_velfield_nointerp import plot_velfield_nointerp 
 import numpy as np 
 import os
 from astropy.io import fits
 from errors2 import get_dataCubeDirectory
-# from plot_results import set_lims
+from plot_results import add_, set_lims
 from checkcomp import checkcomp
 cc = checkcomp()
+from plot_velfield_nointerp import plot_velfield_nointerp
 from prefig import Prefig
-Prefig()#subplots=(3,2))
+Prefig()
 
-def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
+def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={}):
 	print 'Plotting stellar population'
 
 	if cc.device == 'glamdring': vin_dir = '%s/analysis/%s/%s/pop' % (cc.base_dir,
@@ -28,7 +27,7 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/%s" % (out_dir, galaxy, opt)
-	out_plots = "%s/plots" % (output)
+	out_plots = "%s/plots/population" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 	 
 	if D is None:
@@ -59,8 +58,6 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
 	unc_met = np.zeros(D.number_of_bins)
 	unc_alp = np.zeros(D.number_of_bins)
 
-	f, ax_array = plt.subplots(3, 2)
-
 	if method == 'median':
 		for i in xrange(D.number_of_bins):
 			ag, me, al = np.loadtxt('%s/%i.dat' % (vin_dir, i), unpack=True)
@@ -72,7 +69,7 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
 			alp[i] = al[0]
 			unc_alp[i] = al[1]
 
-		f.suptitle('%s median and standard deviation' %(galaxy.upper()))
+		title = '%s median and standard deviation' %(galaxy.upper())
 
 
 		
@@ -103,63 +100,129 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop'):
 				gt_fwhm = hist >= np.max(hist)/2
 				unc_plot[i] = np.max(x[gt_fwhm]) - np.min(x[gt_fwhm])
 
-			f.suptitle('%s mostlikely and fwhm' % (galaxy.upper()))
+			title = 'Mostlikely'
+			u_title = 'FWHM'
 
-
-	ax_array[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+	# Age
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
 		D.xBar, D.yBar, age, header, nodots=True, colorbar=True, label='Age (Gyrs)', 
-		vmin=0, vmax=15, title='Age', ax=ax_array[0,0], cmap='gnuplot2', 
+		vmin=0, vmax=15, title=title + ' Age', cmap='gnuplot2', 
 		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=SN_target, center=center)
+		signal_noise_target=SN_target, center=center, redshift=z)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Age.png' % (out_plots))
+	plt.close()
 
-	ax_array[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, met, header, nodots=True, colorbar=True, 
-		label='Metalicity [Z/H]', vmin=-2.25, vmax=0.67, title='Metalicity', 
-		ax=ax_array[1,0], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-		signal_noise=D.SNRatio, signal_noise_target=SN_target, center=center)
-
-	ax_array[2,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, alp, header, nodots=True, colorbar=True, 
-		label='Element Ratio [alpha/Fe]', 
-		vmin=-0.3, vmax=0.5, title='Alpha Enhancement', ax=ax_array[2,0], 
-		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=SN_target, center=center)
-
-
-	ax_array[0,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, 
 		D.xBar, D.yBar, unc_age, header, nodots=True, colorbar=True, label='Age (Gyrs)', 
-		vmin=0, vmax=15, title='Age Uncertainty', ax=ax_array[0,1], 
-		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-		signal_noise_target=SN_target, center=center)
+		vmin=0, vmax=15, title=u_title+' Age', cmap='gnuplot2', 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, close=True,
+		signal_noise_target=SN_target, center=center, save='%s/Age_uncert.png'%(out_plots))
 
-	ax_array[1,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, unc_met, header, nodots=True, colorbar=True, label='Metalicity', 
-		vmin=0, vmax=0.67+2.25, title='Metalicity Uncertainty [Z/H]', 
-		ax=ax_array[1,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+	# Metalicity
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, met, header, nodots=True, colorbar=True,
+		label='Metalicity [Z/H]', vmin=-2.25, vmax=0.67, title=title+' Metalicity', 
+		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
 		signal_noise=D.SNRatio, signal_noise_target=SN_target, center=center)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Metalicity.png' % (out_plots))
+	plt.close()
 
-	ax_array[2,1] = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-		D.xBar, D.yBar, unc_alp, header, nodots=True, colorbar=True, 
-		label='Element Ratio [alpha/Fe]', 
-		vmin=0, vmax=0.5+0.3, title='Alpha Enhancement Uncertainty', 
-		ax=ax_array[2,1], cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, unc_met, header, 
+		nodots=True, colorbar=True, label='Metalicity', vmin=0, vmax=0.67+2.25, 
+		title=u_title+' Metalicity [Z/H]', cmap='gnuplot2', 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=SN_target, center=center, 
+		save='%s/Metalicity_uncert.png'%(out_plots), close=True)
+
+	# Alpha
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, alp, header, 
+		nodots=True, colorbar=True, label='Element Ratio [alpha/Fe]', vmin=-0.3, vmax=0.5, 
+		title=title+' Alpha Enhancement', cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
 		signal_noise=D.SNRatio, signal_noise_target=SN_target, center=center)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Alpha.png' % (out_plots))
+	plt.close()
 
 
-	# f.set_size_inches(8.5,3*1.8)
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, unc_alp, header, 
+		nodots=True, colorbar=True, label='Element Ratio [alpha/Fe]', vmin=0, 
+		vmax=0.5+0.3, title=u_title+' Alpha Enhancement', cmap='gnuplot2', 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=SN_target, center=center,
+		save='%s/Alpha_uncert.png'%(out_plots), close=True)
 
-	print 'Saving plot'
 
-	saveTo = "%s/population.pdf" % (out_plots)
-	# f.tight_layout()
-	ax_array[0,1].set_xlabel('')
-	ax_array[0,0].set_xlabel('')
-	ax_array[1,0].set_xlabel('')
-	ax_array[1,1].set_xlabel('')
-	ax_array[0,1].set_ylabel('')
-	ax_array[1,1].set_ylabel('')
-	ax_array[2,1].set_ylabel('')
-	f.savefig(saveTo)#, bbox_inches="tight")
+	# Detailed (no clip on color axis)
+	out_plots = "%s/plots/population_detail" % (output)
+	if not os.path.exists(out_plots): os.makedirs(out_plots)
+	# Age
+	vmin, vmax = set_lims(age)
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, age, header, nodots=True, colorbar=True, label='Age (Gyrs)', 
+		title=title + ' Age', cmap='gnuplot2', vmin=vmin, vmax=vmax, 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=SN_target, center=center, redshift=z)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Age.png' % (out_plots))
+	plt.close()
+
+	vmin, vmax = set_lims(unc_age)
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, unc_age, header, nodots=True, colorbar=True, label='Age (Gyrs)', 
+		title=u_title+' Age', cmap='gnuplot2', vmin=vmin, vmax=vmax,
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, close=True,
+		signal_noise_target=SN_target, center=center, save='%s/Age_uncert.png'%(out_plots))
+
+	# Metalicity
+	vmin, vmax = set_lims(met)
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		D.xBar, D.yBar, met, header, nodots=True, colorbar=True,
+		label='Metalicity [Z/H]', title=title+' Metalicity', vmin=vmin, vmax=vmax,
+		cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		signal_noise=D.SNRatio, signal_noise_target=SN_target, center=center)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Metalicity.png' % (out_plots))
+	plt.close()
+
+	vmin, vmax = set_lims(unc_met)
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, unc_met, header, 
+		nodots=True, colorbar=True, label='Metalicity', vmin=vmin, vmax=vmax, 
+		title=u_title+' Metalicity [Z/H]', cmap='gnuplot2', 
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=SN_target, center=center, 
+		save='%s/Metalicity_uncert.png'%(out_plots),close=True)
+
+	# Alpha
+	vmin, vmax = set_lims(alp)
+	ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, alp, header, 
+		nodots=True, colorbar=True, label='Element Ratio [alpha/Fe]', vmin=vmin, vmax=vmax,
+		title=title+' Alpha Enhancement', cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		signal_noise=D.SNRatio, signal_noise_target=SN_target, center=center)
+	if overplot:
+		for o, color in overplot.iteritems():
+			add_(o, color, ax, galaxy)
+	plt.gcf().savefig('%s/Alpha.png' % (out_plots))
+	plt.close()
+
+	vmin, vmax = set_lims(unc_alp)
+	plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, unc_alp, header, 
+		nodots=True, colorbar=True, label='Element Ratio [alpha/Fe]', 
+		title=u_title+' Alpha Enhancement', cmap='gnuplot2', vmin=vmin, vmax=vmax,
+		flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		signal_noise_target=SN_target, center=center,
+		save='%s/Alpha_uncert.png'%(out_plots), close=True)
 
 	return D
 
