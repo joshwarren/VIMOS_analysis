@@ -24,12 +24,12 @@ from fit_disk import fit_disk
 import traceback, sys
 
 galaxies = [
-			# 'eso443-g024',
-			# 'ic1459',
-			# 'ic1531', 
-			# 'ic4296',
-			# 'ngc0612',
-			# 'ngc1399',
+			'eso443-g024',
+			'ic1459',
+			'ic1531', 
+			'ic4296',
+			'ngc0612',
+			'ngc1399',
 			'ngc3100',
 			'ngc3557',
 			'ngc7075',
@@ -48,7 +48,7 @@ galaxies = [
 
 
 discard = 0
-norm='lws' # 'lwv'
+norm= 'lwv' # 'lws'
 opt_dir=''
 
 m=mapping()
@@ -68,7 +68,7 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
+		D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
 		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
 		# D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
@@ -79,7 +79,7 @@ for galaxy in galaxies:
 		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
 		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
-		# fit_disk(galaxy, opt='kin'+opt_dir, D=D)
+		fit_disk(galaxy, opt='kin'+opt_dir, D=D)
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# classify(galaxy, opt='kin'+opt_dir)

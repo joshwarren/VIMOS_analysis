@@ -113,7 +113,8 @@ def roundToNearest(x, dx=None, ceil=False, floor=False):
     """
 
     # sanity check
-    if (ceil==True & floor==True): raise "Can't CEIL and FLOOR, just one or t'other"
+    if (ceil==True & floor==True): raise ValueError("Can't CEIL and FLOOR, just one or"+
+    	" t'other")
 
     
     if dx==None:
@@ -135,8 +136,9 @@ def roundToNearest(x, dx=None, ceil=False, floor=False):
 ## warrenj 20170126 
 ## Purpose:	to return the index of an array which is closest to a given number.
 def nearest(x, a, ceil=False, floor=False):
-	if (ceil==True & floor==True): raise "Can't CEIL and FLOOR, just one or t'other"
-	if ~np.isfinite(a): raise "Comparison value must be finite"
+	if (ceil==True & floor==True): raise ValueError("Can't CEIL and FLOOR, just one"+
+		" or t'other")
+	if ~np.isfinite(a): raise ValueError("Comparison value must be finite")
 
 	x = np.array(x)
 	if ceil:
@@ -162,7 +164,7 @@ def all_neighbours(m):
 	NEIGHBOURS = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
 	s = m.shape
 	if len(s) != 2:
-		raise 'm must be 2D for the routine to work'
+		raise ValueError('m must be 2D for the routine to work')
 
 	for i in xrange(len(m.flatten())):
 		nx = []

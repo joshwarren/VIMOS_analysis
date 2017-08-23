@@ -34,15 +34,21 @@ Prefig()
 
 c = 299792.458
 
-if cc.device == 'glamdring': vin_dir = '%s/analysis' % (cc.base_dir)
-else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+def get_vin_dir(instrument):
+	if instrument=='vimos':
+		if cc.device == 'glamdring': vin_dir = '%s/analysis' % (cc.base_dir)
+		else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+	elif instrument=='muse':
+		if cc.device == 'glamdring': vin_dir = '%s/analysis_muse' % (cc.base_dir)
+		else: vin_dir = '%s/Data/muse/analysis' % (cc.base_dir)
 
-def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None):
+def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, instrument='vimos'):
 	if (pp is None and galaxy is None) or (pp is not None and galaxy is not None):
-		raise 'Either pp or galaxy must be supplied: one or tother'
+		raise ValueError('Either pp or galaxy must be supplied: one or tother')
 	if galaxy is not None and (bin is None or opt is None):
-		raise 'If galaxy is supplied, so to must bin and opt'
+		raise ValueError('If galaxy is supplied, so to must bin and opt')
 
+	vin_dir = get_vin_dir(instrument)
 	if pp is None:
 		vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	
@@ -105,35 +111,47 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None):
 
 class population(object):
 
-	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, ab_uncert=None):
+	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, ab_uncert=None,
+		instrument='vimos'):
 		self.pp = pp
 		self.galaxy = galaxy
+		self.instrument = instrument
 
 		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		grid_length = 40
 
 		if ab_index is not None:
 			if ab_uncert is None:
-				raise('Uncertainty values must be supplied')
+				raise ValueError('Uncertainty values must be supplied')
 			self.ab_lines = ab_index
 			self.uncerts = ab_uncert
 		else:
 			if self.pp is None:
-				self.i_gal=int(sys.argv[1])
-				self.opt=str(sys.argv[2])
-				self.bin=int(sys.argv[3])
 
-				vout_dir = '%s/%s/%s/pop' % (vin_dir, galaxy, opt)
-				if not os.path.exists(vout_dir): os.makedirs(vout_dir)
+				try:
+					self.instrument = str(sys.argv[1])
+					self.i_gal=int(sys.argv[2])
+					self.opt=str(sys.argv[3])
+					self.bin=int(sys.argv[4])
+				except IndexError:
+					self.i_gal=int(sys.argv[1])
+					self.opt=str(sys.argv[2])
+					self.bin=int(sys.argv[3])
+				
 
 				galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 					'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 				self.galaxy = galaxies[self.i_gal]
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, galaxy=galaxy, 
-					bin=bin, opt=opt)
+					bin=bin, opt=opt, instrument=self.instrument)
 			else:
-				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=pp)
+				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=pp,
+					instrument=self.instrument)
+
+		vin_dir = get_vin_dir(self.instrument)
+		vout_dir = '%s/%s/%s/pop' % (vin_dir, galaxy, opt)
+		if not os.path.exists(vout_dir): os.makedirs(vout_dir)
 				
 
 
@@ -266,8 +284,8 @@ class population(object):
 
 	def save(self):
 		if self.pp is not None:
-			raise('population was run using the ppxf output object and therefore has no' +
-				' obvious place to save the output')
+			raise ValueError('population was run using the ppxf output object and ' +
+				'therefore has no obvious place to save the output')
 		file = "%s/%i.dat" % (self.vout_dir, self.bin)
 		with open(file, 'w') as f:
 			f.write('%f   %f   %f \n' % (self.age, self.metallicity, self.alpha))

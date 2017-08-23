@@ -458,6 +458,7 @@ def get_dataCubeDirectory(galaxy):
 			str.__init__(s)
 			self.RAoffset = 0 # offset in arcsec
 			self.decoffset = 0
+			self.band = ''
 
 
 	class mystring(str):
@@ -479,37 +480,120 @@ def get_dataCubeDirectory(galaxy):
 	dataCubeDirectory.CO = mystring2("%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy))
 
 	if galaxy == 'eso443-g024':
-		dataCubeDirectory.xray = '%s/Data/Chandra/ESO443_full.fits' % (cc.base_dir)
+		# dataCubeDirectory.xray = '%s/Data/Chandra/ESO443_full.fits' % (cc.base_dir)
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/ESO443.CBAND.IMAGE.FITS')
+		dataCubeDirectory.radio.band = 'L band (4.86 GHz)'
+		dataCubeDirectory.radio.decoffset = 0
+		dataCubeDirectory.radio.RAoffset = 31
+
+		# Seem to be just noise/point sources in the U-band
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+		# 	'Southern_RG_VLA/ESO443.UBAND.IMAGE.FITS')
+		# dataCubeDirectory.radio.band = 'U band (14.94 GHz)'
 	elif galaxy == 'ic1459':
-		dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
+		pass
+		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1531':
-		dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
+		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
+
 		dataCubeDirectory.CO.RAoffset = 6.0
 		dataCubeDirectory.CO.decoffset = 0.5
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/IC1531.LBAND.IMAGE.FITS')
+		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
+		dataCubeDirectory.radio.RAoffset = 6.75
+		dataCubeDirectory.radio.decoffset = 2
+
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+		# 	'Southern_RG_VLA/IC1531.XBAND.IMAGE.FITS')
+		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
+		# dataCubeDirectory.radio.RAoffset = 29
+		# dataCubeDirectory.radio.decoffset = 1
 	elif galaxy == 'ic4296':
-		dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
+		# dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/IC4296.LBAND.IMAGE.FITS')
+		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
+		dataCubeDirectory.radio.RAoffset = 4.7
+		dataCubeDirectory.radio.decoffset = 0.5
+
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+		# 	'Southern_RG_VLA/IC4296.CBAND.IMAGE.FITS')
+		# dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
+		# dataCubeDirectory.radio.RAoffset = 4.8
+		# dataCubeDirectory.radio.decoffset = 0.5
 	elif galaxy == 'ngc0612':
-		dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
+		# dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
+
 		dataCubeDirectory.CO = mystring2("%s/Data/alma/ngc612-mom0.fits" % (cc.base_dir))
 	elif galaxy == 'ngc1399':
-		dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
+		# dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
+		pass
 	elif galaxy == 'ngc3100':
-		dataCubeDirectory.radio = mystring2('%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, 
-			galaxy))
-		dataCubeDirectory.radio.RAoffset = 2.6
-		dataCubeDirectory.radio.decoffset = -1.2
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, 
+		# 	galaxy))
+		# dataCubeDirectory.radio.RAoffset = 2.6
+		# dataCubeDirectory.radio.decoffset = -1.2
+
 		dataCubeDirectory.CO.RAoffset = 2.6
 		dataCubeDirectory.CO.decoffset = -1.2
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD254.fits' % (
+			cc.base_dir))
+		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
+		dataCubeDirectory.radio.RAoffset = 8.5
+		dataCubeDirectory.radio.decoffset = 0.5
+
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD270.fits' % (
+		# 	cc.base_dir))
+		# dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
+		# dataCubeDirectory.radio.RAoffset = 3.5
+		# dataCubeDirectory.radio.decoffset = -1.2
+
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AL508.fits' % (
+		# 	cc.base_dir))
+		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
+		# dataCubeDirectory.radio.RAoffset = 3.5
+		# dataCubeDirectory.radio.decoffset = -0.5
 	elif galaxy == 'ngc3557':
 		dataCubeDirectory.CO.RAoffset = 3.0
 		dataCubeDirectory.CO.decoffset = -0.5
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/NGC3557.ABC.6CM.PBCOR.FITS')
+		dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
+		dataCubeDirectory.radio.RAoffset = 4.7
+		dataCubeDirectory.radio.decoffset = -1
+
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) + 
+		# 	'Southern_RG_VLA/NGC3557.CD.6CM.PBCOR.FITS')
+		# dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
+		# dataCubeDirectory.radio.RAoffset = 10
+		# dataCubeDirectory.radio.decoffset = 2
 	elif galaxy == 'ngc7075':
 		dataCubeDirectory.CO.RAoffset = 4.5
 		dataCubeDirectory.CO.decoffset = 0.6
+
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/NGC7075BC.IMAGE.FITS')
+		dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
+		dataCubeDirectory.radio.RAoffset = 15
+		dataCubeDirectory.radio.decoffset = 0.5
+
+		# Just noise in the X-band image...
+		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+		# 	'Southern_RG_VLA/NGC7075.XBAND.IMAGE.FITS')
+		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
 	elif galaxy == 'pks0718-34':
-		pass
-	
-	
+		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
+			'Southern_RG_VLA/0718.XBAND.IMAGE.FITS')
+		dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
+		dataCubeDirectory.radio.RAoffset = 8
+		dataCubeDirectory.radio.decoffset = -0.5
 
 	return dataCubeDirectory
 #-----------------------------------------------------------------------------

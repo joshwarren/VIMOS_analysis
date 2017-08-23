@@ -95,7 +95,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	header, vmin=None, vmax=None, nodots=True, colorbar=False, label=None, 
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, signal_noise=None, 
+	ax = None, close=False, show_vel=False, signal_noise=None, debug=False,
 	signal_noise_target=None, pa=None, center=None, alpha=None, **kwargs):
 	Prefig()
 
@@ -156,7 +156,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# Create display axis
 	ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
-	if True:
+	if not debug:
 		ax_dis.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*
 			header['CD1_1']*60*60)
 		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*

@@ -124,25 +124,29 @@ class Data(object):
 
 	# Take output some atttribute and return 2D 'unbinned' versions i.e. that value 
 	# applied to each spaxel within the bin. Norm keyword is for moment-0 quantities
-	def unbin(self, attr, norm=False):
+	def unbin(self, attr):
 		if isinstance(attr, str):
 			attr = self.__getattribute__(self, attr)
-		# if norm:
-		# 	attr /= self.n_spaxels_in_bin
 
-		out = np.zeros(self.unbinned_flux.shape)
+		out = np.full(self.unbinned_flux.shape, np.nan)
 
 		for bin in self.bin:
 			out[bin.xspaxels, bin.yspaxels] = attr[bin.bin_number]
+		# Transform such that imshow displays as plot_velfield_nointerp does.
 		out = np.rot90(out[::-1,:])
 		return out
 
-	def rebin(self, field):
-		new = np.zeros(self.number_of_bins)
+	def rebin(self, field, flux_weighted=True):
+		field = np.rot90(field, 3)[::-1,:] # remove transform applied in unbin
+		new = np.full(self.number_of_bins, np.nan)
 		for i in range(self.number_of_bins):
 			m = ~np.isnan(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
-			new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m], 
-				weights=self.unbinned_flux[self.bin[i].xspaxels, self.bin[i].yspaxels][m])
+			if flux_weighted:
+				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m], 
+					weights=self.unbinned_flux[self.bin[i].xspaxels, 
+					self.bin[i].yspaxels][m])
+			else:
+				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m])
 		return new
 
 

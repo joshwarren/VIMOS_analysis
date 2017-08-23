@@ -195,7 +195,7 @@ def add_R_e(ax, galaxy, discard=0):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def add_(overplot, color, ax, galaxy, close=False):
+def add_(overplot, color, ax, galaxy, close=False, debug=False):
 	image_dir=getattr(get_dataCubeDirectory(galaxy), overplot)
 	
 	if os.path.exists(image_dir):
@@ -203,9 +203,9 @@ def add_(overplot, color, ax, galaxy, close=False):
 
 		# ****** NB: NOTE THE -VE SIGN ON CDELT1 ******
 		x = (np.arange(f.header['NAXIS1']) - f.header['CRPIX1']) *\
-			-f.header['CDELT1'] + f.header['CRVAL1'] + image_dir.RAoffset/(60**2)
+			-f.header['CDELT1'] + f.header['CRVAL1'] + image_dir.RAoffset/(60.**2)
 		y = (np.arange(f.header['NAXIS2'])-f.header['CRPIX2']) *\
-			f.header['CDELT2'] + f.header['CRVAL2'] + image_dir.decoffset/(60**2)
+			f.header['CDELT2'] + f.header['CRVAL2'] + image_dir.decoffset/(60.**2)
 	
 		#remove random extra dimenisons.
 		s = np.array(f.data.shape)
@@ -227,10 +227,14 @@ def add_(overplot, color, ax, galaxy, close=False):
 		# Plot
 		cs = ax.contour(x, y, image, colors=color, linestyles='solid', linewidth=1)
 		# cs = ax.contour(image, colors=color, linestyles='solid', linewidth=1)
-		cs.collections[0].set_label(overplot)
+		if overplot == 'radio':
+			cs.collections[0].set_label(image_dir.band)
+		else:
+			cs.collections[0].set_label(overplot)
 
-		ax.set_xlim(xlim)
-		ax.set_ylim(ylim)
+		if not debug:
+			ax.set_xlim(xlim)
+			ax.set_ylim(ylim)
 
 		leg = ax.legend(facecolor='w')
 
