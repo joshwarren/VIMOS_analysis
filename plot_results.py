@@ -195,7 +195,7 @@ def add_R_e(ax, galaxy, discard=0):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def add_(overplot, color, ax, galaxy, close=False, debug=False):
+def add_(overplot, color, ax, galaxy, scale='log', close=False, debug=False, FoV=None):
 	image_dir=getattr(get_dataCubeDirectory(galaxy), overplot)
 	
 	if os.path.exists(image_dir):
@@ -222,19 +222,39 @@ def add_(overplot, color, ax, galaxy, close=False, debug=False):
 			image[image < lim] = lim
 		else:
 			Warning('Are you sure the x axis has the correct sign?')
-		image = np.log(image)
+		if scale == 'log':
+			image = np.log10(image)
+		elif scale == 'lin':
+			pass
+		elif scale == 'sqrt':
+			image = np.sqrt(image)
+		else:
+			raise ValueError("'scale' keyword has invaild value: %s" % (scale))
 
 		# Plot
 		cs = ax.contour(x, y, image, colors=color, linestyles='solid', linewidth=1)
 		# cs = ax.contour(image, colors=color, linestyles='solid', linewidth=1)
 		if overplot == 'radio':
-			cs.collections[0].set_label(image_dir.band)
+			if scale != 'lin':
+				cs.collections[0].set_label(scale+' '+image_dir.band)
+			else:
+				cs.collections[0].set_label(image_dir.band)
 		else:
-			cs.collections[0].set_label(overplot)
+			if scale != 'lin':
+				cs.collections[0].set_label(scale+' '+overplot)
+			else:
+				cs.collections[0].set_label(overplot)
 
 		if not debug:
 			ax.set_xlim(xlim)
 			ax.set_ylim(ylim)
+		elif FoV is not None:
+			xdiff = xlim[1] - xlim[0]
+			xcent = np.mean(xlim)
+			ax.set_xlim(np.array([-1,1])*xdiff*FoV/2. + xcent)
+			ydiff = ylim[1] - ylim[0]
+			ycent = np.mean(ylim)
+			ax.set_ylim(np.array([-1,1])*ydiff*FoV/2. + ycent)
 
 		leg = ax.legend(facecolor='w')
 

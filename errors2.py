@@ -479,121 +479,115 @@ def get_dataCubeDirectory(galaxy):
 	dataCubeDirectory = mystring('%s/cubes/%s.cube.combined.corr.fits' %  (dir, galaxy))
 	dataCubeDirectory.CO = mystring2("%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy))
 
+	# Using offsets file
+	offsets_file = '%s/Data/offsets.txt' % (cc.base_dir)
+	file_headings = np.genfromtxt(offsets_file, dtype=str, max_rows=1)
+	galaxies, CO_RA, CO_dec = np.loadtxt(offsets_file, dtype=str, usecols=(0,9,10), 
+		skiprows=2, unpack=True)
+	CO_RA[CO_RA=='-'] = 'nan'
+	CO_dec[CO_dec=='-'] = 'nan'
+	i_gal = np.where(galaxies == galaxy)[0][0]
+	dataCubeDirectory.CO.RAoffset = np.float(CO_RA[i_gal].strip('*'))
+	dataCubeDirectory.CO.decoffset = np.float(CO_dec[i_gal].strip('*'))
+	
+
 	if galaxy == 'eso443-g024':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/ESO443_full.fits' % (cc.base_dir)
 
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/ESO443.CBAND.IMAGE.FITS')
 		dataCubeDirectory.radio.band = 'L band (4.86 GHz)'
-		dataCubeDirectory.radio.decoffset = 0
-		dataCubeDirectory.radio.RAoffset = 31
+		col = np.where(file_headings=='VIMOS-VLA_L')[0][0]
 
-		# Seem to be just noise/point sources in the U-band
+		# Plot linear not log contours: very small extent
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 		# 	'Southern_RG_VLA/ESO443.UBAND.IMAGE.FITS')
 		# dataCubeDirectory.radio.band = 'U band (14.94 GHz)'
+		# col = np.where(file_headings=='VIMOS-VLA_U')[0][0]
 	elif galaxy == 'ic1459':
 		pass
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1531':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
 
-		dataCubeDirectory.CO.RAoffset = 6.0
-		dataCubeDirectory.CO.decoffset = 0.5
-
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/IC1531.LBAND.IMAGE.FITS')
 		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
-		dataCubeDirectory.radio.RAoffset = 6.75
-		dataCubeDirectory.radio.decoffset = 2
+		col = np.where(file_headings=='VIMOS-VLA_L')[0][0]
 
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 		# 	'Southern_RG_VLA/IC1531.XBAND.IMAGE.FITS')
 		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
-		# dataCubeDirectory.radio.RAoffset = 29
-		# dataCubeDirectory.radio.decoffset = 1
+		# col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 	elif galaxy == 'ic4296':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
 
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/IC4296.LBAND.IMAGE.FITS')
 		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
-		dataCubeDirectory.radio.RAoffset = 4.7
-		dataCubeDirectory.radio.decoffset = 0.5
+		col = np.where(file_headings=='VIMOS-VLA_L')[0][0]
 
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 		# 	'Southern_RG_VLA/IC4296.CBAND.IMAGE.FITS')
 		# dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
-		# dataCubeDirectory.radio.RAoffset = 4.8
-		# dataCubeDirectory.radio.decoffset = 0.5
+		# col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 	elif galaxy == 'ngc0612':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
 
 		dataCubeDirectory.CO = mystring2("%s/Data/alma/ngc612-mom0.fits" % (cc.base_dir))
+		dataCubeDirectory.CO.RAoffset = 3.7
 	elif galaxy == 'ngc1399':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
 		pass
 	elif galaxy == 'ngc3100':
-		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/%s/AD270.fits' % (cc.base_dir, 
-		# 	galaxy))
-		# dataCubeDirectory.radio.RAoffset = 2.6
-		# dataCubeDirectory.radio.decoffset = -1.2
-
-		dataCubeDirectory.CO.RAoffset = 2.6
-		dataCubeDirectory.CO.decoffset = -1.2
-
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD254.fits' % (
 			cc.base_dir))
 		dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
-		dataCubeDirectory.radio.RAoffset = 8.5
-		dataCubeDirectory.radio.decoffset = 0.5
+		col = np.where(file_headings=='VIMOS-VLA_L')[0][0]
 
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD270.fits' % (
 		# 	cc.base_dir))
 		# dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
-		# dataCubeDirectory.radio.RAoffset = 3.5
-		# dataCubeDirectory.radio.decoffset = -1.2
+		# col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AL508.fits' % (
 		# 	cc.base_dir))
 		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
-		# dataCubeDirectory.radio.RAoffset = 3.5
-		# dataCubeDirectory.radio.decoffset = -0.5
+		# col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 	elif galaxy == 'ngc3557':
-		dataCubeDirectory.CO.RAoffset = 3.0
-		dataCubeDirectory.CO.decoffset = -0.5
-
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/NGC3557.ABC.6CM.PBCOR.FITS')
 		dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
-		dataCubeDirectory.radio.RAoffset = 4.7
-		dataCubeDirectory.radio.decoffset = -1
+		col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) + 
 		# 	'Southern_RG_VLA/NGC3557.CD.6CM.PBCOR.FITS')
 		# dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
-		# dataCubeDirectory.radio.RAoffset = 10
-		# dataCubeDirectory.radio.decoffset = 2
 	elif galaxy == 'ngc7075':
-		dataCubeDirectory.CO.RAoffset = 4.5
-		dataCubeDirectory.CO.decoffset = 0.6
-
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/NGC7075BC.IMAGE.FITS')
 		dataCubeDirectory.radio.band = 'C band (4.87 GHz)'
-		dataCubeDirectory.radio.RAoffset = 15
-		dataCubeDirectory.radio.decoffset = 0.5
+		col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 
-		# Just noise in the X-band image...
+		# Plot linear, not log contours: very small extent
 		# dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 		# 	'Southern_RG_VLA/NGC7075.XBAND.IMAGE.FITS')
 		# dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
+		# col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 	elif galaxy == 'pks0718-34':
 		dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 			'Southern_RG_VLA/0718.XBAND.IMAGE.FITS')
 		dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
-		dataCubeDirectory.radio.RAoffset = 8
-		dataCubeDirectory.radio.decoffset = -0.5
+		col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
+
+	# Extracting offsets (found by eye)
+	col *= 2
+	dataCubeDirectory.radio.RAoffset, dataCubeDirectory.radio.decoffset = \
+		np.genfromtxt(offsets_file, unpack=True, usecols=(col-1, col), dtype=str,
+		skip_header=2, missing_values='-', filling_values='nan')[:, i_gal]
+	dataCubeDirectory.radio.RAoffset = float(dataCubeDirectory.radio.RAoffset.strip('*'))
+	dataCubeDirectory.radio.decoffset = float(dataCubeDirectory.radio.decoffset.strip('*'))
+	
 
 	return dataCubeDirectory
 #-----------------------------------------------------------------------------

@@ -140,13 +140,11 @@ class Data(object):
 		field = np.rot90(field, 3)[::-1,:] # remove transform applied in unbin
 		new = np.full(self.number_of_bins, np.nan)
 		for i in range(self.number_of_bins):
-			m = ~np.isnan(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
 			if flux_weighted:
-				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m], 
-					weights=self.unbinned_flux[self.bin[i].xspaxels, 
-					self.bin[i].yspaxels][m])
+				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels], 
+					weights=self.unbinned_flux[self.bin[i].xspaxels, self.bin[i].yspaxels])
 			else:
-				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels][m])
+				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
 		return new
 
 
