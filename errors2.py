@@ -581,12 +581,15 @@ def get_dataCubeDirectory(galaxy):
 		col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 
 	# Extracting offsets (found by eye)
-	col *= 2
-	dataCubeDirectory.radio.RAoffset, dataCubeDirectory.radio.decoffset = \
-		np.genfromtxt(offsets_file, unpack=True, usecols=(col-1, col), dtype=str,
-		skip_header=2, missing_values='-', filling_values='nan')[:, i_gal]
-	dataCubeDirectory.radio.RAoffset = float(dataCubeDirectory.radio.RAoffset.strip('*'))
-	dataCubeDirectory.radio.decoffset = float(dataCubeDirectory.radio.decoffset.strip('*'))
+	if 'Data' in dataCubeDirectory.radio: # check is set
+		col *= 2
+		dataCubeDirectory.radio.RAoffset, dataCubeDirectory.radio.decoffset = \
+			np.genfromtxt(offsets_file, unpack=True, usecols=(col-1, col), dtype=str,
+			skip_header=2, missing_values='-', filling_values='nan')[:, i_gal]
+		dataCubeDirectory.radio.RAoffset = float(
+			dataCubeDirectory.radio.RAoffset.strip('*'))
+		dataCubeDirectory.radio.decoffset = float(
+			dataCubeDirectory.radio.decoffset.strip('*'))
 	
 
 	return dataCubeDirectory

@@ -44,11 +44,11 @@ galaxies = [
 # galaxies = ['ngc3100']
 # galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
-galaxies = ['pks0718-34']
+# galaxies = ['pks0718-34']
 
 
 discard = 0
-norm= 'lwv' # 'lws'
+norm= 'fit_disk'#'lwv' # 'lws'
 opt_dir=''
 
 m=mapping()
