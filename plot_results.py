@@ -195,18 +195,19 @@ def add_R_e(ax, galaxy, discard=0):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def add_(overplot, color, ax, galaxy, scale='lin', close=False, debug=False, FoV=None):
-	image_dir=getattr(get_dataCubeDirectory(galaxy), overplot)
+def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None, 
+	debug=False, FoV=None):
+	image_dir=getattr(get_dataCubeDirectory(galaxy, radio_band=radio_band), overplot)
 	
 	if os.path.exists(image_dir):
 		f = fits.open(image_dir)[0]
-
 		# ****** NB: NOTE THE -VE SIGN ON CDELT1 ******
 		x = (np.arange(f.header['NAXIS1']) - f.header['CRPIX1']) *\
-			-f.header['CDELT1'] + f.header['CRVAL1'] + image_dir.RAoffset/(60.**2)
-		y = (np.arange(f.header['NAXIS2'])-f.header['CRPIX2']) *\
-			f.header['CDELT2'] + f.header['CRVAL2'] + image_dir.decoffset/(60.**2)
+			-abs(f.header['CDELT1']) + f.header['CRVAL1'] + (image_dir.RAoffset/(60.**2))
+		y = (np.arange(f.header['NAXIS2']) - f.header['CRPIX2']) *\
+			f.header['CDELT2'] + f.header['CRVAL2'] + (image_dir.decoffset/(60.**2))
 	
+		x, y = np.meshgrid(x,y)
 		#remove random extra dimenisons.
 		s = np.array(f.data.shape)
 		if any(s==1):
@@ -217,17 +218,17 @@ def add_(overplot, color, ax, galaxy, scale='lin', close=False, debug=False, FoV
 		ylim = ax.get_ylim()
 
 		# Discard noise from outer parts of the galaxy -  for radio
-		if overplot == 'radio':
+		if overplot == 'radio' or scale =='lin':
 			lim = np.nanmean(image) + np.nanstd(image)
 			image[image < lim] = lim
-		else:
-			Warning('Are you sure the x axis has the correct sign?')
+
 		if scale == 'log':
 			image = np.log10(image)
 		elif scale == 'lin':
-			m = np.nanmean(image)
-			s = np.nanstd(image)
-			image[image<m+s] = np.nan
+			pass
+			# m = np.nanmean(image)
+			# s = np.nanstd(image)
+			# image[image<m+s] = np.nan
 		elif scale == 'sqrt':
 			image = np.sqrt(image)
 		else:

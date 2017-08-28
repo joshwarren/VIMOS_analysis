@@ -95,7 +95,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	header, vmin=None, vmax=None, nodots=True, colorbar=False, label=None, 
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, signal_noise=None, debug=False,
+	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, dms=False,
 	signal_noise_target=None, pa=None, center=None, alpha=None, **kwargs):
 	Prefig()
 
@@ -135,9 +135,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		# VIMOS parameters
 		header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
 		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
-		header['CTYPE1'] = 'RA---TAN'
+		header['CTYPE1'] = 'RA---TAN' # No idea what the projection should be...
 		header['CTYPE2'] = 'DEC--TAN'
-		header['CD1_1'] = -header['CDELT1']/(60**2)
+		header['CD1_1'] = -abs(header['CDELT1']/(60**2))
 		header['CD2_2'] = header['CDELT2']/(60**2)
 	except KeyError:
 		pass # MUSE has the correctly labelled headers
@@ -177,16 +177,24 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax.xaxis.set_visible(False)
 		ax.yaxis.set_visible(False)
 	else:
-		from astropy.wcs import WCS 
-		wcs = WCS(header).celestial
-		ax = plt.axes(projection=wcs)
+		ax_dis.xaxis.set_visible(False)
+		ax_dis.yaxis.set_visible(False)
+
+		ax.set_xlabel('RA')
+		ax.set_ylabel('Dec')
+
 
 	
 	bin_num = bin_num.astype(int)
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
-	xmin, xmax = np.min(x), np.max(x)
-	ymin, ymax = np.min(y), np.max(y)
+	# xmin, xmax = np.min(x), np.max(x)
+	# ymin, ymax = np.min(y), np.max(y)
+	xmax = (0 - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
+	xmin = (header['NAXIS1'] - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
+	ymin = (0 - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
+	ymax = (header['NAXIS2'] - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
+
 	nx = int(round((xmax - xmin)/pixelSize) + 1)
 	ny = int(round((ymax - ymin)/pixelSize) + 1)
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
@@ -224,12 +232,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
 	# 	cmap=cmap, extent=[xmin, xmax, ymin, ymax])
 
-	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmin, xmax, ymin, ymax],
+	# RA increases right to left, thus xmax, xmin,...
+	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmax, xmin, ymin, ymax],
 		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
-
-	# RA increases right to left
-	# ax.invert_xaxis()
-
 
 	if galaxy is not None:
 		gal_name = ax.text(0.02,0.98, galaxy, color='black',
@@ -344,6 +349,42 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if pa is not None:
 		add_orientation(pa)
+
+	
+	if debug and dms:
+		plt.draw()
+		from astropy.coordinates import Angle
+		import astropy.units as u
+
+		labels = ax.get_xticklabels()
+		first = True
+		second = True
+		for i, l in enumerate(labels):
+			if l.get_text() != '':
+				coord = Angle(l.get_text(), unit=u.deg)
+				if first:
+					labels[i] = r"%.0f$\degree$ %.0f' %.2f" % (coord.dms[0], 
+						abs(coord.dms[1]), abs(coord.dms[2])) + '"'
+					first = False
+				elif second:
+					labels[i] = ''
+					second = False
+				else:
+					labels[i] = '%.2f"' % (coord.dms[2])
+		ax.set_xticklabels(labels)
+
+		labels = ax.get_yticklabels()
+		first = True
+		for i, l in enumerate(labels):
+			if l.get_text() != '':
+				coord = Angle(l.get_text(), unit=u.deg)
+				if i == len(labels)-2:
+					labels[i] = r"%.0f$\degree$ %.0f' %.2f" %(coord.dms[0], 
+						abs(coord.dms[1]), abs(coord.dms[2])) + '"'
+					first = False
+				else:
+					labels[i] = '%.2f"' % (coord.dms[2])
+		ax.set_yticklabels(labels)
 	
 	if save is not None:
 		ax.saveTo = save
