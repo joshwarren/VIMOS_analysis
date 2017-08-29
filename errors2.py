@@ -484,12 +484,6 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 	file_headings = np.genfromtxt(offsets_file, dtype=str, max_rows=1)
 	galaxies, CO_RA, CO_dec = np.loadtxt(offsets_file, dtype=str, usecols=(0,9,10), 
 		skiprows=2, unpack=True)
-	CO_RA[CO_RA=='-'] = 'nan'
-	CO_dec[CO_dec=='-'] = 'nan'
-	i_gal = np.where(galaxies == galaxy)[0][0]
-	dataCubeDirectory.CO.RAoffset = np.float(CO_RA[i_gal].strip('*'))
-	dataCubeDirectory.CO.decoffset = np.float(CO_dec[i_gal].strip('*'))
-	
 
 	if galaxy == 'eso443-g024':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/ESO443_full.fits' % (cc.base_dir)
@@ -539,7 +533,6 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N612_full.fits' % (cc.base_dir)
 
 		dataCubeDirectory.CO = mystring2("%s/Data/alma/ngc612-mom0.fits" % (cc.base_dir))
-		dataCubeDirectory.CO.RAoffset = 3.7
 	elif galaxy == 'ngc1399':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
 		pass
@@ -591,7 +584,14 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 
-	# Extracting offsets (found by eye)
+	# Extraction CO offsets
+	CO_RA[CO_RA=='-'] = 'nan'
+	CO_dec[CO_dec=='-'] = 'nan'
+	i_gal = np.where(galaxies == galaxy)[0][0]
+	dataCubeDirectory.CO.RAoffset = np.float(CO_RA[i_gal].strip('*'))
+	dataCubeDirectory.CO.decoffset = np.float(CO_dec[i_gal].strip('*'))
+
+	# Extracting radio offsets (found by eye)
 	if 'Data' in dataCubeDirectory.radio and radio_band != 'C2': # check is set
 		col *= 2
 		dataCubeDirectory.radio.RAoffset, dataCubeDirectory.radio.decoffset = \
@@ -601,7 +601,6 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			dataCubeDirectory.radio.RAoffset.strip('*'))
 		dataCubeDirectory.radio.decoffset = float(
 			dataCubeDirectory.radio.decoffset.strip('*'))
-	
 
 	return dataCubeDirectory
 #-----------------------------------------------------------------------------

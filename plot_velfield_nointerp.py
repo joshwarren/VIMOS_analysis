@@ -157,9 +157,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	# Create display axis
 	ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
 	if not debug:
-		ax_dis.set_xlim((np.array([header['NAXIS1'], 0]) - center[0])*
+		ax_dis.set_xlim((np.array([header['NAXIS1'], 0]) - center[0]+0.5)*
 			header['CD1_1']*60*60)
-		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*
+		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1]-0.5)*
 			header['CD2_2']*60*60)
 
 		ax_dis.set_xlabel(x_label)
