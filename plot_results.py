@@ -198,7 +198,11 @@ def add_R_e(ax, galaxy, discard=0):
 def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None, 
 	debug=False, FoV=None):
 	image_dir=getattr(get_dataCubeDirectory(galaxy, radio_band=radio_band), overplot)
-	
+	if scale is None:
+		if image_dir.default_scale is not None:
+			scale = image_dir.default_scale
+		else:
+			scale = 'lin'
 	if os.path.exists(image_dir):
 		f = fits.open(image_dir)[0]
 		# ****** NB: NOTE THE -VE SIGN ON CDELT1 ******
@@ -707,7 +711,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		if hasattr(a,'ax3'): f.add_axes(a.ax3)
 		if not os.path.exists(os.path.dirname(a.saveTo)):
 			os.makedirs(os.path.dirname(a.saveTo))
-		f.savefig(a.saveTo)#, bbox_inches="tight")
+		f.savefig(a.saveTo, bbox_inches="tight")
 
 		if overplot:
 			for o, color in overplot.iteritems():

@@ -113,7 +113,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		return
 
 	if ax is None:
-		fig, ax = plt.subplots()#nrows=1,ncols=1)
+		fig, ax = plt.subplots()
 	else:
 		fig = plt.gcf()
 	ax.set_aspect('equal')
@@ -135,12 +135,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		# VIMOS parameters
 		header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
 		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
-		header['CTYPE1'] = 'RA---TAN' # No idea what the projection should be...
-		header['CTYPE2'] = 'DEC--TAN'
 		header['CD1_1'] = -abs(header['CDELT1']/(60**2))
 		header['CD2_2'] = header['CDELT2']/(60**2)
 	except KeyError:
-		pass # MUSE has the correctly labelled headers
+		header['CD1_1'] = -abs(header['CD1_1'])
+		#pass # MUSE has the correctly labelled headers
 
 	x = (x_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	y = (y_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
@@ -155,9 +154,10 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	y_label = r'$\Delta$ Dec (arcsec)'
 
 	# Create display axis
-	ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
+	
 	if not debug:
-		ax_dis.set_xlim((np.array([header['NAXIS1'], 0]) - center[0]+0.5)*
+		ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
+		ax_dis.set_xlim((np.array([0, header['NAXIS1']]) - center[0]+0.5)*
 			header['CD1_1']*60*60)
 		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1]-0.5)*
 			header['CD2_2']*60*60)
@@ -173,13 +173,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax_dis.xaxis.set_major_formatter(tick_formatter)
 		ax_dis.yaxis.set_major_formatter(tick_formatter)
 
+		ax.ax_dis = ax_dis
+
 		# Hide ax
 		ax.xaxis.set_visible(False)
 		ax.yaxis.set_visible(False)
 	else:
-		ax_dis.xaxis.set_visible(False)
-		ax_dis.yaxis.set_visible(False)
-
 		ax.set_xlabel('RA')
 		ax.set_ylabel('Dec')
 
@@ -188,8 +187,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	bin_num = bin_num.astype(int)
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
-	# xmin, xmax = np.min(x), np.max(x)
-	# ymin, ymax = np.min(y), np.max(y)
 	xmax = (0 - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	xmin = (header['NAXIS1'] - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	ymin = (0 - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
@@ -228,10 +225,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if alpha is not None:
 		pic[j, k, 3] = alpha[bin_num]
 
-
-	# cs = ax.imshow(np.rot90(img), interpolation='none', clim=[vmin, vmax],
-	# 	cmap=cmap, extent=[xmin, xmax, ymin, ymax])
-
 	# RA increases right to left, thus xmax, xmin,...
 	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmax, xmin, ymin, ymax],
 		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
@@ -255,7 +248,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
-			contours = -2.5*np.log10(np.rot90(flux_unbinned[::-1,::-1])/
+			contours = -2.5*np.log10(np.rot90(flux_unbinned[:,::-1])/
 				np.max(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
@@ -264,7 +257,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 
 		else:
-			cont = ax.contour(np.rot90(flux_unbinned[::-1,::-1]), colors='k', 
+			cont = ax.contour(np.rot90(flux_unbinned[:,::-1]), colors='k', 
 				extent=[xmin, xmax, ymin, ymax], linewidths=1)
 			cont.collections[0].set_label('Flux (linear)')
 
@@ -276,7 +269,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if show_bin_num and not show_vel:
 		for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
 			ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
-		# ax.text(xBar[180], yBar[180], str(180), color='black', fontsize=4)
 
 	if show_vel:
 		for i in range(len(xBar)):
@@ -285,7 +277,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(vel[i]), 
 					color='grey', fontsize=5)
 
-	if redshift is not None:
+	if redshift is not None and not debug:
 		c = 299792 #km/s
 		#H = 67.8 #(km/s)/Mpc # From Planck
 		H = 70.0 # value used by Bolonga group.
@@ -324,10 +316,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if hasattr(ax,'ax2'):
 			ax.set_title(title, y=1.1)
 		else:
-			ax.set_title(title)#, fontdict={'fontsize':'small'})
+			ax.set_title(title)
 
-
-	if colorbar:
+	if colorbar and not debug:
 		ticks = ticker.MaxNLocator(nbins=nticks)
 		if hasattr(ax,'ax2'):
 			cbar = plt.colorbar(cs, ax=[ax,ax_dis, ax2], ticks=ticks, pad=0.1, 
@@ -335,13 +326,18 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		else:
 			cbar = plt.colorbar(cs, ax=[ax, ax_dis], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
+	elif colorbar:
+		ticks = ticker.MaxNLocator(nbins=nticks)
+		if hasattr(ax,'ax2'):
+			cbar = plt.colorbar(cs, ax=[ax, ax2], ticks=ticks, pad=0.1, 
+				use_gridspec=True)
+		else:
+			cbar = plt.colorbar(cs, ax=[ax], ticks=ticks, pad=0.1, 
+				use_gridspec=True)
 
-		# cbar.ax.tick_params(labelsize=6)
-		
+	if colorbar:	
 		if label:
-			#cbar.set_label(label, rotation=270, fontsize='small')
-			cbar.ax.text(4.0,0.5, label, rotation=270, #fontsize=8,
-				verticalalignment='center')
+			cbar.ax.text(4.0,0.5, label, rotation=270, verticalalignment='center')
 			
 		ax.cax = cbar.ax
 	ax.get_yaxis().get_major_formatter().set_useOffset(False)
@@ -361,7 +357,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		second = True
 		for i, l in enumerate(labels):
 			if l.get_text() != '':
-				coord = Angle(l.get_text(), unit=u.deg)
+				coord = Angle(l.get_text().strip('$'), unit=u.deg)
 				if first:
 					labels[i] = r"%.0f$\degree$ %.0f' %.2f" % (coord.dms[0], 
 						abs(coord.dms[1]), abs(coord.dms[2])) + '"'
@@ -377,7 +373,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		first = True
 		for i, l in enumerate(labels):
 			if l.get_text() != '':
-				coord = Angle(l.get_text(), unit=u.deg)
+				coord = Angle(l.get_text().strip('$'), unit=u.deg)
 				if i == len(labels)-2:
 					labels[i] = r"%.0f$\degree$ %.0f' %.2f" %(coord.dms[0], 
 						abs(coord.dms[1]), abs(coord.dms[2])) + '"'

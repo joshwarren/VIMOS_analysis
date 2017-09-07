@@ -459,6 +459,7 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			self.RAoffset = 0 # offset in arcsec
 			self.decoffset = 0
 			self.band = ''
+			self.default_scale = None
 
 
 	class mystring(str):
