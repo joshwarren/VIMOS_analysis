@@ -64,6 +64,7 @@ class Data(object):
 		self._gas = 0
 		self.__threshold__ = 3.0
 		self.center = (int(max(x)/2.0), int(max(y)/2.0))
+		self.sauron = False
 
 
 	def add_e_line(self, line, wav):
@@ -265,7 +266,12 @@ class Data(object):
 
 	@property
 	def gas_dynamics_SN(self):
-		return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],axis=0)[-2,:]
+		if self.sauron:
+			return self.components['[OIII]5007d'].amp_noise
+		elif self.broad_narrow:
+			pass
+		else:
+			return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],axis=0)[-2,:]
 
 
 
@@ -437,11 +443,13 @@ class emission_data(_data):
 	@property
 	def equiv_width(self):
 
-		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam-self.wav))] 
+		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam/
+			(1 + bin.components['stellar'].vel) - self.wav))] 
 			for bin in self.__parent__.bin])
 		e = myArray(self.flux/cont)
 		cont_uncert = np.array([
-			bin.continuum.uncert[np.argmin(np.abs(bin.lam-self.wav))] 
+			bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+			(1 + bin.components['stellar'].vel) - self.wav))] 
 			for bin in self.__parent__.bin])
 		e.uncert = np.sqrt(e**2 * ((self.flux.uncert/self.flux)**2 + 
 			(cont_uncert/cont)**2))
@@ -800,12 +808,22 @@ class emission_line(_bin_data):
 	
 	@property
 	def AmpNoi(self):
-		return max(self.spectrum_nomask)/self.__parent__.noise[np.argmin(np.abs(
-			self.__parent__.lam-self.wav))]
+		return max(self.spectrum_nomask)/np.median(self.__parent__.noise[
+			(self.__parent__.loglam > np.log(self.wav) + (self.vel - 300)/c) *
+			(self.__parent__.loglam < np.log(self.wav) + (self.vel + 300)/c)])
 
 	@property
 	def mask(self):
-		return self.AmpNoi < self.__parent__.__parent__.__threshold__
+		if self.__parent__.__parent__.sauron:
+			if '[OIII]' in self.name:
+				return self.AmpNoi < 4
+			elif '[NI]' in self.name:
+				return (self.AmpNoi < 4) * self.__parent__.e_line['Hbeta'].mask
+			else:
+				return (self.AmpNoi < 3) * \
+					self.__parent__.e_line['[OIII]5007d'].mask
+		else:
+			return self.AmpNoi < self.__parent__.__parent__.__threshold__
 
 
 # Find the propergated uncertainty from numpy.trapz().

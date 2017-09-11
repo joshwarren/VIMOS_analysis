@@ -316,7 +316,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if hasattr(ax,'ax2'):
 			ax.set_title(title, y=1.1)
 		else:
-			ax.set_title(title)
+			ax.set_title(title, y=1.02)
 
 	if colorbar and not debug:
 		ticks = ticker.MaxNLocator(nbins=nticks)
