@@ -267,8 +267,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				markersize=kwargs.get("markersize", 3))
 
 	if show_bin_num and not show_vel:
-		for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
-			ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
+		# for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
+		# 	ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
+		for i in range(len(xBar)):
+			# number 100 bins only.
+			if i%int((max(bin_num)+1)/100.0)==0:
+				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(i), 
+					color='grey', fontsize=5)
 
 	if show_vel:
 		for i in range(len(xBar)):
