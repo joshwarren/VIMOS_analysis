@@ -113,9 +113,9 @@ class get_stellar_templates(object):
 		self.FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
 		self.FWHM_dif = np.sqrt(abs(FWHM_gal**2 - self.FWHM_tem**2))
 		
-		if use_all_temp:
+		if use_all_temp or galaxy is None:
 			self.ntemp = len(templateFiles)
-			self.templatesToUse = np.arange(1, self.ntemp + 1)
+			self.templatesToUse = np.arange(self.ntemp)
 		else:
 			self.templatesToUse = use_templates(galaxy, cc.device=='glamdring')
 			self.ntemp = len(self.templatesToUse)
@@ -131,7 +131,7 @@ class get_stellar_templates(object):
 				_, self.lin_templates[:,i] = np.loadtxt(
 					templateFiles[self.templatesToUse[i]], unpack='True')
 			if self.FWHM_tem < FWHM_gal:
-				sigma = FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
+				sigma = self.FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
 				conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],sigma)
 			else:
 				conv_temp = self.lin_templates[:,i]
@@ -696,18 +696,24 @@ def errors2(i_gal=None, opt=None, bin=None):
 ## ----------===============================================---------
 def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_plot=True,
 	use_all_temp=False):
-	if cc.device == 'glamdring':
-		data_file = "%s/analysis/galaxies.txt" % (cc.base_dir)
-	else:
-		data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
-	# different data types need to be read separetly
-	z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
-		usecols=(1,2,3))
-	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
-	i_gal = np.where(galaxy_gals==galaxy)[0][0]
-	vel = vel_gals[i_gal]
-	sig = sig_gals[i_gal]
-	z = z_gals[i_gal]
+
+	if galaxy is not None:
+		if cc.device == 'glamdring':
+			data_file = "%s/analysis/galaxies.txt" % (cc.base_dir)
+		else:
+			data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+		# different data types need to be read separetly
+		z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
+			usecols=(1,2,3))
+		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+		i_gal = np.where(galaxy_gals==galaxy)[0][0]
+		vel = vel_gals[i_gal]
+		sig = sig_gals[i_gal]
+		z = z_gals[i_gal]
+	else: 
+		vel = 150.
+		sig = 100.
+		z = 0.
 
 	lamRange = lamRange/(1+z)
 	FWHM_gal = params.FWHM_gal/(1+z) # Adjust resolution in Angstrom
@@ -729,7 +735,7 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 		velscale=velscale)
 	bin_log_noise = np.sqrt(bin_log_noise)
 
-	noise = bin_log_noise+0.0000000000001
+	noise = bin_log_noise
 
 	dv = (stellar_templates.logLam_template[0]-logLam_bin[0])*c # km/s	
 	lambdaq = np.exp(logLam_bin)

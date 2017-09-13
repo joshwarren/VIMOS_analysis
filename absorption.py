@@ -36,12 +36,19 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		line_name2='nad'
 	elif line_name=='TiO1':
 		line_name2='tio1'
+	elif line_name=='TiO2':
+		line_name2='tio2'
+	elif line_name=='Fe5270':
+		line_name2='fe52'
+	elif line_name=='Fe5335':
+		line_name2='fe53'
 	else:
 		line_name2=line_name
 
-	if len(unc_lam) != len(unc_spec):
-		raise ValueError('Length of unconvoled spectrum and corresponding '+\
-			'wavelength should be the same.')
+	if unc_lam is not None and unc_spec is not None:
+		if len(unc_lam) != len(unc_spec):
+			raise ValueError('Length of unconvoled spectrum and corresponding '+\
+				'wavelength should be the same.')
 	if conv_spec is not None:
 		if len(lam) != len(conv_spec) != len(spec):
 			raise ValueError('Length of spectrum (bestfit and observed) and '+\
@@ -69,17 +76,24 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			variance = None
 	
 		disp = np.diff(lam)[np.argmin(np.abs(lam-np.mean(getattr(spectra,line_name2))))]
+		spec = gaussian_filter1d(spec, np.sqrt(8.4**2 - disp**2)/2.355/disp)
+		spectra = spectrum(lam=lam, lamspec=spec)
+
 		index_value, index_va, con_band, index_band = spectra.irindex(disp, line_name, 
 			varSED=variance, verbose=False)
 
 		# Calculate correction for velocity dispersion spreading
 		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
 			# Bring unc_spec and conv_spec to the same resolution
-			sig_pix = np.sqrt(np.abs((unc_lam[1]-unc_lam[0])**2 - (lam[1]-lam[0])**2)
-				)/(unc_lam[1]-unc_lam[0])
-			if unc_lam[1]-unc_lam[0] > lam[1]-lam[0]:
+			unc_disp = np.diff(unc_lam)[np.argmin(np.abs(unc_lam - 
+				np.mean(getattr(spectra,line_name2))))]
+			conv_disp = disp
+
+			if unc_disp > conv_disp:
+				sig_pix = np.sqrt(unc_disp**2 - conv_disp**2)/conv_disp
 				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
 			else:
+				sig_pix = np.sqrt(conv_disp**2 - unc_disp**2)/unc_disp
 				conv_spec = gaussian_filter1d(conv_spec, sig_pix)
 			# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
 			if lick:
@@ -88,11 +102,10 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 				#	indices)
 				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
 			spectra = spectrum(unc_lam, unc_spec)
-			unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_lam[1]-unc_lam[0], 
-				line_name)
+			unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_disp, line_name)
 			# Line strength of convolved spectrum (bestfit - emission lines)
 			spectra = spectrum(lam, conv_spec)
-			conv_index_value, conv_index_va, _, _ = spectra.irindex(disp, line_name)
+			conv_index_value, conv_index_va, _, _ = spectra.irindex(conv_disp, line_name)
 			# LOSVD correction (From SAURON VI: Section 4.2.2)
 			corr = unc_index_value/conv_index_value
 			# corr_var = np.sqrt((conv_index_va/conv_index_value)**2 + 
