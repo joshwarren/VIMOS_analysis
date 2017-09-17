@@ -23,27 +23,56 @@ else:
 	import matplotlib.pyplot as plt # used for plotting
 import ppxf_util as util
 from rolling_stats import *
-from ppxf import ppxf
+from ppxf import ppxf, create_plot
 
 c = 299792.458 # speed of light in km/s
 
 
 #-----------------------------------------------------------------------------
 class set_params(object):
-	def __init__(self, opt='kin', reps=1000):
-		self.quiet = True
-		self.gas = 1 # 0   No gas emission lines
-				# 1   Probe ionised gas
-				# 2   Seperate gases heated by shocks (OIII and NI) and by SF gas
-				#     (Hb and Hd)
-				# 3   All gas seperate.
+	def __init__(self,
+		opt 			=	'kin', 
+		reps 			= 	1000, 
+		quiet	 		= 	True, 
+		gas 			= 	1, 
+		set_range 		= 	np.array([4200,10000]), 
+		stellar_moments = 	2, 
+		gas_moments 	=	2, 
+		narrow_broad 	=	False, 
+		lines 			= 	'all', 
+		produce_plot 	= 	True, 
+		temp_mismatch 	= 	True,
+		start 			= 	None,
+		discard			= 	0,
+		library 		=	'Miles'
+		):
+		self.quiet = quiet # True
+		self.gas = gas # 0   No gas emission lines
+					# 1   Probe ionised gas
+					# 2   Seperate gases heated by shocks (OIII and NI) and by 
+					#		SF gas (Balmer lines)
+					# 3   All gas seperate.
 		self.reps = reps ## number of monte carlo reps per bin.
-		self.discard = 0
-		self.set_range = np.array([4200,10000])
-		self.FWHM_gal = 2.5 # VIMOS documentation (and fits header)
-		self.stellar_moments = 2 # number of componants to calc with ppxf (see 
-							# keyword moments in ppxf.pro for more details)
-		self.gas_moments = 2
+		self.FWHM_gal = 2.5 # VIMOS documentation
+		self.set_range = set_range # [2000,7410]
+		self.stellar_moments = stellar_moments # 2
+		self.gas_moments = gas_moments # 2
+		self.narrow_broad = narrow_broad # False; Find 2 components to each gas 
+										 # 	line
+		self.lines = lines # 'all'; list of which lines to use
+		self.produce_plot = produce_plot # True
+		self.temp_mismatch = temp_mismatch # False
+		self.start = start # None => vel and sigma in VIMOS galaxies.txt files
+		self.discard = discard
+		self.opt = opt
+		self.library = library
+
+	@property
+	def opt(self):
+		return self._opt
+	@opt.setter
+	def opt(self, opt):
+		self._opt = opt
 		if 'kin' in opt:
 			self.degree = 4  # order of addative Legendre polynomial used to 
 							# correct the template continuum shape during the fit
@@ -51,6 +80,21 @@ class set_params(object):
 		elif 'pop' in opt:
 			self.degree = -1
 			self.mdegree = 10
+
+	@property
+	def lines(self):
+		if self.gas == 0:
+			return []
+		else:
+			return self._lines
+	@lines.setter
+	def lines(self, value):
+		if value == 'all' or value =='All' or value =='ALL':
+			self._lines = ['Hdelta', 'Hgamma', 'Hbeta', '[OIII]5007d', '[NI]d']
+		elif value == 'none' or value == 'None' or value is None:
+			self._lines = []
+		else:
+			self._lines = list(value)
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -83,67 +127,125 @@ def use_templates(galaxy, glamdring=False):
 #-----------------------------------------------------------------------------
 class get_stellar_templates(object):
 
-	def __init__(self, galaxy, FWHM_gal, use_all_temp=False):
+	def __init__(self, galaxy, FWHM_gal, use_all_temp=False, library='Miles'):
 		import glob # for searching for files
-		# Finding the template files
-		# There is some issue with the memory structure of the university macs (HFS+),
-		# meaning these templates can only be loaded once if located on the home 
-		# directory, but more if on the Data partition...
-		if cc.device != 'uni':
-			templateFiles = glob.glob('%s/models/miles_library/m0[0-9][0-9][0-9]V' % (
-				cc.home_dir))
-		else:
-			templateFiles = glob.glob('%s/Data/idl_libraries/ppxf/' % (cc.base_dir) +
-				'MILES_library/m0[0-9][0-9][0-9]V')
+		if library == 'vazdekis':
+			templateFiles = glob.glob(
+				'%s/libraries/python/ppxf/spectra/Rbi1.30z*.fits' % (cc.home_dir))
+			FWHM_tem = 1.8
 
-		# self.wav is wavelength, v2 is spectrum
-		self.wav, v2 = np.loadtxt(templateFiles[0], unpack='True')
+			f = fits.open(templateFiles[0])
+			v2 = f[0].data
+			self.wav = np.arange(f[0].header['NAXIS1'])*f[0].header['CDELT1'] + \
+				f[0].header['CRVAL1']
 
-		# Using same keywords as fits headers
-		CRVAL_temp = self.wav[0]		# starting wavelength
-		NAXIS_temp = np.shape(v2)[0]   # Number of entries
-		# wavelength increments (resolution?)
-		CDELT_temp = (self.wav[NAXIS_temp-1]-self.wav[0])/(NAXIS_temp-1)
+			# Using same keywords as fits headers
+			CRVAL_temp = f[0].header['CRVAL1']		# starting wavelength
+			NAXIS_temp = f[0].header['NAXIS1']   # Number of entries
+			# wavelength increments (resolution?)
+			CDELT_temp = f[0].header['CDELT1']
+			f.close()
 
-		self.lamRange_template = CRVAL_temp + [0, CDELT_temp*(NAXIS_temp-1)]
+			self.lamRange_template = CRVAL_temp + np.array(
+				[0, CDELT_temp*(NAXIS_temp-1)])
 
-		log_temp_template, self.logLam_template, self.velscale = \
-			util.log_rebin(self.lamRange_template, self.wav)
+			log_temp_template, self.logLam_template, self.velscale = \
+				util.log_rebin(self.lamRange_template, self.wav)
 
-		self.FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
-		self.FWHM_dif = np.sqrt(abs(FWHM_gal**2 - self.FWHM_tem**2))
-		
-		if use_all_temp or galaxy is None:
+			self.FWHM_tem = 1.8 # Vazdekis library has FWHM of 1.8A.
+			self.FWHM_dif = np.sqrt(abs(FWHM_gal**2 - self.FWHM_tem**2))
+			
 			self.ntemp = len(templateFiles)
 			self.templatesToUse = np.arange(self.ntemp)
-		else:
-			self.templatesToUse = use_templates(galaxy, cc.device=='glamdring')
-			self.ntemp = len(self.templatesToUse)
-		self.templates = np.zeros((len(log_temp_template), self.ntemp))
-		self.lin_templates = np.zeros((len(log_temp_template), self.ntemp))
+			
+			self.templates = np.zeros((len(log_temp_template), self.ntemp))
+			self.lin_templates = np.zeros((len(log_temp_template), self.ntemp))
 
-		## Reading the contents of the files into the array templates. 
-		## Including rebinning them.
-		for i in range(self.ntemp):
-			if use_all_temp:
-				_, self.lin_templates[:,i] = np.loadtxt(templateFiles[i], unpack='True')
+			## Reading the contents of the files into the array templates. 
+			## Including rebinning them.
+			for i in range(self.ntemp):
+				f = fits.open(templateFiles[i])
+				self.lin_templates[:,i] = f[0].data
+				f.close()
+				if self.FWHM_tem < FWHM_gal:
+					sigma = self.FWHM_dif/2.355/CDELT_temp # Sigma difference (px)
+					conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],
+						sigma)
+				else:
+					conv_temp = self.lin_templates[:,i]
+				## Rebinning templates logarthmically
+				log_temp_template, self.logLam_template, _ = util.log_rebin(
+					self.lamRange_template, conv_temp)#, velscale=self.velscale)
+				self.templates[:,i] = log_temp_template
+
+		elif library=='Miles': # Miles stars
+			# Finding the template files
+			# There is some issue with the memory structure of the university macs 
+			# (HFS+), meaning these templates can only be loaded once if located on 
+			# the home directory, but more if on the Data partition...
+			if cc.device != 'uni':
+				templateFiles = glob.glob(
+					'%s/models/miles_library/m0[0-9][0-9][0-9]V' % (cc.home_dir))
 			else:
-				_, self.lin_templates[:,i] = np.loadtxt(
-					templateFiles[self.templatesToUse[i]], unpack='True')
-			if self.FWHM_tem < FWHM_gal:
-				sigma = self.FWHM_dif/2.355/CDELT_temp # Sigma difference in pixels
-				conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],sigma)
+				templateFiles = glob.glob('%s/Data/' % (cc.base_dir) +
+					'idl_libraries/ppxf/MILES_library/m0[0-9][0-9][0-9]V')
+
+			# self.wav is wavelength, v2 is spectrum
+			self.wav, v2 = np.loadtxt(templateFiles[0], unpack='True')
+
+			# Using same keywords as fits headers
+			CRVAL_temp = self.wav[0]		# starting wavelength
+			NAXIS_temp = np.shape(v2)[0]   # Number of entries
+			# wavelength increments (resolution?)
+			CDELT_temp = (self.wav[NAXIS_temp-1]-self.wav[0])/(NAXIS_temp-1)
+
+			self.lamRange_template = CRVAL_temp + np.array(
+				[0, CDELT_temp*(NAXIS_temp-1)])
+
+			log_temp_template, self.logLam_template, self.velscale = \
+				util.log_rebin(self.lamRange_template, self.wav)
+
+			self.FWHM_tem = 2.5 # Miles library has FWHM of 2.5A.
+			self.FWHM_dif = np.sqrt(abs(FWHM_gal**2 - self.FWHM_tem**2))
+			
+			if use_all_temp or galaxy is None:
+				self.ntemp = len(templateFiles)
+				self.templatesToUse = np.arange(self.ntemp)
 			else:
-				conv_temp = self.lin_templates[:,i]
-			## Rebinning templates logarthmically
-			log_temp_template, self.logLam_template, _ = util.log_rebin(
-				self.lamRange_template, conv_temp, velscale=self.velscale)
-			self.templates[:,i] = log_temp_template
+				self.templatesToUse = use_templates(galaxy, cc.device=='glamdring')
+				self.ntemp = len(self.templatesToUse)
+			self.templates = np.zeros((len(log_temp_template), self.ntemp))
+			self.lin_templates = np.zeros((len(log_temp_template), self.ntemp))
+
+			## Reading the contents of the files into the array templates. 
+			## Including rebinning them.
+			for i in range(self.ntemp):
+				if use_all_temp:
+					_, self.lin_templates[:,i] = np.loadtxt(templateFiles[i], 
+						unpack='True')
+				else:
+					_, self.lin_templates[:,i] = np.loadtxt(
+						templateFiles[self.templatesToUse[i]], unpack='True')
+				if self.FWHM_tem < FWHM_gal:
+					sigma = self.FWHM_dif/2.355/CDELT_temp # Sigma difference (px)
+					conv_temp = ndimage.gaussian_filter1d(self.lin_templates[:,i],
+						sigma)
+				else:
+					conv_temp = self.lin_templates[:,i]
+				## Rebinning templates logarthmically
+				log_temp_template, self.logLam_template, _ = util.log_rebin(
+					self.lamRange_template, conv_temp, velscale=self.velscale)
+				self.templates[:,i] = log_temp_template
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
 class get_emission_templates(object):
-	def __init__(self, gas, lamRange, logLam_template, FWHM_gal, quiet=True):
+	def __init__(self, gas, lamRange, logLam_template, FWHM_gal, quiet=True,
+		lines='all'):
+		if lines == 'all' or lines =='All' or lines =='ALL':
+			lines = ['Hdelta', 'Hgamma', 'Hbeta', 'Halpha', '[OII]3726', 
+				'[OII]3729', '[SII]6716', '[SII]6731', '[OIII]5007d', '[NI]d', 
+				'[OI]6300d', '[NII]6583d']
 		self.element = []
 		self.component = []
 		self.templatesToUse = []
@@ -154,10 +256,14 @@ class get_emission_templates(object):
 			emission_lines, line_name, line_wav = util.emission_lines(
 				logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
+			nTemp = 0
 			for i in range(len(line_name)):
-				self.templatesToUse = np.append(self.templatesToUse, line_name[i])
-				self.templates.append(emission_lines[:,i])
-			self.component = self.component + [1]*len(line_name)
+				if line_name[i] in lines:
+					self.templatesToUse = np.append(self.templatesToUse, 
+						line_name[i])
+					self.templates.append(emission_lines[:,i])
+					nTemp += 1
+			self.component = self.component + [1]*nTemp
 			self.element.append('gas')
 		## ----------=============== SF and shocks lines ==============---------
 		if gas == 2:
@@ -165,18 +271,19 @@ class get_emission_templates(object):
 				logLam_template, lamRange, FWHM_gal, quiet=quiet)
 
 			for i in range(len(line_name)):
-				
-
-				if 'H' in line_name[i]:
-					self.templatesToUse = np.append(self.templatesToUse, line_name[i])
-					self.templates.append(emission_lines[:,i])
-					self.component = self.component + [1]
-					self.element.append['SF']
-				else:
-					self.templatesToUse = np.append(self.templatesToUse, line_name[i])
-					self.templates.append(emission_lines[:,i])
-					self.component = self.component + [2] 
-					self.element.append['Shocks']
+				if line_name[i] in lines:
+					if 'H' in line_name[i]:
+						self.templatesToUse = np.append(self.templatesToUse, 
+							line_name[i])
+						self.templates.append(emission_lines[:,i])
+						self.component = self.component + [1]
+						self.element.append['SF']
+					else:
+						self.templatesToUse = np.append(self.templatesToUse, 
+							line_name[i])
+						self.templates.append(emission_lines[:,i])
+						self.component = self.component + [2] 
+						self.element.append['Shocks']
 		## ----------=========== All lines inderpendantly ==============---------
 		if gas == 3:
 			emission_lines, line_name, line_wav = util.emission_lines(
@@ -185,13 +292,15 @@ class get_emission_templates(object):
 			aph_lin = np.sort(line_name)
 
 			for i in range(len(line_name)):
-				self.templatesToUse = np.append(self.templatesToUse, line_name[i])
+				if line_name[i] in lines:
+					self.templatesToUse = np.append(self.templatesToUse,
+						line_name[i])
 
-				# line listed alphabetically
-				self.component = self.component + \
-					[np.where(line_name[i] == aph_lin)[0][0]+1]
-				self.templates.append(emission_lines[:,i])
-				self.element.append(aph_lin[i])
+					# line listed alphabetically
+					self.component = self.component + \
+						[np.where(line_name[i] == aph_lin)[0][0]+1]
+					self.templates.append(emission_lines[:,i])
+					self.element.append(aph_lin[i])
 
 		self.templates = np.array(self.templates).T
 		if gas:	self.ntemp = self.templates.shape[1]
@@ -232,9 +341,9 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, gas=False):
 	flag = logLam < 0
 
 	# Marks telluric line
-	tell = 5199
-	flag |= (logLam > np.log(tell) - z - dv/c) \
-		& (logLam < np.log(tell) - z + dv/c) 
+	# tell = 5199
+	# flag |= (logLam > np.log(tell) - z - dv/c) \
+	# 	& (logLam < np.log(tell) - z + dv/c) 
 
 	if not gas:
 		#                 -----[OII]-----   Hdelta    Hgamma   Hbeta;
@@ -481,7 +590,10 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 	dataCubeDirectory.CO = mystring2("%s/Data/alma/%s-mom0.fits" % (cc.base_dir, galaxy))
 
 	# Using offsets file
-	offsets_file = '%s/Data/offsets.txt' % (cc.base_dir)
+	if cc.device == 'glamdring':
+		offsets_file = '%s/offsets.txt' % (cc.base_dir)
+	else:
+		offsets_file = '%s/Data/offsets.txt' % (cc.base_dir)
 	file_headings = np.genfromtxt(offsets_file, dtype=str, max_rows=1)
 	galaxies, CO_RA, CO_dec = np.loadtxt(offsets_file, dtype=str, usecols=(0,9,10), 
 		skiprows=2, unpack=True)
@@ -695,7 +807,7 @@ def errors2(i_gal=None, opt=None, bin=None):
 ## ----------=============== Run analysis  =================---------
 ## ----------===============================================---------
 def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_plot=True,
-	use_all_temp=False):
+	use_all_temp=False, z=0.):
 
 	if galaxy is not None:
 		if cc.device == 'glamdring':
@@ -713,13 +825,12 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 	else: 
 		vel = 150.
 		sig = 100.
-		z = 0.
 
 	lamRange = lamRange/(1+z)
 	FWHM_gal = params.FWHM_gal/(1+z) # Adjust resolution in Angstrom
 ## ----------============= Stellar templates ===============---------
 	stellar_templates = get_stellar_templates(galaxy, FWHM_gal, 
-		use_all_temp=use_all_temp)
+		use_all_temp=use_all_temp, library=params.library)
 	velscale = stellar_templates.velscale
 	
 	## smooth spectrum to fit with templates resolution
@@ -744,7 +855,7 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 		vel, z, gas=params.gas!=0)
 
 	e_templates = get_emission_templates(params.gas, lamRange, 
-		stellar_templates.logLam_template, FWHM_gal)
+		stellar_templates.logLam_template, FWHM_gal, lines=params.lines)
 
 	if params.gas:
 		templates = np.column_stack((stellar_templates.templates, e_templates.templates))
@@ -764,21 +875,12 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 	pp = ppxf(templates, bin_log, noise, velscale, start, 
 		goodpixels=goodPixels, mdegree=params.mdegree, moments=moments, 
 		degree=params.degree, vsyst=dv, component=component, lam=lambdaq, 
-		plot=not params.quiet, quiet=params.quiet, produce_plot=produce_plot)
+		plot=not params.quiet, quiet=params.quiet, produce_plot=False)
+	if isinstance(pp.sol[0], float):
+		pp.sol = [pp.sol]
+	pp.z = z
 
-	if produce_plot:
-		# Add noise to plot
-		ax2 = pp.ax.twinx()
-		ax2.set_ylabel('Residuals, emission lines and Noise',rotation=270,labelpad=12)
-		r = pp.ax.get_ylim()[1] - pp.ax.get_ylim()[0]
-		mn = np.min(pp.bestfit[goodPixels]) - pp.ax.get_ylim()[0]
-
-		ax2.plot(pp.lam, pp.noise, 'purple')
-		pp.ax.plot(np.nan, 'purple', label='Noise') # Proxy for legend
-		ax2.axhline(0, linestyle='--', color='k', dashes=(5,5),zorder=10)
-		ax2.set_ylim([-mn, -mn+r])
-		pp.ax2 = ax2
-
+	pp.library = params.library
 	pp.templatesToUse = templatesToUse
 	pp.element = element
 
@@ -858,10 +960,8 @@ def run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT, params, produce_pl
 			pp.MCgas_uncert_spec = np.std(pp.MCgas_uncert_spec, axis=1)
 
 			# pp.MCgas_weights = [i,rep] = ppMC.weights[np.where(templatesToUse==n)[0][0]]
-		if (rep == params.reps-1) and params.gas and produce_plot:
-			ax2.plot(lambdaq, np.nansum(pp.MCgas_uncert_spec,axis=0), 'c')
-			pp.ax.plot(np.nan, 'c', label='Emission Line Uncertainty') # Proxy for legend
-
+	if produce_plot:
+		pp.fig, pp.ax = create_plot(pp).produce
 	return pp
 ##############################################################################
 

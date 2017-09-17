@@ -25,7 +25,7 @@ c = 299792.458 # speed of light in km/s
 
 
 def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
-	noise=None, lick=False):
+	conv_lam=None, noise=None, lick=False):
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
 		line_name2='hb'
@@ -47,15 +47,21 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 	if unc_lam is not None and unc_spec is not None:
 		if len(unc_lam) != len(unc_spec):
-			raise ValueError('Length of unconvoled spectrum and corresponding '+\
+			raise ValueError('Length of unconvoled spectrum and corresponding '+
 				'wavelength should be the same.')
-	if conv_spec is not None:
+	if conv_spec is not None and conv_lam is None:
 		if len(lam) != len(conv_spec) != len(spec):
-			raise ValueError('Length of spectrum (bestfit and observed) and '+\
+			raise ValueError('Length of spectrum (bestfit and observed) and '+
 				'corresponding wavelength should be the same.')
+		else:
+			conv_lam = lam
+	elif conv_spec is not None and conv_lam is not None:
+		if len(conv_lam) != len(conv_spec):
+			raise ValueError('Convolved wavelength and spectrum must be the same'+
+				' length')
 	if noise is not None:
 		if len(noise) != len(spec):
-			raise ValueError('Length of noise and observed spectrum '+\
+			raise ValueError('Length of noise and observed spectrum '+
 				'should be the same.')
 
 	# Catch if index is not in wavelenght range.
@@ -104,7 +110,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			spectra = spectrum(unc_lam, unc_spec)
 			unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_disp, line_name)
 			# Line strength of convolved spectrum (bestfit - emission lines)
-			spectra = spectrum(lam, conv_spec)
+			spectra = spectrum(conv_lam, conv_spec)
 			conv_index_value, conv_index_va, _, _ = spectra.irindex(conv_disp, line_name)
 			# LOSVD correction (From SAURON VI: Section 4.2.2)
 			corr = unc_index_value/conv_index_value

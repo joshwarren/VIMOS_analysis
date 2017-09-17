@@ -19,6 +19,7 @@ import numpy as np
 import sys
 import os
 from glob import glob
+from astropy.io import fits
 from scipy.interpolate import LinearNDInterpolator
 import emcee
 from checkcomp import checkcomp
@@ -42,7 +43,8 @@ def get_vin_dir(instrument):
 		if cc.device == 'glamdring': vin_dir = '%s/analysis_muse' % (cc.base_dir)
 		else: vin_dir = '%s/Data/muse/analysis' % (cc.base_dir)
 
-def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, instrument='vimos'):
+def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, 
+	instrument='vimos', sigma=None):
 	if (pp is None and galaxy is None) or (pp is not None and galaxy is not None):
 		raise ValueError('Either pp or galaxy must be supplied: one or tother')
 	if galaxy is not None and (bin is None or opt is None):
@@ -52,7 +54,20 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, instrument='
 	if pp is None:
 		vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	
-		lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, bin))
+		if cc.device == 'glamdring':
+			data_file = "%s/analysis/galaxies.txt" % (cc.base_dir)
+		else:
+			data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+		# different data types need to be read separetly
+		z_gals = np.loadtxt(data_file, unpack=True, skiprows=1, usecols=(1,))
+		galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+		i_gal = np.where(galaxy_gals==galaxy)[0][0]
+		z = z_gals[i_gal]
+
+		vel = np.loadtxt("%s/%d.dat" % (vin_dir_gasMC, bin), unpack=True, 
+			usecols=(1,))[0]
+		lam = np.loadtxt("%s/lambda/%d.dat" % (vin_dir_gasMC, bin)) * (
+			1 + z)/(1 + z + (vel/c))
 		spectrum = np.loadtxt("%s/input/%d.dat" % (vin_dir_gasMC, bin))
 		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, bin), 
 			dtype=str)
@@ -64,8 +79,9 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, instrument='
 		e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
 		e_line_spec = matrix[e_lines,1:].astype(float)
 		stellar_temps = matrix[~e_lines,0]
+		library = 'Miles'
 	else:
-		lam = pp.lam
+		lam = pp.lam*(1+pp.z)/(1+pp.z+(pp.sol[0][0]/c))
 		spectrum = pp.galaxy
 		matrix = pp.matrix.T.astype(str)
 		temp_weights = pp.weights
@@ -75,37 +91,68 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, instrument='
 
 		e_lines = pp.component != 0
 		e_line_spec =  matrix[e_lines,:].astype(float)
-
 		stellar_temps = pp.templatesToUse[~e_lines]
+
+		library = pp.library
 
 	e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
 
 	continuum = spectrum - e_line_spec #np.nansum(e_line_spec,axis=0)
 	convolved = bestfit - e_line_spec # np.nansum(e_line_spec, axis=0)
 
-	if cc.getDevice() == 'uni':
-		files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
-			'm0[0-9][0-9][0-9]V')
-	else:
-		files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+	if library == 'Miles':
+		if cc.getDevice() == 'uni':
+			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
+				'm0[0-9][0-9][0-9]V')
+		else:
+			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
 
-	a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
-	unconvolved_spectrum = np.zeros(a[1]-a[0])
+		a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
+		unconvolved_spectrum = np.zeros(a[1]-a[0])
 
-	for i, n in enumerate(stellar_temps):
-		template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
-		unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
-	unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
+		for i, n in enumerate(stellar_temps):
+			template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
+			unconvolved_spectrum += template[a[0]:a[1]]*temp_weights[i]
+		unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
+				len(unconvolved_spectrum)), np.append(1, mpweight))
+		unconvolved_lam =  wav[a[0]:a[1]]
+		CDELT = unconvolved_lam[1] - unconvolved_lam[0]
+	elif library == 'vazdekis':
+		templateFiles = glob(
+			'%s/libraries/python/ppxf/spectra/Rbi1.30z*.fits' % (cc.home_dir))
+		FWHM_tem = 1.8
+
+		f = fits.open(templateFiles[0])
+		unconvolved_lam = np.arange(f[0].header['NAXIS1'])*f[0].header['CDELT1'] + \
+			f[0].header['CRVAL1']
+		unconvolved_spectrum = np.zeros((f[0].header['NAXIS1'], len(templateFiles)))
+
+		for i in range(len(templateFiles)):
+			f = fits.open(templateFiles[i])
+			unconvolved_spectrum[:,i] = f[0].data
+		unconvolved_spectrum = unconvolved_spectrum.dot(temp_weights[~e_lines])
+		unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
 			len(unconvolved_spectrum)), np.append(1, mpweight))
-	unconvolved_lam =  wav[a[0]:a[1]]
+		CDELT = f[0].header['CDELT1']
+		f.close()
+
+	if sigma is not None:
+		from scipy.ndimage.filters import gaussian_filter1d
+		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
+		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
 
 	ab_lines = {}
 	uncerts = {}
 	for l in lines:
-		ab, uncert = absorption(l, lam, continuum, noise=noise,
-			unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
-			conv_spec=convolved)
+		if sigma is None:
+			ab, uncert = absorption(l, lam, continuum, noise=noise,
+				unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
+				conv_spec=convolved)
+		else:
+			ab, uncert = absorption(l, lam, continuum, noise=noise,
+				unc_lam=unconvolved_lam, unc_spec=unconvolved_spectrum, 
+				conv_spec=convolved, conv_lam=unconvolved_lam)
 		ab_lines[l], uncerts[l] = ab[0], uncert[0]
 	return ab_lines, uncerts
 
