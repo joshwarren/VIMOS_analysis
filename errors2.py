@@ -32,7 +32,7 @@ c = 299792.458 # speed of light in km/s
 class set_params(object):
 	def __init__(self,
 		opt 			=	'kin', 
-		reps 			= 	1000, 
+		reps 			= 	100, 
 		quiet	 		= 	True, 
 		gas 			= 	1, 
 		set_range 		= 	np.array([4200,10000]), 
@@ -726,7 +726,7 @@ def errors2(i_gal=None, opt=None, bin=None):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-	params = set_params()
+	params = set_params(opt=opt)
 	
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']

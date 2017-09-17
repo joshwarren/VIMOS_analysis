@@ -42,13 +42,13 @@ galaxies = [
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
-# galaxies = ['ngc3557']
+galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 
 
 discard = 0
-norm= 'fit_disk'#'lwv' # 'lws'
+norm= ''#'lwv' # 'lws'
 opt_dir=''
 
 m=mapping()
@@ -70,10 +70,10 @@ for galaxy in galaxies:
 	try:
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
 		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
-		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
-			residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
-			show_bin_num=True)
-		plt.close("all")
+		# D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
+		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
+		# 	show_bin_num=True)
+		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
 		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
@@ -87,11 +87,11 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
-		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
-		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
-		# 	overplot={'CO':'c', 'radio':'r'})
-		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-		# 	overplot={'CO':'c', 'radio':'r'})
+		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
+			overplot={'CO':'c', 'radio':'r'})
+		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+			overplot={'CO':'c', 'radio':'r'})
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

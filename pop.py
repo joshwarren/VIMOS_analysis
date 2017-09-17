@@ -42,6 +42,7 @@ def get_vin_dir(instrument):
 	elif instrument=='muse':
 		if cc.device == 'glamdring': vin_dir = '%s/analysis_muse' % (cc.base_dir)
 		else: vin_dir = '%s/Data/muse/analysis' % (cc.base_dir)
+	return vin_dir
 
 def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, 
 	instrument='vimos', sigma=None):
@@ -163,6 +164,8 @@ class population(object):
 		self.pp = pp
 		self.galaxy = galaxy
 		self.instrument = instrument
+		self.opt = opt
+
 
 		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		grid_length = 40
@@ -176,31 +179,29 @@ class population(object):
 			if self.pp is None:
 
 				try:
+					self.bin=int(sys.argv[4])
 					self.instrument = str(sys.argv[1])
 					self.i_gal=int(sys.argv[2])
 					self.opt=str(sys.argv[3])
-					self.bin=int(sys.argv[4])
 				except IndexError:
 					self.i_gal=int(sys.argv[1])
 					self.opt=str(sys.argv[2])
 					self.bin=int(sys.argv[3])
-				
 
 				galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 					'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
 				self.galaxy = galaxies[self.i_gal]
 
-				self.ab_lines, self.uncerts = get_absorption(self.lines, galaxy=galaxy, 
-					bin=bin, opt=opt, instrument=self.instrument)
+				self.ab_lines, self.uncerts = get_absorption(self.lines, 
+					galaxy=self.galaxy, bin=self.bin, opt=self.opt, 
+					instrument=self.instrument)
 			else:
-				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=pp,
+				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=self.pp,
 					instrument=self.instrument)
 
 		vin_dir = get_vin_dir(self.instrument)
-		vout_dir = '%s/%s/%s/pop' % (vin_dir, galaxy, opt)
-		if not os.path.exists(vout_dir): os.makedirs(vout_dir)
-				
-
+		self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
+		if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
 
 		s=[grid_length,grid_length,grid_length]
 
