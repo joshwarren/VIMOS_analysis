@@ -24,14 +24,14 @@ from fit_disk import fit_disk
 import traceback, sys
 
 galaxies = [
-			'eso443-g024',
-			'ic1459',
-			'ic1531', 
-			'ic4296',
+			# 'eso443-g024',
+			# 'ic1459',
+			# 'ic1531', 
+			# 'ic4296',
 			# 'ngc0612',
-			'ngc1399',
+			# 'ngc1399',
 			'ngc3100',
-			'ngc3557',
+			# 'ngc3557',
 			'ngc7075',
 			'pks0718-34'
 			]
@@ -42,7 +42,7 @@ galaxies = [
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
-galaxies = ['ngc3557']
+# galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 
@@ -90,8 +90,8 @@ for galaxy in galaxies:
 		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
 		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
 			overplot={'CO':'c', 'radio':'r'})
-		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-			overplot={'CO':'c', 'radio':'r'})
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+		# 	overplot={'CO':'c', 'radio':'r'})
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)
