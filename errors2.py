@@ -168,7 +168,7 @@ class get_stellar_templates(object):
 			self.templatesToUse = np.arange(self.ntemp)
 			
 			self.templates = np.zeros((len(log_temp_template), self.ntemp))
-			self.lin_templates = np.zeros((len(f[0].header['NAXIS1']), self.ntemp))
+			self.lin_templates = np.zeros((f[0].header['NAXIS1'], self.ntemp))
 
 			## Reading the contents of the files into the array templates. 
 			## Including rebinning them.
@@ -871,7 +871,7 @@ class run_ppxf(ppxf):
 
 		self.lamRange = self.lamRange/(1 + self.z)
 		self.FWHM_gal = self.params.FWHM_gal/(1 + self.z) # Adjust resolution in Angstrom
-	## ----------============= Stellar templates ===============---------
+
 		self.rebin()
 		self.load_stellar_templates()
 
@@ -956,6 +956,7 @@ class run_ppxf(ppxf):
 		self.bin_log_noise = np.sqrt(bin_log_noise)
 		self.lambdaq = np.exp(self.logLam_bin)
 
+	## ----------============= Stellar templates ===============---------
 	def load_stellar_templates(self):
 		if self.params.use_all_temp is None and self.params.gas == 0:
 			raise ValueError('No templates to fit... gas or stellar')
@@ -1017,8 +1018,6 @@ class run_ppxf(ppxf):
 		moments = [self.params.stellar_moments] + [self.params.gas_moments] * \
 			max(self.component)
 	## ----------============== The bestfit part ===============---------
-		# noise = np.abs(noise)
-
 		ppxf.__init__(self, self.templates, self.bin_log, self.bin_log_noise, 
 			self.velscale, start, goodpixels=self.goodPixels, 
 			mdegree=self.params.mdegree, moments=moments, 

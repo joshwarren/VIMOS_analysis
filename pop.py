@@ -94,7 +94,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		e_line_spec =  matrix[e_lines,:].astype(float)
 		stellar_temps = pp.templatesToUse[~e_lines]
 
-		library = pp.library
+		library = pp.params.library
 
 	e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
 

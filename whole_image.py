@@ -33,7 +33,7 @@ def whole_image(galaxy):
 
 		params = set_params(opt='pop', reps=0, temp_mismatch=True, produce_plot=False)
 
-		lam = np.arange(len(spec) - (f[0].header['CRPIX3'] - 1)) * \
+		lam = (np.arange(len(spec)) - (f[0].header['CRPIX3'] - 1)) * \
 			f[0].header['CDELT3'] + f[0].header['CRVAL3']
 		spec, lam, cut = apply_range(spec, lam=lam, return_cuts=True, 
 			set_range=params.set_range)
@@ -44,10 +44,11 @@ def whole_image(galaxy):
 
 		pp.noise = np.min([pp.noise, np.abs(pp.galaxy-pp.bestfit)],axis=0)
 
-		OIII_spec = pp.matrix[:, pp.templatesToUse=='[OIII]5007d'].flatten()
+		OIII_spec = pp.matrix[:, pp.templatesToUse=='[OIII]5007d'].flatten() * \
+			pp.weights[pp.templatesToUse=='[OIII]5007d']
 
-
-		Hb_spec = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten()
+		Hb_spec = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() * \
+			pp.weights[pp.templatesToUse=='Hbeta']
 		Hb_flux = np.trapz(Hb_spec, x=pp.lam)
 		Ha_flux = 2.86 * Hb_flux
 
@@ -71,11 +72,16 @@ def whole_image(galaxy):
 		else:
 			print '<%.2f log10(Solar Masses)' % ( np.log10(Mass))
 		discard += 1
+	from ppxf import create_plot
+	create_plot(pp).produce 
+	import matplotlib.pyplot as plt
+	plt.show()
 
 
 
 if __name__=='__main__':
 	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
 		'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+	galaxies = ['ngc1399']
 	for g in galaxies:
 		whole_image(g)

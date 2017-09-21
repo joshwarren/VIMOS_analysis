@@ -25,15 +25,15 @@ import traceback, sys
 
 galaxies = [
 			# 'eso443-g024',
-			# 'ic1459',
+			'ic1459',
 			# 'ic1531', 
 			# 'ic4296',
 			# 'ngc0612',
 			# 'ngc1399',
-			'ngc3100',
-			# 'ngc3557',
-			'ngc7075',
-			'pks0718-34'
+			# 'ngc3100',
+			'ngc3557',
+			# 'ngc7075',
+			# 'pks0718-34'
 			]
 # galaxies = ['eso443-g024']
 # galaxies = ['ic1459']
@@ -88,10 +88,13 @@ for galaxy in galaxies:
 
 		D = None
 		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
+			residual="median", norm=norm, D=D, mapping=m, opt='pop'+opt_dir,
+			show_bin_num=True)
 		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
 			overplot={'CO':'c', 'radio':'r'})
-		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-		# 	overplot={'CO':'c', 'radio':'r'})
+		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+			overplot={'CO':'c', 'radio':'r'})
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)
