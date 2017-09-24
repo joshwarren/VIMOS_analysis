@@ -401,7 +401,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 				D.e_line[c].flux, header, vmin=f_min, vmax=f_max, colorbar=True, 
 				nodots=True, label=fCBtitle, title=f_title, ax=ax,
 				flux_unbinned=D.unbinned_flux, center=center, galaxy=galaxy.upper(),
-				signal_noise=D.e_line[c].amp_noise, signal_noise_target=5, redshift=z)
+				signal_noise=D.e_line[c].amp_noise, signal_noise_target=4, redshift=z)
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
@@ -445,7 +445,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 				D.e_line[c].equiv_width, header, vmin=eq_min, vmax=eq_max, 
 				colorbar=True, nodots=True, label=eqCBtitle, title=eq_title, ax=ax, 
 				flux_unbinned=D.unbinned_flux, center=center, galaxy=galaxy.upper(),
-				signal_noise=D.e_line[c].amp_noise, signal_noise_target=5, redshift=z)
+				signal_noise=D.e_line[c].amp_noise, signal_noise_target=4, redshift=z)
 			ax_array.append(ax)
 			f.delaxes(ax)
 			f.delaxes(ax.cax)
@@ -485,7 +485,7 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 
 			if im_type == "gas":
 				im_type=""
-				pl = 'Hbeta'
+				pl = '[OIII]5007d'
 			elif im_type == "SF":
 				im_type=" (Star Forming)"
 				pl = '[OIII]5007d'
@@ -727,38 +727,38 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 		f.delaxes(a.cax)
 		if hasattr(a,'ax2'): f.delaxes(a.ax2)
 		if hasattr(a,'ax3'): f.delaxes(a.ax3)
-		a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
-	if mapping.all or mapping is None:
-		for i, a in enumerate(ax_array):
-			if not np.isnan(a.figy):
-				a2 = f.add_axes(a)
-				# cax2 = f.add_axes(a.cax, position=cbar_position[i])
-				p = a2.get_position()
-				c = f.add_axes([p.x1,p.y0, 0.01, p.height])
-				# c = f.add_axes([p.x1,p.y0*1.06-0.004,0.005, p.height*1.05])
-				cb = plt.colorbar(a.images[0], cax=c)
-				cb.outline.set_visible(False)
-				cb.ax.tick_params(labelsize='x-small') 
-				a.set_title(a.get_title(), fontdict={'fontsize':'small'})
+	# 	a.change_geometry(n_rows, 3, a.figy*3+a.figx+1)
+	# if mapping.all or mapping is None:
+	# 	for i, a in enumerate(ax_array):
+	# 		if not np.isnan(a.figy):
+	# 			a2 = f.add_axes(a)
+	# 			# cax2 = f.add_axes(a.cax, position=cbar_position[i])
+	# 			p = a2.get_position()
+	# 			c = f.add_axes([p.x1,p.y0, 0.01, p.height])
+	# 			# c = f.add_axes([p.x1,p.y0*1.06-0.004,0.005, p.height*1.05])
+	# 			cb = plt.colorbar(a.images[0], cax=c)
+	# 			cb.outline.set_visible(False)
+	# 			cb.ax.tick_params(labelsize='x-small') 
+	# 			a.set_title(a.get_title(), fontdict={'fontsize':'small'})
 
 
 					
 
-				a.xaxis.set_visible(False)
-				a.yaxis.set_visible(False)
-				a.axis('off')
-				# a.autoscale(False)
-				# c.autoscale(False)
-				if hasattr(a,'gal_name'): a.gal_name.remove()
-				if hasattr(a, 'gal_z'): a.gal_z.remove()
+	# 			a.xaxis.set_visible(False)
+	# 			a.yaxis.set_visible(False)
+	# 			a.axis('off')
+	# 			# a.autoscale(False)
+	# 			# c.autoscale(False)
+	# 			if hasattr(a,'gal_name'): a.gal_name.remove()
+	# 			if hasattr(a, 'gal_z'): a.gal_z.remove()
 
-		f.set_size_inches(8.5,n_rows*1.8)
-		# f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
-		# f.subplots_adjust(top=0.94)
-		f.suptitle(galaxy.upper())
+	# 	f.set_size_inches(8.5,n_rows*1.8)
+	# 	# f.tight_layout(h_pad=0.5)#pad=0.4, w_pad=0.5, h_pad=1.0)
+	# 	# f.subplots_adjust(top=0.94)
+	# 	f.suptitle(galaxy.upper())
 
-		saveTo = "%s/grid.pdf" % (out_plots)
-		f.savefig(saveTo)#, bbox_inches="tight",format='pdf')
+	# 	saveTo = "%s/grid.pdf" % (out_plots)
+	# 	f.savefig(saveTo)#, bbox_inches="tight",format='pdf')
 
 	return D
 

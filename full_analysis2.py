@@ -20,20 +20,21 @@ import matplotlib.pyplot as plt # used for plotting
 from plot_stellar_pop import plot_stellar_pop
 from use_kinemetry import use_kinemetry
 from classify import classify
-from fit_disk import fit_disk
+from fit_disk_binned import fit_disk
+from BPT import BPT
 import traceback, sys
 
 galaxies = [
-			# 'eso443-g024',
+			'eso443-g024',
 			'ic1459',
-			# 'ic1531', 
-			# 'ic4296',
-			# 'ngc0612',
-			# 'ngc1399',
+			'ic1531', 
+			'ic4296',
+			'ngc0612',
+			'ngc1399',
 			# 'ngc3100',
 			'ngc3557',
-			# 'ngc7075',
-			# 'pks0718-34'
+			'ngc7075',
+			'pks0718-34'
 			]
 # galaxies = ['eso443-g024']
 # galaxies = ['ic1459']
@@ -79,22 +80,32 @@ for galaxy in galaxies:
 		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
 		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
-		# fit_disk(galaxy, opt='kin'+opt_dir, D=D)
-		# plt.close('all')
 
 		# Requires the IDL kinemetry routine to have been run. 
 		# classify(galaxy, opt='kin'+opt_dir)
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
-		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		if galaxy =='ngc3100':
+			D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='pop'+opt_dir,
 			show_bin_num=True)
-		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
-			overplot={'CO':'c', 'radio':'r'})
-		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-			overplot={'CO':'c', 'radio':'r'})
+		plt.close("all")
+		if galaxy == 'ngc3100':
+			D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
+				overplot={'CO':'c', 'radio':'r'})
+			plt.close("all")
+			D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+				overplot={'CO':'c', 'radio':'r'})
+			plt.close("all")
+		try:
+			D = BPT(galaxy, D=D, opt='pop'+opt_dir)
+			plt.close("all")
+		except:
+			print 'BPT for %s FAILED' % (galaxy)
+		fit_disk(galaxy, opt='pop'+opt_dir, D=D)
+		plt.close("all")
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

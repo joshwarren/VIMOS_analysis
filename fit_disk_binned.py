@@ -21,7 +21,10 @@ def fit_disk(galaxy, D=None, opt='kin'):
 	sigclip = None#3.
 
 	pa = {'ngc0612':136.238, 'ic1459':None}
-	pa = pa[galaxy]
+	galaxy_gals, pa_gals = np.loadtxt('%s/Data/vimos/analysis/galaxies2.txt' % 
+		(cc.base_dir), usecols=(0,3), skiprows=1, unpack=True, dtype=str)
+	i_gal = np.where(galaxy_gals == galaxy)[0][0]
+	pa = float(pa_gals[i_gal])
 
 	Prefig(subplots=(4,2))
 	fig, ax = plt.subplots(2,4)

@@ -182,7 +182,7 @@ def binning_spaxels(galaxy, discard=2, targetSN=None, opt='kin', auto_override=F
 				str(round(xBin[i],5)), str(round(yBin[i],5))))
 
 
-	with open("%s/analysis/%s/%s/setupvoronoi_2d_binning_output2.txt" % (dir,galaxy,opt), 
+	with open("%s/analysis/%s/%s/setup/voronoi_2d_binning_output2.txt" % (dir,galaxy,opt), 
 		'w') as f:
 		f.write(temp2.format('XBAR','YBAR'))
 		for i in range(len(xBar)):

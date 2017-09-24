@@ -52,7 +52,7 @@ class Data(object):
 #	sets which bin contains which spaxel.
 # absorption_line (absorption line): returns absorption line indice level
 # 	from Lick like methods.
-	def __init__(self, xyb_turple):
+	def __init__(self, xyb_turple, sauron):
 		x,y,bin_num = xyb_turple
 		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
 		self.set_spaxels_in_bins(x, y, bin_num)
@@ -64,7 +64,7 @@ class Data(object):
 		self._gas = 0
 		self.__threshold__ = 3.0
 		self.center = (int(max(x)/2.0), int(max(y)/2.0))
-		self.sauron = False
+		self.sauron = bool(sauron)
 
 
 	def add_e_line(self, line, wav):
@@ -478,7 +478,9 @@ class emission_data(_data):
 	@property
 	def mask_dynamics(self):
 		p = np.ones(self.__parent__.number_of_bins).astype(bool) # all masked
-		if self.__parent__.gas == 3:
+		if self.__parent__.sauron:
+			p = self.__parent__.components['[OIII]5007d'].mask
+		elif self.__parent__.gas == 3:
 			p = self.mask
 		elif self.__parent__.gas == 2:
 			for k, i in self.__parent__.e_line_no_mask.iteritems():
@@ -818,9 +820,9 @@ class emission_line(_bin_data):
 			if '[OIII]' in self.name:
 				return self.AmpNoi < 4
 			elif '[NI]' in self.name:
-				return (self.AmpNoi < 4) * self.__parent__.e_line['Hbeta'].mask
+				return (self.AmpNoi < 4) + self.__parent__.e_line['Hbeta'].mask
 			else:
-				return (self.AmpNoi < 3) * \
+				return (self.AmpNoi < 3) + \
 					self.__parent__.e_line['[OIII]5007d'].mask
 		else:
 			return self.AmpNoi < self.__parent__.__parent__.__threshold__

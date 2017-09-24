@@ -30,22 +30,22 @@ def fit_disk(galaxy, D=None, opt='kin'):
 		pickleFile.close()
 
 	# Use gas disk
-	vel = D.components['Hbeta'].plot['vel'].unbinned
-	vel_err = D.components['Hbeta'].plot['vel'].uncert.unbinned
+	vel = D.components['[OIII]5007d'].plot['vel'].unbinned
+	vel_err = D.components['[OIII]5007d'].plot['vel'].uncert.unbinned
 
 	disk,pars=dfn.disk_fit_exp(vel.copy(),vel_err.copy(),sigclip=3.0,leeway=2.)
 
 	
 
 	ax[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
-		D.components['Hbeta'].plot['vel'], header, #vmin=vmin, vmax=vmax, 
+		D.components['[OIII]5007d'].plot['vel'], header, #vmin=vmin, vmax=vmax, 
 		flux_unbinned=D.unbinned_flux, nodots=True, colorbar=True, ax=ax[1,0],
 		title=r'Gas observed velocity (v$_\mathrm{gas}$)')
 
 	ax[1,1].imshow(disk, cmap=sauron)
 	ax[1,1].set_title(r'Gas model velocity (v$_\mathrm{g,mod})$')
 
-	plot = D.components['Hbeta'].plot['vel']-D.rebin(disk, flux_weighted=True)
+	plot = D.components['[OIII]5007d'].plot['vel']-D.rebin(disk, flux_weighted=True)
 	# vmin,vmax = set_lims(plot)
 
 	ax[1,2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, plot, header, 
@@ -71,7 +71,7 @@ def fit_disk(galaxy, D=None, opt='kin'):
 	ax[0,1].set_title(r'Gas model velocity (v$_\mathrm{\ast,mod}$)')
 
 
-	plot = D.components['Hbeta'].plot['vel']-D.rebin(disk, flux_weighted=True)
+	plot = D.components['[OIII]5007d'].plot['vel']-D.rebin(disk, flux_weighted=True)
 	# vmin,vmax = set_lims(plot)
 
 	ax[0,2] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, plot, header, 

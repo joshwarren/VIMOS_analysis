@@ -59,7 +59,7 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 					"Use the 'override' keyword to run this routine anyway.")
 # ------------======== Reading the spectrum  ============----------
 	D = Data(np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
-			usecols=(0,1,2)))
+			usecols=(0,1,2)), sauron=True)
 
 	galaxy_data, header = pyfits.getdata(dataCubeDirectory, 0, header=True)
 	

@@ -828,6 +828,7 @@ def errors2(i_gal=None, opt=None, bin=None):
 	lamRange = np.array([lam[0],lam[-1]])
 	bin_lin_noise = bin_lin_noise[cut]
 
+
 	pp = run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT_spec, params)
 
 	## ----------============ Write ouputs to file =============---------
@@ -919,9 +920,9 @@ class run_ppxf(ppxf):
 			self.params.lines = params_sav.lines
 			self.load_emission_templates()
 
-			self._bin_log = np.copy(save_bin_log)
-			self._bin_lin_noise = np.copy(save_bin_log_noise)
-			self._lamRange = np.copy(save_lamRange)
+			self.bin_log = np.copy(save_bin_log)
+			self.bin_lin_noise = np.copy(save_bin_log_noise)
+			self.lamRange = np.copy(save_lamRange)
 
 			self.run()
 
@@ -967,13 +968,14 @@ class run_ppxf(ppxf):
 		self.dv = (self.stellar_templates.logLam_template[0] - 
 			self.logLam_bin[0])*c # km/s	
 	## ----------=============== Emission lines ================---------
-	def load_emission_templates(self):
+	def set_goodPix(self):
 		self.goodPixels = determine_goodpixels(self.logLam_bin,
 			self.stellar_templates.lamRange_template, self.vel, self.z, 
 			lines=self.params.lines, invert=self.params.use_all_temp is None)
 		self.goodPixels = np.array([g for g in self.goodPixels if 
 			(~np.isnan(self.bin_log[g]))])
-
+	def load_emission_templates(self):
+		self.set_goodPix()
 		self.e_templates = get_emission_templates(self.params.gas, self.lamRange, 
 			self.stellar_templates.logLam_template, self.FWHM_gal, 
 			goodWav=self.lambdaq[self.goodPixels], 

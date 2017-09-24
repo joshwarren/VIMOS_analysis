@@ -188,8 +188,11 @@ class population(object):
 					self.opt=str(sys.argv[2])
 					self.bin=int(sys.argv[3])
 
-				galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 
-					'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+				if self.instrument == 'vimos':
+					galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+						'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+				elif self.instrument == 'muse':
+					galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
 				self.galaxy = galaxies[self.i_gal]
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 

@@ -36,10 +36,11 @@ def full_analysis(galaxy=None, opt='kin'):
 	
 	z = z_gals[gal]
 	discard = 0
-	targetSN = None
+	targetSN = 30.
 	set_range = [4200, 10000]
 
-	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, auto_override=True)
+	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, 
+		auto_override=True)
 
 	# find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
@@ -48,15 +49,15 @@ def full_analysis(galaxy=None, opt='kin'):
 
 if __name__=="__main__":
 	galaxies = [#'ngc3557',
-		'ic1459'#,
+		# 'ic1459'#,
 		#'ic1531', 
 		# 'ic4296', 
 		# 'ngc0612',
 		# 'ngc1399',
-		# 'ngc3100',
+		'ngc3100',
 		# 'ngc7075', 
 		# 'pks0718-34', 
 		# 'eso443-g024'
 		]
-	for g in galaxies: full_analysis(galaxy=g, opt='kin')
+	for g in galaxies: full_analysis(galaxy=g, opt='pop')
 	# full_analysis(galaxy='ic1531', opt='pop')
