@@ -42,6 +42,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 		line_name2='fe52'
 	elif line_name=='Fe5335':
 		line_name2='fe53'
+	elif line_name=='HdeltaA' or line_name=='HdA':
+		line_name2='hdA'
 	else:
 		line_name2=line_name
 

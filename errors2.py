@@ -32,10 +32,10 @@ c = 299792.458 # speed of light in km/s
 class set_params(object):
 	def __init__(self,
 		opt 			=	'kin', 
-		reps 			= 	100,
+		reps 			= 	10,
 		quiet	 		= 	True, 
 		gas 			= 	1, 
-		set_range 		= 	np.array([4200,10000]), 
+		set_range 		= 	np.array([4000,10000]), 
 		stellar_moments = 	2, 
 		gas_moments 	=	2, 
 		narrow_broad 	=	False, 
