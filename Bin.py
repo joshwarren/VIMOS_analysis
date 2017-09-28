@@ -360,7 +360,7 @@ class _data(object):
 		if attr in ['vel','sigma','h3','h4']:
 			m = self.mask_dynamics
 			k = np.array([])
-			for bin in D.bin:
+			for bin in self.__parent__.bin:
 				if not m[bin.bin_number]:
 					k = np.append(k, getattr(bin.components[self.name], attr))
 				else:
