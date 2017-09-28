@@ -101,7 +101,8 @@ class Data(object):
 			self.vel_norm = 0.0
 			d = np.sqrt((self.xBar-self.bin[self.center[0]].xBar)**2 +
 				(self.yBar-self.bin[self.center[1]].yBar)**2)
-			lws = self.components['stellar'].plot['sigma']*self.flux*self.n_spaxels_in_bin
+			lws = self.components['stellar'].plot['sigma'] * self.flux * \
+				self.n_spaxels_in_bin
 			lws[d > 7] = 0
 			s_sort = sorted(lws)
 			c = np.where(lws > s_sort[int(-np.ceil(self.number_of_bins*0.05))])[0]
@@ -110,7 +111,8 @@ class Data(object):
 			import disk_fit_functions as dfn
 			vel = D.components['stellar'].plot['vel'].unbinned
 			vel_err = D.components['stellar'].plot['vel'].uncert.unbinned
-			disk,pars=dfn.disk_fit_exp(vel.copy(),vel_err.copy(),leeway=2., verbose=False)
+			disk,pars=dfn.disk_fit_exp(vel.copy(),vel_err.copy(),leeway=2., 
+				verbose=False)
 			self.vel_norm = np.nanmean(disk)
 		elif self.norm_method is None:
 			self.vel_norm = 0.0
@@ -149,7 +151,8 @@ class Data(object):
 		for i in range(self.number_of_bins):
 			if flux_weighted:
 				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels], 
-					weights=self.unbinned_flux[self.bin[i].xspaxels, self.bin[i].yspaxels])
+					weights=self.unbinned_flux[self.bin[i].xspaxels, 
+					self.bin[i].yspaxels])
 			else:
 				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
 		return new
@@ -158,7 +161,8 @@ class Data(object):
 	@property
 	def center_bin(self):
 		# return np.nanargmax(self.flux)
-		return np.where((self.xBar == self.center[0])*(self.yBar == self.center[1]))[0][0]
+		return np.where((self.xBar == self.center[0]) * \
+			(self.yBar == self.center[1]))[0][0]
 	
 	@property
 	def e_components(self):
@@ -166,6 +170,9 @@ class Data(object):
 	@property
 	def list_components(self):
 		return list(self.components.keys())
+	@property
+	def list_components_no_mask(self):
+		return list(self.components_no_mask.keys())
 
 	@property
 	def e_line(self):
@@ -180,6 +187,10 @@ class Data(object):
 	def components(self):
 		return {k:v for k,v in self._components.iteritems() if k=='stellar' or not
 			all(v.mask)}
+
+	@property
+	def components_no_mask(self):
+		return self._components
 
 	@property
 	def flux(self):
@@ -271,7 +282,8 @@ class Data(object):
 		elif self.broad_narrow:
 			pass
 		else:
-			return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],axis=0)[-2,:]
+			return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],
+				axis=0)[-2,:]
 
 
 
@@ -367,7 +379,8 @@ class _data(object):
 			# for spaxel in range(len(self.__parent__.x)):
 			# 	unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
 			# 		kinematics[self.__parent__.bin_num[spaxel]]
-			# 	uncert_unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
+			# 	uncert_unbinned[self.__parent__.x[spaxel],
+			# 	self.__parent__.y[spaxel]] = \
 			# 		kinematics.uncert[self.__parent__.bin_num[spaxel]]
 			kinematics.unbinned = unbinned
 			kinematics.uncert.unbinned = uncert_unbinned
@@ -548,15 +561,16 @@ class Bin(object):
 #	(see above)
 #
 # Methods:
-# **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is set. 
-# 	Uses ppxf utilites to determine which lines are within the observed spectrum.
+# **DEPRECATED** set_emission_lines (FWHM of observations): requires self._lam is  
+# 	set. Uses ppxf utilites to determine which lines are within the observed 
+# 	spectrum.
 # set_templates (template name, ppxf fitted weighting): Sets the template weights
 #	particularly in the emission_line objects. Also now loads the unconvolved 
 #	spectrum instead of method below.
 # **DEPRECATED** Unconvolved spectrum (wavelength of templates, templates used in 
-# 	dictionary): (array) Returns the unconvolved templates. NB: this are not in the same 
-#	wavelength bins as spectrum, bestfit, lam etc, but are binned as the stellar 
-#	templates.
+# 	dictionary): (array) Returns the unconvolved templates. NB: this are not in 
+# 	the same wavelength bins as spectrum, bestfit, lam etc, but are binned as the 
+# 	stellar templates.
 # absorption_line (line name): returns absorption line strength (of LICK style 
 #	indicies). Use uncert (boolean ) keyword to return uncertainty as well 
 #	(defualt False). 
@@ -655,10 +669,11 @@ class Bin(object):
 
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
-		## Solving an error in the Uni system with loading large numbers of files from 
-		## the home directory - they have to come from the Data partition instead.
+		## Solving an error in the Uni system with loading large numbers of files  
+		## from the home directory - they have to come from the Data partition 
+		## instead.
 		if cc.getDevice() == 'uni':
-			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/' % (cc.base_dir) +
+			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/'%(cc.base_dir) +
 				'm0[0-9][0-9][0-9]V')
 		else:
 			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))

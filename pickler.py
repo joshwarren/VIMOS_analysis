@@ -20,6 +20,7 @@ from Bin import Data, emission_line
 from errors2 import get_dataCubeDirectory
 from checkcomp import checkcomp
 cc = checkcomp()
+from Bin import myFloat
 
 
 vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
@@ -29,7 +30,7 @@ out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 
 
 #-----------------------------------------------------------------------------
-def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
+def pickler(galaxy, discard=0, norm='', opt="kin", override=False):
 	print "    Loading D"
 
 	tessellation_File = "%s/%s/%s/setup/voronoi_2d_binning_output.txt" % (vin_dir, 
@@ -41,12 +42,13 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 	vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	out_pickle = '%s/pickled' % (output)
 	
-	# Check tessellation file is older than pPXF outputs (checks vin_dir_gasMC/0.dat only).
+	# Check tessellation file is older than pPXF outputs (checks 
+	# vin_dir_gasMC/0.dat only).
 	if not override:
 		if os.path.getmtime(tessellation_File) > os.path.getmtime('%s/0.dat' % (
 			vin_dir_gasMC)): 
-			bin_num = np.loadtxt(tessellation_File, unpack=True, skiprows = 1, usecols=(2,), 
-				dtype=int)
+			bin_num = np.loadtxt(tessellation_File, unpack=True, skiprows = 1, 
+				usecols=(2,), dtype=int)
 			if os.path.exists('%s/%i.dat' % (vin_dir_gasMC,max(bin_num))) and not \
 				os.path.exists('%s/%i.dat' % (vin_dir_gasMC, max(bin_num)+1)):
 				# Issue warning, but do not stop.
@@ -86,49 +88,52 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 		# Getting emission templates used
 		lines = {'Hdelta':4101.76, 'Hgamma':4340.47, 'Hbeta':4861.33, 
 			'[OIII]5007d':5004.0,'[NI]d':5200.0}
-		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, i),dtype=str)
+		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (vin_dir_gasMC, i),
+			dtype=str)
 		ms = matrix.shape
-		for j in range(ms[0]):
+		for j in range(ms[0]-8, ms[0]):
 			if not matrix[j,0].isdigit():
 				line = matrix[j,0]
-				D.bin[i].components[matrix[j,0]] = emission_line(D.bin[i],
+				D.bin[i].components[line] = emission_line(D.bin[i],
 					line,lines[line],matrix[j,1:].astype(float))
 				# Skip step if file is empty.
 				with warnings.catch_warnings():
 					warnings.simplefilter('error')
 					try:
 						D.bin[i].components[line].uncert_spectrum = np.loadtxt(
-							'%s/gas_uncert_spectrum/%s/%i.dat' % (vin_dir_gasMC, line, i))
+							'%s/gas_uncert_spectrum/%s/%i.dat' % (vin_dir_gasMC, 
+							line, i))
 					except:# Warning:
 						pass
-				D.add_e_line(matrix[j,0],lines[matrix[j,0]])
+				D.add_e_line(line, lines[line])
+
+		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
+			unpack=True)
+		if 'kin' in opt:
+			D.bin[i].apweight = np.loadtxt("%s/apweights/%d.dat" %(vin_dir_gasMC,i), 
+				unpack=True)
+		elif 'pop' in opt:
+			D.bin[i].mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC,i), 
+				unpack=True)
 		
 		#Setting the weighting given to the gas templates 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
 			vin_dir_gasMC, i), unpack=True, dtype='str')
-		temp_weight = temp_weight.astype(float)
-		D.bin[i].set_templates(temp_name, temp_weight)
+		# temp_weight = temp_weight.astype(float)
+		D.bin[i].set_templates(temp_name, temp_weight.astype(float))
 
-		D.bin[i].bestfit = np.loadtxt("%s/bestfit/%d.dat" %(vin_dir_gasMC,i), 
-			unpack=True)
-		if opt == 'kin':
-			D.bin[i].apweight = np.loadtxt("%s/apweights/%d.dat" %(vin_dir_gasMC,i), 
-				unpack=True)
-		elif opt == 'pop':
-			D.bin[i].mpweight = np.loadtxt("%s/mpweights/%d.dat" %(vin_dir_gasMC,i), 
-				unpack=True)
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
 # ------------=========== Read kinematics results ==============----------
-	componants = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
+	components = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
 		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
 
-	if len(componants) == 0: gas =0
-	elif 'gas' in componants: gas = 1
-	elif 'Shocks' in componants and 'SF' in componants: gas = 2
+	if len(components) == 0: gas =0
+	elif 'gas' in components: gas = 1
+	elif 'Shocks' in components and 'SF' in components: gas = 2
 	else: gas = 3
 	D.gas = gas
 
-	for c in D.list_components:
+	for c in D.list_components_no_mask:
 		dynamics = {'vel':np.zeros(D.number_of_bins)*np.nan, 
 			'sigma':np.zeros(D.number_of_bins)*np.nan, 
 			'h3':np.zeros(D.number_of_bins)*np.nan, 
@@ -167,11 +172,6 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 						dynamics[d][bin] = float(row[j+1])
 					except IndexError:
 						pass
-					# 	dynamics[d][bin] = 0
-				# dynamics['vel'][bin] = vel[i]				
-				# dynamics['sigma'][bin] = sig[i]
-				# dynamics['h3'][bin] = h3s[i]
-				# dynamics['h4'][bin] = h4s[i]
 
 				# Calculating uncertainties
 				if c_type != "stellar": MC_dir = "%s/gas" % (vin_dir_gasMC) 
@@ -194,12 +194,13 @@ def pickler(galaxy, discard=0, norm="lwv", opt="kin", override=False):
 
 		for kine in dynamics.keys():
 			if np.isnan(dynamics[kine]).all():
-				D.components[c].unset(kine)
+				D.components_no_mask[c].unset(kine)
 			else:
-				# if c in D.list_components:
-				D.components[c].setkin(kine, dynamics[kine])
-				D.components[c].setkin_uncert(kine, dynamics_uncert[kine])
+				D.components_no_mask[c].setkin(kine, dynamics[kine])
+				D.components_no_mask[c].setkin_uncert(kine, dynamics_uncert[kine])
 
+	if norm != '':
+		D.norm_method = norm
 	D.find_restFrame()
 # ------------================ Pickling =================----------
 

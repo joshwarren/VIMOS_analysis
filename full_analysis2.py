@@ -31,7 +31,7 @@ galaxies = [
 			'ic4296',
 			'ngc0612',
 			'ngc1399',
-			# 'ngc3100',
+			'ngc3100',
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34'
@@ -49,8 +49,8 @@ galaxies = [
 
 
 discard = 0
-norm= ''#'lwv' # 'lws'
-opt_dir=''
+norm = 'fit_disk'#'lwv' # 'lws'
+opt_dir = ''
 
 m=mapping()
 # m.SNR = False
@@ -86,19 +86,17 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
-		if galaxy =='ngc3100':
-			D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
 		D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 			residual="median", norm=norm, D=D, mapping=m, opt='pop'+opt_dir,
 			show_bin_num=True)
 		plt.close("all")
-		if galaxy == 'ngc3100':
-			D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
-				overplot={'CO':'c', 'radio':'r'})
-			plt.close("all")
-			D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
-				overplot={'CO':'c', 'radio':'r'})
-			plt.close("all")
+		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
+			overplot={'CO':'c', 'radio':'r'})
+		plt.close("all")
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, opt='pop'+opt_dir, 
+		# 	overplot={'CO':'c', 'radio':'r'})
+		# plt.close("all")
 		try:
 			D = BPT(galaxy, D=D, opt='pop'+opt_dir)
 			plt.close("all")
