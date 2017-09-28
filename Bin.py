@@ -328,7 +328,10 @@ class _data(object):
 	# If value is unmeasured.
 	def unset(self, attr):
 		for i, bin in enumerate(self.__parent__.bin):
-			del bin.components[self.name].__dict__[attr]
+			try:
+				del bin.components[self.name].__dict__[attr]
+			except KeyError:
+				pass
 
 	def setkin(self, attr, value):
 		# Ensures only acts on kinematics
@@ -356,32 +359,25 @@ class _data(object):
 	def __getattr__(self, attr):
 		if attr in ['vel','sigma','h3','h4']:
 			m = self.mask_dynamics
+			k = np.array([])
+			for bin in D.bin:
+				if not m[bin.bin_number]:
+					k = np.append(k, getattr(bin.components[self.name], attr))
+				else:
+					k = np.append(k, np.nan)
+
 			# Normalise to rest frame of stars
 			if attr == 'vel':
-				kinematics = myArray([bin.components[self.name].__dict__[attr] 
-					- self.__parent__.vel_norm if not m[i] else np.nan 
-					for i, bin in enumerate(self.__parent__.bin)])
-			else:
-				kinematics = myArray([bin.components[self.name].__dict__[attr] 
-					if not m[i] else np.nan 
-					for i, bin in enumerate(self.__parent__.bin)])
+				k -= self.__parent__.vel_norm
+			kinematics = myArray(k)
 			kinematics.uncert = myArray(
-				[bin.components[self.name].__dict__[attr].uncert 
+				[getattr(bin.components[self.name], attr, myFloat(np.nan)).uncert 
 				if not m[i] else np.nan 
 				for i, bin in enumerate(self.__parent__.bin)])
 
 			unbinned = self.__parent__.unbin(kinematics)
 			uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
 
-			# unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
-			# uncert_unbinned = np.zeros(self.__parent__.unbinned_flux.shape)
-
-			# for spaxel in range(len(self.__parent__.x)):
-			# 	unbinned[self.__parent__.x[spaxel],self.__parent__.y[spaxel]] = \
-			# 		kinematics[self.__parent__.bin_num[spaxel]]
-			# 	uncert_unbinned[self.__parent__.x[spaxel],
-			# 	self.__parent__.y[spaxel]] = \
-			# 		kinematics.uncert[self.__parent__.bin_num[spaxel]]
 			kinematics.unbinned = unbinned
 			kinematics.uncert.unbinned = uncert_unbinned
 

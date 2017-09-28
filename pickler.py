@@ -202,6 +202,7 @@ def pickler(galaxy, discard=0, norm='', opt="kin", override=False):
 	if norm != '':
 		D.norm_method = norm
 	D.find_restFrame()
+
 # ------------================ Pickling =================----------
 
 	print "    Pickling D"

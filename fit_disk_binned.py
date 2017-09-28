@@ -46,7 +46,7 @@ def fit_disk(galaxy, D=None, opt='kin'):
 	# vel_err = vel*0+1
 
 	disk,pars=dfn.disk_fit_exp(D.xBar,D.yBar,vel.copy(),vel_err.copy(),leeway=leeway, 
-		sigclip=sigclip, grid_length=40, pa=pa)
+		sigclip=sigclip, grid_length=40, pa=pa, verbose=False)
 
 	ax[1,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
 		D.components['[OIII]5007d'].plot['vel'], header, #vmin=vmin, vmax=vmax, 
@@ -79,7 +79,7 @@ def fit_disk(galaxy, D=None, opt='kin'):
 	# vel_err = vel*0+1
 
 	disk,pars=dfn.disk_fit_exp(D.xBar, D.yBar, vel.copy(),vel_err.copy(),leeway=leeway, 
-		sigclip=sigclip, grid_length=40, pa=pa)
+		sigclip=sigclip, grid_length=40, pa=pa, verbose=False)
 
 	
 	ax[0,0] = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 

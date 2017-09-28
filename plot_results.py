@@ -466,6 +466,14 @@ def plot_results(galaxy, discard=0, norm="lwv", plots=False, residual=False, ove
 # ------------============ Amplitude/Noise ==============----------
 	if mapping.amp_noise or mapping is None:
 		for c in D.e_components:
+			if 'OIII' in c:
+				c_title = '[OIII]'
+			elif 'Hbeta' in c:
+				c_title = r'H$_\beta$'
+			elif 'Hgamma' in c:
+				c_title = r'H$_\gamma$'
+			else:
+				c_title = c
 			amp_title = '%s Amplitude to Noise ratio' % (c_title)
 			amp_min, amp_max = set_lims(D.e_line[c].amp_noise, positive=True)
 			saveTo = "%s/%s_amp_noise.png" % (out_nointerp, c)
