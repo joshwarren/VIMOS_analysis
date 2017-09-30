@@ -238,5 +238,6 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={}):
 # Use of plot_stellar_pop.py
 
 if __name__ == '__main__':
-	plot_stellar_pop('eso443-g024')
+	plot_stellar_pop('ngc3100', method='mostlikely',
+		overplot={'CO':'c', 'radio':'r'})
 

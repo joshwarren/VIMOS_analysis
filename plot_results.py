@@ -239,7 +239,8 @@ def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None,
 			raise ValueError("'scale' keyword has invaild value: %s" % (scale))
 
 		# Plot
-		cs = ax.contour(x, y, image, colors=color, linestyles='solid', linewidth=1)
+		cs = ax.contour(x, y, image, colors=color, linestyles='solid', 
+			linewidth=1)
 		# cs = ax.contour(image, colors=color, linestyles='solid', linewidth=1)
 		if overplot == 'radio':
 			if scale != 'lin':

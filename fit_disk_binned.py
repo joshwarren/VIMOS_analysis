@@ -16,13 +16,15 @@ from prefig import Prefig
 
 
 
-def fit_disk(galaxy, D=None, opt='kin'):
+def fit_disk(galaxy, D=None, opt='pop', instrument='vimos'):
+	print '    Fit disk'
 	leeway  = 1.
 	sigclip = None#3.
 
 	pa = {'ngc0612':136.238, 'ic1459':None}
-	galaxy_gals, pa_gals = np.loadtxt('%s/Data/vimos/analysis/galaxies2.txt' % 
-		(cc.base_dir), usecols=(0,3), skiprows=1, unpack=True, dtype=str)
+	galaxy_gals, pa_gals = np.loadtxt('%s/Data/%s/analysis/galaxies2.txt' % 
+		(cc.base_dir, instrument), usecols=(0,3), skiprows=1, unpack=True, 
+		dtype=str)
 	i_gal = np.where(galaxy_gals == galaxy)[0][0]
 	pa = float(pa_gals[i_gal])
 
@@ -34,8 +36,8 @@ def fit_disk(galaxy, D=None, opt='kin'):
 	f.close()
 
 	if D is None:
-		pickleFile = open('%s/Data/vimos/analysis/%s/%s/pickled/dataObj.pkl' % (
-			cc.base_dir, galaxy,opt))
+		pickleFile = open('%s/Data/%s/analysis/%s/%s/pickled/dataObj.pkl' % (
+			cc.base_dir, instrument, galaxy,opt))
 		D = pickle.load(pickleFile)
 		pickleFile.close()
 	D.sauron = True
@@ -117,8 +119,8 @@ def fit_disk(galaxy, D=None, opt='kin'):
 
 	fig.suptitle('Outflows in %s' % (galaxy))
 
-	fig.savefig('%s/Data/vimos/analysis/%s/%s/plots/outflows.png' % (cc.base_dir, galaxy,
-		opt))
+	fig.savefig('%s/Data/%s/analysis/%s/%s/plots/outflows.png' % (cc.base_dir, 
+		instrument, galaxy, opt))
 
 	return D
 

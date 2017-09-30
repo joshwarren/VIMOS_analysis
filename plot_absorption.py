@@ -70,15 +70,18 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={}):
 
 		saveTo = '%s/%s.png' % (out_plots, line)
 		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, D.absorption_line(line), header, vmin=abmin, vmax=abmax,
-			nodots=True, colorbar=True, label='Index strength ('+r'$\AA$'+')', 
-			title=line, cmap='gnuplot2', redshift=z,
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center, save=saveTo)
+			D.xBar, D.yBar, D.absorption_line(line), header, vmin=abmin, 
+			vmax=abmax, nodots=True, colorbar=True, 
+			label='Index strength ('+r'$\AA$'+')', title=line, 
+			cmap='gnuplot2', redshift=z, flux_unbinned=D.unbinned_flux, 
+			signal_noise=D.SNRatio, signal_noise_target=SN_target, 
+			center=center, save=saveTo)
 		ax.saveTo = saveTo
+		count = 0
 		if overplot:
 			for o, color in overplot.iteritems():
-				add_(o, color, ax, galaxy)
+				count +=1
+				add_(o, color, ax, galaxy, close = count==len(overplot))
 		
 		if uncert:
 			abmin, abmax = set_lims(ab_uncert)
@@ -88,7 +91,7 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={}):
 				label='Index strength ('+r'$\AA$'+')', title=line, cmap='gnuplot2', 
 				flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
 				signal_noise_target=SN_target, center=center, 
-				save='%s/%s_uncert.png' % (out_plots, line))
+				save='%s/%s_uncert.png' % (out_plots, line), close=True)
 
 	return D
 
@@ -104,5 +107,5 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={}):
 # Use of plot_absorption.py
 
 if __name__ == '__main__':
-	plot_absorption('ic1531', uncert=False)
+	plot_absorption('ngc3100', overplot={'CO':'c', 'radio':'r'})
 

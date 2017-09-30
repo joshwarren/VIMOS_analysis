@@ -12,6 +12,8 @@ import glob # for searching for files
 from astropy.io import fits
 import numpy as np # for array handling
 from scipy import ndimage
+from sauron_colormap2 import sauron2 as sauron
+
 
 #-----------------------------------------------------------------------------
 
@@ -20,6 +22,9 @@ def unsharpmask(galaxy):
 
 	sigma = 10
 	weight = 0.6
+	if galaxy == 'ic1459':
+		sigma = 4
+		weight = 0.9
 	clip = 3
 
 	fig, ax = plt.subplots(1,2)
@@ -40,7 +45,7 @@ def unsharpmask(galaxy):
 		fig, ax = plt.subplots(1,2)
 		m = np.nanmean(img)
 		s = np.nanstd(img)
-		ax[0].imshow(np.rot90(img.clip(m - clip*s,m + clip*s)), cmap='gist_yarg')
+		ax[0].imshow(np.rot90(img.clip(m - clip*s,m + clip*s)), cmap=sauron)#cmap='gist_yarg')
 		ax[0].set_title('Original image for %s' % (galaxy.upper()))
 	
 		# fig.text(0.02,0.9, "Galaxy: " + galaxy.upper())
@@ -49,7 +54,7 @@ def unsharpmask(galaxy):
 
 		unsharp = img - blurred*weight
 
-		ax[1].imshow(np.rot90(unsharp.clip(m - clip*s,m + clip*s)), cmap='gist_yarg')
+		ax[1].imshow(np.rot90(unsharp.clip(m - clip*s,m + clip*s)), cmap=sauron)# cmap='gist_yarg')
 		ax[1].set_title('Unsharped image for %s' % (galaxy.upper()))
 
 		fig.savefig(file.replace('fits', 'png'))
@@ -57,6 +62,7 @@ def unsharpmask(galaxy):
 
 if __name__ == '__main__':
 	for g in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399', 'ngc3557']:
+	# for g in ['ic1459']:
 		unsharpmask(g)
 
 
