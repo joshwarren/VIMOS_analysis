@@ -9,15 +9,15 @@ from plot_velfield_nointerp import plot_velfield_nointerp
 import cPickle as pickle
 from plot_results_muse import set_lims
 from astropy.io import fits
-from errors2 import get_dataCubeDirectory
 import disk_fit_functions_binned as dfn
 from sauron_colormap import sauron
 from prefig import Prefig 
+from importlib import import_module
 
 
 
 def fit_disk(galaxy, D=None, opt='pop', instrument='vimos'):
-	print '    Fit disk'
+	print '   Fit disk'
 	leeway  = 1.
 	sigclip = None#3.
 
@@ -30,9 +30,15 @@ def fit_disk(galaxy, D=None, opt='pop', instrument='vimos'):
 
 	Prefig(subplots=(4,2))
 	fig, ax = plt.subplots(2,4)
-
+	
+	if instrument == 'muse':
+		get_dataCubeDirectory = import_module('errors2_muse'
+			).get_dataCubeDirectory
+	else:
+		from errors2 import get_dataCubeDirectory
 	f = fits.open(get_dataCubeDirectory(galaxy))
-	header = f[0].header
+	if instrument == 'muse': header = f[1].header
+	else: header = f[0].header
 	f.close()
 
 	if D is None:
