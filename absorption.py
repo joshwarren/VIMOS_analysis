@@ -32,6 +32,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 	elif line_name=='Mg_b':
 		line_name='Mgb'
 		line_name2='mgb'
+	elif line_name=='Mg2':
+		line_name2='mg2'
 	elif line_name=='NaD':
 		line_name2='nad'
 	elif line_name=='TiO1':
