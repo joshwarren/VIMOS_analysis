@@ -99,7 +99,6 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 	e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
 
 	continuum = spectrum - e_line_spec #np.nansum(e_line_spec,axis=0)
-	convolved = bestfit - e_line_spec # np.nansum(e_line_spec, axis=0)
 
 	if library == 'Miles':
 		if cc.getDevice() == 'uni':
@@ -142,6 +141,9 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		from scipy.ndimage.filters import gaussian_filter1d
 		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
 		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
+	else:
+		convolved = bestfit - e_line_spec # np.nansum(e_line_spec, axis=0)
+		
 
 	ab_lines = {}
 	uncerts = {}

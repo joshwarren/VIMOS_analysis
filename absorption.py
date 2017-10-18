@@ -26,20 +26,27 @@ c = 299792.458 # speed of light in km/s
 
 def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
 	conv_lam=None, noise=None, lick=False):
+	mag = False
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
 		line_name2='hb'
 	elif line_name=='Mg_b':
 		line_name='Mgb'
 		line_name2='mgb'
+	elif line_name=='Mg1':
+		line_name2='mg1'
+		mag = True
 	elif line_name=='Mg2':
 		line_name2='mg2'
+		mag = True
 	elif line_name=='NaD':
 		line_name2='nad'
 	elif line_name=='TiO1':
 		line_name2='tio1'
+		mag = True
 	elif line_name=='TiO2':
 		line_name2='tio2'
+		mag = True
 	elif line_name=='Fe5270':
 		line_name2='fe52'
 	elif line_name=='Fe5335':
@@ -68,6 +75,8 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			raise ValueError('Length of noise and observed spectrum '+
 				'should be the same.')
 
+	# spec /= spec[np.argmin(np.abs(lam-4300))]
+
 	# Catch if index is not in wavelenght range.
 	try:
 		# Reduce spec to Lick resolution
@@ -84,13 +93,17 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			variance = spectrum(lam=lam, lamspec=noise**2)
 		else: 
 			variance = None
-	
+
 		disp = np.diff(lam)[np.argmin(np.abs(lam-np.mean(getattr(spectra,line_name2))))]
 		spec = gaussian_filter1d(spec, np.sqrt(8.4**2 - disp**2)/2.355/disp)
-		spectra = spectrum(lam=lam, lamspec=spec)
+		spectra = spectrum(lam=lam, lamspec=spec)	
 
-		index_value, index_va, con_band, index_band = spectra.irindex(disp, line_name, 
-			varSED=variance, verbose=False)
+		if mag:
+			index_value, index_va = spectra.irmagindex(disp, line_name, 
+				varSED=variance, verbose=False)
+		else:
+			index_value, index_va, cont, band = spectra.irindex(disp, line_name, 
+				varSED=variance, verbose=False)
 
 		# Calculate correction for velocity dispersion spreading
 		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
@@ -111,18 +124,31 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 				# unc_spec becomes convolved to 200km/s dispersion (as required for LICK 
 				#	indices)
 				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
+			# unc_spec /= unc_spec[np.argmin(np.abs(unc_lam-4300))]
 			spectra = spectrum(unc_lam, unc_spec)
-			unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_disp, line_name)
+			if mag:
+				unc_index_value, unc_index_va = spectra.irmagindex(unc_disp, 
+					line_name)
+			else:
+				unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_disp, 
+					line_name)
 			# Line strength of convolved spectrum (bestfit - emission lines)
+			# conv_spec /= conv_spec[np.argmin(np.abs(conv_lam-4300))]
 			spectra = spectrum(conv_lam, conv_spec)
-			conv_index_value, conv_index_va, _, _ = spectra.irindex(conv_disp, line_name)
+			if mag:
+				conv_index_value, conv_index_va = spectra.irmagindex(conv_disp, 
+					line_name)
+			else:
+				conv_index_value, conv_index_va, _, _ = spectra.irindex(conv_disp, 
+					line_name)
 			# LOSVD correction (From SAURON VI: Section 4.2.2)
 			corr = unc_index_value/conv_index_value
 			# corr_var = np.sqrt((conv_index_va/conv_index_value)**2 + 
 			# 	(unc_index_va/unc_index_value)**2)*corr
 		else:
 			corr = 1
-			# corr_var = 0		
+			# corr_var = 0
+
 
 		# Apply correction
 		index_va = np.sqrt(index_va) * corr
