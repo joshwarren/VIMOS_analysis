@@ -161,8 +161,8 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 
 class population(object):
 
-	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, ab_uncert=None,
-		instrument='vimos'):
+	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, 
+		ab_uncert=None, instrument='vimos'):
 		self.pp = pp
 		self.galaxy = galaxy
 		self.instrument = instrument
