@@ -303,7 +303,8 @@ if __name__=='__main__':
 	for i in range(len(np.unique(r2))):
 		for gal in ['ic1459','ic4296','ngc3557']:
 			m = (r2 == np.unique(r2)[i]) * (p2 == gal)
-			params = np.polyfit(f2[m], g2[m], 1, w=np.sqrt(j2[m]**2 + h2[m]**2))
+			params = np.polyfit(f2[m], g2[m], 1, 
+				w=1/np.sqrt(j2[m]**2 + h2[m]**2))
 			i_gal = np.where(np.array(lines) == np.unique(r2)[i])[0][0]
 			if gal == 'ic1459':
 				ax.errorbar(f2[m], g2[m], xerr=j2[m], yerr=h2[m], fmt='x', 
@@ -313,7 +314,8 @@ if __name__=='__main__':
 					color=color[i_gal])
 	for i in range(len(np.unique(r2))):
 			m = (r2 == np.unique(r2)[i])
-			params = np.polyfit(f2[m], g2[m], 1, w=np.sqrt(j2[m]**2 + h2[m]**2))
+			params = np.polyfit(f2[m], g2[m], 1, 
+				w=1/np.sqrt(j2[m]**2 + h2[m]**2))
 			print np.unique(r2)[i], 'Offset:', np.mean(f2[m] - g2[m]), \
 				'dispersion:', np.std(f2[m] - g2[m])
 

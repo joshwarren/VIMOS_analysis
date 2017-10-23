@@ -15,6 +15,7 @@ from plot_results import add_, set_lims
 from checkcomp import checkcomp
 cc = checkcomp()
 from plot_velfield_nointerp import plot_velfield_nointerp
+from classify import get_R_e
 from prefig import Prefig
 Prefig()
 
@@ -266,12 +267,12 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 					y_err = eval('unc_'+i)
 				axs[i].errorbar(r, y, yerr=y_err, fmt='.', c='k')
 
-				params, cov = np.polyfit(r, y, 1, w=y_err, cov=True)
+				params, cov = np.polyfit(r, y, 1, w=1/y_err, cov=True)
 				axs[i].plot(r, np.poly1d(params)(r), '--k')
-				# params, residuals, _, _, _ = numpy.polyfit(r, y, 1, w=y_err, 
+				# params, residuals, _, _, _ = numpy.polyfit(r, y, 1, w=1/y_err, 
 				# 	full=True)
 				# chi2 = residuals / (len(r) - 2)
-				figs[i].text(0.1, 0.9, r'grad: %.2f $\pm$ %.2f'%(params[0], 
+				figs[i].text(0.15, 0.84, r'grad: %.3f $\pm$ %.3f'%(params[0], 
 					np.sqrt(np.diag(cov))[0]))
 
 
@@ -279,15 +280,14 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 	if gradient:
 		out_plots = "%s/plots/population" % (output)
 
-		lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 
-		'Mg_b']
 		index = np.zeros((40,40,2))
 		for i in range(40):
 			for j in range(40):
 				index[i,j,:] = np.array([i,j]) - center
 
 		step_size = 2
-		annuli = np.arange(2, 26, step_size)
+		# annuli = np.arange(2, 26, step_size).astype(float)
+		annuli = np.arange(2, 5, step_size).astype(float)
 
 		age_rad = np.zeros(len(annuli))
 		met_rad = np.zeros(len(annuli))
@@ -315,17 +315,14 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 			pp = run_ppxf(galaxy, spec, noise, lamRange, header['CDELT3'], 
 				params)
 
-			absorp, uncert = get_absorption(lines, pp=pp, instrument='vimos')
+			pop = population(pp=pp, instrument='vimos')
 
-			pop = population(ab_index=absorp, ab_uncert=uncert, 
-				instrument='vimos')
-
-			axs['age'].errorbar(a, np.log10(pop.age), yerr=1/pop.unc_age, 
-				c='r', fmt='.')
-			axs['met'].errorbar(a, pop.metallicity, yerr=pop.unc_met, c='r', 
-				fmt='.')
-			axs['alp'].errorbar(a, pop.alpha, yerr=pop.unc_alp, c='r', 
-				fmt='.')
+			# axs['age'].errorbar(a, np.log10(pop.age), 
+			# 	yerr=np.abs(pop.unc_age/pop.age/np.log(10)), c='r', fmt='.')
+			# axs['met'].errorbar(a, pop.metallicity, yerr=pop.unc_met, c='r', 
+			# 	fmt='.')
+			# axs['alp'].errorbar(a, pop.alpha, yerr=pop.unc_alp, c='r', 
+			# 	fmt='.')
 
 			for i in ['age', 'met', 'alp']:
 				if i=='met': i2='metallicity'
@@ -333,6 +330,19 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 				else: i2=i
 				rad[i].append(getattr(pop, i2))
 				rad_err[i].append(getattr(pop, 'unc_'+i))
+
+		annuli *= header['CDELT1']
+
+
+		gradient_file = '%s/galaxies_pop_gradients.txt' % (out_dir)
+		ageRe, ageG, e_ageG, metRe, metG, e_metG, alpRe, alpG, e_alpG = \
+			np.loadtxt(gradient_file, use_cols=(1,2,3,4,5,6,7,8,9), 
+			unpack=True, skiprows=1)
+		galaxy_gals = np.loadtxt(gradient_file, use_cols=(0,), unpack=True, 
+			skiprows=1, dtype=str)
+		i_gal = np.where(galaxy_gals == galaxy)[0][0]
+
+		R_e = get_R_e(galaxy)
 
 		for i in ['age', 'met', 'alp']:
 			axs[i].set_xlabel('Radius')
@@ -342,26 +352,51 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 				y_err = np.abs(np.array(rad_err[i])/np.array(rad[i])/
 					np.log(10))
 			else: 
-				y = rad[i]
-				y_err = rad_err[i]
-			axs[i].errorbar(annuli, y, yerr=y_err, fmt='x', c='r')
+				y = np.array(rad[i])
+				y_err = np.array(rad_err[i])
+			axs[i].errorbar(annuli, y, yerr=y_err, 
+				fmt='x', c='r')
 
-			params, cov = np.polyfit(annuli, y, 1, w=y_err, cov=True)
-			axs[i].plot(annuli, np.poly1d(params)(annuli), '-r')
+			params, cov = np.polyfit(annuli, y, 1, w=1/y_err, cov=True)
+			axs[i].plot(annuli, np.poly1d(params)(annuli), 
+				'-r')
 			# params, residuals, _, _, _ = numpy.polyfit(annuli, y, 1, 
-			# 	w=y_err, full=True)
+			# 	w=1/y_err, full=True)
 			# chi2 = residuals / (len(annuli) - 2)
-			figs[i].text(0.1, 0.86, r'grad: %.2f $\pm$ %.2f'%(params[0], 
+			figs[i].text(0.15, 0.8, r'grad: %.3f $\pm$ %.3f'%(params[0], 
 				np.sqrt(np.diag(cov))[0]), color='r')
 
 			if i =='age':
-				axs[i].set_ylabel('Age (Gyr)')
+				axs[i].set_ylabel('log(Age (Gyr))')
+
+				ageG[i_gal], e_ageG[i_gal] = params[0],np.sqrt(np.diag(cov))[0]
+				ageRe[i_gal] = np.poly1d(params)(R_e)
 			elif i == 'met':
 				axs[i].set_ylabel('Metalicity [Z/H]')
+
+				metG[i_gal], e_metG[i_gal] = params[0],np.sqrt(np.diag(cov))[0]
+				metRe[i_gal] = np.poly1d(params)(R_e)
 			elif i == 'alp':
 				axs[i].set_ylabel('Alpha Enhancement [alpha/Fe]')
+
+				alpG[i_gal], e_alpG[i_gal] = params[0],np.sqrt(np.diag(cov))[0]
+				alpRe[i_gal] = np.poly1d(params)(R_e)
 			figs[i].savefig('%s/%s_grad.png' % (out_plots, i))
 			plt.close(i)
+
+		temp = "{0:12}{1:7}{2:7}{3:7}{4:7}{5:7}{6:7}{7:7}{8:7}{9:7}\n"
+		with open(gradient_file, 'w') as f:
+			f.write(temp.format('Galaxy', 'ageRe', 'ageG', 'e_ageG', 'metRe', 
+				'metG', 'e_metG', 'alpRe', 'alpG', 'e_alpG'))
+			for i in range(len(galaxy_gals)):
+				f.write(temp.format(galaxy_gals[i], str(round(ageRe,1)),
+					str(round(ageG,3)), str(round(e_ageG,3)), 
+					str(round(metRe,1)), str(round(metG,3)), 
+					str(round(e_metG,3)), str(round(alpRe,1)),
+					str(round(alpG,3)), str(round(e_alpG,3))))
+
+
+
 
 	return D
 
@@ -378,5 +413,5 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 
 if __name__ == '__main__':
 	plot_stellar_pop('ngc3100', method='mostlikely',
-		overplot={'CO':'c', 'radio':'r'})
+		overplot={'CO':'c', 'radio':'r'}, gradient='only')
 

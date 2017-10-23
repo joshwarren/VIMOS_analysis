@@ -11,70 +11,73 @@ from astropy.io import fits
 from errors2 import get_dataCubeDirectory, run_ppxf, set_params, apply_range
 from pop import population
 from Bin import trapz_uncert
+from global_mg_sigma import in_aperture
 from prefig import Prefig 
 Prefig(transparent=False)
 
 # In pixel units (Except d - in units of app_size)
-def get_areaInAperture(x_len,y_len,x_cent,y_cent,app_size):
-	# Used agentp's answer from: https://stackoverflow.com/questions/622287/
-	#	area-of-intersection-between-circle-and-rectangle
-	a = np.full((x_len, y_len), np.nan)
+# def get_areaInAperture(x_len,y_len,x_cent,y_cent,app_size):
+# 	# Used agentp's answer from: https://stackoverflow.com/questions/622287/
+# 	#	area-of-intersection-between-circle-and-rectangle
+# 	a = np.full((x_len, y_len), np.nan)
 
-	x = np.arange(x_len).repeat(y_len).reshape(x_len, y_len)
-	y = np.tile(np.arange(y_len), x_len).reshape(x_len, y_len)
+# 	x = np.arange(x_len).repeat(y_len).reshape(x_len, y_len)
+# 	y = np.tile(np.arange(y_len), x_len).reshape(x_len, y_len)
 	
-	left = (x_cent - x + 0.5)/app_size
-	right = (x - x_cent + 0.5)/app_size
-	upper = (y - y_cent + 0.5)/app_size
-	lower = (y_cent - y + 0.5)/app_size
+# 	left = (x_cent - x + 0.5)/app_size
+# 	right = (x - x_cent + 0.5)/app_size
+# 	upper = (y - y_cent + 0.5)/app_size
+# 	lower = (y_cent - y + 0.5)/app_size
 
-	d = np.array([left,upper,right,lower])
-	# spaxel outside of square containing aperture
-	a[np.any(d <= -1, axis=0)] = 0
-	# spaxel fully inside aperture	**** NOT TRUE *** 
-	# a[np.all((d <= 1) * (d>-1), axis=0)] = 1
-	# aperture fully inside spaxel
-	a[np.all(d > 1, axis=0)] = np.pi * app_size**2
-	# spaxel inside square bounding aperture, but outside of aperture
-	m = (a*0).astype(bool)
-	for i in range(-1,3):
-		m *= d[i]**2 + d[i+1]**2 < 1
-		a[(d[i] <= 0) * (d[i+1] <= 0) * (d[i]**2 + d[i+1]**2 > 1)] = 0
-	# spaxel fully inside aperture	
-	a[m] = 1
+# 	d = np.array([left,upper,right,lower])
+# 	# spaxel outside of square containing aperture
+# 	a[np.any(d <= -1, axis=0)] = 0
+# 	# spaxel fully inside aperture	**** NOT TRUE *** 
+# 	# a[np.all((d <= 1) * (d>-1), axis=0)] = 1
+# 	# aperture fully inside spaxel
+# 	a[np.all(d > 1, axis=0)] = np.pi * app_size**2
+# 	# spaxel inside square bounding aperture, but outside of aperture
+# 	m = (a*0).astype(bool)
+# 	for i in range(-1,3):
+# 		m *= d[i]**2 + d[i+1]**2 < 1
+# 		a[(d[i] <= 0) * (d[i+1] <= 0) * (d[i]**2 + d[i+1]**2 > 1)] = 0
+# 	# spaxel fully inside aperture	
+# 	a[m] = 1
 
-	# spaxels partially inside the aperture
-	partial = np.isnan(a)
-	a[partial] = np.pi*app_size**2
-	# Remove segments
-	for i in range(-1,3):
-		# Ensure at least one vertex of line i is inside the aperture
-		m = (d[i] < 1) * (d[i]>-1) * partial * (
-			(d[i-1]**2 + d[i]**2 < 1) + (d[i]**2 + d[i+1]**2 < 1))
-		theta = 2 * np.arccos(d[i,m])
-		a[m] -= (app_size**2/2) * (theta - np.sin(theta))
+# 	# spaxels partially inside the aperture
+# 	partial = np.isnan(a)
+# 	a[partial] = np.pi*app_size**2
+# 	# Remove segments
+# 	for i in range(-1,3):
+# 		# Ensure at least one vertex of line i is inside the aperture
+# 		m = (d[i] < 1) * (d[i]>-1) * partial * (
+# 			(d[i-1]**2 + d[i]**2 < 1) + (d[i]**2 + d[i+1]**2 < 1))
+# 		theta = 2 * np.arccos(d[i,m])
+# 		a[m] -= (app_size**2/2) * (theta - np.sin(theta))
 
-	# Added corners of segments that have been removed twice
-	for i in range(-1,3):
-		# Find vertex inside aperture
-		m = ((d[i] < 1) * (d[i+1] < 1) * (d[i]**2 + d[i+1]**2 < 1)) * partial
-		# Add segment
-		b = app_size * (np.sqrt(1-d[i,m]**2) - d[i+1,m])
-		c = app_size * (np.sqrt(1-d[i+1,m]**2) - d[i,m])
-		cord_length = np.sqrt(b**2 + c**2)
-		theta = 2 * np.arcsin(cord_length/(2*app_size))
-		a[m] += (app_size**2/2) * (theta - np.sin(theta))
-		# Add triangle
-		a[m] += b * c/2
-	return a
-
-
+# 	# Added corners of segments that have been removed twice
+# 	for i in range(-1,3):
+# 		# Find vertex inside aperture
+# 		m = ((d[i] < 1) * (d[i+1] < 1) * (d[i]**2 + d[i+1]**2 < 1)) * partial
+# 		# Add segment
+# 		b = app_size * (np.sqrt(1-d[i,m]**2) - d[i+1,m])
+# 		c = app_size * (np.sqrt(1-d[i+1,m]**2) - d[i,m])
+# 		cord_length = np.sqrt(b**2 + c**2)
+# 		theta = 2 * np.arcsin(cord_length/(2*app_size))
+# 		a[m] += (app_size**2/2) * (theta - np.sin(theta))
+# 		# Add triangle
+# 		a[m] += b * c/2
+# 	return a
 
 
 
-def get_specFromAperture(galaxy, app_size=1.0, inside=True, res=0.67):
+
+
+def get_specFromAperture(galaxy, app_size=1.0, inside=True):
 	f = fits.open(get_dataCubeDirectory(galaxy))
 	s = f[0].data.shape
+
+	res = f[0].header['CDELT1']
 
 	galaxy_gals = np.loadtxt('%s/Data/vimos/analysis/galaxies.txt' % (cc.base_dir),
 		unpack=True, skiprows=1, usecols=(0,), dtype=str)
@@ -84,7 +87,8 @@ def get_specFromAperture(galaxy, app_size=1.0, inside=True, res=0.67):
 	x_cent = x_cent[i_gal]
 	y_cent = y_cent[i_gal]
 
-	area = get_areaInAperture(s[1], s[2], x_cent, y_cent, app_size/res)
+	# area = get_areaInAperture(s[1], s[2], x_cent, y_cent, app_size/res)
+	area = in_aperture(x_cent, y_cent, app_size/res, instrument='vimos')
 	
 	if not inside:
 		area = 1 - area
@@ -94,23 +98,23 @@ def get_specFromAperture(galaxy, app_size=1.0, inside=True, res=0.67):
 	d[np.isnan(d)] = 0
 	n = f[1].data
 	n[np.isnan(n)] = 0
-	return np.einsum('ijk,jk->i', d, area), np.sqrt(np.einsum('ijk,jk->i', n**2, area)), \
+	return np.einsum('ijk,jk->i', d, area), \
+		np.sqrt(np.einsum('ijk,jk->i', n**2, area)), \
 		np.arange(s[0])*f[0].header['CDELT3'] + f[0].header['CRVAL3']
 
 
 def KDC_pop(galaxy):
-	params = set_params(opt='pop')
-	params.reps = 10	
+	params = set_params(opt='pop', produce_plot=False, reps=10)
 
 
 	spec, noise, lam = get_specFromAperture(galaxy, app_size=1.0)
 	CD = lam[1] - lam[0]
-	spec, lam, cut = apply_range(spec, window=201, repeats=3, 
-		lam=lam, return_cuts=True, set_range=params.set_range, n_sigma=2)
+	spec, lam, cut = apply_range(spec,lam=lam, return_cuts=True, 
+		set_range=params.set_range)
 	noise = noise[cut]
 	lamRange = np.array([lam[0],lam[-1]])
 
-	pp = run_ppxf(galaxy, spec, noise, lamRange, CD, params, produce_plot=False)
+	pp = run_ppxf(galaxy, spec, noise, lamRange, CD, params)
 
 	pop = population(pp=pp, galaxy=galaxy)
 	pop.plot_probability_distribution(label=' of core region')
@@ -134,14 +138,19 @@ def KDC_pop(galaxy):
 	f = pop.fig
 	ax = pop.ax
 
+	del pop
+
 	# Calculate OIII equivalent width
+	e_lines = pp.component != 0
+	e_line_spec =  pp.matrix[:,e_lines].T.astype(float)
+	e_line_spec = np.einsum('ij,i->j',e_line_spec, pp.weights[e_lines])
 	OIII_pos = np.argmin(np.abs(pp.lam - 5007)) # pix in spectrum at 5007A
 	peak_width = 20 # Integrate over 2 * peak_width of pixels
-	OIII_pos += np.argmax(pop.e_line_spec[OIII_pos - peak_width:OIII_pos + peak_width]
-		) - peak_width
-	flux = np.trapz(pop.e_line_spec[OIII_pos - peak_width:OIII_pos + 
+	OIII_pos += np.argmax(e_line_spec[OIII_pos - peak_width:OIII_pos + peak_width]
+		) - peak_width # find redshifted peak
+	flux = np.trapz(e_line_spec[OIII_pos - peak_width:OIII_pos + 
 		peak_width], x=pp.lam[OIII_pos - peak_width:OIII_pos + peak_width])
-	OIII_eqw_gals[i_gal] = flux/pop.continuum[OIII_pos]
+	OIII_eqw_gals[i_gal] = flux/((pp.galaxy - e_line_spec)[OIII_pos])
 	
 	i_OIII = np.where('[OIII]5007d' in [e for e in pp.templatesToUse 
 		if not e.isdigit()])[0][0]
@@ -152,20 +161,23 @@ def KDC_pop(galaxy):
 		OIII_pos]))
 
 	OIII_eqw_uncer_gals[i_gal] = np.sqrt(OIII_eqw_gals[i_gal]**2 * 
-		((flux_uncert/flux)**2 + (cont_uncert/pop.continuum[OIII_pos])**2))
-	del pop
+		((flux_uncert/flux)**2 + (cont_uncert/
+		(pp.galaxy - e_line_spec)[OIII_pos])**2))
+	
 
 	# Outside apperture
+	params = set_params(opt='pop', produce_plot=False, reps=10)
+
 	spec, noise, lam = get_specFromAperture(galaxy, app_size=1.0, inside=False)
 	CD = lam[1] - lam[0]
-	spec, lam, cut = apply_range(spec, window=201, repeats=3, 
-		lam=lam, return_cuts=True, set_range=params.set_range, n_sigma=2)
+	spec, lam, cut = apply_range(spec, lam=lam, return_cuts=True, 
+		set_range=params.set_range)
 	noise = noise[cut]
 	lamRange = np.array([lam[0],lam[-1]])
 
 	
 
-	pp_outside = run_ppxf(galaxy, spec, noise, lamRange, CD, params, produce_plot=False)
+	pp_outside = run_ppxf(galaxy, spec, noise, lamRange, CD, params)
 	pop_outside = population(pp=pp_outside, galaxy=galaxy)
 	pop_outside.plot_probability_distribution(f=f, ax_array=ax, label=' of outer region')
 

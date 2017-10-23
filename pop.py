@@ -201,8 +201,8 @@ class population(object):
 					galaxy=self.galaxy, bin=self.bin, opt=self.opt, 
 					instrument=self.instrument)
 			else:
-				self.ab_lines, self.uncerts = get_absorption(self.lines, pp=self.pp,
-					instrument=self.instrument)
+				self.ab_lines, self.uncerts = get_absorption(self.lines, 
+					pp=self.pp, instrument=self.instrument)
 
 		vin_dir = get_vin_dir(self.instrument)
 		self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)

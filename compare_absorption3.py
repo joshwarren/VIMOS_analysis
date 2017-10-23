@@ -55,7 +55,7 @@ def slitFoV(c, l, w, pa, instrument='vimos'):
 	i = np.arange(s[0])
 	j = np.arange(s[1])
 	i, j = np.meshgrid(i,j)
-	i, j = i.flatten(),  j.flatten()
+	i, j = i.flatten(), j.flatten()
 
 
 	frac[i,j] = rebin(sampler, i*os+os/2, j*os+os/2)

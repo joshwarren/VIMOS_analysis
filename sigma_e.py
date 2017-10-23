@@ -117,7 +117,7 @@ def sigma_e(i_gal=None):
 	## write key parameters from header - can then be altered in future	
 	CRVAL_spec = header['CRVAL3']
 	CDELT_spec = header['CDELT3']
-	R_e_pix = R_e/CDELT_spec
+	R_e_pix = R_e/header['CDELT1']
 	s = galaxy_data.shape
 
 	rows_to_remove = range(params.discard)
@@ -143,8 +143,8 @@ def sigma_e(i_gal=None):
 	bin_lin_noise = np.sqrt(bin_lin_noise)
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
-	bin_lin, lam, cut = apply_range(bin_lin, window=201, repeats=3, 
-		lam=lam, set_range=params.set_range, return_cuts=True)
+	bin_lin, lam, cut = apply_range(bin_lin, lam=lam, 
+		set_range=params.set_range, return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])
 	bin_lin_noise = bin_lin_noise[cut]
 

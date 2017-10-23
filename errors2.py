@@ -911,7 +911,7 @@ class run_ppxf(ppxf):
 		else:
 			from copy import copy
 			# Fit stellar component only.
-			params_sav = copy(params)
+			params_sav = copy(self.params)
 			self.params.gas = 0
 			self.params.produce_plot = False
 			self.load_emission_templates()
@@ -928,7 +928,8 @@ class run_ppxf(ppxf):
 
 			# Find [OIII] kinematics and amplitude, enforce stellar kinematics
 			self.params.stellar_moments *= -1
-			self.params.start = [self.sol[0].tolist(), [None]*self.params.gas_moments]
+			self.params.start = [self.sol[0].tolist(), 
+				[None]*self.params.gas_moments]
 			self.params.gas = params_sav.gas
 			self.params.lines = ['[OIII]5007d']
 			self.load_emission_templates()
@@ -1005,9 +1006,9 @@ class run_ppxf(ppxf):
 			(~np.isnan(self.bin_log[g]))])
 	def load_emission_templates(self):
 		self.set_goodPix()
-		self.e_templates = get_emission_templates(self.params.gas, self.lamRange, 
-			self.stellar_templates.logLam_template, self.FWHM_gal, 
-			goodWav=self.lambdaq[self.goodPixels], 
+		self.e_templates = get_emission_templates(self.params.gas, 
+			self.lamRange, self.stellar_templates.logLam_template, 
+			self.FWHM_gal, goodWav=self.lambdaq[self.goodPixels], 
 			narrow_broad=self.params.narrow_broad, lines=self.params.lines)
 
 		if self.params.use_all_temp is not None:
