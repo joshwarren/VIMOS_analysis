@@ -286,8 +286,7 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 				index[i,j,:] = np.array([i,j]) - center
 
 		step_size = 2
-		# annuli = np.arange(2, 26, step_size).astype(float)
-		annuli = np.arange(2, 5, step_size).astype(float)
+		annuli = np.arange(2, 26, step_size).astype(float)
 
 		age_rad = np.zeros(len(annuli))
 		met_rad = np.zeros(len(annuli))
@@ -336,9 +335,9 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 
 		gradient_file = '%s/galaxies_pop_gradients.txt' % (out_dir)
 		ageRe, ageG, e_ageG, metRe, metG, e_metG, alpRe, alpG, e_alpG = \
-			np.loadtxt(gradient_file, use_cols=(1,2,3,4,5,6,7,8,9), 
+			np.loadtxt(gradient_file, usecols=(1,2,3,4,5,6,7,8,9), 
 			unpack=True, skiprows=1)
-		galaxy_gals = np.loadtxt(gradient_file, use_cols=(0,), unpack=True, 
+		galaxy_gals = np.loadtxt(gradient_file, usecols=(0,), unpack=True, 
 			skiprows=1, dtype=str)
 		i_gal = np.where(galaxy_gals == galaxy)[0][0]
 
@@ -389,11 +388,11 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 			f.write(temp.format('Galaxy', 'ageRe', 'ageG', 'e_ageG', 'metRe', 
 				'metG', 'e_metG', 'alpRe', 'alpG', 'e_alpG'))
 			for i in range(len(galaxy_gals)):
-				f.write(temp.format(galaxy_gals[i], str(round(ageRe,1)),
-					str(round(ageG,3)), str(round(e_ageG,3)), 
-					str(round(metRe,1)), str(round(metG,3)), 
-					str(round(e_metG,3)), str(round(alpRe,1)),
-					str(round(alpG,3)), str(round(e_alpG,3))))
+				f.write(temp.format(galaxy_gals[i], str(round(ageRe[i],1)),
+					str(round(ageG[i],3)), str(round(e_ageG[i],3)), 
+					str(round(metRe[i],1)), str(round(metG[i],3)), 
+					str(round(e_metG[i],3)), str(round(alpRe[i],1)),
+					str(round(alpG[i],3)), str(round(e_alpG[i],3))))
 
 
 
