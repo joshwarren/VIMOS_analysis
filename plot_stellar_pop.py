@@ -344,7 +344,7 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 		R_e = get_R_e(galaxy)
 
 		for i in ['age', 'met', 'alp']:
-			axs[i].set_xlabel('Radius')
+			axs[i].set_xlabel('Radius (arcsec)')
 
 			if i=='age': 
 				y = np.log10(rad[i])

@@ -132,15 +132,15 @@ def mg_sigma(galaxy, aperture=1.0):
 	return mg['Mg_b'], mg_uncert['Mg_b'], sigma_e, unc_sigma_e
 
 if __name__=='__main__':
-	galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
-		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
 
 	m = []
 	u_m = []
 	s = []
 	u_s = []
 	for g in galaxies:
-		mg, mg_uncert, sigma_e, unc_sigma_e = mg_sigma(g)
+		mg, mg_uncert, sigma_e, unc_sigma_e = mg_sigma(g, aperture=2.)
 		m = np.append(m, mg)
 		u_m = np.append(u_m, mg_uncert)
 		s = np.append(s, sigma_e)
