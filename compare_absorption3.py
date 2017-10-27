@@ -24,7 +24,7 @@ from compare_absorption2 import Lick_to_LIS
 from scipy.ndimage.interpolation import rotate
 from scipy.stats import binned_statistic
 from scipy.spatial import cKDTree as KDTree
-# from disk_fit_functions_binned import rebin
+from disk_fit_functions_binned import rebin
 
 
 
@@ -33,7 +33,7 @@ c = 299792.458 # speed of light in km/s
 # Works in pixel units
 # c: center, l: length, w:width, pa:position angle (anticlockwise from 
 # 	vertical?)
-def slitFoV(c, l, w, pa, instrument='vimos'):
+def slitFoV(c, l, w, pa, instrument='vimos', os=20):
 	if instrument=='vimos':
 		frac = np.zeros((40,40))
 	elif instrument=='muse':
@@ -42,7 +42,6 @@ def slitFoV(c, l, w, pa, instrument='vimos'):
 
 	s = frac.shape
 
-	os = 100 # oversample
 	# sampler = np.array(np.meshgrid(np.arange(s[0]*100), np.arange(s[1]*100))
 	# 	).T/100.
 
@@ -50,21 +49,14 @@ def slitFoV(c, l, w, pa, instrument='vimos'):
 	sampler[int(np.round(c[0] - w/2))*os: int(np.round(c[0] + w/2))*os, 
 		int(np.round(c[1] - l/2))*os: int(np.round(c[1] + l/2))*os] = 1
 
-	sampler = rotate(sampler, pa)
+	sampler = rotate(sampler, pa, reshape=False)
 
 	i = np.arange(s[0])
 	j = np.arange(s[1])
 	i, j = np.meshgrid(i,j)
 	i, j = i.flatten(), j.flatten()
-
-
-	frac[i,j] = rebin(sampler, i*os+os/2, j*os+os/2)
-
-	fig, ax = plt.subplots(2)
-	ax[0].imshow(sampler)
-	ax[1].imshow(frac)
-	plt.show()
-
+	frac[j, i] = rebin(sampler, i*os+os/2, j*os+os/2, statistic='mean')
+	
 	return frac
 
 
@@ -121,7 +113,7 @@ def compare_absortion(galaxy, O_sig=False, corr_lines='all'):
 		produce_plot=False)
 
 	# **********************
-	mask = slitFoV(center, 4.1/header['CDELT3'], 2.5/header['CDELT3'], pa, 
+	mask = slitFoV(center, 4.1/header['CDELT1'], 2.5/header['CDELT2'], pa, 
 		instrument='vimos')
 
 	ifu = np.array(f[0].data)
@@ -130,7 +122,7 @@ def compare_absortion(galaxy, O_sig=False, corr_lines='all'):
 
 	ifu = np.array(f[1].data)
 	ifu[np.isnan(ifu)] = 0
-	spec = np.sqrt(np.einsum('ijk,jk->i',ifu**2, mask**2))
+	spec = np.sqrt(np.einsum('ijk,jk->i',ifu**2, mask))
 	# **********************
 	lkadsjklas
 	lam = np.arange(len(spec))*header['CDELT3'] + header['CRVAL3']
@@ -266,7 +258,7 @@ def compare_absortion(galaxy, O_sig=False, corr_lines='all'):
 if __name__=='__main__':
 	lines = ['H_beta', 'Fe5015', 'Mg_b']
 	color = ['r',        'b',       'g']
-	slitFoV((20,20), 10, 3, 45)
+	slitFoV((20,20), 10, 3, 45, instrument='vimos')
 	# compare_absortion('ic1459', corr_lines = ['Hbeta','[OIII]5007d'])
 	# fig, ax = plt.subplots()
 	# for gal in ['ic1459','ic4296','ngc3557']:

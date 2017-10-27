@@ -23,6 +23,7 @@ from classify import classify
 from fit_disk_binned import fit_disk
 from BPT import BPT
 import traceback, sys
+from find_limits import find_limits
 
 galaxies = [
 			'eso443-g024',
@@ -77,7 +78,10 @@ for galaxy in galaxies:
 		# plt.close("all")
 		# # GH_plots(galaxy)
 		# plt.close("all")
-		# kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# D = kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
+		# plt.close("all")
+		# find_limits(galaxy, D=D, opt='kin'+opt_dir, norm=norm, 
+		# 	instrument='vimos')
 		# rotation_curve(galaxy, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
 
@@ -87,16 +91,18 @@ for galaxy in galaxies:
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		find_limits(galaxy, D=D, opt='pop'+opt_dir, norm=norm, 
+			instrument='vimos')
 		# D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
 		# 	residual="median", norm=norm, D=D, mapping=m, opt='pop'+opt_dir,
 		# 	show_bin_num=True)
 		# plt.close("all")
 		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
-		# 	overplot={'CO':'c', 'radio':'r'})
+		# 	overplot={'CO':'c', 'radio':'r'}, gradient='only')
 		# plt.close("all")
-		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, 
-			opt='pop'+opt_dir, overplot={'CO':'c', 'radio':'r'}, 
-			gradient='only')
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, 
+		# 	opt='pop'+opt_dir, overplot={'CO':'c', 'radio':'r'}, 
+		# 	gradient='only')
 		# plt.close("all")
 		# try:
 		# 	D = BPT(galaxy, D=D, opt='pop'+opt_dir)

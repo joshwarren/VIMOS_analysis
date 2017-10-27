@@ -124,9 +124,12 @@ def pickler(galaxy, discard=0, norm='', opt="kin", override=False):
 
 	D.xBar, D.yBar = np.loadtxt(tessellation_File2, unpack=True, skiprows = 1)
 # ------------=========== Read kinematics results ==============----------
-	components = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
-		os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
-
+	if os.path.isdir(vin_dir_gasMC + "/gas"):
+		components = [d for d in os.listdir(vin_dir_gasMC + "/gas") if \
+			os.path.isdir(os.path.join(vin_dir_gasMC + "/gas", d))]
+	else:
+		components = []
+		
 	if len(components) == 0: gas =0
 	elif 'gas' in components: gas = 1
 	elif 'Shocks' in components and 'SF' in components: gas = 2
@@ -165,8 +168,8 @@ def pickler(galaxy, discard=0, norm='', opt="kin", override=False):
 			if c_type in c_in_bin:
 				i = np.where(c_in_bin == c_type)[0][0]
 				with open(glamdring_file, 'r') as g:
-					rows = g.read().splitlines()
-					row = np.array(rows[i].split('   '))
+					rows = g.read().replace('[','').replace(']','').splitlines()
+					row = np.array(rows[i].split())
 				for j, d in enumerate(['vel', 'sigma', 'h3', 'h4']):
 					try:
 						dynamics[d][bin] = float(row[j+1])
