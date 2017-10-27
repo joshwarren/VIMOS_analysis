@@ -59,5 +59,5 @@ if __name__=="__main__":
 		# 'pks0718-34', 
 		# 'eso443-g024'
 		]
-	for g in galaxies: full_analysis(galaxy=g, opt='pop')
+	for g in galaxies: full_analysis(galaxy=g, opt='kin')
 	# full_analysis(galaxy='ic1531', opt='pop')

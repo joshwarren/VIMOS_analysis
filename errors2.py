@@ -458,8 +458,7 @@ def saveAll(galaxy, bin, pp, opt='kin'):
 					ger.write("   ".join([str(s) for s in pp.MCgas_kin_err[d,i,:]]) + '\n')
 
 	# gas MC uncertainty spectrum
-	for d, gas_dir in enumerate([e for e in pp.templatesToUse if e != 'stellar' and 
-		not e.isdigit()]):
+	for d, gas_dir in enumerate([e for e in pp.templatesToUse if not e.isdigit()]):
 		check_directory("%s/gas_uncert_spectrum/%s" %(dir, gas_dir))
 		gas_uncert_file = "%s/gas_uncert_spectrum/%s/%s.dat" % (dir, gas_dir, str(bin))
 		with open(gas_uncert_file, 'w') as u:
@@ -905,7 +904,7 @@ class run_ppxf(ppxf):
 		self.rebin()
 		self.load_stellar_templates()
 
-		if not self.params.temp_mismatch:
+		if not self.params.temp_mismatch or self.params.gas==0:
 			self.load_emission_templates()
 			self.run()
 		else:
@@ -1019,7 +1018,7 @@ class run_ppxf(ppxf):
 				self.templates = self.stellar_templates.templates
 			self.component = [0]*len(self.stellar_templates.templatesToUse
 				) + self.e_templates.component
-			self.templatesToUse = np.append(self.stellar_templates.templatesToUse, 
+			self.templatesToUse = np.append(self.stellar_templates.templatesToUse.astype(str), 
 				self.e_templates.templatesToUse)
 			self.element = ['stellar'] + self.e_templates.element
 		else:

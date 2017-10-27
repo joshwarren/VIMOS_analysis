@@ -125,32 +125,39 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	# R_m[0.85*A_ellipse > A_s] = np.nan
 
 	vel = D.components['stellar'].plot['vel']
-	vel_lim = set_lims(vel, symmetric=True)
-	mask = (vel < vel_lim[0]) + (vel > vel_lim[1])
+	# vel_lim = set_lims(vel, symmetric=True)
+	# mask = (vel < vel_lim[0]) + (vel > vel_lim[1])
 
 	sigma = D.components['stellar'].plot['sigma']
-	sigma_lim = set_lims(sigma, positive=True)
-	mask += (sigma < sigma_lim[0]) + (sigma > sigma_lim[1])
+	# sigma_lim = set_lims(sigma, positive=True)
+	# mask += (sigma < sigma_lim[0]) + (sigma > sigma_lim[1])
 	
-	vel[mask], sigma[mask] = np.nan, np.nan
+	# vel[mask], sigma[mask] = np.nan, np.nan
 
 
 	# NB: numerator and denominator are in R_m order
-	numerator = np.nancumsum(D.flux[R_m_sort] * 
-		np.sqrt(D.xBar**2 + D.yBar**2)[R_m_sort] * np.abs(vel[R_m_sort]))
+	numerator = np.nancumsum((D.flux * R_m * np.abs(vel))[R_m_sort])
 
-	denominator = np.nancumsum(D.flux[R_m_sort] * 
-		np.sqrt(D.xBar**2 + D.yBar**2)[R_m_sort] * np.sqrt(vel**2 + sigma**2)[R_m_sort])
+	denominator = np.nancumsum((D.flux * R_m * 
+		np.sqrt(vel**2 + sigma**2))[R_m_sort])
 
-	lambda_R = numerator[R_m_sort.argsort()]/denominator[R_m_sort.argsort()]
+	lambda_R = (numerator/denominator)[R_m_sort.argsort()]
 	lambda_R[np.isnan(R_m)] = np.nan
 
 	lambda_Re = interp1d(R_m[~np.isnan(R_m)], lambda_R[~np.isnan(R_m)],
 		bounds_error=False, fill_value=(0, 
-			lambda_R[R_m_sort][~np.isnan(lambda_R[R_m_sort])][-1]))(R_e)
+		lambda_R[R_m_sort][~np.isnan(lambda_R[R_m_sort])][-1]))(R_e)
 
 	print 'lambda_Re: ', lambda_Re
 	lambda_Re_gals[i_gal2] = lambda_Re
+
+	file = '%s/Data/vimos/analysis/%s/%s/lambda_R.txt' % (cc.base_dir, 
+			galaxy, opt)
+
+	with open(file, 'w') as f2:
+		for i in range(len(R_m)):
+			f2.write('%.4f   %.4f \n' %(R_m[R_m_sort][i], 
+				lambda_R[R_m_sort][i]))
 
 	fig, ax = plt.subplots()
 	ax.set_title(r"Radial $\lambda_R$ profile")
@@ -159,6 +166,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	ax.plot(R_m[R_m_sort][10:]/R_e, lambda_R[R_m_sort][10:])
 	# ax.text(0.02,0.98, "Galaxy: " + galaxy.upper())#, verticalalignment='top',
 		# transform=ax.transAxes)
+	if not os.path.exists('%s/plots' % (output)):
+		os.makedirs('%s/plots' % (output))
 	plt.savefig("%s/plots/lambda_R.png" % (output), bbox_inches="tight")
 	if plots: 
 		plt.show()
@@ -202,6 +211,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 				str(round(lambda_Re_gals[i],3)), str(round(ellip_gals[i],3)), 
 				str(round(pa_gals[i],3)), str(round(star_kine_pa_gals[i],3)), 
 				str(gas_kine_pa_gals[i])))
+
+	return D
 
 ##############################################################################
 

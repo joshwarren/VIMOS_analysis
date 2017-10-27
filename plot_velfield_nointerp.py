@@ -95,8 +95,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	header, vmin=None, vmax=None, nodots=True, colorbar=False, label=None, 
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
-	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, dms=False,
-	signal_noise_target=None, pa=None, center=None, alpha=None, **kwargs):
+	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, 
+	dms=False, signal_noise_target=None, pa=None, center=None, alpha=None, 
+	**kwargs):
 	Prefig()
 
 	kwg = {}

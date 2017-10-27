@@ -204,10 +204,6 @@ class population(object):
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
 					pp=self.pp, instrument=self.instrument)
 
-		vin_dir = get_vin_dir(self.instrument)
-		self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
-		if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
-
 		s=[grid_length,grid_length,grid_length]
 
 		models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
@@ -254,6 +250,9 @@ class population(object):
 		self.unc_alp = np.nanstd(self.samples[:,2])
 		
 		if self.pp is None and ab_index is None:
+			vin_dir = get_vin_dir(self.instrument)
+			self.vout_dir = '%s/%s/%s/pop' % (vin_dir, self.galaxy, self.opt)
+			if not os.path.exists(self.vout_dir): os.makedirs(self.vout_dir)
 			self.save()
 			self.plot_probability_distribution(
 				saveTo="%s/plots/%i.png" % (self.vout_dir, self.bin))

@@ -26,24 +26,35 @@ from disk_fit_functions_binned import rebin
 
 # pixel units
 def in_aperture(x_cent, y_cent, r, instrument='vimos', os=20):
-	if instrument=='vimos':
-		frac = np.zeros((40,40))
-	elif instrument=='muse':
-		frac = np.zeros((150,150))
+	# main routine 
+	def find_frac(x_cent, y_cent, r, instrument='vimos', os=20):
+		if instrument=='vimos':
+			frac = np.zeros((40,40))
+		elif instrument=='muse':
+			frac = np.zeros((150,150))
 
+		s = frac.shape
+
+		sampler = np.zeros((s[0]*os,s[1]*os))
+		index = np.array(np.meshgrid(np.arange(s[0]*os)-x_cent*os, 
+			np.arange(s[1]*os)-y_cent*os))
+		sampler[index[0]**2 + index[1]**2 < (r*os)**2] = 1
+
+		i = np.arange(s[0])
+		j = np.arange(s[1])
+		i, j = np.meshgrid(i,j)
+		i, j = i.flatten(), j.flatten()
+		frac[i,j] = rebin(sampler, i*os+os/2, j*os+os/2, statistic='mean')
+		return frac
+
+	frac = find_frac(x_cent, y_cent, r, instrument=instrument, os=os)
 	s = frac.shape
 
-	sampler = np.zeros((s[0]*os,s[1]*os))
-	index = np.array(np.meshgrid(np.arange(s[0]*os)-x_cent*os, 
-		np.arange(s[1]*os)-y_cent*os))
-	sampler[index[0]**2 + index[1]**2 < (r*os)**2] = 1
-
-	i = np.arange(s[0])
-	j = np.arange(s[1])
-	i, j = np.meshgrid(i,j)
-	i, j = i.flatten(), j.flatten()
-	frac[i,j] = rebin(sampler, i*os+os/2, j*os+os/2, statistic='mean')
-
+	# Check if aperture is larger than FoV
+	area = np.sum(frac)
+	if area < 0.85 * np.pi * r**2:
+		r = np.sqrt(0.85 * s[0] * s[1] / np.pi)
+		frac = find_frac(x_cent, y_cent, r, instrument=instrument, os=os)
 	return frac
 
 
@@ -126,7 +137,6 @@ def mg_sigma(galaxy, aperture=1.0):
 # 		G = 4.302*10**-6 # kpc (km/s)^2 M_odot^-1 
 # 		M = 5.0 * R_e * sigma_e**2/G
 
-## ----------============ Find dynamical mass ===============---------
 	mg, mg_uncert = get_absorption(['Mg_b'], pp=pp, instrument='vimos')
 
 	return mg['Mg_b'], mg_uncert['Mg_b'], sigma_e, unc_sigma_e
@@ -140,7 +150,7 @@ if __name__=='__main__':
 	s = []
 	u_s = []
 	for g in galaxies:
-		mg, mg_uncert, sigma_e, unc_sigma_e = mg_sigma(g, aperture=2.)
+		mg, mg_uncert, sigma_e, unc_sigma_e = mg_sigma(g, aperture=4.)
 		m = np.append(m, mg)
 		u_m = np.append(u_m, mg_uncert)
 		s = np.append(s, sigma_e)
