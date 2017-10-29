@@ -97,6 +97,7 @@ class set_params(object):
 			self._lines = ['Hdelta', 'Hgamma', 'Hbeta', '[OIII]5007d', '[NI]d']
 		elif value == 'none' or value == 'None' or value is None:
 			self._lines = []
+			self.gas=0
 		else:
 			self._lines = list(value)
 #-----------------------------------------------------------------------------

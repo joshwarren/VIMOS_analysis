@@ -19,7 +19,7 @@ opt = 'kin'
 
 def plot_lambda_R():
 	fig, ax = plt.subplots()
-	FR = ['ic1459', 'ngc0612', 'ngc3100', 'ngc3557', 'pks0718-34']
+	FR = ['ngc0612', 'ngc1316', 'ngc3100', 'ngc3557', 'pks0718-34']
 	for galaxy in ['eso443-g024',
 				'ic1459',
 				'ic1531', 
@@ -53,7 +53,7 @@ def plot_lambda_R():
 			ax.plot(r, lam_R, 'b--')
 
 	ax.set_xlabel(r'Radius (R$_e$)')
-	ax.set_ylabel(r'$\lambda_{R_e}$')
+	ax.set_ylabel(r'$\lambda_R$')
 
 	fig.savefig('%s/Data/vimos/analysis/lambda_R.png' % (cc.base_dir))
 

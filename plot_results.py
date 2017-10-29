@@ -279,7 +279,7 @@ def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None,
 
 		if close:
 			plt.close()
-		else:
+		elif not nolegend:
 			leg.remove()
 #-----------------------------------------------------------------------------
 

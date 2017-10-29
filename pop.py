@@ -162,7 +162,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 class population(object):
 
 	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, 
-		ab_uncert=None, instrument='vimos'):
+		ab_uncert=None, instrument='vimos', method='mean'):
 		self.pp = pp
 		self.galaxy = galaxy
 		self.instrument = instrument
@@ -242,12 +242,41 @@ class population(object):
 		# Discard initial steps away from initial point
 		self.samples[:,:] = sampler.chain[:, 50:, :].reshape((-1, ndim))
 
-		self.age = np.nanmean(self.samples[:,0])
-		self.unc_age = np.nanstd(self.samples[:,0])
-		self.metallicity = np.nanmean(self.samples[:,1])
-		self.unc_met = np.nanstd(self.samples[:,1])
-		self.alpha = np.nanmean(self.samples[:,2])
-		self.unc_alp = np.nanstd(self.samples[:,2])
+		if method == 'mean':
+			self.age = np.nanmean(self.samples[:,0])
+			self.unc_age = np.nanstd(self.samples[:,0])
+			self.metallicity = np.nanmean(self.samples[:,1])
+			self.unc_met = np.nanstd(self.samples[:,1])
+			self.alpha = np.nanmean(self.samples[:,2])
+			self.unc_alp = np.nanstd(self.samples[:,2])
+		elif method == 'mostlikely':
+			hist = np.histogram(self.samples[:,0], bins=40)
+			x = (hist[1][0:-1]+hist[1][1:])/2
+			hist = hist[0]
+			self.age = x[np.argmax(hist)]
+			gt_fwhm = hist >= (np.max(hist)/2)
+			# Not quite definition of fwhm, but close enough for sake of plotting
+			self.unc_age = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+
+
+			hist = np.histogram(self.samples[:,1], bins=40)
+			x = (hist[1][0:-1]+hist[1][1:])/2
+			hist = hist[0]
+			self.metallicity = x[np.argmax(hist)]
+			gt_fwhm = hist >= (np.max(hist)/2)
+			self.unc_met = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+
+
+			hist = np.histogram(self.samples[:,2], bins=40)
+			x = (hist[1][0:-1]+hist[1][1:])/2
+			hist = hist[0]
+			self.alpha = x[np.argmax(hist)]
+			gt_fwhm = hist >= (np.max(hist)/2)
+			self.unc_alp = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+		else:
+			raise ValueError("Method '%s' has not been programed in yet."%(
+				method))
+
 		
 		if self.pp is None and ab_index is None:
 			vin_dir = get_vin_dir(self.instrument)
@@ -304,7 +333,7 @@ class population(object):
 			h, l = ax_array[0,0].get_legend_handle_labels()
 			ax_array[1,1].legend(h,l)
 
-		if saveTo is not None and self.pp is None:
+		if saveTo is not None:# and self.pp is None:
 			if not os.path.exists(os.path.dirname(saveTo)):
 				os.makedirs(os.path.dirname(saveTo))
 			f.savefig(saveTo)

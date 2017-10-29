@@ -29,7 +29,7 @@ def stellar_pop_grad(galaxy, method='median', opt='pop'):
 	# Load pickle file from pickler.py
 	out_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	output = "%s/%s/%s" % (out_dir, galaxy, opt)
-	out_plots = "%s/plots/population" % (output)
+	out_plots = "%s/plots/pop_distributions" % (output)
 	if not os.path.exists(out_plots): os.makedirs(out_plots)
 
 	f = fits.open(get_dataCubeDirectory(galaxy))
@@ -44,6 +44,7 @@ def stellar_pop_grad(galaxy, method='median', opt='pop'):
 
 	R_e = get_R_e(galaxy)
 	apertures = np.array([R_e/8, R_e/2, R_e])
+	str_ap = ['R_e_8', 'R_e_2', 'R_e']
 
 	for i, a in enumerate(apertures):
 		params = set_params(reps=100, opt='pop', gas=1, produce_plot=False)
@@ -66,7 +67,10 @@ def stellar_pop_grad(galaxy, method='median', opt='pop'):
 		pp = run_ppxf(galaxy, spec, noise, lamRange, header['CDELT3'], 
 			params)
 
-		pop = population(pp=pp, instrument='vimos')
+		pop = population(pp=pp, instrument='vimos', method=method)
+
+		pop.plot_probability_distribution(saveTo='%s/%s.png' % (
+			out_plots, str_ap[i]))
 
 
 		file = '%s/pop_sigma.txt' % (out_dir)
@@ -120,7 +124,7 @@ if __name__ == '__main__':
 			'ic4296',
 			'ngc0612',
 			'ngc1399',
-			# 'ngc3100',
+			'ngc3100',
 			'ngc3557',
 			'ngc7075',
 			'pks0718-34'
