@@ -277,6 +277,8 @@ class population(object):
 			raise ValueError("Method '%s' has not been programed in yet."%(
 				method))
 
+		self.prob = np.exp(self.lnprob((self.age, self.metallicity, self.alpha)))
+
 		
 		if self.pp is None and ab_index is None:
 			vin_dir = get_vin_dir(self.instrument)

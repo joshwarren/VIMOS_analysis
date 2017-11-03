@@ -98,6 +98,9 @@ def find_limits(galaxy, opt='kin', norm='fit_disk', D=None,
 			if 'vel' in p:
 				positive = False
 				symmetric = True
+			if 'uncert' in p:
+				positive = True
+				symmetric = False
 			r = set_lims(array, symmetric=symmetric, positive=positive)
 
 			try:
@@ -126,6 +129,7 @@ if __name__=='__main__':
 				'ngc3557',
 				'ngc7075',
 				'pks0718-34']:
+			print galaxy
 
 			plots = [
 				'flux',

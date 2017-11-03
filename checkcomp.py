@@ -33,7 +33,7 @@ class checkcomp(object):
 		uname = platform.uname()
 		if 'Hal' in uname and 'CYGWIN_NT-10.0' in uname: 
 			d = 'cygwin_home'
-		elif 'HAL' in uname and 'Linux' in uname:
+		elif 'Hal' in uname and 'Linux' in uname:
 			d = 'bash_home'
 		elif 'glamdring' in uname:
 			d = 'glamdring'
@@ -57,7 +57,7 @@ class checkcomp(object):
 			#b_dir = '/cygdrive/x' # Moved from external to laptop
 			b_dir = ''
 		elif comp == 'bash_home':
-			b_dir = '/mnt/x'
+			b_dir = '/mnt/c/cygwin64'
 		elif comp == 'glamdring':
 			if not self.overriden:
 				warnings.warn('This may not setup to run on Glamdring')

@@ -1,9 +1,11 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from prefig import Prefig
-Prefig(size=(30,30))
+Prefig(size=(20,20))
 from checkcomp import checkcomp
 cc = checkcomp()
+from sauron_colormap import sauron#2 as sauron
+
 
 fig, axs = plt.subplots(3, 3, sharex=True, sharey='row')
 
@@ -26,9 +28,11 @@ mask = np.array([g not in ['NGC4268, PGC170172', 'NGC1222', 'NGC4684',
 	'NGC5273', 'NGC3998', 'PGC029321'] for g in atlas3d_gals])
 
 
-for i, str_ap in enumerate(['R_e/8', 'R_e/2', 'R_e']):
-	sigma = np.log10(value[2*8+0])
-	e_sigma = np.abs(value[2*8+1]/value[2*8+0]/np.log(10))
+for i, str_ap in enumerate([r'R$_e$/8', r'R$_e$/2', r'R$_e$']):
+	sigma = np.log10(value[2*9+0])
+	e_sigma = np.abs(value[2*9+1]/value[2*9+0]/np.log(10))
+	prob = value[i*9+8]
+	print prob
 
 	m_sigma = np.log10(m_value[2*8+0])
 	e_m_sigma = np.abs(m_value[2*8+1]/m_value[2*8+0]/np.log(10))
@@ -36,8 +40,8 @@ for i, str_ap in enumerate(['R_e/8', 'R_e/2', 'R_e']):
 	Atlas_file = '%s/Data/atlas3d/XXX_table%i.dat' % (cc.base_dir,i+1)
 
 	for j, str_ssp in  enumerate(['age', 'metallicity', 'alpha']):
-		ssp = value[i*8+j*2+2]
-		e_ssp = value[i*8+j*2+3]
+		ssp = value[i*9+j*2+2]
+		e_ssp = value[i*9+j*2+3]
 
 		m_ssp = m_value[i*8+j*2+2]
 		e_m_ssp = m_value[i*8+j*2+3]
@@ -45,10 +49,10 @@ for i, str_ap in enumerate(['R_e/8', 'R_e/2', 'R_e']):
 		atlas3d_ssp, atlas3d_e_ssp = np.loadtxt(Atlas_file, unpack=True, 
 			usecols=(2*j+9, 2*j+10))
 
-		axs[j, i].errorbar(sigma, ssp, xerr=e_sigma, yerr=e_ssp, c='r', 
-			fmt='.')
-		axs[j, i].errorbar(m_sigma, m_ssp, xerr=e_m_sigma, yerr=e_m_ssp, c='b', 
-			fmt='.')
+		axs[j, i].errorbar(sigma, ssp, xerr=e_sigma, yerr=e_ssp, c=prob, 
+			fmt='o')
+		axs[j, i].errorbar(m_sigma, m_ssp, xerr=e_m_sigma, yerr=e_m_ssp, c='r', 
+			fmt=x)
 		axs[j, i].text(0.1, 0.9, str_ap, va='center', 
 			transform=axs[j,i].transAxes)
 

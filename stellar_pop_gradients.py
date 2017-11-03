@@ -6,14 +6,16 @@
 
 # import cPickle as pickle
 # import matplotlib.pyplot as plt 
+from checkcomp import checkcomp
+cc = checkcomp()
 import numpy as np 
 import os
 from astropy.io import fits
 from errors2 import get_dataCubeDirectory, apply_range, set_params, run_ppxf
 from pop import population
 # from plot_results import add_, set_lims
-from checkcomp import checkcomp
-cc = checkcomp()
+
+
 # from plot_velfield_nointerp import plot_velfield_nointerp
 from classify import get_R_e
 # from prefig import Prefig
@@ -77,30 +79,31 @@ def stellar_pop_grad(galaxy, method='median', opt='pop'):
 		value = np.loadtxt(file, unpack=True, skiprows=2, dtype=str)
 		i_gal = np.where(value[0]==galaxy)[0][0]
 		
-		value[i*8+1, i_gal] = str(round(pp.sol[0][1], 2))
-		value[i*8+2, i_gal] = str(round(np.std(pp.MCstellar_kin[:,1]), 2))
-		value[i*8+3, i_gal] = str(round(pop.age, 2))
-		value[i*8+4, i_gal] = str(round(pop.unc_age, 2))
-		value[i*8+5, i_gal] = str(round(pop.metallicity, 2))
-		value[i*8+6, i_gal] = str(round(pop.unc_met, 2))
-		value[i*8+7, i_gal] = str(round(pop.alpha, 2))
-		value[i*8+8, i_gal] = str(round(pop.unc_alp, 2))
+		value[i*9+1, i_gal] = str(round(pp.sol[0][1], 2))
+		value[i*9+2, i_gal] = str(round(np.std(pp.MCstellar_kin[:,1]), 2))
+		value[i*9+3, i_gal] = str(round(pop.age, 2))
+		value[i*9+4, i_gal] = str(round(pop.unc_age, 2))
+		value[i*9+5, i_gal] = str(round(pop.metallicity, 2))
+		value[i*9+6, i_gal] = str(round(pop.unc_met, 2))
+		value[i*9+7, i_gal] = str(round(pop.alpha, 2))
+		value[i*9+8, i_gal] = str(round(pop.unc_alp, 2))
+		value[i*9+9, i_gal] = str(round(pop.prob, 2))
 
 
 		temp = '{0:12}{1:7}{2:7}{3:7}{4:7}{5:7}{6:7}{7:7}{8:7}{9:7}{10:7}'+\
 			'{11:7}{12:7}{13:7}{14:7}{15:7}{16:7}{17:7}{18:7}{19:7}{20:7}'+\
-			'{21:7}{22:7}{23:7}{24:7}\n'
+			'{21:7}{22:7}{23:7}{24:7}{25:7}{26:7}{27:7}\n'
 
 		with open(file, 'w') as out:
 			out.write(temp.format('Galaxy', 'sig', 'e_sig', 'age', 'e_age', 
-				'met', 'e_met', 'alpha', 'e_alpha', 'sig', 'e_sig', 
-				'age', 'e_age', 'met', 'e_met', 'alpha', 'e_alpha', 
+				'met', 'e_met', 'alpha', 'e_alpha', 'prob', 'sig', 'e_sig', 
+				'age', 'e_age', 'met', 'e_met', 'alpha', 'e_alpha', 'prob', 
 				'sig', 'e_sig', 'age', 'e_age', 'met', 'e_met', 'alpha', 
-				'e_alpha'))
-			out.write(temp.format('', 'R_e/8', 'R_e/8', 'R_e/8', 'R_e/8',
+				'e_alpha', 'prob'))
+			out.write(temp.format('', 'R_e/8', 'R_e/8', 'R_e/8', 'R_e/8', 'R_e/8',
 				'R_e/8', 'R_e/8', 'R_e/8', 'R_e/8', 'R_e/2', 'R_e/2', 'R_e/2', 
-				'R_e/2', 'R_e/2', 'R_e/2', 'R_e/2', 'R_e/2', 'R_e', 'R_e', 
-				'R_e', 'R_e', 'R_e', 'R_e', 'R_e', 'R_e'))
+				'R_e/2', 'R_e/2', 'R_e/2', 'R_e/2', 'R_e/2', 'R_e', 'R_e', 'R_e/2',
+				'R_e', 'R_e', 'R_e', 'R_e', 'R_e', 'R_e', 'R_e'))
 			for j in range(len(value[0])):
 				out.write(temp.format(*value[:,j]))
 		
