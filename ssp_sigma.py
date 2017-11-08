@@ -29,13 +29,13 @@ mask = np.array([g not in ['NGC4268, PGC170172', 'NGC1222', 'NGC4684',
 
 
 for i, str_ap in enumerate([r'R$_e$/8', r'R$_e$/2', r'R$_e$']):
-	sigma = np.log10(value[2*9+0])
-	e_sigma = np.abs(value[2*9+1]/value[2*9+0]/np.log(10))
+	sigma = np.log10(value[i*9+0])
+	e_sigma = np.abs(value[i*9+1]/value[i*9+0]/np.log(10))
 	prob = value[i*9+8]
 	print prob
 
-	m_sigma = np.log10(m_value[2*8+0])
-	e_m_sigma = np.abs(m_value[2*8+1]/m_value[2*8+0]/np.log(10))
+	m_sigma = np.log10(m_value[i*8+0])
+	e_m_sigma = np.abs(m_value[i*8+1]/m_value[i*8+0]/np.log(10))
 
 	Atlas_file = '%s/Data/atlas3d/XXX_table%i.dat' % (cc.base_dir,i+1)
 

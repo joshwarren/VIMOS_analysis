@@ -44,14 +44,14 @@ galaxies = [
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
-# galaxies = ['ngc3557']
+galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 
 
 discard = 0
 norm = 'fit_disk'#'lwv' # 'lws'
-opt_dir = ''
+opt_dir = '_highSN'
 
 m=mapping()
 # m.SNR = False
@@ -90,12 +90,12 @@ for galaxy in galaxies:
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
 		D = None
-		# D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
-		find_limits(galaxy, D=D, opt='pop'+opt_dir, norm=norm, 
-			instrument='vimos')
-		# D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
-		# 	residual="median", norm=norm, D=D, mapping=m, opt='pop'+opt_dir,
-		# 	show_bin_num=True)
+		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		# find_limits(galaxy, D=D, opt='pop'+opt_dir, norm=norm, 
+		# 	instrument='vimos')
+		D = plot_results(galaxy, discard=discard, 
+			overplot={'CO':'c', 'radio':'r'}, residual="median", norm=norm, 
+			D=D, mapping=m, opt='pop'+opt_dir, show_bin_num=True)
 		# plt.close("all")
 		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
 		# 	overplot={'CO':'c', 'radio':'r'}, gradient='only')

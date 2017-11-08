@@ -105,31 +105,31 @@ def length(f):
 ##############################################################################
 ## Ryan Houghton nearest.py
 def roundToNearest(x, dx=None, ceil=False, floor=False):
-    """
-    Purpose: to round a number to the nearest multiple of the dx you specify
-             Particularly useful for plots 
-             e.g. nearest(234,50) = 250 but nearest(234,50,/floor) = 200
-             if dx==None, round to nearest Order of Mag
-    """
+	"""
+	Purpose: to round a number to the nearest multiple of the dx you specify
+			 Particularly useful for plots 
+			 e.g. nearest(234,50) = 250 but nearest(234,50,/floor) = 200
+			 if dx==None, round to nearest Order of Mag
+	"""
 
-    # sanity check
-    if (ceil==True & floor==True): raise ValueError("Can't CEIL and FLOOR, just one or"+
-    	" t'other")
+	# sanity check
+	if (ceil==True & floor==True): raise ValueError("Can't CEIL and FLOOR, just one or"+
+		" t'other")
 
-    
-    if dx==None:
-        dx = 10.0**np.floor(np.log10(np.fabs(x)))
-        if (~np.isfinite(np.log10(dx))): dx=10.0 # was rounding zero value
+	
+	if dx==None:
+		dx = 10.0**np.floor(np.log10(np.fabs(x)))
+		if (~np.isfinite(np.log10(dx))): dx=10.0 # was rounding zero value
 
-    near = float(x) / float(dx)
-    if ceil:
-        result = np.ceil(near)*dx
-    elif floor:
-        result = np.floor(near)*dx
-    else:
-        result = round(near)*dx
+	near = float(x) / float(dx)
+	if ceil:
+		result = np.ceil(near)*dx
+	elif floor:
+		result = np.floor(near)*dx
+	else:
+		result = round(near)*dx
 
-    return result
+	return result
 ##############################################################################
 
 ##############################################################################
@@ -267,4 +267,43 @@ def get_slit2(h, w, pa, x_cent, y_cent):
 	roty = y_cent + np.sin(pa) * (x - x_cent) + np.cos(pa) * (y - y_cent)
 
 	return rotx,roty
+##############################################################################
+
+
+def fwhm(x, y, k=10, debug=False):
+	from scipy.interpolate import splrep, sproot
+	"""
+	Determine full-with-half-maximum of a peaked set of points, x and y.
+
+	Assumes that there is only one peak present in the datasset.  The function
+	uses a spline interpolation of order k.
+
+	Taken from https://stackoverflow.com/questions/10582795/finding-the-full-
+	width-half-maximum-of-a-peak, written by user: jdg
+	"""
+
+	class MultiplePeaks(Exception): pass
+	class NoPeaksFound(Exception): pass
+
+	half_max = np.max(y)/2.0
+	s = splrep(x, y - half_max)
+
+	if debug:
+		x2 = np.linspace(np.min(x), np.max(x), 200)
+		from scipy.interpolation import splev
+		y2 = splev(x2, s)
+		import matplotlib.pyplot as plt
+		plt.plot(x, y-half_max, 'o')
+		plt.plot(x2, y2)
+		plt.show()
+	roots = sproot(s)
+
+	if len(roots) > 2:
+		raise MultiplePeaks("The dataset appears to have multiple peaks, and "
+				"thus the FWHM can't be determined.")
+	elif len(roots) < 2:
+		raise NoPeaksFound("No proper peaks were found in the data set; likely "
+				"the dataset is flat (e.g. all zeros).")
+	else:
+		return abs(roots[1] - roots[0])
 ##############################################################################

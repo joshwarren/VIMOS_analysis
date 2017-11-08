@@ -30,8 +30,8 @@ if cc.remote:
 	import matplotlib # 20160202 JP to stop lack-of X-windows error
 	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from absorption import absorption
-from prefig import Prefig 
-Prefig()
+# from prefig import Prefig 
+# Prefig()
 
 c = 299792.458
 
@@ -168,8 +168,15 @@ class population(object):
 		self.instrument = instrument
 		self.opt = opt
 
+		if self.instrument == 'vimos':
+			self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 
+				'Fe5015', 'Mg_b']
+		elif self.instrument == 'muse':
+			self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 'Fe5335', 
+				'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 'TiO1', 'TiO2']
+		elif self.instrument == 'sauron':
+			self.lines = ['H_beta', 'Fe5015', 'Mg_b']
 
-		self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
 		grid_length = 40
 
 		if ab_index is not None:
@@ -177,6 +184,7 @@ class population(object):
 				raise ValueError('Uncertainty values must be supplied')
 			self.ab_lines = ab_index
 			self.uncerts = ab_uncert
+			self.lines = self.ab_lines.keys()
 		else:
 			if self.pp is None:
 
@@ -191,10 +199,16 @@ class population(object):
 					self.bin=int(sys.argv[3])
 
 				if self.instrument == 'vimos':
-					galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
-						'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024']
+					galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 
+						'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 
+						'pks0718-34', 'eso443-g024']
+					self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
+						'H_beta', 'Fe5015', 'Mg_b']
 				elif self.instrument == 'muse':
 					galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
+					self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 
+						'Fe5335', 'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 
+						'TiO1', 'TiO2']
 				self.galaxy = galaxies[self.i_gal]
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
@@ -250,29 +264,40 @@ class population(object):
 			self.alpha = np.nanmean(self.samples[:,2])
 			self.unc_alp = np.nanstd(self.samples[:,2])
 		elif method == 'mostlikely':
+			print min(self.samples[:,0]), max(self.samples[:,0])
 			hist = np.histogram(self.samples[:,0], bins=40)
 			x = (hist[1][0:-1]+hist[1][1:])/2
 			hist = hist[0]
 			self.age = x[np.argmax(hist)]
-			gt_fwhm = hist >= (np.max(hist)/2)
-			# Not quite definition of fwhm, but close enough for sake of plotting
-			self.unc_age = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+			self.unc_age = np.nanstd(self.samples[:,0])
+			
+			# from tools import fwhm
+			# self.unc_age = fwhm(x, hist)
 
+			# gt_fwhm = hist >= (np.max(hist)/2)
+			# # Not quite definition of fwhm, but close enough 
+			# self.unc_age = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
 
 			hist = np.histogram(self.samples[:,1], bins=40)
 			x = (hist[1][0:-1]+hist[1][1:])/2
 			hist = hist[0]
 			self.metallicity = x[np.argmax(hist)]
-			gt_fwhm = hist >= (np.max(hist)/2)
-			self.unc_met = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+			self.unc_met = np.nanstd(self.samples[:,1])
+			# self.unc_met = fwhm(x, hist)
+
+			# gt_fwhm = hist >= (np.max(hist)/2)
+			# self.unc_met = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
 
 
 			hist = np.histogram(self.samples[:,2], bins=40)
 			x = (hist[1][0:-1]+hist[1][1:])/2
 			hist = hist[0]
 			self.alpha = x[np.argmax(hist)]
-			gt_fwhm = hist >= (np.max(hist)/2)
-			self.unc_alp = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
+			self.unc_alp = np.nanstd(self.samples[:,2])
+			# self.unc_alp = fwhm(x, hist)
+
+			# gt_fwhm = hist >= (np.max(hist)/2)
+			# self.unc_alp = (np.max(x[gt_fwhm]) - np.min(x[gt_fwhm]))/2
 		else:
 			raise ValueError("Method '%s' has not been programed in yet."%(
 				method))
@@ -332,7 +357,7 @@ class population(object):
 		# plt.tight_layout()
 
 		if legend:
-			h, l = ax_array[0,0].get_legend_handle_labels()
+			h, l = ax_array[0,0].get_legend_handles_labels()
 			ax_array[1,1].legend(h,l)
 
 		if saveTo is not None:# and self.pp is None:

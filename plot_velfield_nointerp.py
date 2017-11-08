@@ -158,9 +158,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	
 	if not debug:
 		ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
-		ax_dis.set_xlim((np.array([0, header['NAXIS1']]) - center[0]+0.5)*
-			header['CD1_1']*60*60)
-		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1]-0.5)*
+		ax_dis.set_xlim((np.array([0, header['NAXIS1']]) - (
+			max(x_pix) - center[0]) + 0.5)*header['CD1_1']*60*60)
+		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1] - 0.5)*
 			header['CD2_2']*60*60)
 
 		ax_dis.set_xlabel(x_label)
