@@ -229,7 +229,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	# RA increases right to left, thus xmax, xmin,...
 	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmax, xmin, ymin, ymax],
 		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
-
+	ax.cs = cs
+	
 	if galaxy is not None:
 		gal_name = ax.text(0.02,0.98, galaxy, color='black',
 			verticalalignment='top',transform=ax.transAxes)

@@ -19,13 +19,12 @@
 from spectools import *
 # from tools import length as len
 import numpy as np 
-from scipy.ndimage.filters import gaussian_filter1d
 
 c = 299792.458 # speed of light in km/s
 
 
-def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None, 
-	conv_lam=None, noise=None, lick=False):
+def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, 
+	conv_spec=None, conv_lam=None, noise=None):
 	mag = False
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
@@ -65,7 +64,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 			raise ValueError('Length of spectrum (bestfit and observed) and '+
 				'corresponding wavelength should be the same.')
 		else:
-			conv_lam = lam
+			conv_lam = np.array(lam)
 	elif conv_spec is not None and conv_lam is not None:
 		if len(conv_lam) != len(conv_spec):
 			raise ValueError('Convolved wavelength and spectrum must be the same'+
@@ -79,68 +78,49 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None, conv_spec=None
 
 	# Catch if index is not in wavelenght range.
 	try:
-		# Reduce spec to Lick resolution
-		if lick:
-			Lick_res = get_Lick_res(line_name)
-
-			sig_pix = np.sqrt(Lick_res**2 - disp**2)/(disp)
-			spec = gaussian_filter1d(spec, sig_pix)
-
+		# if disp is not None:
+			# sig_pix = np.sqrt(8.4**2 - disp**2)/(disp)
+			# spec = gaussian_filter1d(spec, sig_pix)
 		spectra = spectrum(lam=lam, lamspec=spec)
+		disp = np.diff(lam)[np.argmin(np.abs(lam 
+			- np.mean(getattr(spectra,line_name2))))]
 		if noise is not None: 
-			if lick:
-				noise = gaussian_filter1d(noise, sig_pix)
 			variance = spectrum(lam=lam, lamspec=noise**2)
 		else: 
 			variance = None
-
-		disp = np.diff(lam)[np.argmin(np.abs(lam-np.mean(getattr(spectra,line_name2))))]
-		spec = gaussian_filter1d(spec, np.sqrt(8.4**2 - disp**2)/2.355/disp)
-		spectra = spectrum(lam=lam, lamspec=spec)	
 
 		if mag:
 			index_value, index_va = spectra.irmagindex(disp, line_name, 
 				varSED=variance, verbose=False)
 		else:
-			index_value, index_va, cont, band = spectra.irindex(disp, line_name, 
-				varSED=variance, verbose=False)
+			index_value, index_va, cont, band = spectra.irindex(disp, 
+				line_name, varSED=variance, verbose=False)
 
 		# Calculate correction for velocity dispersion spreading
-		if unc_lam is not None and unc_spec is not None and conv_spec is not None:
-			# Bring unc_spec and conv_spec to the same resolution
+		if unc_lam is not None and unc_spec is not None and \
+			conv_spec is not None:
+
+			# Line strength of unconvolved spectrum from templates
+			spectra = spectrum(unc_lam, unc_spec)
 			unc_disp = np.diff(unc_lam)[np.argmin(np.abs(unc_lam - 
 				np.mean(getattr(spectra,line_name2))))]
-			conv_disp = disp
+			if mag:
+				unc_index_value, unc_index_va = spectra.irmagindex(
+					unc_disp, line_name)
+			else:
+				unc_index_value, unc_index_va, _, _ = spectra.irindex(
+					unc_disp, line_name)
 
-			if unc_disp > conv_disp:
-				sig_pix = np.sqrt(unc_disp**2 - conv_disp**2)/conv_disp
-				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
-			else:
-				sig_pix = np.sqrt(conv_disp**2 - unc_disp**2)/unc_disp
-				conv_spec = gaussian_filter1d(conv_spec, sig_pix)
-			# Line strength of unconvolved (/convolved to LICK resolution) spectrum.
-			if lick:
-				sig_pix = np.sqrt(200**2 - 64**2)*np.median(lam)/c/(unc_lam[1]-unc_lam[0])
-				# unc_spec becomes convolved to 200km/s dispersion (as required for LICK 
-				#	indices)
-				unc_spec = gaussian_filter1d(unc_spec, sig_pix)
-			# unc_spec /= unc_spec[np.argmin(np.abs(unc_lam-4300))]
-			spectra = spectrum(unc_lam, unc_spec)
-			if mag:
-				unc_index_value, unc_index_va = spectra.irmagindex(unc_disp, 
-					line_name)
-			else:
-				unc_index_value, unc_index_va, _, _ = spectra.irindex(unc_disp, 
-					line_name)
-			# Line strength of convolved spectrum (bestfit - emission lines)
-			# conv_spec /= conv_spec[np.argmin(np.abs(conv_lam-4300))]
+			# Line strength of convolved spectrum
 			spectra = spectrum(conv_lam, conv_spec)
+			conv_disp = np.diff(conv_lam)[np.argmin(np.abs(conv_lam - 
+				np.mean(getattr(spectra,line_name2))))]
 			if mag:
-				conv_index_value, conv_index_va = spectra.irmagindex(conv_disp, 
-					line_name)
+				conv_index_value, conv_index_va = spectra.irmagindex(
+					conv_disp, line_name)
 			else:
-				conv_index_value, conv_index_va, _, _ = spectra.irindex(conv_disp, 
-					line_name)
+				conv_index_value, conv_index_va, _, _ = spectra.irindex(
+					conv_disp, line_name)
 			# LOSVD correction (From SAURON VI: Section 4.2.2)
 			corr = unc_index_value/conv_index_value
 			# corr_var = np.sqrt((conv_index_va/conv_index_value)**2 + 

@@ -307,3 +307,65 @@ def fwhm(x, y, k=10, debug=False):
 	else:
 		return abs(roots[1] - roots[0])
 ##############################################################################
+# Taken from answer by EOL from
+# https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
+def weighted_avg_and_std(values, weights, axis=None):
+	"""
+	Return the weighted average and standard deviation.
+
+	values, weights -- Numpy ndarrays with the same shape.
+	"""
+	average = np.average(values, axis=axis, weights=weights)
+	# variance = np.average(values2**2, axis=axis, weights=weights)
+	variance = np.average(np.subtract(values.T, average).T**2, 
+		axis=axis, weights=weights)
+	return (average, np.sqrt(variance))
+
+def gaussian(x,amp=1,mean=0,sigma=1):
+	return amp*np.exp(-(x-mean)**2/(2*sigma**2))
+
+# Taken from answer by Jamie from 
+# https://stackoverflow.com/questions/18517722/weighted-moving-average-in-python
+def moving_weighted_average(x, y, step_size=.1, weights=None, interp=True):
+	from numpy.lib.stride_tricks import as_strided
+
+	# Default is gaussian
+	if weights is None:
+		x1 = np.arange(-5,6)
+		weights = gaussian(x1,sigma=7.)
+
+	# This ensures that all samples are within a bin
+	number_of_bins = int(np.ceil(np.ptp(x) / step_size))
+	bins = np.linspace(np.min(x), np.min(x) + step_size*number_of_bins,
+					   num=number_of_bins+1)
+	bins -= (bins[-1] - np.max(x)) / 2 # centering range
+	bin_centers = bins[:-int(len(weights))] + step_size*len(weights)/2.
+	# bin_centers = (bins[:-1] + bins[1:])/2.
+
+	counts, _ = np.histogram(x, bins=bins)
+	vals, _ = np.histogram(x, bins=bins, weights=y)
+	bin_avgs = vals / counts
+	n = len(bin_avgs)
+	# windowed_bin_avgs = as_strided(bin_avgs, 
+	# 	shape=(n, len(weights)), strides=bin_avgs.strides*2)
+	windowed_bin_avgs = as_strided(bin_avgs,
+		(n-len(weights)+1, len(weights)), bin_avgs.strides*2)
+	
+
+	weighted_average, weighted_std = weighted_avg_and_std(
+		windowed_bin_avgs, axis=1, weights=weights)
+
+	if interp:
+		from scipy.interpolate import interp1d
+		cut = 1
+		inter = interp1d(bin_centers, weighted_average, bounds_error=False, 
+			fill_value='extrapolate')
+		weighted_average = inter(x)
+
+		inter = interp1d(bin_centers, weighted_std, bounds_error=False, 
+			fill_value='extrapolate')
+		weighted_std = inter(x)
+
+		bin_centers = np.array(x)
+
+	return bin_centers, weighted_average, weighted_std

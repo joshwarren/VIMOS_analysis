@@ -30,6 +30,9 @@ if cc.remote:
 	import matplotlib # 20160202 JP to stop lack-of X-windows error
 	matplotlib.use('Agg') # 20160202 JP to stop lack-of X-windows error
 from absorption import absorption
+from scipy.ndimage.filters import gaussian_filter1d
+from tools import moving_weighted_average
+
 # from prefig import Prefig 
 # Prefig()
 
@@ -37,22 +40,26 @@ c = 299792.458
 
 def get_vin_dir(instrument):
 	if instrument=='vimos':
-		if cc.device == 'glamdring': vin_dir = '%s/analysis' % (cc.base_dir)
-		else: vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
+		if cc.device == 'glamdring': 
+			vin_dir = '%s/analysis' % (cc.base_dir)
+		else: 
+			vin_dir = '%s/Data/vimos/analysis' % (cc.base_dir)
 	elif instrument=='muse':
-		if cc.device == 'glamdring': vin_dir = '%s/analysis_muse' % (cc.base_dir)
-		else: vin_dir = '%s/Data/muse/analysis' % (cc.base_dir)
+		if cc.device == 'glamdring': 
+			vin_dir = '%s/analysis_muse' % (cc.base_dir)
+		else: 
+			vin_dir = '%s/Data/muse/analysis' % (cc.base_dir)
 	return vin_dir
 
 def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None, 
-	instrument='vimos', sigma=None):
+	instrument='vimos', sigma=None, res=None):
 	if (pp is None and galaxy is None) or (pp is not None and galaxy is not None):
 		raise ValueError('Either pp or galaxy must be supplied: one or tother')
 	if galaxy is not None and (bin is None or opt is None):
 		raise ValueError('If galaxy is supplied, so to must bin and opt')
 
-	vin_dir = get_vin_dir(instrument)
 	if pp is None:
+		vin_dir = get_vin_dir(instrument)
 		vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	
 		if cc.device == 'glamdring':
@@ -80,6 +87,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		e_lines = np.array([not s.isdigit() for s in matrix[:,0]])
 		e_line_spec = matrix[e_lines,1:].astype(float)
 		stellar_temps = matrix[~e_lines,0]
+		e_temps = matrix[e_lines, 0]
 		library = 'Miles'
 	else:
 		lam = pp.lam*(1+pp.z)/(1+pp.z+(pp.sol[0][0]/c))
@@ -93,12 +101,45 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		e_lines = pp.component != 0
 		e_line_spec =  matrix[e_lines,:].astype(float)
 		stellar_temps = pp.templatesToUse[~e_lines]
+		e_temps = pp.templatesToUse[e_lines]
 
 		library = pp.params.library
 
-	e_line_spec = np.einsum('ij,i->j',e_line_spec,temp_weights[e_lines])
+	e_line_spec = np.einsum('ij,i->ij',e_line_spec,temp_weights[e_lines])
 
-	continuum = spectrum - e_line_spec #np.nansum(e_line_spec,axis=0)
+	# Find and smooth residuals
+	residuals = spectrum - bestfit
+	_, residuals, _ = moving_weighted_average(lam, residuals, step_size=3., 
+		interp=True)
+	noise = np.sqrt(residuals**2 + noise**2)
+	# Only use line if formally detected.
+	if '[OIII]5007d' in e_temps:
+		if np.max(e_line_spec[e_temps=='[OIII]5007d'])/np.median(
+			noise[(np.log(lam) > np.log(5007) - 300/c) * 
+			(np.log(lam) < np.log(5007) + 300/c)]) < 4:
+
+			e_line_spec[:,:] = 0
+		else:
+			if '[NI]d' in e_temps:
+				if np.max(e_line_spec[e_temps=='[NI]d'])/np.median(
+					noise[(np.log(lam) > np.log(5200) - 300/c) * 
+					(np.log(lam) < np.log(5200) + 300/c)]) < 4:
+
+					e_line_spec[e_temps=='[NI]d',:] = 0
+				else:
+					print '[NI] detected'
+
+			if 'Hbeta' in e_temps:
+				if np.max(e_line_spec[e_temps=='Hbeta'])/np.median(
+					noise[(np.log(lam) > np.log(4861) - 300/c) * 
+					(np.log(lam) < np.log(4861) + 300/c)]) < 3:
+
+					e_line_spec[e_temps=='Hbeta',:] = 0
+	else:
+		e_line_spec[:,:] = 0
+
+	e_line_spec = np.sum(e_line_spec, axis=0)
+	continuum = spectrum - e_line_spec
 
 	if library == 'Miles':
 		if cc.getDevice() == 'uni':
@@ -106,6 +147,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 				'm0[0-9][0-9][0-9]V')
 		else:
 			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
+		temp_res = 2.5 # A (FWHM)
 		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
 
 		a = [min(np.where(wav>=lam[0])[0]), max(np.where(wav<=lam[-1])[0])]
@@ -121,7 +163,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 	elif library == 'vazdekis':
 		templateFiles = glob(
 			'%s/libraries/python/ppxf/spectra/Rbi1.30z*.fits' % (cc.home_dir))
-		FWHM_tem = 1.8
+		temp_res = 1.8 # A (FWHM)
 
 		f = fits.open(templateFiles[0])
 		unconvolved_lam = np.arange(f[0].header['NAXIS1'])*f[0].header['CDELT1'] + \
@@ -131,19 +173,59 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		for i in range(len(templateFiles)):
 			f = fits.open(templateFiles[i])
 			unconvolved_spectrum[:,i] = f[0].data
-		unconvolved_spectrum = unconvolved_spectrum.dot(temp_weights[~e_lines])
-		unconvolved_spectrum *= np.polynomial.legendre.legval(np.linspace(-1,1,
-			len(unconvolved_spectrum)), np.append(1, mpweight))
+		unconvolved_spectrum = unconvolved_spectrum.dot(
+			temp_weights[~e_lines])
+		unconvolved_spectrum *= np.polynomial.legendre.legval(
+			np.linspace(-1,1,len(unconvolved_spectrum)), 
+			np.append(1, mpweight))
 		CDELT = f[0].header['CDELT1']
 		f.close()
 
+	# Convolve to required velocity dispersion
 	if sigma is not None:
-		from scipy.ndimage.filters import gaussian_filter1d
 		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
 		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
 	else:
-		convolved = bestfit - e_line_spec # np.nansum(e_line_spec, axis=0)
+		# bestfit is already convolved to velocty dispersion
+		convolved = bestfit - e_line_spec
 		
+
+	# Continuum need be brought require resolution
+	if res is not None:
+		if instrument == 'vimos':
+			instr_res = 2.5 # A (FWHM)
+		elif instrument == 'muse':
+			instr_res = 2.3 # A (FWHM)
+		elif instrument == 'sauron':
+			instr_res = 4.2
+
+		if instr_res > res:
+			import warnings
+			warnings.warn('get_absorption cannot increase the ' +
+				"resolution of %s from %.2f A to %.2f A: That's " % (
+				instrument, instr_res, res) + 'impossible you chump!')
+		else:
+			sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
+				/ np.median(np.diff(lam))
+			continuum = gaussian_filter1d(continuum, sig_pix)
+
+
+	# unc_spec and conv_spec need to be the same resolution
+	# unc_spec is at temp_res
+	conv_res = max((instr_res, temp_res))
+	if conv_res < temp_res:
+		if sigma is None:
+			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+				/ np.median(np.diff(lam))
+		else:
+			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+				/ np.median(np.diff(unconvolved_lam))
+		convolved = gaussian_filter1d(convolved, sig_pix)
+	else:
+		sig_pix = np.sqrt(conv_res**2 - temp_res**2) / 2.355 \
+			/ np.median(np.diff(unconvolved_lam))
+		unconvolved_spectrum = gaussian_filter1d(unconvolved_spectrum, 
+			sig_pix)
 
 	ab_lines = {}
 	uncerts = {}
@@ -202,21 +284,21 @@ class population(object):
 					galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 
 						'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 
 						'pks0718-34', 'eso443-g024']
-					self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
-						'H_beta', 'Fe5015', 'Mg_b']
+					# self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
+					# 	'H_beta', 'Fe5015', 'Mg_b']
 				elif self.instrument == 'muse':
 					galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
-					self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 
-						'Fe5335', 'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 
-						'TiO1', 'TiO2']
+					# self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 
+					# 	'Fe5335', 'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 
+					# 	'TiO1', 'TiO2']
 				self.galaxy = galaxies[self.i_gal]
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
 					galaxy=self.galaxy, bin=self.bin, opt=self.opt, 
-					instrument=self.instrument)
+					instrument=self.instrument, res=2.5)
 			else:
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
-					pp=self.pp, instrument=self.instrument)
+					pp=self.pp, instrument=self.instrument, res=2.5)
 
 		s=[grid_length,grid_length,grid_length]
 
