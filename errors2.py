@@ -55,7 +55,7 @@ class set_params(object):
 					#		SF gas (Balmer lines)
 					# 3   All gas seperate.
 		self.reps = reps ## number of monte carlo reps per bin.
-		self.FWHM_gal = 2.5 # VIMOS documentation
+		self.FWHM_gal = 3 # Py3D reduces FHWM from 2.5 VIMOS documentation
 		self.set_range = set_range # [2000,7410]
 		self.stellar_moments = stellar_moments # 2
 		self.gas_moments = gas_moments # 2

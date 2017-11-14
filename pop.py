@@ -188,7 +188,6 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 	else:
 		# bestfit is already convolved to velocty dispersion
 		convolved = bestfit - e_line_spec
-		
 
 	# Continuum need be brought require resolution
 	if res is not None:
@@ -198,6 +197,9 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 			instr_res = 2.3 # A (FWHM)
 		elif instrument == 'sauron':
 			instr_res = 4.2
+		elif instrument is None:
+			raise ValueError('If keyword res is set, so too must the '+
+				'instrument keyword')
 
 		if instr_res > res:
 			import warnings
@@ -244,7 +246,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 class population(object):
 
 	def __init__(self, pp=None, galaxy=None, opt='pop', ab_index=None, 
-		ab_uncert=None, instrument='vimos', method='mean'):
+		ab_uncert=None, instrument='vimos', method='mean', sigma=None):
 		self.pp = pp
 		self.galaxy = galaxy
 		self.instrument = instrument
@@ -295,10 +297,11 @@ class population(object):
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
 					galaxy=self.galaxy, bin=self.bin, opt=self.opt, 
-					instrument=self.instrument, res=2.5)
+					instrument=self.instrument, res=2.5, sigma=sigma)
 			else:
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 
-					pp=self.pp, instrument=self.instrument, res=2.5)
+					pp=self.pp, instrument=self.instrument, res=2.5,
+					sigma=sigma)
 
 		s=[grid_length,grid_length,grid_length]
 

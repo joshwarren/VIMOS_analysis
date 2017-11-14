@@ -9,6 +9,8 @@ from absorption import absorption
 from glob import glob
 from checkcomp import checkcomp
 cc = checkcomp()
+from tools import moving_weighted_average
+
 
 c = 299792.458 # speed of light in km/s
 
@@ -117,15 +119,17 @@ class Data(object):
 		elif self.norm_method is None:
 			self.vel_norm = 0.0
 
-	def absorption_line(self, absorption_line, uncert=False):
+	def absorption_line(self, absorption_line, uncert=False, res=None, 
+		insrument=None):
 		ab = np.zeros(self.number_of_bins)
 		ab_uncert = np.zeros(self.number_of_bins)
 		for i, bin in enumerate(self.bin):
 			if uncert:
 				ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
-					uncert=uncert)
+					uncert=uncert, res=res, insrument=insrument)
 			else:
-				ab[i] = bin.absorption_line(absorption_line, uncert=uncert)
+				ab[i] = bin.absorption_line(absorption_line, uncert=uncert,
+					res=res, insrument=insrument)
 		if uncert:
 			return ab, ab_uncert
 		else:
@@ -593,6 +597,13 @@ class Bin(object):
 		self.unconvolved_lam = np.array([])
 
 	@property
+	def residual_noise(self):
+		residual = self.spectrum - self.bestfit
+		_, residuals, _ = moving_weighted_average(lam, residuals, step_size=3., 
+		interp=True)
+		return np.sqrt(residuals**2 + noise**2)
+
+	@property
 	def e_line(self):
 		return {k:v for k,v in self.components.iteritems() if k!='stellar'}
 
@@ -628,7 +639,7 @@ class Bin(object):
 	@property
 	def continuum(self):
 		# NB: Masks not used
-		c = myArray(self.spectrum - np.nansum([line.spectrum_nomask 
+		c = myArray(self.spectrum - np.nansum([line.spectrum 
 			for key, line in self.e_line.iteritems()],axis=0))
 		c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
 			for key, line in self.e_line.iteritems()],axis=0))
@@ -696,24 +707,25 @@ class Bin(object):
 		self.unconvolved_spectrum = unc_spec
 		self.unconvolved_lam = wav[a[0]:a[1]]
 
-	def absorption_line(self, absorption_line, uncert=False):
-		convolved = self.bestfit - np.nansum([line.spectrum_nomask for key, 
+	def absorption_line(self, absorption_line, uncert=False, res=None,
+		insrument=None):
+		convolved = self.bestfit - np.nansum([line.spectrum for key, 
 			line in self.e_line.iteritems()], axis=0)
 		lam = self.lam/(1+self.components['stellar'].vel/c)
 		if uncert:
-			return absorption(absorption_line, lam, self.continuum, noise=self.noise,
-				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 
-				conv_spec=convolved)
+			return absorption(absorption_line, lam, self.continuum, 
+				noise=self.noise, unc_lam=self.unconvolved_lam, 
+				unc_spec=self.unconvolved_spectrum, conv_spec=convolved,
+				res=res, insrument=insrument)
 		else:
 			return absorption(absorption_line, lam, self.continuum, 
-				unc_lam=self.unconvolved_lam, unc_spec=self.unconvolved_spectrum, 
-				conv_spec=convolved)
+				unc_lam=self.unconvolved_lam, 
+				unc_spec=self.unconvolved_spectrum, conv_spec=convolved,
+				res=res, insrument=insrument)
 
 
 class myFloat(float):
 # Required to add attributes to float object
-
-	#pass
 	def __init__(self, value):
 		float.__init__(self)
 		# self._uncert = np.nan
