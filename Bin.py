@@ -10,6 +10,7 @@ from glob import glob
 from checkcomp import checkcomp
 cc = checkcomp()
 from tools import moving_weighted_average
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 c = 299792.458 # speed of light in km/s
@@ -120,16 +121,16 @@ class Data(object):
 			self.vel_norm = 0.0
 
 	def absorption_line(self, absorption_line, uncert=False, res=None, 
-		insrument=None):
+		instrument=None):
 		ab = np.zeros(self.number_of_bins)
 		ab_uncert = np.zeros(self.number_of_bins)
 		for i, bin in enumerate(self.bin):
 			if uncert:
 				ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
-					uncert=uncert, res=res, insrument=insrument)
+					uncert=uncert, res=res, instrument=instrument)
 			else:
 				ab[i] = bin.absorption_line(absorption_line, uncert=uncert,
-					res=res, insrument=insrument)
+					res=res, instrument=instrument)
 		if uncert:
 			return ab, ab_uncert
 		else:
@@ -598,10 +599,10 @@ class Bin(object):
 
 	@property
 	def residual_noise(self):
-		residual = self.spectrum - self.bestfit
-		_, residuals, _ = moving_weighted_average(lam, residuals, step_size=3., 
-		interp=True)
-		return np.sqrt(residuals**2 + noise**2)
+		residuals = self.spectrum - self.bestfit
+		_, residuals, _ = moving_weighted_average(self.lam, residuals, 
+			step_size=3., interp=True)
+		return np.sqrt(residuals**2 + self.noise**2)
 
 	@property
 	def e_line(self):
@@ -673,7 +674,6 @@ class Bin(object):
 	def n_spaxels_in_bin(self):
 		return len(self.xspaxels)
 
-
 	def set_templates(self, name, weight):
 		weight = weight.astype(float)
 		## Solving an error in the Uni system with loading large numbers of files  
@@ -708,21 +708,46 @@ class Bin(object):
 		self.unconvolved_lam = wav[a[0]:a[1]]
 
 	def absorption_line(self, absorption_line, uncert=False, res=None,
-		insrument=None):
+		instrument=None):
 		convolved = self.bestfit - np.nansum([line.spectrum for key, 
 			line in self.e_line.iteritems()], axis=0)
 		lam = self.lam/(1+self.components['stellar'].vel/c)
-		if uncert:
-			return absorption(absorption_line, lam, self.continuum, 
-				noise=self.noise, unc_lam=self.unconvolved_lam, 
-				unc_spec=self.unconvolved_spectrum, conv_spec=convolved,
-				res=res, insrument=insrument)
-		else:
-			return absorption(absorption_line, lam, self.continuum, 
-				unc_lam=self.unconvolved_lam, 
-				unc_spec=self.unconvolved_spectrum, conv_spec=convolved,
-				res=res, insrument=insrument)
 
+		temp_res = 2.5 # A (FWHM); Resoluton of Miles templates
+		if res is not None:
+			if instrument == 'vimos':
+				instr_res = 3 # A (FWHM)
+			elif instrument == 'muse':
+				instr_res = 2.3 # A (FWHM)
+			elif instrument == 'sauron':
+				instr_res = 4.2 # A (FWHM)
+			elif instrument is None:
+				raise ValueError('If keyword res is set, so too must the '+
+					'instrument keyword')
+
+			if instr_res < res:
+				sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
+					/ np.median(np.diff(lam))
+				continuum = gaussian_filter1d(self.continuum, sig_pix)
+			else:
+				continuum = np.array(self.continuum)
+			conv_res = max((instr_res, temp_res))
+		else:
+			conv_res = temp_res
+			continuum = np.array(self.continuum)
+			
+		if conv_res < temp_res:
+			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+				/ np.median(np.diff(lam))
+			convolved = gaussian_filter1d(convolved, sig_pix)
+		if uncert:
+			return absorption(absorption_line, lam, continuum, 
+				noise=self.noise, unc_lam=self.unconvolved_lam, 
+				unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
+		else:
+			return absorption(absorption_line, lam, continuum, 
+				unc_lam=self.unconvolved_lam, 
+				unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
 
 class myFloat(float):
 # Required to add attributes to float object
@@ -833,7 +858,8 @@ class emission_line(_bin_data):
 	
 	@property
 	def AmpNoi(self):
-		return max(self.spectrum_nomask)/np.median(self.__parent__.noise[
+		return max(self.spectrum_nomask)/np.median(
+			self.__parent__.residual_noise[
 			(self.__parent__.loglam > np.log(self.wav) + (self.vel - 300)/c) *
 			(self.__parent__.loglam < np.log(self.wav) + (self.vel + 300)/c)])
 

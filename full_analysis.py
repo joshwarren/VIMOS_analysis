@@ -36,15 +36,15 @@ def full_analysis(galaxy=None, opt='kin'):
 	
 	z = z_gals[gal]
 	discard = 0
-	targetSN = 60.
+	targetSN = 30.
 	set_range = [4200, 10000]
 
 	binning_spaxels(galaxy, discard=discard, targetSN=targetSN, opt=opt, 
 		auto_override=True)
 
-	# find_template(galaxy, z=z, discard=discard, set_range=set_range)
+	find_template(galaxy, z=z, discard=discard, set_range=set_range)
 
-	# mcmc(galaxy, z=z, discard=discard, set_range=set_range)
+	mcmc(galaxy, z=z, discard=discard, set_range=set_range)
 
 
 if __name__=="__main__":
@@ -59,5 +59,5 @@ if __name__=="__main__":
 		'pks0718-34', 
 		'eso443-g024'
 		]
-	for g in galaxies: full_analysis(galaxy=g, opt='pop_highSN')
+	for g in galaxies: full_analysis(galaxy=g, opt='kin')
 	# full_analysis(galaxy='ic1531', opt='pop')

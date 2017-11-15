@@ -19,8 +19,8 @@ quiet = True
 c = 299792.458
 
 
-def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000], 
-	use_all_temp=False):
+def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=0, 
+	set_range=[4200,10000], use_all_temp=False):
 # ----------===============================================---------
 # ----------============= Input parameters  ===============---------
 # ----------===============================================---------
@@ -34,7 +34,8 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 		   # correct the template continuum shape during the fit 
 
 ## ----------=============== Miles library =================---------
-	stellar_templates = get_stellar_templates(galaxy, FWHM_gal, use_all_temp=True)
+	stellar_templates = get_stellar_templates(FWHM_gal)
+	stellar_templates.get_templates(galaxy, use_all_temp=use_all_temp)
 	templates = stellar_templates.templates
 	velscale = stellar_templates.velscale
 ## ----------========= Reading the spectrum  ===============---------
@@ -75,8 +76,8 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 	gal_noise = np.sqrt(np.nansum(galaxy_noise**2, axis=(1,2)))
 ## ----------========= Calibrating the spectrum  ===========---------
 	lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
-	gal_spec, lam, cut = apply_range(gal_spec, window=201, repeats=3, lam=lam, 
-		set_range=set_range, return_cuts=True)
+	gal_spec, lam, cut = apply_range(gal_spec, lam=lam, set_range=set_range, 
+		return_cuts=True)
 	lamRange = np.array([lam[0],lam[-1]])/(1+z)
 	gal_noise = gal_noise[cut]
 
@@ -110,12 +111,13 @@ def setup(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000],
 ## ----------===============================================---------
 ## ----------============== The bestfit part ===============---------
 ## ----------===============================================---------
-def find_template(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
+def find_template(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, 
+	set_range=[4200,10000]):
 	print '     Finding templates to use'
 
-	templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, dv, \
-		lambdaq, plot, quiet = setup(galaxy, z=z, vel=vel, sig=sig, discard=discard, 
-		set_range=set_range, use_all_temp=True)
+	templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, \
+		dv, lambdaq, plot, quiet = setup(galaxy, z=z, vel=vel, sig=sig, 
+		discard=discard, set_range=set_range, use_all_temp=True)
 
 
 	pp = ppxf(templates, bin_log, noise, velscale, start, 

@@ -193,11 +193,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ymin = (0 - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
 	ymax = (header['NAXIS2'] - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
 
-	nx = int(round((xmax - xmin)/pixelSize) + 1)
-	ny = int(round((ymax - ymin)/pixelSize) + 1)
+	nx = int(round((xmax - xmin)/pixelSize))
+	ny = int(round((ymax - ymin)/pixelSize))
 	img = np.full((nx, ny), np.nan)  # use nan for missing data
-	j = np.round((x - xmin)/pixelSize).astype(int)
-	k = np.round((y - ymin)/pixelSize).astype(int)
+	j = np.round((x - xmin)/pixelSize).astype(int)-1
+	k = np.round((y - ymin)/pixelSize).astype(int)-1
 	# Clipping vel and creating 2D array of image (img)
 	img[j, k] = vel[bin_num].clip(vmin, vmax)
 	

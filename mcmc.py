@@ -39,9 +39,9 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 			lam=lambdaq, plot=plot, quiet=quiet)
 		z = (z + 1)*np.sqrt((1 + pp.sol[0]/c)/(1 - pp.sol[0]/c)) - 1 
 
-	templates, bin_log, noise, velscale, start, goodpixels,	moments, degree, dv, \
-		lambdaq, plot, quiet = 	setup(galaxy, z=z, vel=vel, sig=sig, discard=discard, 
-		set_range=set_range)
+	templates, bin_log, noise, velscale, start, goodpixels,	moments, \
+		degree, dv, lambdaq, plot, quiet = 	setup(galaxy, z=z, vel=vel, 
+		sig=sig, discard=discard, set_range=set_range)
 
 	chi = 1000000
 	for i in range(repeats):
@@ -58,12 +58,12 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 
 		if i != repeats-1:
 			pp = ppxf(templates, bin_log, noise, velscale, start, 
-				goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
-				lam=lambdaq, plot=not quiet, quiet=quiet)
+				goodpixels=goodpixels, moments=moments, degree=degree, 
+				vsyst=dv, lam=lambdaq, plot=not quiet, quiet=quiet)
 		else:
 			pp = ppxf(templates, bin_log, noise, velscale, start, 
-				goodpixels=goodpixels, moments=moments, degree=degree, vsyst=dv, 
-				lam=lambdaq, plot=False, quiet=quiet)
+				goodpixels=goodpixels, moments=moments, degree=degree, 
+				vsyst=dv, lam=lambdaq, plot=False, quiet=quiet)
 
 		vel = pp.sol[0]
 		sig = pp.sol[1]
@@ -123,10 +123,11 @@ def mcmc(galaxy, z=0.01, vel=0.0, sig=200.0, discard=2, set_range=[4200,10000]):
 		vel_gals[i_gal] = vel
 		sig_gals[i_gal] = sig
 
-	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(['{%i:%i}'%(i+3,len(t)+1) 
+	temp = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(['{%i:%i}'%(i+6,len(t)+1) 
 		for i, t in enumerate(SN_gals.keys())]) + "\n"
 
 	SN_titles = list(SN_gals.keys())
+
 	with open(data_file, 'w') as f:
 		f.write(temp.format("Galaxy", "z", "velocity", "sigma", "x", "y", 
 			*(s for s in SN_titles)))

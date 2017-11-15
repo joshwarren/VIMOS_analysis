@@ -192,7 +192,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 	# Continuum need be brought require resolution
 	if res is not None:
 		if instrument == 'vimos':
-			instr_res = 2.5 # A (FWHM)
+			instr_res = 3 # A (FWHM)
 		elif instrument == 'muse':
 			instr_res = 2.3 # A (FWHM)
 		elif instrument == 'sauron':
@@ -214,7 +214,9 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 
 	# unc_spec and conv_spec need to be the same resolution
 	# unc_spec is at temp_res
-	conv_res = max((instr_res, temp_res))
+		conv_res = max((instr_res, temp_res))
+	else:
+		conv_res = temp_res
 	if conv_res < temp_res:
 		if sigma is None:
 			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
@@ -223,7 +225,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
 				/ np.median(np.diff(unconvolved_lam))
 		convolved = gaussian_filter1d(convolved, sig_pix)
-	else:
+	elif conv_res > temp_res:
 		sig_pix = np.sqrt(conv_res**2 - temp_res**2) / 2.355 \
 			/ np.median(np.diff(unconvolved_lam))
 		unconvolved_spectrum = gaussian_filter1d(unconvolved_spectrum, 
