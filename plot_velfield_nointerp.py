@@ -327,12 +327,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if colorbar and not debug:
 		ticks = ticker.MaxNLocator(nbins=nticks)
+		ax_loc = ax.get_position()
 		if hasattr(ax,'ax2'):
-			cbar = plt.colorbar(cs, ax=[ax,ax_dis, ax2], ticks=ticks, pad=0.1, 
-				use_gridspec=True)
+			cax = fig.add_axes([1.0, ax_loc.y0, 0.03, ax_loc.height])
 		else:
-			cbar = plt.colorbar(cs, ax=[ax, ax_dis], ticks=ticks, pad=0.1, 
-				use_gridspec=True)
+			cax = fig.add_axes([0.93, ax_loc.y0, 0.03, ax_loc.height])
+		cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
 	elif colorbar:
 		ticks = ticker.MaxNLocator(nbins=nticks)
 		if hasattr(ax,'ax2'):
