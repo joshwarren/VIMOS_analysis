@@ -112,6 +112,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 	_, residuals, _ = moving_weighted_average(lam, residuals, step_size=3., 
 		interp=True)
 	noise = np.sqrt(residuals**2 + noise**2)
+
 	# Only use line if formally detected.
 	if '[OIII]5007d' in e_temps:
 		if np.max(e_line_spec[e_temps=='[OIII]5007d'])/np.median(
@@ -120,7 +121,21 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 
 			e_line_spec[:,:] = 0
 		else:
-			if '[NI]d' in e_temps:
+			for l in [l for l in e_temps if l not in ['[OIII]5007d', 
+				'[NI]d']]:
+
+				wav = lam[np.argmax(e_line_spec[e_temps==l])]
+				if np.max(e_line_spec[e_temps==l])/np.median(
+					noise[(np.log(lam) > np.log(wav) - 300/c) * 
+					(np.log(lam) < np.log(wav) + 300/c)]) < 3:
+
+					e_line_spec[e_temps==l,:] = 0
+					if l == 'Hbeta':
+						Hb = False
+				elif l == 'Hbeta':
+					Hb = True 
+
+			if '[NI]d' in e_temps and Hb:
 				if np.max(e_line_spec[e_temps=='[NI]d'])/np.median(
 					noise[(np.log(lam) > np.log(5200) - 300/c) * 
 					(np.log(lam) < np.log(5200) + 300/c)]) < 4:
@@ -128,13 +143,6 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 					e_line_spec[e_temps=='[NI]d',:] = 0
 				else:
 					print '[NI] detected'
-
-			if 'Hbeta' in e_temps:
-				if np.max(e_line_spec[e_temps=='Hbeta'])/np.median(
-					noise[(np.log(lam) > np.log(4861) - 300/c) * 
-					(np.log(lam) < np.log(4861) + 300/c)]) < 3:
-
-					e_line_spec[e_temps=='Hbeta',:] = 0
 	else:
 		e_line_spec[:,:] = 0
 
@@ -288,13 +296,13 @@ class population(object):
 					galaxies = ['ngc3557', 'ic1459', 'ic1531', 'ic4296', 
 						'ngc0612', 'ngc1399', 'ngc3100', 'ngc7075', 
 						'pks0718-34', 'eso443-g024']
-					# self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
-					# 	'H_beta', 'Fe5015', 'Mg_b']
+					self.lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 
+						'H_beta', 'Fe5015', 'Mg_b']
 				elif self.instrument == 'muse':
 					galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
-					# self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 
-					# 	'Fe5335', 'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 
-					# 	'TiO1', 'TiO2']
+					self.lines = ['H_beta', 'Fe5015', 'Mg_b', 'Fe5270', 
+						'Fe5335', 'Fe5406', 'Fe5709', 'Fe5782', 'NaD', 
+						'TiO1', 'TiO2']
 				self.galaxy = galaxies[self.i_gal]
 
 				self.ab_lines, self.uncerts = get_absorption(self.lines, 

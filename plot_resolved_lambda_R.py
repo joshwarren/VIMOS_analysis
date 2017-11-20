@@ -19,7 +19,8 @@ opt = 'kin'
 
 def plot_lambda_R():
 	fig, ax = plt.subplots()
-	FR = ['ngc0612', 'ngc1316', 'ngc3100', 'ngc3557', 'pks0718-34']
+	FR = ['ic1531', 'ngc0612', 'ngc1316', 'ngc3100', 'ngc3557', 
+		'pks0718-34']
 	for galaxy in ['eso443-g024',
 				'ic1459',
 				'ic1531', 
@@ -33,24 +34,27 @@ def plot_lambda_R():
 		lam_R_file = '%s/Data/vimos/analysis/%s/%s/lambda_R.txt' % (
 			cc.base_dir, galaxy, opt)
 		r, lam_R = np.loadtxt(lam_R_file, unpack=True)
+		r /= get_R_e(galaxy)
 
 		if galaxy in FR:
-			ax.plot(r[4::3], lam_R[4::3], 'r')
+			ax.plot(r, lam_R, 'r')
 		else:
-			ax.plot(r[4::3], lam_R[4::3], 'r--')
+			ax.plot(r, lam_R, 'r--')
+		ax.text(r[-1], lam_R[-1], galaxy.upper(), color='r', 
+			va='center', size='x-small')
 
 	for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 		lam_R_file = '%s/Data/muse/analysis/%s/%s/lambda_R.txt' % (
 			cc.base_dir, galaxy, opt)
 		r, lam_R = np.loadtxt(lam_R_file, unpack=True)
-
-		# if any(lam_R > 0.2):
-		# 	print galaxy
+		r /= get_R_e(galaxy)
 
 		if galaxy in FR:
-			ax.plot(r[4::3], lam_R[4::3], 'b')
+			ax.plot(r, lam_R, 'b')
 		else:
 			ax.plot(r, lam_R, 'b--')
+		ax.text(r[-1], lam_R[-1], galaxy.upper(), color='b', 
+			va='center', size='x-small')
 
 	ax.set_xlabel(r'Radius (R$_e$)')
 	ax.set_ylabel(r'$\lambda_R$')

@@ -8,8 +8,6 @@
 import numpy as np # for reading files
 import os
 import glob # for searching for files
-from astropy.io import fits as pyfits # reads fits files (is from astropy)
-from find_galaxy import find_galaxy # part of mge package, fits photometry
 from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
 import math # for sine functions
 import matplotlib.pyplot as plt # used for plotting
@@ -51,9 +49,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	galaxy_gals = d[0][1:]
 	z_gals, vel_gals, sig_gals = d[1][1:].astype(float), d[2][1:].astype(float), \
 		d[3][1:].astype(float),
-	x_gals, y_gals = d[4][1:].astype(int), d[5][1:].astype(int)
-	SN_gals = {d[i][0]:d[i][1:].astype(float) for i in range(6,len(d))}
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
+	x0, y0 = int(d[4][i_gal + 1]), int(d[5][i_gal + 1])
 
 
 	if os.path.exists(galaxiesFile2):
@@ -90,65 +87,75 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	R_e = get_R_e(galaxy)
 # ------------=============== Photometry =================----------
-	# save_to = "%s/plots/photometry.png" % (output)
-	f = find_galaxy(D.unbinned_flux, quiet=True, plot=plots)#, 
-		#galaxy=galaxy.upper(), redshift=z, sav_fig=save_to)
-	#f_err = find_galaxy(galaxy_data_error, quiet=True, plot=False)
-	x_gals[i_gal] = f.xpeak # f.xmed?
-	y_gals[i_gal] = f.ypeak # f.ymed?
-	ellip_gals[i_gal2] = f.eps
-	pa_gals[i_gal2] = f.theta
+	file = '%s/kinemetry/kinemetry_stellar_flux.txt' % (output)
+	a, pa_r, e_pa_r, ellip, e_ellip, b4, e_b4 = np.loadtxt(file, unpack=True,
+		skiprows=1)
 
-	print "ellip: " + str(f.eps) #+ "+/-" + str(abs(f.eps-f_err.eps))
-	print "PA_photo: " + str(90-f.theta) #+ "+/-" + str(abs(f.theta-f_err.theta))
+	A_ellipse = np.pi * a**2 * (1 - ellip)
+	A_s = np.zeros(len(a))
+	res = 0.67 # arcsec/pix
+
+	h = 0.1 # pix; discretization accuracy
+	# discretizing FoV
+	x, y = np.meshgrid(np.arange(0, 40, h), np.arange(0, 40, h))
+	x -= x0
+	y -= y0
+	x *= res 
+	y *= res
+
+	for i in range(len(a)):
+		# set all points of ellipse that are inside
+		x_rot = x * np.cos(np.radians(90 + pa_r[i])) - \
+			y * np.sin(np.radians(90 + pa_r[i]))
+		y_rot = y * np.cos(np.radians(90 + pa_r[i])) + \
+			x * np.sin(np.radians(90 + pa_r[i]))
+		el = ((x_rot)/a[i])**2 + ((y_rot)/(a[i] * (1 - ellip[i])))**2 <= 1 
+		# plt.imshow(el.astype(int))
+		# plt.show()
+		A_s[i] = np.sum(el) * h**2 * res**2
+
+		if A_s[i] > 0.85 * A_ellipse[i]:
+			R_max = a[i]
+
+	
+
+	R_m = np.sqrt(A_s/np.pi)
+	m = np.array(R_m <= R_max)
+
+	R_m = R_m[m]
+	ellip, e_ellip, pa_r, e_pa_r, b4, e_b4 = ellip[m], e_ellip[m], \
+		pa_r[m], e_pa_r[m], b4[m], e_b4[m]
+
+	ellip_gals[i_gal2] = interp1d(R_m, ellip, bounds_error=False, 
+		fill_value=(0, ellip[-1]))(R_e)
+	pa_gals[i_gal2] = interp1d(R_m, pa_r, bounds_error=False, 
+		fill_value=(0, pa_r[-1]))(R_e)
 # ------------================ Lambda_R ==================----------
-
-	beta = np.tan(D.yBar/D.xBar) # Angle between point and center of galaxy and RA 
-									# axis.
-	pa = 90 - f.theta # Position angle
-	res = 0.67 # arcsec. Spatial resolution of MUSE
-
-	# Semi-major axis
-	a = res* np.sqrt(((D.xBar - f.xpeak)**2 + (D.yBar - f.ypeak)**2) * \
-		(np.sin(beta + pa)**2 + np.cos(beta + pa)**2/(1 - f.eps)**2))
-
-	R_m = a * np.sqrt(1 - f.eps)
-	R_m_sort = R_m.argsort() # argsort of R_m_sort will be the inverse opperation 
-	
-	# Area of ellipse
-	A_ellipse = np.pi * a**2 * (1 - f.eps)
-	# Area sampled
-	A_s = np.cumsum(D.n_spaxels_in_bin[R_m_sort])[R_m_sort.argsort()] * res**2
-
-	R_m[A_ellipse > A_s] = np.sqrt(A_s[A_ellipse>A_s]/np.pi)
-	# R_max occurs when 0.85*A_ellipse = A_s
-	# R_m[0.85*A_ellipse > A_s] = np.nan
-
 	vel = D.components['stellar'].plot['vel']
-	# vel_lim = set_lims(vel, symmetric=True)
-	# mask = (vel < vel_lim[0]) + (vel > vel_lim[1])
-
 	sigma = D.components['stellar'].plot['sigma']
-	# sigma_lim = set_lims(sigma, positive=True)
-	# mask += (sigma < sigma_lim[0]) + (sigma > sigma_lim[1])
-	
-	# vel[mask], sigma[mask] = np.nan, np.nan
 
+	R = np.sqrt((D.xBar - x0)**2 + (D.yBar - y0)**2)* res
 
-	# NB: numerator and denominator are in R_m order
-	numerator = np.nancumsum((D.flux * R_m * np.abs(vel))[R_m_sort])
+	lambda_R = np.zeros(len(R_m))
 
-	denominator = np.nancumsum((D.flux * R_m * 
-		np.sqrt(vel**2 + sigma**2))[R_m_sort])
+	for i in range(len(R_m)):
+		x_rot = (D.xBar - x0) * res * np.cos(np.radians(90 + pa_r[i])) - \
+			(D.yBar - y0) * res * np.sin(np.radians(90 + pa_r[i]))
+		y_rot = (D.yBar - y0) * res * np.cos(np.radians(90 + pa_r[i])) + \
+			(D.xBar - x0) * res * np.sin(np.radians(90 + pa_r[i]))
+		el = ((x_rot)/a[i])**2 + ((y_rot)/(a[i] * (1 - ellip[i])))**2 <= 1
 
-	lambda_R = (numerator/denominator)[R_m_sort.argsort()]
-	lambda_R[np.isnan(R_m)] = np.nan
+		numerator = np.nansum(D.flux[el] * R[el] * np.abs(vel[el]))
+		denominator = np.nansum(D.flux[el] * R[el] * 
+			np.sqrt(vel[el]**2 + sigma[el]**2))
 
-	lambda_Re = interp1d(R_m[~np.isnan(R_m)], lambda_R[~np.isnan(R_m)],
-		bounds_error=False, fill_value=(0, 
-		lambda_R[R_m_sort][~np.isnan(lambda_R[R_m_sort])][-1]))(R_e)
+		lambda_R[i] = numerator/denominator
+
+	lambda_Re = interp1d(R_m, lambda_R, bounds_error=False, 
+		fill_value=(0, lambda_R[-1]))(R_e)
 
 	print 'lambda_Re: ', lambda_Re
+
 	lambda_Re_gals[i_gal2] = lambda_Re
 
 	file = '%s/Data/vimos/analysis/%s/%s/lambda_R.txt' % (cc.base_dir, 
@@ -156,51 +163,34 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	with open(file, 'w') as f2:
 		for i in range(len(R_m)):
-			f2.write('%.4f   %.4f \n' %(R_m[R_m_sort][i], 
-				lambda_R[R_m_sort][i]))
+			f2.write('%.4f   %.4f \n' %(R_m[i], lambda_R[i]))
 
 	fig, ax = plt.subplots()
 	ax.set_title(r"Radial $\lambda_R$ profile")
 	ax.set_ylabel(r"$\lambda_R$")
 	ax.set_xlabel(r"Radius ($R_m$/$R_e$)")
-	ax.plot(R_m[R_m_sort][10:]/R_e, lambda_R[R_m_sort][10:])
-	# ax.text(0.02,0.98, "Galaxy: " + galaxy.upper())#, verticalalignment='top',
-		# transform=ax.transAxes)
+	ax.plot(R_m/R_e, lambda_R)
+
 	if not os.path.exists('%s/plots' % (output)):
 		os.makedirs('%s/plots' % (output))
 	plt.savefig("%s/plots/lambda_R.png" % (output), bbox_inches="tight")
 	if plots: 
 		plt.show()
-# ------------========= Stellar Kinematics ===============----------
-	save_to = "%s/plots/stellar_kinematics.png" % (output)
-	k = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
-		np.array(D.components['stellar'].plot['vel']), quiet=True, plot=plots, 
-		sav_fig=save_to)
-	star_kine_pa_gals[i_gal2] = k[0]
-# ------------=========== Gas Kinematics =================----------
-# NB: this is not written for gas=2 or gas=3 options. 
-	if D.gas == 1:
-		save_to = "%s/plots/gas_kinematics.png" % (output)
-		kgas = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
-			np.array(D.components['Hbeta'].plot['vel']), quiet=True, plot=plots, 
-			sav_fig=save_to)
-		gas_kine_pa_gals[i_gal2] = kgas[0]
+# # ------------========= Stellar Kinematics ===============----------
+# 	save_to = "%s/plots/stellar_kinematics.png" % (output)
+# 	k = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
+# 		np.array(D.components['stellar'].plot['vel']), quiet=True, plot=plots, 
+# 		sav_fig=save_to)
+# 	star_kine_pa_gals[i_gal2] = k[0]
+# # ------------=========== Gas Kinematics =================----------
+# # NB: this is not written for gas=2 or gas=3 options. 
+# 	if D.gas == 1:
+# 		save_to = "%s/plots/gas_kinematics.png" % (output)
+# 		kgas = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
+# 			np.array(D.components['Hbeta'].plot['vel']), quiet=True, plot=plots, 
+# 			sav_fig=save_to)
+# 		gas_kine_pa_gals[i_gal2] = kgas[0]
 # ------------============== Save outputs ================----------
-	template = "{0:12}{1:11}{2:10}{3:15}{4:4}{5:4}" + ''.join(
-		['{%i:%i}'%(i+6,len(t)+1) for i, t in enumerate(SN_gals.keys())]
-		) + "\n"
-
-	SN_titles = list(SN_gals.keys())
-	with open(galaxiesFile, 'w') as f:
-		f.write(template.format("Galaxy", "z", "velocity", "sigma", "x", "y", 
-			*(s for s in SN_titles)))
-		for i in range(len(galaxy_gals)):
-			f.write(template.format(galaxy_gals[i], str(round(z_gals[i],7)), 
-				str(round(vel_gals[i],4)), str(round(sig_gals[i],4)), 
-				str(int(x_gals[i])), str(int(y_gals[i])), 
-				*(str(round(SN_gals[s][i],2)) for s in SN_titles)))
-
-	
 	template2 = "{0:13}{1:9}{2:13}{3:13}{4:17}{5:8}\n" 
 	with open(galaxiesFile2, 'wb') as f2:
 	# f2 = open('/Data/vimos/analysis/test.txt', 'wb')
@@ -219,7 +209,7 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	galaxy = 'eso443-g024'
+	galaxy = 'ngc0612'
 	discard = 0
 
 	kinematics(galaxy, discard=discard, plots=False)

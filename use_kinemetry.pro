@@ -5,10 +5,9 @@
 
 PRO do_work, gal, opt, type
 	print, gal, ' ', type
-	plot = 1
+	plot = 0
 	; Odd or even moment?
-	if type eq 'vel' then even=0 else even=1
-
+	if stregex(type, '.*vel', /boolean) then even=0 else even=1
 
 	print, 'Have you got the most recent files for '+gal+'?'
 	; Select correct file
@@ -22,8 +21,10 @@ PRO do_work, gal, opt, type
 	rdfloat, file, _,_,bin_num, xbin, ybin, skipline=1
 
 	file = '/Data/vimos/analysis/galaxies.txt'
-	readcol, file, galaxy_gals,x0,y0, skipline=1,format='A,D,D,D,I,I,I,I'
+	readcol, file, galaxy_gals, _, _, _, x0, y0, skipline=1, format='A,D,D,D,I,I,I,I'
 	i_gal = where(galaxy_gals eq gal)
+	x0 = float(x0[i_gal[0]])
+	y0 = float(y0[i_gal[0]])
 
 	badpix = where(velbin eq 9999)
 
@@ -33,10 +34,10 @@ PRO do_work, gal, opt, type
 	ybin = ybin[b]
 
 	; Center the origin on the center of the galaxy
-	x_cent = max(xbin)/2
-	y_cent = max(ybin)/2
-	xbin = xbin - x_cent
-	ybin = ybin - y_cent
+	; x_cent = max(xbin)/2
+	; y_cent = max(ybin)/2
+	xbin = xbin - x0
+	ybin = ybin - y0
 
 	xbin = xbin * 0.67
 	ybin = ybin * 0.67
@@ -46,8 +47,9 @@ PRO do_work, gal, opt, type
 		; Get average PA
 		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0, $
 			y0=y0, ntrm=2, scale=0.2, name=gal,er_cf=er_cf, $
-			er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, badpix=badpix, $
-			velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, /FIXCEN
+			er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, $
+			badpix=badpix, velkin=velkin, velcirc=velcirc, /bmodel, $
+			cover=0.05, /FIXCEN
 
 		med_pa  = MEDIAN(pa)
 		;if even eq 0 then 
@@ -57,7 +59,7 @@ PRO do_work, gal, opt, type
 
 	; Low harmonic terms only
 		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0, $
-			y0=y0, ntrm=2, scale=0.2, name=gal,er_cf=er_cf, $
+			y0=y0, ntrm=2, scale=0.67, name=gal,er_cf=er_cf, $
 			er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, badpix=badpix, $
 			velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, /FIXCEN, $
 			rangepa=[med_pa,med_pa+0.1], rangeq=[med_q,med_q+0.1]
@@ -76,24 +78,49 @@ PRO do_work, gal, opt, type
 	endif
 
 	; Include high harmonic terms to reach k5.
-	if type eq 'stellar_vel' then begin
-		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0, $
-			y0=y0, ntrm=6, scale=0.2, name=gal,er_cf=er_cf, $
-			er_pa=er_pa, even=even, ERROR=er_velbin, er_q=er_q, $;/verbose, $
-			velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, /FIXCEN;, $
+	if stregex(type, 'stellar.*', /boolean) then begin
+		if stregex(type, '.*_flux', /boolean) then ntrm=10 else ntrm=6
+		thisDevice = !D.Name
+		Set_Plot, 'Z', /COPY
+
+		Device, Set_Resolution=[1000,1000], Z_Buffer=0
+		Erase
+		
+		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, $;x0=x0, y0=y0, $
+			ntrm=ntrm, scale=0.67, /FIXCEN, even=even, error=er_velbin, $
+			er_pa=er_pa, er_q=er_q, er_cf=er_cf, $
+			plot='/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg'
+
+			;  ERROR=er_velbin, , $;/verbose, $
+			; velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, ;, $
 			; rangepa=[med_pa,med_pa+0.1], rangeq=[med_q,med_q+0.1]
 
-		k0 = cf[*,0]
-		k1 = SQRT(cf[*,1]^2 + cf[*,2]^2)
-		k5 = SQRT(cf[*,5]^2 + cf[*,6]^2)
-		k51 = k5/k1
-		erk1 = (SQRT( (cf[*,1]*er_cf[*,1])^2 + (cf[*,2]*er_cf[*,2])^2 ))/k1
-		erk5 = (SQRT( (cf[*,5]*er_cf[*,5])^2 + (cf[*,6]*er_cf[*,6])^2 ))/k5
-		erk51 = ( SQRT( ((k5/k1) * erk1)^2 + erk5^2  ) )/k1 
+		if stregex(type, '.*_vel', /boolean) then begin
+			k0 = cf[*,0]
+			k1 = SQRT(cf[*,1]^2 + cf[*,2]^2)
+			k5 = SQRT(cf[*,5]^2 + cf[*,6]^2)
+			k51 = k5/k1
+			erk1 = (SQRT( (cf[*,1]*er_cf[*,1])^2 + (cf[*,2]*er_cf[*,2])^2 ))/k1
+			erk5 = (SQRT( (cf[*,5]*er_cf[*,5])^2 + (cf[*,6]*er_cf[*,6])^2 ))/k5
+			erk51 = ( SQRT( ((k5/k1) * erk1)^2 + erk5^2  ) )/k1 
 
-		file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
-		forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
-			/SILENT, comment='  radius(arcsec)      pa(deg)        err         ellip        err           k1           err          k51         err'
+			file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
+			forprint2, rad, pa, er_pa, q, er_q, k1, erk1, k51, erk51, width=200, TEXTOUT = file, $
+				/SILENT, comment='  radius(arcsec)      pa(deg)        err         ellip        err           k1           err          k51         err'
+		endif
+
+		if stregex(type, '.*_flux', /boolean) then begin
+			b4 = cf[*, 8]
+			er_b4 = er_cf[*, 8]
+			
+			file = '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.txt'
+			forprint2, rad, pa, er_pa, 1-q, er_q, b4, er_b4, width=200, $
+				TEXTOUT = file, /SILENT, $
+				comment='  radius(arcsec)      pa(deg)        err         ellip        err           b4           err'
+		endif
+
+
+
 
 	endif
 
@@ -143,14 +170,16 @@ END
 
 pro use_kinemetry
 ;	gal = 'eso443-g024'
-	gals=['ic1459', 'ic1531', 'ic4296', 'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34', 'eso443-g024']
+	gals=['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', $
+		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
 	for i=0,9 do begin
 		gal=gals[i]
 
 		; do_work, gal, 'kin', 'gas_flux'
 		; do_work, gal, 'kin', 'gas_vel'
 		; do_work, gal, 'kin', 'gas_sigma'
-		do_work, gal, 'kin', 'stellar_vel'
+		; do_work, gal, 'kin', 'stellar_vel'
+		do_work, gal, 'kin', 'stellar_flux'
 	endfor
 
 END

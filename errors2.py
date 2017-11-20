@@ -1046,7 +1046,7 @@ class run_ppxf(ppxf):
 						start[i][1] = self.sig
 					else:
 						start[i][1] = self.sig/2.
-
+		
 		moments = [self.params.stellar_moments] + [self.params.gas_moments] * \
 			max(self.component)
 	## ----------============== The bestfit part ===============---------

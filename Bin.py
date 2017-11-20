@@ -199,7 +199,13 @@ class Data(object):
 
 	@property
 	def flux(self):
-		return np.array([bin.flux for bin in self.bin])
+		fl = np.zeros(self.number_of_bins)
+		e_fl = np.zeros(self.number_of_bins)
+		for i, bin in enumerate(self.bin):
+			f = bin.flux
+			e_fl[i] = f.uncert
+			fl[i] = float(f)
+		return myArray(fl, uncert=e_fl)
 
 	@property
 	def gas_flux(self):
@@ -652,8 +658,11 @@ class Bin(object):
 		# NB: only calculated for the common wavelength range.
 		a = [min(np.where(self.lam > self.__parent__.common_range[0])[0]),
 			max(np.where(self.lam < self.__parent__.common_range[1])[0])]
-		return np.trapz(self.spectrum[a[0]:a[1]], x=self.lam[a[0]:a[1]])
-			# )/self.n_spaxels_in_bin
+		fl =  myFloat(np.trapz(self.spectrum[a[0]:a[1]], 
+			x=self.lam[a[0]:a[1]]))
+		fl.uncert = trapz_uncert(self.noise[a[0]:a[1]], 
+			x=self.lam[a[0]:a[1]])
+		return fl
 
 	@property
 	def xBar(self):
@@ -755,6 +764,8 @@ class myFloat(float):
 		float.__init__(self)
 		# self._uncert = np.nan
 		self.uncert = np.nan
+
+
 
 class _bin_data(object):
 # Attributes:

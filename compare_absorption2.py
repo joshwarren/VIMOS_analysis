@@ -27,6 +27,8 @@ c = 299792.458 # speed of light in km/s
 def Lick_to_LIS(line, value, res=8.4):
 	if line =='H_beta' or line=='Hb' or line=='hb':
 		line='Hbeta'
+	if line =='Mgb' or line == 'mgb' or line =='mg_b':
+		line='Mg_b'
 
 
 	file = '%s/Data/lit_absorption/Miles/lick_to_lis.txt' % (cc.base_dir)
@@ -321,8 +323,8 @@ if __name__=='__main__':
 
 	ax.plot([1,7],[1,7],'k')
 	ax.legend(facecolor='w')
-	ax.set_xlabel(r'Mine values \AA')
-	ax.set_ylabel(r'Rampazzo values \AA')
+	ax.set_xlabel(r'Mine values $\AA$')
+	ax.set_ylabel(r'Rampazzo values $\AA$')
 	fig.savefig('%s/Data/lit_absorption/comparison_to_Rampazzo_vimos.png' % (
 		cc.base_dir))
 

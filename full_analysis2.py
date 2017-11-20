@@ -14,6 +14,7 @@ from sav_for_kinemetry import sav_for_kinemetry
 from plot_results import plot_results, mapping
 from kinematics import kinematics
 # from GH_plots import GH_plots
+from find_centre import find_centre
 from rotation_curve import rotation_curve
 from plot_absorption import plot_absorption
 import matplotlib.pyplot as plt # used for plotting
@@ -44,14 +45,14 @@ galaxies = [
 # galaxies = ['ngc0612']
 # galaxies = ['ngc1399']
 # galaxies = ['ngc3100']
-galaxies = ['ngc3557']
+# galaxies = ['ngc3557']
 # galaxies = ['ngc7075']
 # galaxies = ['pks0718-34']
 
 
 discard = 0
 norm = 'fit_disk'#'lwv' # 'lws'
-opt_dir = '_highSN'
+opt_dir = ''
 
 m=mapping()
 # m.SNR = False
@@ -70,15 +71,17 @@ for galaxy in galaxies:
 	D = None
 	print galaxy
 	try:
-		# D = pickler(galaxy, discard=discard, norm=norm, opt='kin'+opt_dir)
+		# D = pickler(galaxy, discard=discard, norm=norm, 
+		# 	opt='kin'+opt_dir)
+		# D = find_centre(galaxy, discard=discard, D=D, 
+		# 	opt='kin'+opt_dir)
 		# D = sav_for_kinemetry(galaxy, opt='kin'+opt_dir)
-		# D = plot_results(galaxy, discard=discard, overplot={'CO':'c', 'radio':'r'}, 
-		# 	residual="median", norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
+		# D = plot_results(galaxy, discard=discard, 
+		# 	overplot={'CO':'c', 'radio':'r'}, residual="median", 
+		# 	norm=norm, D=D, mapping=m, opt='kin'+opt_dir,
 		# 	show_bin_num=True)
 		# plt.close("all")
 		# # GH_plots(galaxy)
-		# plt.close("all")
-		# D = kinematics(galaxy, discard=discard, D=D, opt='kin'+opt_dir)
 		# plt.close("all")
 		# find_limits(galaxy, D=D, opt='kin'+opt_dir, norm=norm, 
 		# 	instrument='vimos')
@@ -89,16 +92,23 @@ for galaxy in galaxies:
 		# classify(galaxy, opt='kin'+opt_dir)
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
+		D = kinematics(galaxy, discard=discard, D=D, 
+			opt='kin'+opt_dir)
+		plt.close("all")
+
 		D = None
-		D = pickler(galaxy, discard=discard, norm=norm, opt='pop'+opt_dir)
+		# D = pickler(galaxy, discard=discard, norm=norm, 
+		# 	opt='pop'+opt_dir)
 		# find_limits(galaxy, D=D, opt='pop'+opt_dir, norm=norm, 
 		# 	instrument='vimos')
-		D = plot_results(galaxy, discard=discard, 
-			overplot={'CO':'c', 'radio':'r'}, residual="median", norm=norm, 
-			D=D, mapping=m, opt='pop'+opt_dir, show_bin_num=True)
+		# D = plot_results(galaxy, discard=discard, 
+		# 	overplot={'CO':'c', 'radio':'r'}, residual="median", 
+		# 	norm=norm, D=D, mapping=m, opt='pop'+opt_dir, 
+		# 	show_bin_num=True)
 		# plt.close("all")
-		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, uncert=True, 
-		# 	overplot={'CO':'c', 'radio':'r'}, gradient='only')
+		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, 
+		# 	uncert=True, overplot={'CO':'c', 'radio':'r'}, 
+		# 	gradient='only')
 		# plt.close("all")
 		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, 
 		# 	opt='pop'+opt_dir, overplot={'CO':'c', 'radio':'r'}, 
@@ -124,5 +134,6 @@ for i in range(len(gal_err)):
 	print gal_err[i], ' FAILED'
 	print err[i]
 	exc_type, exc_value, exc_traceback = trace[i]
-	traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stdout)
+	traceback.print_exception(exc_type, exc_value, exc_traceback, 
+		file=sys.stdout)
 	print ''
