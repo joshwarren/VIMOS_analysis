@@ -1,9 +1,13 @@
 from find_galaxy import find_galaxy #part of mge package: fits photometry
 import numpy as np
+from checkcomp import checkcomp
+cc = checkcomp()
+import cPickle as pickle
 
 
 def find_centre(galaxy, discard=0, opt="kin", D=None, 
 	instrument='vimos'):
+	print '   finding centre of galaxy'
 	analysis_dir = "%s/Data/%s/analysis" % (cc.base_dir, instrument)
 	output = '%s/%s/%s' % (analysis_dir, galaxy, opt)
 	if D is None:
@@ -28,7 +32,7 @@ def find_centre(galaxy, discard=0, opt="kin", D=None,
 			len(d))}
 		i_gal = np.where(galaxy_gals==galaxy)[0][0]
 
-	f = find_galaxy(D.unbinned_flux, quiet=True, plot=plots)
+	f = find_galaxy(D.unbinned_flux, quiet=True, plot=False)
 
 	x_gals[i_gal] = int(round(f.xmed, 0))
 	y_gals[i_gal] = int(round(f.ymed, 0))

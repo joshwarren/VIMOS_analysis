@@ -9,6 +9,8 @@ import numpy as np # for array handling
 import cPickle as pickle
 from plot_results import set_lims
 from prefig import Prefig
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 
 
@@ -205,13 +207,16 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_ylabel('[OIII] flux')
+		ax.set_xlabel('[OIII] flux')
 		ax.set_ylabel('[OI] flux')
+		axins = zoomed_inset_axes(ax, 6, loc=1) # zoom = 6
+
 
 		OIII = []
 		OI = []
 		e_OIII = []
 		e_OI = []
+		n_bins = []
 		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 		for galaxy in ['ic1459', 'ngc1316']:
 			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
@@ -240,6 +245,9 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 					ax.errorbar(OIII_gal, D.components['[OI]6300d'].flux,
 						yerr=D.components['[OI]6300d'].flux.uncert,
 						xerr=e_OIII_gal, fmt='.', label=galaxy)
+					axins.errorbar(OIII_gal, D.components['[OI]6300d'].flux,
+						yerr=D.components['[OI]6300d'].flux.uncert,
+						xerr=e_OIII_gal, fmt='.')
 
 					OIII.extend(OIII_gal)
 					e_OIII.extend(e_OIII_gal)
@@ -247,15 +255,21 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 					e_OI.extend(D.components['[OI]6300d'].flux.uncert)
 
 
-					print galaxy, np.sum(
-						~np.isnan(OIII_gal) * 
+					print galaxy, np.sum(~np.isnan(OIII_gal) * 
 						~np.isnan(D.components['[OI]6300d'].flux)),'/',\
 						D.number_of_bins
+
+					n_bins.append(D.number_of_bins)
 
 		OIII = np.array(OIII)
 		e_OIII = np.array(e_OIII)
 		OI = np.array(OI)
 		e_OI = np.array(e_OI)
+
+		axins.set_xlim(set_lims(OIII[n_bins[1]:], symmetric=False, positive=True))
+		axins.set_ylim(set_lims(OI[n_bins[1]:], symmetric=False, positive=True))
+
+		mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
 
 		m = ~np.isnan(OIII) * ~np.isnan(OI)
 		# weighting is assumed to be for y data, so following line is 
@@ -271,6 +285,9 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 
 		lims = np.array(ax.get_xlim())
 		ax.plot(np.linspace(lims[0], lims[1], 100), 
+			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+			'k')
+		axins.plot(np.linspace(lims[0], lims[1], 100), 
 			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
 			'k')
 
@@ -356,8 +373,8 @@ if __name__=='__main__':
 
 	elif cc.device == 'uni':
 		instrument = 'muse'
-		find_ndec()
-		# find_odec()
+		# find_ndec()
+		find_odec()
 		# for galaxy in [
 		# 		'ic1459', 
 		# 		'ic4296',

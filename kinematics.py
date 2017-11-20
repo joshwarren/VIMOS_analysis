@@ -7,20 +7,16 @@
 
 import numpy as np # for reading files
 import os
-import glob # for searching for files
 from fit_kinematic_pa import fit_kinematic_pa # fit kinemetry
-import math # for sine functions
 import matplotlib.pyplot as plt # used for plotting
-import matplotlib.axes as ax # for adding text onto images
-from scipy.optimize import curve_fit # for fitting a gaussian
+# from scipy.optimize import curve_fit # for fitting a gaussian
 from scipy.interpolate import interp1d
 from checkcomp import checkcomp
 from classify import get_R_e
 cc = checkcomp()
 import cPickle as pickle
-from plot_results import set_lims
 
-#---------------------------------------------------------------------------
+#----------------------------------------------------------------------
 def spxToKpc(x, z):
 	H0 = 70.4 # Mpc / kms^-1
 	val =  3*10**5 * z/H0 *10**3 * x * 0.67*4.85*10**(-6)
@@ -31,10 +27,12 @@ def spxToRe(x, R_e):
 	return val
 
 
-def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
+def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None, 
+	instrument='vimos'):
+
 	print '  kinematics'
 
-	analysis_dir = "%s/Data/vimos/analysis" % (cc.base_dir)
+	analysis_dir = "%s/Data/%s/analysis" % (cc.base_dir, instrument)
 
 	galaxiesFile = "%s/galaxies.txt" % (analysis_dir)
 	galaxiesFile2 = "%s/galaxies2.txt" % (analysis_dir)
@@ -47,17 +45,18 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	d = np.loadtxt(galaxiesFile, unpack=True, dtype=str)
 	galaxy_gals = d[0][1:]
-	z_gals, vel_gals, sig_gals = d[1][1:].astype(float), d[2][1:].astype(float), \
-		d[3][1:].astype(float),
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
-	x0, y0 = int(d[4][i_gal + 1]), int(d[5][i_gal + 1])
-
+	if instrument == 'vimos':
+		x0, y0 = int(d[4][i_gal + 1]), int(d[5][i_gal + 1])
+	elif instrument == 'muse':
+		x0, y0 = int(d[1][i_gal + 1]), int(d[2][i_gal + 1])
 
 	if os.path.exists(galaxiesFile2):
-		lambda_Re_gals, ellip_gals, pa_gals, star_kine_pa_gals, gas_kine_pa_gals = \
-			np.loadtxt(galaxiesFile2, unpack=True, skiprows=1, usecols=(1,2,3,4,5))
-		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, usecols=(0,),
-			dtype=str)
+		lambda_Re_gals, ellip_gals, pa_gals, star_kine_pa_gals, \
+			gas_kine_pa_gals = np.loadtxt(galaxiesFile2, unpack=True, 
+			skiprows=1, usecols=(1,2,3,4,5))
+		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, 
+			usecols=(0,), dtype=str)
 		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
 		if len(i_gal2) == 0:
 			i_gal2 = -1
@@ -88,16 +87,22 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	R_e = get_R_e(galaxy)
 # ------------=============== Photometry =================----------
 	file = '%s/kinemetry/kinemetry_stellar_flux.txt' % (output)
-	a, pa_r, e_pa_r, ellip, e_ellip, b4, e_b4 = np.loadtxt(file, unpack=True,
-		skiprows=1)
+	a, pa_r, e_pa_r, ellip, e_ellip, b4, e_b4 = np.loadtxt(file, 
+		unpack=True, skiprows=1)
 
 	A_ellipse = np.pi * a**2 * (1 - ellip)
 	A_s = np.zeros(len(a))
-	res = 0.67 # arcsec/pix
+
+	if instrument == 'vimos':
+		res = 0.67 # arcsec/pix
+		l = 40
+	elif instrument == 'muse':
+		res = 0.2 # arcsec/pix
+		l = 150
 
 	h = 0.1 # pix; discretization accuracy
 	# discretizing FoV
-	x, y = np.meshgrid(np.arange(0, 40, h), np.arange(0, 40, h))
+	x, y = np.meshgrid(np.arange(0, l, h), np.arange(0, l, h))
 	x -= x0
 	y -= y0
 	x *= res 
@@ -109,15 +114,14 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 			y * np.sin(np.radians(90 + pa_r[i]))
 		y_rot = y * np.cos(np.radians(90 + pa_r[i])) + \
 			x * np.sin(np.radians(90 + pa_r[i]))
-		el = ((x_rot)/a[i])**2 + ((y_rot)/(a[i] * (1 - ellip[i])))**2 <= 1 
+		el = ((x_rot)/a[i])**2 + ((y_rot)/
+			(a[i] * (1 - ellip[i])))**2 <= 1 
 		# plt.imshow(el.astype(int))
 		# plt.show()
 		A_s[i] = np.sum(el) * h**2 * res**2
 
 		if A_s[i] > 0.85 * A_ellipse[i]:
 			R_max = a[i]
-
-	
 
 	R_m = np.sqrt(A_s/np.pi)
 	m = np.array(R_m <= R_max)
@@ -139,11 +143,12 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 	lambda_R = np.zeros(len(R_m))
 
 	for i in range(len(R_m)):
-		x_rot = (D.xBar - x0) * res * np.cos(np.radians(90 + pa_r[i])) - \
-			(D.yBar - y0) * res * np.sin(np.radians(90 + pa_r[i]))
-		y_rot = (D.yBar - y0) * res * np.cos(np.radians(90 + pa_r[i])) + \
-			(D.xBar - x0) * res * np.sin(np.radians(90 + pa_r[i]))
-		el = ((x_rot)/a[i])**2 + ((y_rot)/(a[i] * (1 - ellip[i])))**2 <= 1
+		x_rot = (D.xBar - x0) * res * np.cos(np.radians(90 + pa_r[i])) \
+			- (D.yBar - y0) * res * np.sin(np.radians(90 + pa_r[i]))
+		y_rot = (D.yBar - y0) * res * np.cos(np.radians(90 + pa_r[i])) \
+			+ (D.xBar - x0) * res * np.sin(np.radians(90 + pa_r[i]))
+		el = ((x_rot)/a[i])**2 + ((y_rot)/
+			(a[i] * (1 - ellip[i])))**2 <= 1
 
 		numerator = np.nansum(D.flux[el] * R[el] * np.abs(vel[el]))
 		denominator = np.nansum(D.flux[el] * R[el] * 
@@ -158,8 +163,7 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 
 	lambda_Re_gals[i_gal2] = lambda_Re
 
-	file = '%s/Data/vimos/analysis/%s/%s/lambda_R.txt' % (cc.base_dir, 
-			galaxy, opt)
+	file = '%s/lambda_R.txt' % (output)
 
 	with open(file, 'w') as f2:
 		for i in range(len(R_m)):
@@ -179,32 +183,33 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None):
 # # ------------========= Stellar Kinematics ===============----------
 # 	save_to = "%s/plots/stellar_kinematics.png" % (output)
 # 	k = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
-# 		np.array(D.components['stellar'].plot['vel']), quiet=True, plot=plots, 
-# 		sav_fig=save_to)
+# 		np.array(D.components['stellar'].plot['vel']), quiet=True, 
+# 		plot=plots, sav_fig=save_to)
 # 	star_kine_pa_gals[i_gal2] = k[0]
 # # ------------=========== Gas Kinematics =================----------
 # # NB: this is not written for gas=2 or gas=3 options. 
 # 	if D.gas == 1:
 # 		save_to = "%s/plots/gas_kinematics.png" % (output)
 # 		kgas = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
-# 			np.array(D.components['Hbeta'].plot['vel']), quiet=True, plot=plots, 
-# 			sav_fig=save_to)
+# 			np.array(D.components['Hbeta'].plot['vel']), quiet=True, 
+# 			plot=plots, sav_fig=save_to)
 # 		gas_kine_pa_gals[i_gal2] = kgas[0]
 # ------------============== Save outputs ================----------
 	template2 = "{0:13}{1:9}{2:13}{3:13}{4:17}{5:8}\n" 
 	with open(galaxiesFile2, 'wb') as f2:
 	# f2 = open('/Data/vimos/analysis/test.txt', 'wb')
-		f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 'PA (deg)',
-			'kine_pa: Stellar', 'Gas'))
+		f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
+			'PA (deg)', 'kine_pa: Stellar', 'Gas'))
 		for i in range(len(galaxy_gals2)):
 			f2.write(template2.format(galaxy_gals2[i], 
-				str(round(lambda_Re_gals[i],3)), str(round(ellip_gals[i],3)), 
-				str(round(pa_gals[i],3)), str(round(star_kine_pa_gals[i],3)), 
+				str(round(lambda_Re_gals[i],3)), 
+				str(round(ellip_gals[i],3)), str(round(pa_gals[i],3)), 
+				str(round(star_kine_pa_gals[i],3)), 
 				str(gas_kine_pa_gals[i])))
 
 	return D
 
-##############################################################################
+#####################################################################
 
 # Use of kinematics.py
 

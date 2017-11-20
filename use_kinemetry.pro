@@ -39,9 +39,6 @@ PRO do_work, gal, opt, type
 	xbin = xbin - x0
 	ybin = ybin - y0
 
-	xbin = xbin * 0.67
-	ybin = ybin * 0.67
-
 	; NB: gas must be the first 3 characters in type
 	if strcmp(type, 'gas', 3, /FOLD_CASE) then begin
 		; Get average PA
@@ -88,7 +85,7 @@ PRO do_work, gal, opt, type
 		
 		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, $;x0=x0, y0=y0, $
 			ntrm=ntrm, scale=0.67, /FIXCEN, even=even, error=er_velbin, $
-			er_pa=er_pa, er_q=er_q, er_cf=er_cf, $
+			er_pa=er_pa, er_q=er_q, er_cf=er_cf, $;cover=0.05,$
 			plot='/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg'
 
 			;  ERROR=er_velbin, , $;/verbose, $
@@ -172,6 +169,7 @@ pro use_kinemetry
 ;	gal = 'eso443-g024'
 	gals=['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', $
 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
+	; gals=['ngc0612']
 	for i=0,9 do begin
 		gal=gals[i]
 
