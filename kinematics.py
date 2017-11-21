@@ -15,6 +15,7 @@ from checkcomp import checkcomp
 from classify import get_R_e
 cc = checkcomp()
 import cPickle as pickle
+from sav_for_kinemetry import find_mask
 
 #----------------------------------------------------------------------
 def spxToKpc(x, z):
@@ -52,9 +53,11 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 		x0, y0 = int(d[1][i_gal + 1]), int(d[2][i_gal + 1])
 
 	if os.path.exists(galaxiesFile2):
-		lambda_Re_gals, ellip_gals, pa_gals, star_kine_pa_gals, \
-			gas_kine_pa_gals = np.loadtxt(galaxiesFile2, unpack=True, 
-			skiprows=1, usecols=(1,2,3,4,5))
+		lambda_Re_gals, ellip_gals, pa_gals, e_pa_gals, \
+			star_kine_pa_gals, e_star_kine_pa_gals, \
+			gas_kine_pa_gals, e_gas_kine_pa_gals = np.loadtxt(
+			galaxiesFile2, unpack=True, skiprows=1, 
+			usecols=(1,2,3,4,5,6,7,8))
 		galaxy_gals2 = np.loadtxt(galaxiesFile2, skiprows=1, 
 			usecols=(0,), dtype=str)
 		i_gal2 = np.where(galaxy_gals2 == galaxy)[0]
@@ -64,8 +67,11 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 			lambda_Re_gals = np.append(lambda_Re_gals, np.nan)
 			ellip_gals = np.append(ellip_gals, np.nan)
 			pa_gals = np.append(pa_gals, np.nan)
+			e_pa_gals = np.append(e_pa_gals, np.nan)
 			star_kine_pa_gals = np.append(star_kine_pa_gals, np.nan)
+			e_star_kine_pa_gals = np.append(e_star_kine_pa_gals, np.nan)
 			gas_kine_pa_gals = np.append(gas_kine_pa_gals, np.nan)
+			e_gas_kine_pa_gals = np.append(e_gas_kine_pa_gals, np.nan)
 		else: i_gal2 = i_gal2[0]
 		if type(lambda_Re_gals) is np.float64:
 			i_gal2 = 0
@@ -73,15 +79,21 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 			lambda_Re_gals = np.array([lambda_Re_gals])
 			ellip_gals = np.array([ellip_gals])
 			pa_gals = np.array([pa_gals])
+			e_pa_gals = np.array([e_pa_gals])
 			star_kine_pa_gals = np.array([star_kine_pa_gals])
+			e_star_kine_pa_gals = np.array([e_star_kine_pa_gals])
 			gas_kine_pa_gals = np.array([gas_kine_pa_gals])
+			e_gas_kine_pa_gals = np.array([e_gas_kine_pa_gals])
 	else:
 		galaxy_gals2 = np.array([galaxy])
 		lambda_Re_gals = np.array([np.nan])
 		ellip_gals = np.array([np.nan])
 		pa_gals = np.array([np.nan])
+		e_pa_gals = np.array([np.nan])
 		star_kine_pa_gals = np.array([np.nan])
+		e_star_kine_pa_gals = np.array([np.nan])
 		gas_kine_pa_gals = np.array([np.nan])
+		e_gas_kine_pa_gals = np.array([np.nan])
 		i_gal2 = 0
 
 	R_e = get_R_e(galaxy)
@@ -134,11 +146,18 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 		fill_value=(0, ellip[-1]))(R_e)
 	pa_gals[i_gal2] = interp1d(R_m, pa_r, bounds_error=False, 
 		fill_value=(0, pa_r[-1]))(R_e)
+	e_pa_gals[i_gal2] = interp1d(R_m, e_pa_r, bounds_error=False, 
+		fill_value=(0, e_pa_r[-1]))(R_e)
 # ------------================ Lambda_R ==================----------
+	m = find_mask(galaxy, instrument, D)
+
 	vel = D.components['stellar'].plot['vel']
 	sigma = D.components['stellar'].plot['sigma']
 
-	R = np.sqrt((D.xBar - x0)**2 + (D.yBar - y0)**2)* res
+	vel[~m] = np.nan
+	sigma[~m] = np.nan
+
+	R = np.sqrt((D.xBar - x0)**2 + (D.yBar - y0)**2) * res
 
 	lambda_R = np.zeros(len(R_m))
 
@@ -181,11 +200,10 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 	if plots: 
 		plt.show()
 # # ------------========= Stellar Kinematics ===============----------
-# 	save_to = "%s/plots/stellar_kinematics.png" % (output)
-# 	k = fit_kinematic_pa(D.xBar - f.xpeak, D.yBar - f.ypeak, 
-# 		np.array(D.components['stellar'].plot['vel']), quiet=True, 
-# 		plot=plots, sav_fig=save_to)
-# 	star_kine_pa_gals[i_gal2] = k[0]
+	save_to = "%s/plots/stellar_kinematics.png" % (output)
+	star_kine_pa_gals[i_gal2], e_star_kine_pa_gals[i_gal2], vSyst = \
+		fit_kinematic_pa(D.xBar-x0, D.yBar-y0, vel, quiet=True, 
+		dvel=vel.uncert, plot=plots, sav_fig=save_to, vSyst=0)
 # # ------------=========== Gas Kinematics =================----------
 # # NB: this is not written for gas=2 or gas=3 options. 
 # 	if D.gas == 1:
@@ -195,17 +213,21 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 # 			plot=plots, sav_fig=save_to)
 # 		gas_kine_pa_gals[i_gal2] = kgas[0]
 # ------------============== Save outputs ================----------
-	template2 = "{0:13}{1:9}{2:13}{3:13}{4:17}{5:8}\n" 
+	template2 = "{0:13}{1:9}{2:13}{3:9}{4:8}{5:17}{6:8}{7:8}{8:8}\n" 
 	with open(galaxiesFile2, 'wb') as f2:
 	# f2 = open('/Data/vimos/analysis/test.txt', 'wb')
 		f2.write(template2.format('Galaxy', 'Lambda_R', 'Ellipticity', 
-			'PA (deg)', 'kine_pa: Stellar', 'Gas'))
+			'PA (deg)', 'e_PA', 'kine_pa: Stellar', 'e_star', 'Gas', 
+			'e_gas'))
 		for i in range(len(galaxy_gals2)):
 			f2.write(template2.format(galaxy_gals2[i], 
 				str(round(lambda_Re_gals[i],3)), 
 				str(round(ellip_gals[i],3)), str(round(pa_gals[i],3)), 
+				str(round(e_pa_gals[i],3)), 
 				str(round(star_kine_pa_gals[i],3)), 
-				str(gas_kine_pa_gals[i])))
+				str(round(e_star_kine_pa_gals[i],3)), 
+				str(round(gas_kine_pa_gals[i],3)), 
+				str(round(e_gas_kine_pa_gals[i],3))))
 
 	return D
 
@@ -214,7 +236,7 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 # Use of kinematics.py
 
 if __name__ == '__main__':
-	galaxy = 'ngc0612'
+	galaxy = 'pks0718-34'
 	discard = 0
 
 	kinematics(galaxy, discard=discard, plots=False)

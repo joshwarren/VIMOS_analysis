@@ -202,7 +202,8 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={},
 
 		axs['Mg_sigma'].set_xlabel(r'log $\sigma$ [km s$^{-1}$]')
 		axs['Mg_sigma'].set_ylabel(r'Mg$_b \, \AA$')
-		axs['Mg_sigma'].set_ylim([0.9*min(mg), 1.1*max(mg)])
+		if galaxy not in ['pks0718-34', 'ngc0612']:
+			axs['Mg_sigma'].set_ylim([0.9*min(mg), 1.1*max(mg)])
 		axs['Mg_sigma'].set_xlim(np.log10(200), np.log10(350))
 		figs['Mg_sigma'].savefig('%s/Mg_sigma.png' % (out_plots))
 		plt.close(figs['Mg_sigma'])
@@ -217,7 +218,7 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={},
 		e_grad_gals[i_gal] = str(round(e_grad, 3))
 
 		with open(grad_file, 'w') as f:
-			temp = "{0:12}{1:8}{2:8}\n"
+			temp = "{0:12}{1:15}{2:15}\n"
 			for i in range(len(galaxy_gals)):
 				f.write(temp.format(galaxy_gals[i], grad_gals[i], 
 					e_grad_gals[i]))

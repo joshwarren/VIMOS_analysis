@@ -17,6 +17,18 @@ import cPickle as pickle
 
 opt = 'kin'
 
+def label(galaxy):
+	if 'ic' in galaxy:
+		return 'IC ' + galaxy[2:]
+	elif galaxy == 'ngc0612':
+		return 'NGC 612'
+	elif 'ngc' in galaxy:
+		return 'NGC ' + galaxy[3:]
+	elif galaxy == 'pks0718-34':
+		return 'PKS 718-34'
+	elif galaxy == 'eso443-g024':
+		return 'ESO 443-G24'
+
 def plot_lambda_R():
 	fig, ax = plt.subplots()
 	FR = ['ic1531', 'ngc0612', 'ngc1316', 'ngc3100', 'ngc3557', 
@@ -40,8 +52,9 @@ def plot_lambda_R():
 			ax.plot(r, lam_R, 'r')
 		else:
 			ax.plot(r, lam_R, 'r--')
-		ax.text(r[-1], lam_R[-1], galaxy.upper(), color='r', 
-			va='center', size='x-small')
+
+		ax.text(r[-1], lam_R[-1], label(galaxy), color='r', 
+			ha='center', va='bottom', size='x-small')
 
 	for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 		lam_R_file = '%s/Data/muse/analysis/%s/%s/lambda_R.txt' % (
@@ -53,8 +66,13 @@ def plot_lambda_R():
 			ax.plot(r, lam_R, 'b')
 		else:
 			ax.plot(r, lam_R, 'b--')
-		ax.text(r[-1], lam_R[-1], galaxy.upper(), color='b', 
-			va='center', size='x-small')
+
+		if galaxy == 'ngc1399':
+			va = 'top'
+		else: 
+			va='bottom'
+		ax.text(r[-1], lam_R[-1], label(galaxy), color='b', 
+			ha='center', va=va, size='x-small')
 
 	ax.set_xlabel(r'Radius (R$_e$)')
 	ax.set_ylabel(r'$\lambda_R$')
