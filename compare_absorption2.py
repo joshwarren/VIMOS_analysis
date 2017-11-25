@@ -84,6 +84,7 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 	my_values = {}
 	my_errors = {}
 	sigma = np.array([])
+	R_s = np.array([])
 	t=[]
 	e=[]
 	g=[]
@@ -91,9 +92,10 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 	j=[]
 	r=[]
 	w=[]
+	y=[]
 	for a in apertures:
 		params = set_params(reps=0, opt='pop', gas=1, lines=corr_lines, 
-			produce_plot=False)
+			produce_plot=False, res=8.4)
 
 		mask = np.sqrt(index[:,:,0]**2 + index[:,:,1]**2) * header['CDELT3'] < a
 
@@ -146,14 +148,15 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 		if R_sig:
 			if isinstance(R_sig, bool):
 				absorp, uncert = get_absorption(lines, pp=pp, sigma=R_sigma(a),
-					instrument='vimos')
+					instrument='vimos', res=8.4)
 				sigma = np.append(sigma, R_sigma(a))
 			else:
 				absorp, uncert = get_absorption(lines, pp=pp, instrument='vimos',
-					sigma=R_sigma(a)+R_sig*(pp.sol[0][1]-R_sigma(a)))
+					sigma=R_sigma(a)+R_sig*(pp.sol[0][1]-R_sigma(a)), res=8.4)
 				sigma = np.append(sigma, R_sigma(a)+R_sig*(pp.sol[0][1]-R_sigma(a)))
 		else:
-			absorp, uncert = get_absorption(lines, pp=pp, instrument='vimos')
+			absorp, uncert = get_absorption(lines, pp=pp, instrument='vimos', 
+				res=8.4)
 			sigma = np.append(sigma, pp.sol[0][1])
 
 		for l in lines:
@@ -165,6 +168,8 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 		
 		for i, l in enumerate(lines):
 			ax.errorbar(a, absorp[l], yerr=uncert[l], color=color[i], fmt='x')
+
+		R_s = np.append(R_s, R_sigma(a))
 	for i, l in enumerate(lines):
 	  ax.errorbar(np.nan, np.nan, color=color[i], fmt='x', label=l)
 	ax.legend(facecolor='w')
@@ -191,7 +196,7 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 
 		order = np.argsort(apertures)
 
-		lit_value = Lick_to_LIS(l, R_obs[mask][order])
+		lit_value = Lick_to_LIS(l, R_obs[mask][order], res=8.4)
 		err = np.mean([np.abs(Lick_to_LIS(l, R_obs[mask][order] + 
 			R_err[mask][order]) - Lick_to_LIS(l, R_obs[mask][order])), 
 			np.abs(Lick_to_LIS(l, R_obs[mask][order] - R_err[mask][order]) -
@@ -235,6 +240,7 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 		e.extend(my_errors[l][order])
 		r.extend([lines[i]]*len(sigma))
 		w.extend(4*apertures[order]**2)
+		y.extend(R_s)
 
 
 	ax.set_ylabel(r'Index strength, $\AA$')
@@ -261,7 +267,7 @@ def compare_absortion(galaxy, R_sig=False, corr_lines='all'):
 	plt.close(fig4)
 
 
-	return t, g, h, j, e, r, w
+	return t, g, h, j, e, r, w, y
 
 if __name__=='__main__':
 	lines = ['G4300', 'Fe4383', 'Ca4455', 'Fe4531', 'H_beta', 'Fe5015', 'Mg_b']
@@ -277,8 +283,9 @@ if __name__=='__main__':
 	r2 = []
 	z2 = []
 	p2 = []
+	y2 = []
 	for gal in ['ic1459','ic4296','ngc3557']:
-		s, f, g, h, j, r, z = compare_absortion(gal, 
+		s, f, g, h, j, r, z, y = compare_absortion(gal, 
 			corr_lines = ['Hbeta','[OIII]5007d'])
 		s2.extend(s) # sigma
 		f2.extend(f) # my_values
@@ -288,6 +295,7 @@ if __name__=='__main__':
 		r2.extend(r) # index
 		z2.extend(z) # apature size
 		p2.extend([gal]*len(s)) # galaxy name
+		y2.extend(y) # Ramp sig
 
 
 
@@ -299,32 +307,40 @@ if __name__=='__main__':
 	r2=np.array(r2)
 	z2=np.array(z2)
 	p2=np.array(p2)
+	y2=np.array(y2)
 
 	fig, ax=plt.subplots(subplot_kw={'aspect':'equal'})
 
 	for i in range(len(np.unique(r2))):
 		for gal in ['ic1459','ic4296','ngc3557']:
 			m = (r2 == np.unique(r2)[i]) * (p2 == gal)
-			params = np.polyfit(f2[m], g2[m], 1, 
-				w=1/np.sqrt(j2[m]**2 + h2[m]**2))
 			i_gal = np.where(np.array(lines) == np.unique(r2)[i])[0][0]
 			if gal == 'ic1459':
 				ax.errorbar(f2[m], g2[m], xerr=j2[m], yerr=h2[m], fmt='x', 
 					label=np.unique(r2)[i], color=color[i_gal])
-			else:
+			elif gal == 'ic4296':
 				ax.errorbar(f2[m], g2[m], xerr=j2[m], yerr=h2[m], fmt='o', 
+					color=color[i_gal])
+			else:
+				ax.errorbar(f2[m], g2[m], xerr=j2[m], yerr=h2[m], fmt='.', 
 					color=color[i_gal])
 	for i in range(len(np.unique(r2))):
 			m = (r2 == np.unique(r2)[i])
-			params = np.polyfit(f2[m], g2[m], 1, 
-				w=1/np.sqrt(j2[m]**2 + h2[m]**2))
 			print np.unique(r2)[i], 'Offset:', np.mean(f2[m] - g2[m]), \
-				'dispersion:', np.std(f2[m] - g2[m])
+				'dispersion:', np.std(f2[m] - g2[m]),'A'
+			print np.unique(r2)[i], 'Fractional Offset:', \
+				np.mean((f2[m] - g2[m])/f2[m]), \
+				'Fractionaldispersion:', np.std((f2[m] - g2[m])/f2[m])
+	print 'Average sigma difference:', np.mean(np.abs(y2 - s2))
+	print 'Number of points with higher than Rampazzo sigma:', np.sum((s2-y2)>0),\
+		'/',len(s2)
 
 	ax.plot([1,7],[1,7],'k')
 	ax.legend(facecolor='w')
 	ax.set_xlabel(r'Mine values $\AA$')
 	ax.set_ylabel(r'Rampazzo values $\AA$')
+	lim = ax.get_xlim()
+	ax.set_xlim(max(0, lim[0]), lim[1])
 	fig.savefig('%s/Data/lit_absorption/comparison_to_Rampazzo_vimos.png' % (
 		cc.base_dir))
 

@@ -29,8 +29,8 @@ def find_mask(galaxy, instrument, D):
 			D.yBar - center[1] - star_center[1])**2) >= size
 
 	if galaxy == 'pks0718-34':
-		size = 1.5/0.67
-		star_center = np.array([1, 9])/0.67
+		size = 3/0.67
+		star_center = np.array([1, 10])/0.67
 		m = np.sqrt((D.xBar - center[0] - star_center[0])**2 + (
 			D.yBar - center[1] - star_center[1])**2) >= size
 

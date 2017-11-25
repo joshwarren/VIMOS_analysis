@@ -59,6 +59,16 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		raise ValueError('If galaxy is supplied, so to must bin and opt')
 
 	if pp is None:
+		if res is not None:
+			if instrument == 'vimos':
+				instr_res = 3 # A (FWHM)
+			elif instrument == 'muse':
+				instr_res = 2.3 # A (FWHM)
+			elif instrument == 'sauron':
+				instr_res = 4.2 # A (FWHM)
+			elif instrument is None:
+				raise ValueError('If keyword res is set, so too must the '+
+					'instrument keyword')
 		vin_dir = get_vin_dir(instrument)
 		vin_dir_gasMC = "%s/%s/%s/MC" % (vin_dir, galaxy, opt)
 	
@@ -104,6 +114,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		e_temps = pp.templatesToUse[e_lines]
 
 		library = pp.params.library
+		instr_res = pp.FWHM_gal
 
 	e_line_spec = np.einsum('ij,i->ij',e_line_spec,temp_weights[e_lines])
 
@@ -141,12 +152,12 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 					(np.log(lam) < np.log(5200) + 300/c)]) < 4:
 
 					e_line_spec[e_temps=='[NI]d',:] = 0
-				else:
-					print '[NI] detected'
 	else:
 		e_line_spec[:,:] = 0
 
-	e_line_spec = np.sum(e_line_spec, axis=0)
+	e_line_spec = np.sum(e_line_spec, axis=0) 
+	e_line_spec *= np.polynomial.legendre.legval(
+			np.linspace(-1,1,len(e_line_spec)), np.append(1, mpweight))
 	continuum = spectrum - e_line_spec
 
 	if library == 'Miles':
@@ -189,26 +200,13 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 		CDELT = f[0].header['CDELT1']
 		f.close()
 
-	# Convolve to required velocity dispersion
-	if sigma is not None:
-		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
-		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
-	else:
-		# bestfit is already convolved to velocty dispersion
-		convolved = bestfit - e_line_spec
+	sig_pix = np.sqrt(instr_res**2 - temp_res**2) / 2.355 \
+		/ np.median(np.diff(unconvolved_lam))
+	unconvolved_spectrum = gaussian_filter1d(unconvolved_spectrum, 
+		sig_pix)
 
 	# Continuum need be brought require resolution
 	if res is not None:
-		if instrument == 'vimos':
-			instr_res = 3 # A (FWHM)
-		elif instrument == 'muse':
-			instr_res = 2.3 # A (FWHM)
-		elif instrument == 'sauron':
-			instr_res = 4.2
-		elif instrument is None:
-			raise ValueError('If keyword res is set, so too must the '+
-				'instrument keyword')
-
 		if instr_res > res:
 			import warnings
 			warnings.warn('get_absorption cannot increase the ' +
@@ -218,26 +216,33 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 			sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
 				/ np.median(np.diff(lam))
 			continuum = gaussian_filter1d(continuum, sig_pix)
+			convolved = gaussian_filter1d(bestfit - e_line_spec, sig_pix)
+
+	# Convolve to required velocity dispersion
+	if sigma is not None:
+		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
+		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
+
 
 
 	# unc_spec and conv_spec need to be the same resolution
 	# unc_spec is at temp_res
-		conv_res = max((instr_res, temp_res))
-	else:
-		conv_res = temp_res
-	if conv_res < temp_res:
-		if sigma is None:
-			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
-				/ np.median(np.diff(lam))
-		else:
-			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
-				/ np.median(np.diff(unconvolved_lam))
-		convolved = gaussian_filter1d(convolved, sig_pix)
-	elif conv_res > temp_res:
-		sig_pix = np.sqrt(conv_res**2 - temp_res**2) / 2.355 \
-			/ np.median(np.diff(unconvolved_lam))
-		unconvolved_spectrum = gaussian_filter1d(unconvolved_spectrum, 
-			sig_pix)
+	# 	conv_res = max((instr_res, temp_res))
+	# else:
+	# 	conv_res = temp_res
+	# if conv_res < temp_res:
+	# 	if sigma is None:
+	# 		sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+	# 			/ np.median(np.diff(lam))
+	# 	else:
+	# 		sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+	# 			/ np.median(np.diff(unconvolved_lam))
+	# 	convolved = gaussian_filter1d(convolved, sig_pix)
+	# elif conv_res > temp_res:
+	# 	sig_pix = np.sqrt(conv_res**2 - temp_res**2) / 2.355 \
+	# 		/ np.median(np.diff(unconvolved_lam))
+	# 	unconvolved_spectrum = gaussian_filter1d(unconvolved_spectrum, 
+	# 		sig_pix)
 
 	ab_lines = {}
 	uncerts = {}
@@ -359,7 +364,6 @@ class population(object):
 			self.alpha = np.nanmean(self.samples[:,2])
 			self.unc_alp = np.nanstd(self.samples[:,2])
 		elif method == 'mostlikely':
-			print min(self.samples[:,0]), max(self.samples[:,0])
 			hist = np.histogram(self.samples[:,0], bins=40)
 			x = (hist[1][0:-1]+hist[1][1:])/2
 			hist = hist[0]

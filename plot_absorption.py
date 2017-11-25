@@ -59,10 +59,14 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={},
 	fig,ax =plt.subplots()
 	figs['Mg_sigma'] = fig
 	axs['Mg_sigma'] = ax
+	# mins = {}
+	# maxs = {}
 	for line in lines:
 		fig,ax =plt.subplots()
 		figs[line] = fig
 		axs[line] = ax
+		# mins[line] = 1000
+		# maxs[line] = -1000
 	if gradient !='only':
 		for i, line in enumerate(lines):
 			print "    " + line
@@ -169,6 +173,8 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={},
 			for line in lines:
 				axs[line].errorbar(a, absorp[line], yerr=uncert[line], c='r',
 					fmt='.')
+				# mins[line] = min(mins[line], absorp[line])
+				# maxs[line] = max(maxs[line], absorp[line])
 			axs['Mg_sigma'].errorbar(np.log10(pp.sol[0][1]), absorp['Mg_b'], 
 				xerr=np.std(pp.MCstellar_kin[:,1])/pp.sol[0][1]/np.log(10), 
 				yerr=uncert['Mg_b'], c='r', fmt='.')
@@ -180,6 +186,8 @@ def plot_absorption(galaxy, D=None, uncert=True, opt='pop', overplot={},
 				np.std(pp.MCstellar_kin[:,1])/pp.sol[0][1]/np.log(10))
 
 		for line in lines:
+			# axs[line].set_ylim(0.9*mins[line], 1.1*maxs[line])
+			axs[line].set_ylim(0,9)
 			axs[line].set_xlabel('Radius')
 			axs[line].set_ylabel(r'Index \AA')
 			figs[line].savefig('%s/%s_grad.png' %(out_plots, line))

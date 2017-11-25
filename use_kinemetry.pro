@@ -26,7 +26,7 @@ PRO do_work, gal, opt, type
 	x0 = float(x0[i_gal[0]])
 	y0 = float(y0[i_gal[0]])
 
-	badpix = where(velbin eq 9999)
+	goodpix = where(velbin ne 9999)
 
 
 	b = uniq(bin_num,sort(bin_num))
@@ -38,6 +38,51 @@ PRO do_work, gal, opt, type
 	; y_cent = max(ybin)/2
 	xbin = xbin - x0
 	ybin = ybin - y0
+
+	xbin = xbin[goodpix]
+	ybin = ybin[goodpix]
+	velbin = velbin[goodpix]
+	er_velbin = er_velbin[goodpix]
+
+	; nor = median(velbin)
+	; velbin = velbin / nor
+	; er_velbin = er_velbin / nor
+
+	; cube = readfits('/Data/vimos/cubes/'+gal+'.cube.combined.corr.fits', EXTEN=3)
+	; bad_pix = total(cube, 3)
+
+
+
+	; cube = readfits('/Data/vimos/cubes/'+gal+'.cube.combined.corr.fits', EXTEN=0)
+	; img = total(cube, 3)
+	; badpix = where(finite(img, /NAN))
+	; img[badpix]=0
+	; cube = readfits('/Data/vimos/cubes/'+gal+'.cube.combined.corr.fits', EXTEN=1)
+	; er_velbin = sqrt(total(cube^2, 3))
+	; er_velbin[badpix] = 0
+
+	; ; nor = median(img)
+	; ; img = img / nor
+	; ; er_velbin = er_velbin / nor
+
+	; ; er_velbin= sqrt(img)
+	; ; w=where(finite(er_velbin, /NAN))
+	; ; er_velbin[w]=median(img)
+
+	; s = size(img)
+
+	; n=s[1]*s[2]
+	; yy=REPLICATE(1,s[1])#(indgen(s[2]))
+	; xx=(indgen(s[1]))#REPLICATE(1,s[2])
+	; xbin=REFORM(xx, n)
+	; ybin=REFORM(yy, n)
+	; velbin=REFORM(img, n)
+	
+
+
+
+
+
 
 	; NB: gas must be the first 3 characters in type
 	if strcmp(type, 'gas', 3, /FOLD_CASE) then begin
@@ -83,10 +128,19 @@ PRO do_work, gal, opt, type
 		Device, Set_Resolution=[1000,1000], Z_Buffer=0
 		Erase
 		
-		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, $;x0=x0, y0=y0, $
-			ntrm=ntrm, scale=0.67, /FIXCEN, even=even, error=er_velbin, $
-			er_pa=er_pa, er_q=er_q, er_cf=er_cf, $;cover=0.05,$
-			plot='/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg'
+		KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, $; X0=y0, Y0=x0, $
+               ntrm=ntrm, error=er_velbin, scale=0.67, even=even, er_cf=er_cf, $
+               er_pa=er_pa, er_q=er_q, $
+               plot_dir='/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg', $
+                /FIXCEN, badpix=badpix
+
+
+  ;       lksajdas
+
+		; KINEMETRY, xbin, ybin, velbin, rad, pa, q, cf, x0=x0, y0=y0, $
+		; 	 scale=0.67, /FIXCEN, even=even, error=er_velbin, $
+		; 	er_pa=er_pa, er_q=er_q, er_cf=er_cf, img=img, $;cover=0.05,$
+		; 	plot_dir='/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg'
 
 			;  ERROR=er_velbin, , $;/verbose, $
 			; velkin=velkin, velcirc=velcirc, /bmodel, cover=0.05, ;, $
@@ -121,55 +175,55 @@ PRO do_work, gal, opt, type
 
 	endif
 
-	if keyword_set(plot) then begin
-		; plot coeffs.
-		thisDevice = !D.Name
-		Set_Plot, 'Z', /COPY
+	; if keyword_set(plot) then begin
+	; 	; plot coeffs.
+	; 	thisDevice = !D.Name
+	; 	Set_Plot, 'Z', /COPY
 
-		Device, Set_Resolution=[1000,1000], Z_Buffer=0
-		Erase
+	; 	Device, Set_Resolution=[1000,1000], Z_Buffer=0
+	; 	Erase
 		
-		; r = GET_SCREEN_SIZE()
-		; window, 1, xsize=r[0]*0.3, ysize=r[1]*0.8
-		!p.charsize=3
-		!y.style=1
-		if type eq 'stellar_vel' then !p.multi=[0,1,4] else !p.multi=[0,1,3]
-		!Y.MARGIN=[0,0] ; show plots with shared X axis
-		!Y.OMARGIN=[5,3] ; allow for space for the axis labels
-		ploterror, rad, pa, er_pa, PSYM=-5, TITLE=gal, xtickformat = '(A1)', YTITLE='!7C!X!N [degrees]', YRANGE=[min(pa),max(pa)]
-		ploterror, rad, q, er_q, PSYM=-5, YRANGE=[0,1.1], xtickformat = '(A1)', YTITLE='q'
-		ploterror, rad, k1, erk1, PSYM=-5, xtickformat = '(A1)', YTITLE='k1 [km/s]',YRANGE=[0,245]
-		if type eq 'stellar_vel' then begin
-			ploterror, rad, k51, erk51, PSYM=-5, XTITLE='R [arcsec]', YTITLE='k5/k1', YRANGE=[0,0.13]
-		endif
-		!P.MULTI=0
-		!Y.MARGIN=[4,2] ; back to default values
-		!Y.OMARGIN=[0,0]
-		!p.charsize=1
-		; WAIT, 3000000000
+	; 	; r = GET_SCREEN_SIZE()
+	; 	; window, 1, xsize=r[0]*0.3, ysize=r[1]*0.8
+	; 	!p.charsize=3
+	; 	!y.style=1
+	; 	if type eq 'stellar_vel' then !p.multi=[0,1,4] else !p.multi=[0,1,3]
+	; 	!Y.MARGIN=[0,0] ; show plots with shared X axis
+	; 	!Y.OMARGIN=[5,3] ; allow for space for the axis labels
+	; 	ploterror, rad, pa, er_pa, PSYM=-5, TITLE=gal, xtickformat = '(A1)', YTITLE='!7C!X!N [degrees]', YRANGE=[min(pa),max(pa)]
+	; 	ploterror, rad, q, er_q, PSYM=-5, YRANGE=[0,1.1], xtickformat = '(A1)', YTITLE='q'
+	; 	ploterror, rad, k1, erk1, PSYM=-5, xtickformat = '(A1)', YTITLE='k1 [km/s]',YRANGE=[0,245]
+	; 	if type eq 'stellar_vel' then begin
+	; 		ploterror, rad, k51, erk51, PSYM=-5, XTITLE='R [arcsec]', YTITLE='k5/k1', YRANGE=[0,0.13]
+	; 	endif
+	; 	!P.MULTI=0
+	; 	!Y.MARGIN=[4,2] ; back to default values
+	; 	!Y.OMARGIN=[0,0]
+	; 	!p.charsize=1
+	; 	; WAIT, 3000000000
 
 
-		snapshot = TVRD()
-		TVLCT, r, g, b, /Get
-		Device, Z_Buffer=1
-		Set_Plot, thisDevice
+	; 	snapshot = TVRD()
+	; 	TVLCT, r, g, b, /Get
+	; 	Device, Z_Buffer=1
+	; 	Set_Plot, thisDevice
 
-		image24 = BytArr(3, 1000, 1000)
-		image24[0,*,*] = r[snapshot]
-		image24[1,*,*] = g[snapshot]
-		image24[2,*,*] = b[snapshot]
+	; 	image24 = BytArr(3, 1000, 1000)
+	; 	image24[0,*,*] = r[snapshot]
+	; 	image24[1,*,*] = g[snapshot]
+	; 	image24[2,*,*] = b[snapshot]
 
-		Write_JPEG, '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg', image24, True=1, Quality=75
-	endif
+	; 	Write_JPEG, '/Data/vimos/analysis/'+gal+'/'+opt+'/kinemetry/kinemetry_'+type+'.jpeg', image24, True=1, Quality=75
+	; endif
 
 END
 
 
 pro use_kinemetry
-;	gal = 'eso443-g024'
 	gals=['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', $
 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
-	; gals=['ngc0612']
+	; gals=['pks0718-34']
+	; gals=['ic1459']
 	for i=0,9 do begin
 		gal=gals[i]
 

@@ -152,6 +152,8 @@ def kinematics(galaxy, discard=0, opt="kin", plots=False, D=None,
 	m = find_mask(galaxy, instrument, D)
 
 	vel = D.components['stellar'].plot['vel']
+	if instrument == 'muse' and galaxy == 'ngc1399':
+		vel -= 20
 	sigma = D.components['stellar'].plot['sigma']
 
 	vel[~m] = np.nan

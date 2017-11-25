@@ -20,7 +20,7 @@ else:
 # import of matplotlib.pyplot is within errors routine
 from errors2 import run_ppxf, set_params, apply_range, get_dataCubeDirectory
 from classify import get_R_e
-# from sigma_e import in_aperture
+# from sigma_0 import in_aperture
 from pop import get_absorption
 from disk_fit_functions_binned import rebin
 
@@ -63,7 +63,7 @@ def mg_sigma(galaxy, aperture=1.0):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-	params = set_params(reps=10, produce_plot=False, opt='pop')
+	params = set_params(reps=10, produce_plot=False, opt='pop', res=8.4)
 	
 	galaxies = np.array(['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024'])
@@ -119,27 +119,26 @@ def mg_sigma(galaxy, aperture=1.0):
 
 	pp = run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT_spec, 
 		params)
-
-## ----------=============== Find sigma_e  =================---------
-	sigma_e = pp.sol[0][1]
-	unc_sigma_e = np.std(pp.MCstellar_kin[:,1])
+## ----------=============== Find sigma_0  =================---------
+	sigma_0 = pp.sol[0][1]
+	unc_sigma_0 = np.std(pp.MCstellar_kin[:,1])
 
 	if aperture == 'R_e':
 		area = np.sum(frac_in_ap)*header['CDELT1']*header['CDELT2']
 		if area < 0.97 * np.pi * R_e**2:
 			R = np.sqrt(area/np.pi)
 
-			sigma_e = sigma_e * (R_e/R)**-0.066
-			unc_sigma_e = np.sqrt(unc_sigma_e**2 + 
+			sigma_0 = sigma_0 * (R_e/R)**-0.066
+			unc_sigma_0 = np.sqrt(unc_sigma_0**2 + 
 				((R_e/R)**-0.066 * np.log(R_e/R) * 0.035)**2)
 
 # ## ----------============ Find dynamical mass ===============---------
 # 		G = 4.302*10**-6 # kpc (km/s)^2 M_odot^-1 
-# 		M = 5.0 * R_e * sigma_e**2/G
+# 		M = 5.0 * R_e * sigma_0**2/G
 
-	mg, mg_uncert = get_absorption(['Mg_b'], pp=pp, instrument='vimos')
+	mg, mg_uncert = get_absorption(['Mg_b'], pp=pp, instrument='vimos', res=8.4)
 
-	return mg['Mg_b'], mg_uncert['Mg_b'], sigma_e, unc_sigma_e
+	return mg['Mg_b'], mg_uncert['Mg_b'], sigma_0, unc_sigma_0
 
 if __name__=='__main__':
 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
@@ -150,11 +149,12 @@ if __name__=='__main__':
 	s = []
 	u_s = []
 	for g in galaxies:
-		mg, mg_uncert, sigma_e, unc_sigma_e = mg_sigma(g, aperture=4.)
+		print g
+		mg, mg_uncert, sigma_0, unc_sigma_0 = mg_sigma(g, aperture=2.)
 		m = np.append(m, mg)
 		u_m = np.append(u_m, mg_uncert)
-		s = np.append(s, sigma_e)
-		u_s = np.append(u_s, unc_sigma_e)
+		s = np.append(s, sigma_0)
+		u_s = np.append(u_s, unc_sigma_0)
 
 	fig, ax = plt.subplots()
 	ax.errorbar(np.log10(s), m, xerr=u_s/s/np.log(10), yerr=u_m, fmt='.', 

@@ -92,9 +92,9 @@ for galaxy in galaxies:
 		# classify(galaxy, opt='kin'+opt_dir)
 		# use_kinemetry(galaxy, opt='kin'+opt_dir)
 
-		# D = kinematics(galaxy, discard=discard, D=D, 
-		# 	opt='kin'+opt_dir)
-		# plt.close("all")
+		D = kinematics(galaxy, discard=discard, D=D, 
+			opt='kin'+opt_dir)
+		plt.close("all")
 
 		D = None
 		# D = pickler(galaxy, discard=discard, norm=norm, 
@@ -106,21 +106,21 @@ for galaxy in galaxies:
 		# 	norm=norm, D=D, mapping=m, opt='pop'+opt_dir, 
 		# 	show_bin_num=True)
 		# plt.close("all")
-		D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, 
-			uncert=True, overplot={'CO':'c', 'radio':'r'}, 
-			gradient='only')
-		plt.close("all")
-		D = plot_stellar_pop(galaxy, method='mostlikely', D=D, 
-			opt='pop'+opt_dir, overplot={'CO':'c', 'radio':'r'}, 
-			gradient='only')
-		plt.close("all")
-		try:
-			D = BPT(galaxy, D=D, opt='pop'+opt_dir)
-			plt.close("all")
-		except:
-			print 'BPT for %s FAILED' % (galaxy)
-		fit_disk(galaxy, opt='pop'+opt_dir, D=D)
-		plt.close("all")
+		# D = plot_absorption(galaxy, D=D, opt='pop'+opt_dir, 
+		# 	uncert=True, overplot={'CO':'c', 'radio':'r'}, 
+		# 	gradient='only')
+		# plt.close("all")
+		# D = plot_stellar_pop(galaxy, method='mostlikely', D=D, 
+		# 	opt='pop'+opt_dir, overplot={'CO':'c', 'radio':'r'}, 
+		# 	gradient='only')
+		# plt.close("all")
+		# try:
+		# 	D = BPT(galaxy, D=D, opt='pop'+opt_dir)
+		# 	plt.close("all")
+		# except:
+		# 	print 'BPT for %s FAILED' % (galaxy)
+		# fit_disk(galaxy, opt='pop'+opt_dir, D=D)
+		# plt.close("all")
 	except Exception as e:
 		gal_err.append(galaxy)
 		err.append(e)

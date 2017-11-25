@@ -45,7 +45,8 @@ class set_params(object):
 		start 			= 	None,
 		discard			= 	0,
 		library 		=	'Miles',
-		use_all_temp 	= 	False
+		use_all_temp 	= 	False,
+		res 			=	None
 		):
 		if reps > 0 and reps < 4: raise ValueError('Reps must be either 0 or > 3')
 		self.quiet = quiet # True
@@ -69,6 +70,7 @@ class set_params(object):
 		self.opt = opt
 		self.library = library
 		self.use_all_temp = use_all_temp
+		self.res = res
 
 	@property
 	def opt(self):
@@ -870,8 +872,8 @@ def errors2(i_gal=None, opt=None, bin=None):
 ## ----------=============== Run analysis  =================---------
 ## ----------===============================================---------
 class run_ppxf(ppxf):
-	def __init__(self, galaxy_name, bin_lin, bin_lin_noise, lamRange, CDELT, params, 
-		z=0.):
+	def __init__(self, galaxy_name, bin_lin, bin_lin_noise, lamRange, 
+		CDELT, params, z=0.):
 
 		self.galaxy_name = galaxy_name
 		self.bin_lin = bin_lin
@@ -885,11 +887,13 @@ class run_ppxf(ppxf):
 			if cc.device == 'glamdring':
 				data_file = "%s/analysis/galaxies.txt" % (cc.base_dir)
 			else:
-				data_file = "%s/Data/vimos/analysis/galaxies.txt" % (cc.base_dir)
+				data_file = "%s/Data/vimos/analysis/galaxies.txt" % (
+					cc.base_dir)
 			# different data types need to be read separetly
-			z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, skiprows=1, 
-				usecols=(1,2,3))
-			galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),dtype=str)
+			z_gals, vel_gals, sig_gals = np.loadtxt(data_file, unpack=True, 
+				skiprows=1, usecols=(1,2,3))
+			galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),
+				dtype=str)
 			i_gal = np.where(galaxy_gals==galaxy_name)[0][0]
 			self.vel = vel_gals[i_gal]
 			self.sig = sig_gals[i_gal]
@@ -901,6 +905,14 @@ class run_ppxf(ppxf):
 
 		self.lamRange = self.lamRange/(1 + self.z)
 		self.FWHM_gal = self.params.FWHM_gal/(1 + self.z) # Adjust resolution in Angstrom
+		if self.params.res is not None:
+			res = self.params.res/(1 + self.z)
+			FWHM_dif = res - self.FWHM_gal
+			sigma = FWHM_dif/2.355/self.CDELT # Change in px
+			self.bin_lin = ndimage.gaussian_filter1d(self.bin_lin, sigma)
+			self.bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(
+				self.bin_lin_noise**2, sigma))
+			self.FWHM_gal = res
 
 		self.rebin()
 		self.load_stellar_templates()
