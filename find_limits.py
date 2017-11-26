@@ -138,7 +138,7 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		NI = []
 		e_NI = []
 		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
-		for galaxy in ['ic1459', 'ngc1316']:
+		for galaxy in ['ngc1316', 'ic1459']:
 			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
 				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
 			D = pickle.load(pickleFile)
@@ -146,35 +146,50 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 
 			if 'Hbeta' in D.components.keys() and 'Halpha' in \
 				D.components.keys():
-				bd = D.components['Halpha'].flux/D.components['Hbeta'].flux
-				e_bd = np.sqrt((D.components['Halpha'].flux.uncert/
-					D.components['Halpha'].flux)**2 + 
-					(D.components['Hbeta'].flux.uncert/
-					D.components['Hbeta'].flux))
+
+				Ha = D.components['Halpha'].flux
+				Hb = D.components['Hbeta'].flux
+				
+				bd = Ha/Hb	
+				e_bd = bd * np.sqrt((Ha.uncert / Ha)**2 + (Hb.uncert / Hb)**2)
+
 				dust_grad = bd/2.86/(6563 - 4861) # Flux per A
 				e_dust_grad = e_bd/2.86/(6563 - 4861)
 
 				if '[NII]6583d' in D.components.keys() and '[NI]d' in \
 					D.components.keys():
-					NI_gal = D.components['[NI]d'].flux * dust_grad*\
-						(6563 - 5200)
-					e_NI_gal = (6563 - 5200) * np.sqrt(e_dust_grad**2 
-						+ (D.components['[NI]d'].flux.uncert
-						/ D.components['[NI]d'].flux)**2)
-					ax.errorbar(NI_gal, D.components['[NII]6583d'].flux, 
-						yerr = D.components['[NII]6583d'].flux.uncert,
+					NI_gal = D.components['[NI]d'].flux 
+
+					e_NI_gal = np.sqrt((e_dust_grad / dust_grad)**2 
+						+ (NI_gal.uncert / NI_gal)**2)
+
+					NI_gal *= dust_grad * (6563 - 5200)
+					e_NI_gal *= NI_gal
+
+					NII_gal = D.components['[NII]6583d'].flux
+					ax.errorbar(NI_gal, NII_gal, yerr = NII_gal.uncert,
 						xerr = e_NI_gal, fmt='.', label=galaxy)
 
-					NII.extend(D.components['[NII]6583d'].flux)
-					e_NII.extend(D.components['[NII]6583d'].flux.uncert)
+					NII.extend(NII_gal)
+					e_NII.extend(NII_gal.uncert)
 					NI.extend(NI_gal)
 					e_NI.extend(e_NI_gal)
 
+					if galaxy == 'ngc1316':
+						# xlim = ax.get_xlim()
+						# ylim = ax.get_ylim()
+						xlim = set_lims(NI_gal, symmetric=False, positive=True, 
+							n_std=2.5)
+						ylim = set_lims(NII_gal, symmetric=False, positive=True)
+						axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
+							loc=2)
 
-					print galaxy, np.sum(
-						~np.isnan(NI_gal) * 
-						~np.isnan(D.components['[NII]6583d'].flux)),'/',\
-						D.number_of_bins
+					axins.errorbar(NI_gal, NII_gal, yerr=NII_gal.uncert,
+						xerr=e_NI_gal, fmt='.')
+
+
+					print galaxy, np.sum(~np.isnan(NI_gal) * ~np.isnan(NII_gal)
+						), '/', D.number_of_bins
 
 		NII = np.array(NII)
 		e_NII = np.array(e_NII)
@@ -184,18 +199,47 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		m = ~np.isnan(NII) * ~np.isnan(NI)
 		# params, cov = np.polyfit(NI[m], NII[m], 1, cov=True)
 
-		from scipy import odr
-		data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
-		myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
-		output = myodr.run()
+		from lts_linefit import lts_linefit as lts
+		p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
+			pivot=np.nanmean(NI[m]))
+
+		print 'NII to NI'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+			p.ab[0] - p.ab[1]*np.nanmean(NI[m]), np.sqrt(p.ab_err[0]**2 
+			+ (p.ab_err[1]*np.nanmean(NI[m])) - 2*p.ab_cov[0,1]*np.nanmean(NI[m])))
+
+		print 'Variance matrix:'
+		for a in p.ab_cov[::-1]:
+			print '%.4g    %.4g' % (a[1], a[0])
+
+
+		# data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
+		# myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
+		# output = myodr.run()
 
 		lims = np.array(ax.get_xlim())
-		ax.plot(lims, np.poly1d(output.beta)(lims), 'k')
+		ax_ylim = ax.get_ylim()
 
-		fig.text(0.14,0.84, r'[NII] = (%.3f $\pm$ %.3f) [NI] + (%.3f $\pm$ %.3f)' % (
-			output.beta[0], output.sd_beta[0],
-			output.beta[1], output.sd_beta[1]))
+		# ax.plot(lims, np.poly1d(output.beta)(lims), 'k')
+		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*np.nanmean(NI[m]), 'k')
+
+		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*np.nanmean(NI[m]), 'k')
+
+		# fig.text(0.14,0.84,r'[NII] = (%.3f $\pm$ %.3f) [NI] + (%.3f $\pm$ %.3f)'%(
+		# 	output.beta[0], output.sd_beta[0],
+		# 	output.beta[1], output.sd_beta[1]))
 		ax.legend(facecolor='w', loc=4)
+
+		ax.set_xlim(lims)
+		ax.set_ylim(ax_ylim)
+
+		axins.set_xlim(xlim)
+		axins.set_ylim(ylim)
+		axins.yaxis.set_tick_params(labelright='on', labelleft='off')
+
+		mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
 		fig.savefig('%s/Data/muse/analysis/NII_NI_ratio.png' % (cc.base_dir))
 
@@ -209,8 +253,6 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 		fig, ax = plt.subplots()
 		ax.set_xlabel('[OIII] flux')
 		ax.set_ylabel('[OI] flux')
-		axins = zoomed_inset_axes(ax, 6, loc=1) # zoom = 6
-
 
 		OIII = []
 		OI = []
@@ -218,7 +260,7 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 		e_OI = []
 		n_bins = []
 		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
-		for galaxy in ['ic1459', 'ngc1316']:
+		for galaxy in ['ngc1316', 'ic1459']:
 			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
 				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
 			D = pickle.load(pickleFile)
@@ -226,38 +268,54 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 
 			if 'Hbeta' in D.components.keys() and 'Halpha' in \
 				D.components.keys():
-				bd = D.components['Halpha'].flux/\
-					D.components['Hbeta'].flux
-				e_bd = np.sqrt((D.components['Halpha'].flux.uncert/
-					D.components['Halpha'].flux)**2 + 
-					(D.components['Hbeta'].flux.uncert/
-					D.components['Hbeta'].flux))
+				Ha = D.components['Halpha'].flux
+				Hb = D.components['Hbeta'].flux
+				
+				bd = Ha/Hb	
+				e_bd = bd * np.sqrt((Ha.uncert / Ha)**2 + (Hb.uncert / Hb)**2)
+
 				dust_grad = bd/2.86/(6563 - 4861) # Flux per A
 				e_dust_grad = e_bd/2.86/(6563 - 4861)
 
 				if '[OIII]5007d' in D.components.keys() and \
 					'[OI]6300d' in D.components.keys():
-					OIII_gal = D.components['[OIII]5007d'].flux * \
-						dust_grad * (6300 - 5007)
-					e_OIII_gal = (6300 - 5007) * np.sqrt(e_dust_grad**2 
-						+ (D.components['[OIII]5007d'].flux.uncert
-						/ D.components['[OIII]5007d'].flux)**2)
-					ax.errorbar(OIII_gal, D.components['[OI]6300d'].flux,
-						yerr=D.components['[OI]6300d'].flux.uncert,
+					OIII_gal = D.components['[OIII]5007d'].flux 
+					e_OIII_gal = np.sqrt((e_dust_grad / dust_grad)**2 
+						+ (OIII_gal.uncert / OIII_gal)**2)
+
+					OIII_gal *= dust_grad * (6300 - 5007)
+					e_OIII_gal *= OIII_gal
+
+					OI_gal = D.components['[OI]6300d'].flux
+
+					ax.errorbar(OIII_gal, OI_gal, yerr=OI_gal.uncert, 
 						xerr=e_OIII_gal, fmt='.', label=galaxy)
-					axins.errorbar(OIII_gal, D.components['[OI]6300d'].flux,
-						yerr=D.components['[OI]6300d'].flux.uncert,
+					
+
+					if galaxy == 'ngc1316':
+						# xlim = ax.get_xlim()
+						# ylim = ax.get_ylim()
+						xlim = set_lims(OIII_gal, symmetric=False, positive=True)
+						ylim = set_lims(OI_gal, symmetric=False, positive=True)
+						axins = zoomed_inset_axes(ax, 80000./2.5/np.ptp(ylim), 
+							loc=2)
+						fig2, ax2 = plt.subplots()
+						ax2.errorbar(OIII_gal, OI_gal, yerr=OI_gal.uncert,
+							xerr=e_OIII_gal, fmt='.', label=galaxy)
+						fig2.savefig('ngc1316_OIII_OI.png')
+
+					axins.errorbar(OIII_gal, OI_gal, yerr=OI_gal.uncert,
 						xerr=e_OIII_gal, fmt='.')
+
 
 					OIII.extend(OIII_gal)
 					e_OIII.extend(e_OIII_gal)
-					OI.extend(D.components['[OI]6300d'].flux)
-					e_OI.extend(D.components['[OI]6300d'].flux.uncert)
+					OI.extend(OI_gal)
+					e_OI.extend(OI_gal.uncert)
 
 
-					print galaxy, np.sum(~np.isnan(OIII_gal) * 
-						~np.isnan(D.components['[OI]6300d'].flux)),'/',\
-						D.number_of_bins
+					print galaxy, np.sum(~np.isnan(OIII_gal) * ~np.isnan(OI_gal)
+						), '/', D.number_of_bins
 
 					n_bins.append(D.number_of_bins)
 
@@ -266,36 +324,51 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 		OI = np.array(OI)
 		e_OI = np.array(e_OI)
 
-		axins.set_xlim(set_lims(OIII[n_bins[1]:], symmetric=False, positive=True))
-		axins.set_ylim(set_lims(OI[n_bins[1]:], symmetric=False, positive=True))
-
-		mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+		# axins.set_xlim(set_lims(OIII[n_bins[1]:], symmetric=False, positive=True))
+		# axins.set_ylim(set_lims(OI[n_bins[1]:], symmetric=False, positive=True))
 
 		m = ~np.isnan(OIII) * ~np.isnan(OI)
-		# weighting is assumed to be for y data, so following line is 
-		# not strictly true
-		# params, cov = np.polyfit(OIII[m], OI[m], 2, cov=True,
-		# 	w=1/np.sqrt((e_OI/OI)**2 + (e_OIII/OIII)**2))
-
 
 		from scipy import odr
 		data = odr.RealData(OIII[m], OI[m], sx=e_OIII[m], sy=e_OI[m])
 		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
 		output = myodr.run()
 
+		print 'OI to OIII'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (output.beta[0], 
+			output.sd_beta[0], output.beta[1], output.sd_beta[1], output.beta[2],
+			output.sd_beta[2])
+
+		print 'Variance matrix:'
+		for a in output.cov_beta[::-1]:
+			print '%.4g    %.4g    %.4g' % (a[0], a[1], a[2])
+
 		lims = np.array(ax.get_xlim())
+		ax_ylim = ax.get_ylim()
 		ax.plot(np.linspace(lims[0], lims[1], 100), 
 			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
 			'k')
-		axins.plot(np.linspace(lims[0], lims[1], 100), 
-			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+		axins.plot(np.linspace(xlim[0], xlim[1], 100), 
+			np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
 			'k')
 
-		fig.text(0.14,0.84, r'[OI] = (%.3e $\pm$ %.3e) [OIII]$^2$ + (%.3f $\pm$ %.3f) [OIII] + (%.3f $\pm$ %.3f)' % (
-			output.beta[0], output.sd_beta[0], 
-			output.beta[1], output.sd_beta[1], 
-			output.beta[2], output.sd_beta[2]))
+		# fig.text(0.14,0.84, r'[OI] = (%.3e $\pm$ %.3e) [OIII]$^2$ +' % (
+		# 	output.beta[0], output.sd_beta[0]
+		# 	) + r' (%.3f $\pm$ %.3f) [OIII] + (%.3f $\pm$ %.3f)' % (
+		# 	output.beta[1], output.sd_beta[1], 
+		# 	output.beta[2], output.sd_beta[2]))
 		ax.legend(facecolor='w', loc=4)
+
+		ax.set_xlim(lims)
+		ax.set_ylim(ax_ylim)
+
+		axins.set_xlim(xlim)
+		axins.set_ylim(ylim)
+
+		axins.yaxis.set_tick_params(labelright='on', labelleft='off')
+
+
+		mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
 		fig.savefig('%s/Data/muse/analysis/OIII_OI_ratio.png' % (
 			cc.base_dir))
@@ -373,8 +446,8 @@ if __name__=='__main__':
 
 	elif cc.device == 'uni':
 		instrument = 'muse'
-		# find_ndec()
 		find_odec()
+		find_ndec()
 		# for galaxy in [
 		# 		'ic1459', 
 		# 		'ic4296',
