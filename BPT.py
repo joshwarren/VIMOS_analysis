@@ -17,10 +17,10 @@ from sauron_colormap import sauron
 bd = 2.86 # Bulmer decrement 
 lbd = np.log10(bd)
 
-# nd = 15.8 # grad of bestfit to [NII] vs [NI]
-# lnd = np.log10(nd)
+nd = 8.338 # grad of bestfit to [NII] vs [NI]
+lnd = np.log10(nd)
 def NII_to_NI(v):
-	a = 8.338
+	a = nd
 	b = 2.748e4
 	return (v - b) / a
 
@@ -28,7 +28,7 @@ def log_NII_to_NI(v):
 	return np.log10(NII_to_NI(10**v))
 
 def e_NII_to_NI(v, s_v):
-	a = 8.338
+	a = nd
 	b = 2.748e4
 
 	s_aa = 0.1306 ; s_ab = 429.6
@@ -80,7 +80,7 @@ def e_OI_to_OIII(v, s_v):
 
 	
 
-def add_grids(ax):
+def add_grids(ax, xline, yline, x_Ha=False, y_Ha=False):
 	# Starbursts - No tables in paper
 	d = '%s/models/Dopita_starbursts' % (cc.home_dir)
 	# Z = 0.2,0.4,1,2 solar by q = 0.5,1,2,4,8,15,30 X 10^7 cm/s
@@ -132,8 +132,8 @@ def add_grids(ax):
 	# LINER - from Allen 2008 ApJS 178 20
 	d = '%s/models/Allen_shock_models' % (cc.home_dir)
 	# V_s = 150, 200, 300, 500, 750, 1000 km/s by b = 0.5, 1, 2, 4
-	NI = np.zeros((6,4))
-	OIII = np.zeros((6,4))
+	x = np.zeros((6,4))
+	y = np.zeros((6,4))
 
 	for i, b in enumerate(['0_5', '1', '2', '4']):
 		lines = np.genfromtxt('%s/M_n1_b%s_s_lines.txt' % (d, b), unpack=True, 
@@ -144,17 +144,32 @@ def add_grids(ax):
 		atom, species = np.genfromtxt('%s/M_n1_b%s_s_lines.txt' % (d, b), 
 			unpack=True, usecols=(1,2), dtype=str, skip_footer=1)
 
-		OIII_row = (atom=='O') * (species=='III') * (wav==5006.77)
-		NI_row_a = (atom=='N') * (species=='I') * (wav==5197.82)
-		NI_row_b = (atom=='N') * (species=='I') * (wav==5200.17)
+		if yline == '[OIII]':
+			y_row = (atom=='O') * (species=='III') * (wav==5006.77)
+		if xline == '[NI]':
+			x_row = (atom=='N') * (species=='I') * (wav==5197.82)
+			x_row2 = (atom=='N') * (species=='I') * (wav==5200.17)
+		if xline =='[OI]':
+			x_row = (atom=='O') * (species=='I') * (wav==6300.2)
 
-		OIII[:, i] = lines[:, OIII_row].flatten()
-		NI[:, i] = (lines[:, NI_row_a] + lines[:, NI_row_b]).flatten()
+		x[:, i] = lines[:, x_row].flatten()
+		if x_row2 in locals():
+			x[:, i] += lines[:, x_row2].flatten()
+
+		y[:, i] = lines[:, y_row].flatten()
+		if y_row2 in locals():
+			y[:, i] += lines[:, y_row2].flatten()
+
+		Ha_row = (atom=='H') * (species=='I') * (wav==6562.8)
+		if y_Ha:
+			y[:, i] /= lines[:, Ha_row].flatten()
+		if x_Ha:
+			x[:, i] /= lines[:, Ha_row].flatten()
 
 	for i in range(6):
-		ax.plot(np.log10(NI[i, :]), np.log10(OIII[i, :]), 'g-')
+		ax.plot(np.log10(x[i, :]), np.log10(y[i, :]), 'g-')
 	for i in range(4):
-		ax.plot(np.log10(NI[:, i]), np.log10(OIII[:, i]), 'g:')
+		ax.plot(np.log10(x[:, i]), np.log10(y[:, i]), 'g:')
 
 
 
@@ -191,7 +206,7 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 	# from Atlas3D XXXI (Section 6.2.1)
 	Prefig()
 	fig, ax = plt.subplots()
-	y = np.log10(D.e_line['[OIII]5007d'].flux/D.e_line['Hbeta'].flux)
+	y = np.log10(D.e_line['[OIII]5007d'].flux/1.35/D.e_line['Hbeta'].flux)
 	return_y = np.array(y)
 
 	y_err = np.sqrt((D.e_line['[OIII]5007d'].flux.uncert/
@@ -199,14 +214,14 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 		D.e_line['Hbeta'].flux)**2)/np.log(10)
 
 	large_err = y_err**2 > 1
-	m = ~large_err * (D.e_line['[OIII]5007d'].equiv_width < 0.8)
+	m = ~large_err * (D.e_line['[OIII]5007d'].equiv_width / 1.35 < 0.8)
 	ax.errorbar(D.components['stellar'].plot['sigma'][m], y[m], c='b',
 		xerr = D.components['stellar'].plot['sigma'].uncert[m], yerr=y_err[m], 
 		fmt='.')
 	ax.errorbar(np.nan, np.nan, xerr=np.nan, yerr=np.nan, 
 		label='EW([OIII]) < 0.8')
 
-	m = ~large_err * (D.e_line['[OIII]5007d'].equiv_width >= 0.8)
+	m = ~large_err * (D.e_line['[OIII]5007d'].equiv_width / 1.35 >= 0.8)
 	ax.errorbar(D.components['stellar'].plot['sigma'][m], y[m], c='r',
 		xerr = D.components['stellar'].plot['sigma'].uncert[m], yerr=y_err[m], 
 		fmt='.')
@@ -232,7 +247,7 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 	ax.text(75, -0.23, 'Transition')
 
 	ax.set_xlabel(r'$\sigma_\ast$')
-	ax.set_ylabel(r'log [OIII]d/H$_\beta$')
+	ax.set_ylabel(r'log [OIII]$\lambda$5007/H$\,\beta$')
 	ax.set_title('Mass-excitation (MEx) diagnotics for %s' % (galaxy.upper()))
 	ax.legend(facecolor='w')
 
@@ -260,8 +275,8 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 
 		ax.set_xlim([-2.5, 0.5])
 		ax.set_ylim([-1.5, 1.5])
-		ax.set_xlabel(r'log [NI]d/H$_\beta$')
-		ax.set_ylabel(r'log [OIII]d/H$_\beta$')
+		ax.set_xlabel(r'log [NI]$\lambda\lambda$5197,5200/H$\,\beta$')
+		ax.set_ylabel(r'log [OIII]$\lambda$5007/H$\,\beta$')
 		ax.set_title('SAURON diagnotics for %s' % (galaxy.upper()))
 
 		xlim = ax.get_xlim()
@@ -347,12 +362,12 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 			a.set_xlim(xlim)
 			a.set_ylim(ylim)
 			a.set_ylabel(r'log(EW(H$_\beta$)/$\AA$)')
-			a.set_xlabel(r'log([NI]/H$_\beta$)')
+			a.set_xlabel(r'log [NI]$\lambda\lambda$5197,5200/H$\,\beta$')
 			a.text(-1.9+lbd-lnd,1-lbd,'Star Forming')
 			a.text(-0.35+lbd-lnd,1-lbd,'strong AGN')
 			a.text(-0.35+lbd-lnd,0.55-lbd,'weak AGN')
 			a.text(-1.9+lbd-lnd,0.25-lbd,'Retired Galaxies')
-		fig.suptitle('WHbN1: %s' % (galaxy))
+		# fig.suptitle('WHbN1: %s' % (galaxy))
 
 		fig.savefig('%s/plots/WHbN1.png' % (output))
 		plt.close(fig)

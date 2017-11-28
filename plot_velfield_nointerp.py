@@ -25,10 +25,11 @@
 # label         None    (String) Colorbar label
 # flux          None    (Array) contains binned flux for plotting isophotes. 
 #                           (Not recommended - use flux_unbinned)
-# flux_unbinned None    (Array) contains flux at every spaxel for plotting isophotes. 
+# flux_unbinned None    (Array) contains flux at every spaxel for plotting 
+# 							isophotes. 
 # galaxy        None    (String) of galaxy name for printing on plot (top left)
-# redshift      None    (String) of galaxy redshift for printing on plot (top left)
-#                           and display secondary axis with length scales.
+# redshift      None    (String) of galaxy redshift for printing on plot (top 
+# 							left) and display secondary axis with length scales.
 # nticks        4       (Int) Default number of ticks on colorbar
 # ncolors       64      (Int) Number of color levels in colar chart
 # title         None    (String) of title of the plot
@@ -74,18 +75,20 @@ def add_orientation(pa=0):
 	yr = ylim[1]-ylim[0]
 
 	# East pointing arrow
-	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(pa), 0.1*yr*np.sin(pa), 
-		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', 
-		ec='k')
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], -0.1*xr*np.cos(pa), 
+		0.1*yr*np.sin(pa), length_includes_head=True, head_width=0.02*xr, 
+		head_length=0.03*xr, fc='k', ec='k')
 
 	# North pointing arrow
-	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(pa), 0.1*yr*np.cos(pa), 
-		length_includes_head=True, head_width=0.02*xr, head_length=0.03*xr, fc='k', 
-		ec='k')
+	ax.arrow(0.8*xr+xlim[0], 0.8*yr+ylim[0], 0.1*xr*np.sin(pa), 
+		0.1*yr*np.cos(pa), length_includes_head=True, head_width=0.02*xr, 
+		head_length=0.03*xr, fc='k', ec='k')
 
 
-	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(pa), 0.78*yr+ylim[0]+0.1*yr*np.sin(pa), 'E')
-	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(pa), 0.805*yr+ylim[0]+0.1*yr*np.cos(pa), 'N')
+	ax.text(0.77*xr+xlim[0]-0.1*xr*np.cos(pa), 
+		0.78*yr+ylim[0]+0.1*yr*np.sin(pa), 'E')
+	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(pa), 
+		0.805*yr+ylim[0]+0.1*yr*np.cos(pa), 'N')
 
 
 
@@ -189,9 +192,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
 	xmax = (0 - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
-	xmin = (header['NAXIS1'] - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
+	xmin = (header['NAXIS1'] - header['CRPIX1']) * header['CD1_1'] + \
+		header['CRVAL1']
 	ymin = (0 - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
-	ymax = (header['NAXIS2'] - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
+	ymax = (header['NAXIS2'] - header['CRPIX2']) * header['CD2_2'] + \
+		header['CRVAL2']
 
 	nx = int(round((xmax - xmin)/pixelSize))
 	ny = int(round((ymax - ymin)/pixelSize))
@@ -227,8 +232,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		pic[j, k, 3] = alpha[bin_num]
 
 	# RA increases right to left, thus xmax, xmin,...
-	cs = ax.imshow(np.rot90(pic), interpolation='none', extent=[xmax, xmin, ymin, ymax],
-		clim=[vmin, vmax], cmap=cmap) # clim and cmap supplied for colorbar
+	cs = ax.imshow(np.rot90(pic), interpolation='none', 
+		extent=[xmax, xmin, ymin, ymax], clim=[vmin, vmax], 
+		cmap=cmap) # clim and cmap supplied for colorbar
 	ax.cs = cs
 	
 	if galaxy is not None:
@@ -244,9 +250,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux is not None:
 		# 1 mag contours
-		ax.contour(-2.5*np.log10(flux/np.max(flux)), levels=np.arange(20), colors='k',
-			extent=[xmin, xmax, ymin, ymax], 
-			linewidths=1)
+		ax.contour(-2.5*np.log10(flux/np.max(flux)), levels=np.arange(20), 
+			colors='k', extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
@@ -254,13 +259,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				np.max(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
-				extent=[xmin, xmax, ymin, ymax], linewidths=1)
+				extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
 			cont.collections[0].set_label('Flux (mag)')
 
 
 		else:
 			cont = ax.contour(np.rot90(flux_unbinned[:,::-1]), colors='k', 
-				extent=[xmin, xmax, ymin, ymax], linewidths=1)
+				extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
 			cont.collections[0].set_label('Flux (linear)')
 
 
@@ -269,7 +274,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				markersize=kwargs.get("markersize", 3))
 
 	if show_bin_num and not show_vel:
-		# for i in range(0, len(xBar), max(1, int(np.rint(np.log(len(xBar))))-3)):
+		# for i in range(0,len(xBar),max(1,int(np.rint(np.log(len(xBar))))-3)):
 		# 	ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=4)
 		for i in range(len(xBar)):
 			# number 100 bins only.
@@ -344,7 +349,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if colorbar:	
 		if label:
-			cbar.ax.text(4.0,0.5, label, rotation=270, verticalalignment='center')
+			cbar.ax.text(4.0,0.5, label, rotation=270, 
+				verticalalignment='center')
 			
 		ax.cax = cbar.ax
 	ax.get_yaxis().get_major_formatter().set_useOffset(False)

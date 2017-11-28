@@ -471,7 +471,7 @@ class emission_data(_data):
 			bin.continuum.uncert[np.argmin(np.abs(bin.lam/
 			(1 + bin.components['stellar'].vel) - self.wav))] 
 			for bin in self.__parent__.bin])
-		e.uncert = np.sqrt(e**2 * ((self.flux.uncert/self.flux)**2 + 
+		e.uncert = np.array(e) * np.sqrt(((self.flux.uncert/self.flux)**2 + 
 			(cont_uncert/cont)**2))
 		return e
 

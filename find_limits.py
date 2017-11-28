@@ -11,6 +11,8 @@ from plot_results import set_lims
 from prefig import Prefig
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+from scipy import odr
+from lts_linefit import lts_linefit as lts
 
 
 
@@ -160,10 +162,11 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 					D.components.keys():
 					NI_gal = D.components['[NI]d'].flux 
 
+					e_NI_gal = NI_gal.uncert
 					e_NI_gal = np.sqrt((e_dust_grad / dust_grad)**2 
 						+ (NI_gal.uncert / NI_gal)**2)
 
-					NI_gal *= dust_grad * (6563 - 5200)
+					NI_gal *= dust_grad * (6583 - 5200)
 					e_NI_gal *= NI_gal
 
 					NII_gal = D.components['[NII]6583d'].flux
@@ -176,11 +179,11 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 					e_NI.extend(e_NI_gal)
 
 					if galaxy == 'ngc1316':
-						# xlim = ax.get_xlim()
-						# ylim = ax.get_ylim()
-						xlim = set_lims(NI_gal, symmetric=False, positive=True, 
-							n_std=2.5)
-						ylim = set_lims(NII_gal, symmetric=False, positive=True)
+						xlim = ax.get_xlim()
+						ylim = ax.get_ylim()
+						# xlim = set_lims(NI_gal, symmetric=False, positive=True, 
+						# 	n_std=2.5)
+						# ylim = set_lims(NII_gal, symmetric=False, positive=True)
 						axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
 							loc=2)
 
@@ -191,6 +194,28 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 					print galaxy, np.sum(~np.isnan(NI_gal) * ~np.isnan(NII_gal)
 						), '/', D.number_of_bins
 
+
+					# m = ~np.isnan(NII_gal) * ~np.isnan(NI_gal)
+
+					# pivot=np.nanmean(NI_gal[m])
+					# p = lts(NI_gal[m], NII_gal[m], e_NI_gal[m], 
+					# 	NII_gal.uncert[m], pivot=pivot)
+
+					# print 'NII to NI (lts)'
+					# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], 
+					# 	p.ab_err[1], p.ab[0] - p.ab[1]*pivot, 
+					# 	np.sqrt(p.ab_err[0]**2 + (p.ab_err[1]*pivot)**2 - 
+					# 		2*p.ab_cov[0,1]*pivot))
+
+					# lims = np.array(ax.get_xlim())
+
+					# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+					# 	- p.ab[1]*pivot, ':')
+
+					# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+					# 	- p.ab[1]*pivot, ':')
+
+
 		NII = np.array(NII)
 		e_NII = np.array(e_NII)
 		NI = np.array(NI)
@@ -199,33 +224,49 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		m = ~np.isnan(NII) * ~np.isnan(NI)
 		# params, cov = np.polyfit(NI[m], NII[m], 1, cov=True)
 
-		from lts_linefit import lts_linefit as lts
-		p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
-			pivot=np.nanmean(NI[m]))
+		# pivot=np.nanmean(NI[m])
+		# p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
+		# 	pivot=pivot)
 
-		print 'NII to NI'
-		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
-			p.ab[0] - p.ab[1]*np.nanmean(NI[m]), np.sqrt(p.ab_err[0]**2 
-			+ (p.ab_err[1]*np.nanmean(NI[m])) - 2*p.ab_cov[0,1]*np.nanmean(NI[m])))
+		# print 'NII to NI (lts)'
+		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+		# 	p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+		# 	+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
 
-		print 'Variance matrix:'
-		for a in p.ab_cov[::-1]:
-			print '%.4g    %.4g' % (a[1], a[0])
+		# print 'Variance matrix:'
+		# for a in p.ab_cov[::-1]:
+		# 	print '%.4g    %.4g' % (a[1], a[0])
+
+		lims = np.array(ax.get_xlim())
+		# ax_ylim = ax.get_ylim()
+
+		# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'k')
+
+		# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'k')
 
 
 		# data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
 		# myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
 		# output = myodr.run()
 
-		lims = np.array(ax.get_xlim())
-		ax_ylim = ax.get_ylim()
+		data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
+		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
+		output = myodr.run()
 
-		# ax.plot(lims, np.poly1d(output.beta)(lims), 'k')
-		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*np.nanmean(NI[m]), 'k')
+		ax.plot(lims, np.poly1d(output.beta)(lims), 'r')
+		axins.plot(lims, np.poly1d(output.beta)(lims), 'r')
 
-		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*np.nanmean(NI[m]), 'k')
+		print 'NII to NI (odr)'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (output.beta[0], 
+			output.sd_beta[0], output.beta[1], output.sd_beta[1])
+
+		print 'Variance matrix:'
+		for a in output.cov_beta:#[::-1]:
+			print '%.4g    %.4g' % (a[0], a[1])
+
+
 
 		# fig.text(0.14,0.84,r'[NII] = (%.3f $\pm$ %.3f) [NI] + (%.3f $\pm$ %.3f)'%(
 		# 	output.beta[0], output.sd_beta[0],
@@ -329,7 +370,6 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 
 		m = ~np.isnan(OIII) * ~np.isnan(OI)
 
-		from scipy import odr
 		data = odr.RealData(OIII[m], OI[m], sx=e_OIII[m], sy=e_OI[m])
 		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
 		output = myodr.run()
@@ -340,7 +380,7 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 			output.sd_beta[2])
 
 		print 'Variance matrix:'
-		for a in output.cov_beta[::-1]:
+		for a in output.cov_beta:#[::-1]:
 			print '%.4g    %.4g    %.4g' % (a[0], a[1], a[2])
 
 		lims = np.array(ax.get_xlim())
@@ -446,8 +486,8 @@ if __name__=='__main__':
 
 	elif cc.device == 'uni':
 		instrument = 'muse'
-		find_odec()
 		find_ndec()
+		# find_odec()
 		# for galaxy in [
 		# 		'ic1459', 
 		# 		'ic4296',
