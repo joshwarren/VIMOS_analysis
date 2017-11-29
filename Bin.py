@@ -138,7 +138,7 @@ class Data(object):
 
 	# Take output some atttribute and return 2D 'unbinned' versions i.e. that value 
 	# applied to each spaxel within the bin. Norm keyword is for moment-0 quantities
-	def unbin(self, attr):
+	def unbin(self, attr, imshow=False):
 		if isinstance(attr, str):
 			attr = self.__getattribute__(self, attr)
 
@@ -147,7 +147,8 @@ class Data(object):
 		for bin in self.bin:
 			out[bin.xspaxels, bin.yspaxels] = attr[bin.bin_number]
 		# Transform such that imshow displays as plot_velfield_nointerp does.
-		out = np.rot90(out[::-1,:])
+		if imshow:
+			out = np.rot90(out[::-1,:])
 		return out
 
 	def rebin(self, field, flux_weighted=True):
@@ -464,12 +465,12 @@ class emission_data(_data):
 	def equiv_width(self):
 
 		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel) - self.wav))] 
+			(1 + bin.components['stellar'].vel/c) - self.wav))] 
 			for bin in self.__parent__.bin])
 		e = myArray(self.flux/cont)
 		cont_uncert = np.array([
 			bin.continuum.uncert[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel) - self.wav))] 
+			(1 + bin.components['stellar'].vel/c) - self.wav))] 
 			for bin in self.__parent__.bin])
 		e.uncert = np.array(e) * np.sqrt(((self.flux.uncert/self.flux)**2 + 
 			(cont_uncert/cont)**2))

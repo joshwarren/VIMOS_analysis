@@ -715,18 +715,18 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 	elif galaxy == 'ngc3100':
 		if radio_band is None or radio_band == 'L':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD254.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD254.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'L band (1.45 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_L')[0][0]
 
 		elif radio_band == 'C':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD270.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AD270.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 		elif radio_band == 'X':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AL508.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/Southern_RG_VLA/AL508.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_X')[0][0]

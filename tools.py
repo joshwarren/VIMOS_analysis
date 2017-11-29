@@ -369,3 +369,39 @@ def moving_weighted_average(x, y, step_size=.1, weights=None, interp=True):
 		bin_centers = np.array(x)
 
 	return bin_centers, weighted_average, weighted_std
+
+
+
+def myerrorbar(ax, x, y, xerr=None, yerr=None, zorder=0, color=None, 
+	marker=None, size=None):
+	import matplotlib.pyplot as plt
+	
+	sc = ax.scatter(x,y,marker=marker,s=size,c=color, 
+		zorder=zorder)
+
+	#create colorbar according to the scatter plot
+	clb = plt.colorbar(sc)
+
+	#create errorbar plot and return the outputs to a,b,c
+
+	#convert time to a color tuple using the colormap used for scatter
+	if color is not None:
+		if not isinstance(color, str):
+			a,b,c = ax.errorbar(x,y,xerr=xerr,yerr=yerr,marker='',
+				zorder=zorder-1)
+			try:
+				len(color) # test if has length
+				time_color = clb.to_rgba(color)
+				# adjust the color of c[0], which is a LineCollection, 
+				#	to the colormap
+				c[0].set_color(time_color)
+			except:
+				pass
+		else:
+			a,b,c = ax.errorbar(x,y,xerr=xerr,yerr=yerr,marker='',
+				zorder=zorder-1, color=color)
+
+
+
+
+

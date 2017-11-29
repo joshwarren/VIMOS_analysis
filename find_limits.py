@@ -13,8 +13,9 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from scipy import odr
 from lts_linefit import lts_linefit as lts
+from Bin import myArray
 
-
+c = 299792.458 # speed of light in km/s
 
 def find_limits(galaxy, opt='kin', norm='fit_disk', D=None, 
 	instrument='vimos', plots=None):
@@ -113,14 +114,156 @@ def find_limits(galaxy, opt='kin', norm='fit_disk', D=None,
 
 			try:
 				row = np.where(lims[:,0]==p)[0][0] # attribute
-				lims[row,1] = str(np.nanmin([round(r[0],3), float(lims[row,1])])) 
-				lims[row,2] = str(np.nanmax([round(r[1],3), float(lims[row,2])]))
+				lims[row,1] = str(np.nanmin([round(r[0],3), 
+					float(lims[row,1])])) 
+				lims[row,2] = str(np.nanmax([round(r[1],3), 
+					float(lims[row,2])]))
 				if lims[row,2] == str(round(r[1],3)):
 					lims[row,3] = galaxy # extreme galaxy
 			except:
 				lims = np.append(lims, [[p, r[0], r[1], galaxy]], axis=0)
 
 	np.savetxt(output, lims, fmt='%s %s %s %s')
+
+
+
+def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
+	if 'home' in cc.device:
+		raise ValueError('This routine is for MUSE data only')
+	else:
+		Prefig()
+		fig, ax = plt.subplots()
+		ax.set_ylabel(r'$C_\text{6563\AA}$')
+		ax.set_xlabel(r'$C^\text{corr}_\text{4861\AA}$')
+
+		Ha_cont = []
+		e_Ha_cont = []
+		Hb_cont = []
+		e_Hb_cont = []
+		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
+		for galaxy in ['ngc1316', 'ic1459']:
+			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
+				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
+			D = pickle.load(pickleFile)
+			pickleFile.close()
+
+			if 'Hbeta' in D.components.keys() and 'Halpha' in \
+				D.components.keys():
+
+				Ha = D.components['Halpha'].flux
+				Hb = D.components['Hbeta'].flux
+				
+				bd = Ha/Hb	
+				e_bd = bd * np.sqrt((Ha.uncert / Ha)**2 + (Hb.uncert / Hb)**2)
+
+				dust_grad = bd/2.86/(6563 - 4861) # Flux per A
+				e_dust_grad = e_bd/2.86/(6563 - 4861)
+
+
+				Hb_cont_gal = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
+					(1 + bin.components['stellar'].vel/c) - 4861))] 
+					for bin in D.bin])
+
+				Hb_cont_gal.uncert = np.array([
+					bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+					(1 + bin.components['stellar'].vel/c) - 4861))] 
+					for bin in D.bin])
+
+				Hb_cont_gal.uncert = np.sqrt((e_dust_grad / dust_grad)**2 
+					+ (Hb_cont_gal.uncert / Hb_cont_gal)**2)
+
+				Hb_cont_gal *= dust_grad * (6583 - 4861)
+				Hb_cont_gal.uncert *= Hb_cont_gal
+
+				Ha_cont_gal = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
+					(1 + bin.components['stellar'].vel/c) - 6563))] 
+					for bin in D.bin]) 
+				Ha_cont_gal.uncert = np.array([
+					bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+					(1 + bin.components['stellar'].vel/c) - 6563))] 
+					for bin in D.bin])
+				ax.errorbar(Hb_cont_gal, Ha_cont_gal, 
+					yerr = Ha_cont_gal.uncert, xerr = Hb_cont_gal.uncert, 
+					fmt='.', label=galaxy)
+
+				Ha_cont.extend(Ha_cont_gal)
+				e_Ha_cont.extend(Ha_cont_gal.uncert)
+				Hb_cont.extend(Hb_cont_gal)
+				e_Hb_cont.extend(Hb_cont_gal.uncert)
+
+				if galaxy == 'ngc1316':
+					xlim = ax.get_xlim()
+					ylim = ax.get_ylim()
+					axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
+						loc=2)
+
+				axins.errorbar(Hb_cont_gal, Ha_cont_gal, 
+					yerr = Ha_cont_gal.uncert, xerr = Hb_cont_gal.uncert, 
+					fmt='.')
+
+
+					# m = ~np.isnan(NII_gal) * ~np.isnan(NI_gal)
+
+					# pivot=np.nanmean(NI_gal[m])
+					# p = lts(NI_gal[m], NII_gal[m], e_NI_gal[m], 
+					# 	NII_gal.uncert[m], pivot=pivot)
+
+					# print 'NII to NI (lts)'
+					# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], 
+					# 	p.ab_err[1], p.ab[0] - p.ab[1]*pivot, 
+					# 	np.sqrt(p.ab_err[0]**2 + (p.ab_err[1]*pivot)**2 - 
+					# 		2*p.ab_cov[0,1]*pivot))
+
+					# lims = np.array(ax.get_xlim())
+
+					# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+					# 	- p.ab[1]*pivot, ':')
+
+					# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+					# 	- p.ab[1]*pivot, ':')
+
+
+		Ha_cont = np.array(Ha_cont)
+		e_Ha_cont = np.array(e_Ha_cont)
+		Hb_cont = np.array(Hb_cont)
+		e_Hb_cont = np.array(e_Hb_cont)
+
+		lims = np.array(ax.get_xlim())
+		ax_ylim = ax.get_ylim()
+
+		m = ~np.isnan(Ha_cont) * ~np.isnan(Hb_cont)
+
+		pivot=np.nanmean(Hb_cont[m])
+		p = lts(Hb_cont[m], Ha_cont[m], e_Hb_cont[m], e_Ha_cont[m], 
+			pivot=pivot)
+
+		print 'C_6563 to C_4861 (lts)'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+			p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+			+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+		print 'Variance matrix:'
+		for a in p.ab_cov[::-1]:
+			print '%.4g    %.4g' % (a[1], a[0])
+
+		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*pivot, 'r')
+
+		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*pivot, 'r')
+
+
+		ax.legend(facecolor='w', loc=4)
+
+		ax.set_xlim(lims)
+		ax.set_ylim(ax_ylim)
+
+		axins.set_xlim(xlim)
+		axins.set_ylim(ylim)
+		axins.yaxis.set_tick_params(labelright='on', labelleft='off')
+
+		mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
+
+		fig.savefig('%s/Data/muse/analysis/stellar_ratio.png' % (cc.base_dir))
 
 
 
@@ -132,8 +275,8 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_ylabel('[NII] flux')
-		ax.set_xlabel('[NI] flux')
+		ax.set_ylabel(r'[NII]$\lambda$6584')
+		ax.set_xlabel(r'[NI]$\lambda\lambda$5197,5200 (Corrected for dust)')
 
 		NII = []
 		e_NII = []
@@ -181,9 +324,10 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 					if galaxy == 'ngc1316':
 						xlim = ax.get_xlim()
 						ylim = ax.get_ylim()
-						# xlim = set_lims(NI_gal, symmetric=False, positive=True, 
-						# 	n_std=2.5)
-						# ylim = set_lims(NII_gal, symmetric=False, positive=True)
+						# xlim = set_lims(NI_gal, symmetric=False, 
+						# 	positive=True, n_std=2.5)
+						# ylim = set_lims(NII_gal, symmetric=False, 
+						# 	positive=True)
 						axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
 							loc=2)
 
@@ -224,47 +368,69 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		m = ~np.isnan(NII) * ~np.isnan(NI)
 		# params, cov = np.polyfit(NI[m], NII[m], 1, cov=True)
 
-		# pivot=np.nanmean(NI[m])
-		# p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
-		# 	pivot=pivot)
-
-		# print 'NII to NI (lts)'
-		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
-		# 	p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
-		# 	+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
-
-		# print 'Variance matrix:'
-		# for a in p.ab_cov[::-1]:
-		# 	print '%.4g    %.4g' % (a[1], a[0])
-
 		lims = np.array(ax.get_xlim())
-		# ax_ylim = ax.get_ylim()
+		ax_ylim = ax.get_ylim()
 
-		# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-		# 	- p.ab[1]*pivot, 'k')
+		pivot=np.nanmean(NI[m])
+		p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
+			pivot=pivot)
 
-		# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-		# 	- p.ab[1]*pivot, 'k')
+		print 'NII to NI (lts)'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+			p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+			+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+		print 'Variance matrix:'
+		for a in p.ab_cov[::-1]:
+			print '%.4g    %.4g' % (a[1], a[0])
+
+		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*pivot, 'r')
+
+		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+			- p.ab[1]*pivot, 'r')
 
 
-		# data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
-		# myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
-		# output = myodr.run()
 
 		data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
-		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
+		myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
 		output = myodr.run()
 
-		ax.plot(lims, np.poly1d(output.beta)(lims), 'r')
-		axins.plot(lims, np.poly1d(output.beta)(lims), 'r')
+		ax.plot(np.linspace(lims[0], lims[1], 100), 
+			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+			'b')
+		axins.plot(np.linspace(xlim[0], xlim[1], 100), 
+			np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
+			'b')
 
-		print 'NII to NI (odr)'
+		print 'NII to NI (odr linear)'
 		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (output.beta[0], 
 			output.sd_beta[0], output.beta[1], output.sd_beta[1])
 
 		print 'Variance matrix:'
 		for a in output.cov_beta:#[::-1]:
 			print '%.4g    %.4g' % (a[0], a[1])
+
+
+
+		data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
+		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
+		output = myodr.run()
+
+		ax.plot(np.linspace(lims[0], lims[1], 100), 
+			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+			'k')
+		axins.plot(np.linspace(xlim[0], xlim[1], 100), 
+			np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
+			'k')
+
+		print 'NII to NI (odr quadratic)'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (output.beta[0], 
+			output.sd_beta[0], output.beta[1], output.sd_beta[1], output.beta[2],
+			output.sd_beta[2])
+
+		print 'Variance matrix:'
+		for a in output.cov_beta:#[::-1]:
+			print '%.4g    %.4g    %.4g' % (a[0], a[1], a[2])
 
 
 
@@ -292,8 +458,8 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_xlabel('[OIII] flux')
-		ax.set_ylabel('[OI] flux')
+		ax.set_xlabel(r'[OIII]$\lambda\lambda$5007,4959')
+		ax.set_ylabel(r'[OI]$\lambda\lambda$6300,6364')
 
 		OIII = []
 		OI = []
@@ -417,27 +583,6 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	
 if __name__=='__main__':
 	if 'home' in cc.device:
@@ -486,7 +631,8 @@ if __name__=='__main__':
 
 	elif cc.device == 'uni':
 		instrument = 'muse'
-		find_ndec()
+		find_stellardec()
+		# find_ndec()
 		# find_odec()
 		# for galaxy in [
 		# 		'ic1459', 

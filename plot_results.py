@@ -198,6 +198,7 @@ def add_R_e(ax, galaxy, discard=0):
 def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None, 
 	debug=False, FoV=None, nolegend=False):
 	image_dir=getattr(get_dataCubeDirectory(galaxy, radio_band=radio_band), overplot)
+	print overplot, image_dir
 	if scale is None:
 		if image_dir.default_scale is not None:
 			scale = image_dir.default_scale
