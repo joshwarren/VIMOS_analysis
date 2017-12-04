@@ -463,15 +463,14 @@ class emission_data(_data):
 
 	@property
 	def equiv_width(self):
-
 		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel/c) - self.wav))] 
-			for bin in self.__parent__.bin])
+			(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
+			- self.wav))] for bin in self.__parent__.bin])
 		e = myArray(self.flux/cont)
 		cont_uncert = np.array([
 			bin.continuum.uncert[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel/c) - self.wav))] 
-			for bin in self.__parent__.bin])
+			(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
+			- self.wav))] for bin in self.__parent__.bin])
 		e.uncert = np.array(e) * np.sqrt(((self.flux.uncert/self.flux)**2 + 
 			(cont_uncert/cont)**2))
 		return e

@@ -373,35 +373,57 @@ def moving_weighted_average(x, y, step_size=.1, weights=None, interp=True):
 
 
 def myerrorbar(ax, x, y, xerr=None, yerr=None, zorder=0, color=None, 
-	marker=None, size=None):
+	marker=None, size=None, colorbar=False, cmap=None):
 	import matplotlib.pyplot as plt
+	from matplotlib import cm
 	
-	sc = ax.scatter(x,y,marker=marker,s=size,c=color, 
-		zorder=zorder)
+	sc = ax.scatter(x, y, marker=marker, s=size, c=color, 
+		zorder=zorder, cmap=cmap)
 
-	#create colorbar according to the scatter plot
-	clb = plt.colorbar(sc)
+	if colorbar:
+		#create colorbar according to the scatter plot
+		clb = plt.colorbar(sc)
 
 	#create errorbar plot and return the outputs to a,b,c
 
 	#convert time to a color tuple using the colormap used for scatter
 	if color is not None:
 		if not isinstance(color, str):
-			a,b,c = ax.errorbar(x,y,xerr=xerr,yerr=yerr,marker='',
+			a,b,c = ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt='.',
 				zorder=zorder-1)
-			try:
-				len(color) # test if has length
+
+			color = np.array(color).astype(float)
+			if colorbar:
 				time_color = clb.to_rgba(color)
-				# adjust the color of c[0], which is a LineCollection, 
-				#	to the colormap
-				c[0].set_color(time_color)
-			except:
-				pass
+			else:
+				if isinstance(cmap, str):
+					cmap = cm.get_cmap(cmap)
+				elif cmap is None:
+					cmap = cm.get_cmap()
+				color = cmap((color - np.nanmin(color))/nanptp(color))
+
+			# adjust the color of c[0], which is a LineCollection, 
+			#	to the colormap
+			if xerr is not None:
+				m = np.isfinite(x) * np.isfinite(y) * np.isfinite(xerr)
+				c[0].set_color(color[m])
+
+				if yerr is not None:
+					m = np.isfinite(x) * np.isfinite(y) * np.isfinite(yerr)
+					c[1].set_color(color[m])
+
+			elif yerr is not None:
+				m = np.isfinite(x) * np.isfinite(y) * np.isfinite(yerr)
+				c[0].set_color(color[m])
+
+
+			
 		else:
-			a,b,c = ax.errorbar(x,y,xerr=xerr,yerr=yerr,marker='',
+			a,b,c = ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt='',
 				zorder=zorder-1, color=color)
 
 
-
-
+def nanptp(v):
+	m = np.isfinite(v)
+	return np.nanmax(v[m]) - np.nanmin(v[m])
 

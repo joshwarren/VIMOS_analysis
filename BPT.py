@@ -13,81 +13,115 @@ from errors2 import get_dataCubeDirectory
 import os
 from prefig import Prefig
 from sauron_colormap import sauron
+from global_mg_sigma import in_aperture
+from tools import moving_weighted_average, myerrorbar
+from errors2 import apply_range
+from Bin import trapz_uncert
+
+
+c = 299792.458 # speed of light in km/s
+
 
 bd = 2.86 # Balmer decrement 
 lbd = np.log10(bd)
 
-nd = 12.2300 # grad of bestfit to [NII] vs [NI]
+nd = 14.38 # grad of bestfit to [NII] vs [NI]
 lnd = np.log10(nd)
 
-sd = 0.76 # grad continuum from Ha to Hb
+sd = 1.047 # grad continuum from Ha to Hb
 lsd = np.log10(sd)
-def NII_to_NI(v):
-	a = nd
-	b = 2.748e4
-	return (v - b) / a
 
-def log_NII_to_NI(v):
-	return np.log10(NII_to_NI(10**v))
+"""
+	C_6563 to C_4861 (ODR)
+		a = 1.047+/-0.008363, b = 0.142+/-0.004757
+		Variance matrix:
+		2.487e-06    -7.28e-07
+		-7.28e-07    8.048e-07
+		ngc1316 214 / 1773
+		ic1459 139 / 2611
+	NII to NI (odr linear)
+		a = 14.38+/-0.1866, b = -1.869+/-0.207
+		Variance matrix:
+		0.0004532    -0.0002117
+		-0.0002117    0.0005582
+		ngc1316 151 / 1773
+		ic1459 248 / 2611
+	OI to OIII
+		a = 1.142e-10+/-6.592e-12, b = 0.3879+/-0.008572, c = 0.06725+/-0.005348
+		Variance matrix:
+		9.823e-25    -8.594e-16    2.281e-16
+		-8.594e-16    1.661e-06    -4.41e-07
+		2.281e-16    -4.41e-07    6.465e-07
+"""
 
-def e_NII_to_NI(v, s_v):
-	a = nd
-	b = 0
 
-	s_aa = 0.1389**2 # ; s_ab = 429.6
-	# s_bb = 1.417e6	
 
-	f_a = (b - v) / a**2
-	f_b = -1. / a
-	f_v = -f_b
+# def NII_to_NI(v):
+# 	a = nd
+# 	b = 2.748e4
+# 	return (v - b) / a
 
-	# # Varience
-	# out = f_a**2 * s_aa + f_b**2 * s_bb + f_v**2 * s_v**2
-	# # Add covarience, assuming zero covarience between v and a, b and c
-	# out += 2 * f_a * f_b * s_ab
+# def log_NII_to_NI(v):
+# 	return np.log10(NII_to_NI(10**v))
 
-	# Varience
-	out = f_a**2 * s_aa + f_v**2 * s_v**2
-	return np.sqrt(out) 
+# def e_NII_to_NI(v, s_v):
+# 	a = nd
+# 	b = 0
 
-def OI_to_OIII(v):
-	a = 8.017e-6
-	b = 0.3879
-	c = 1.369e-6
-	# positive root
-	return (-b + np.sqrt(b**2 - 4 * a * (c - v))) / 2 / a 
+# 	s_aa = 0.1389**2 # ; s_ab = 429.6
+# 	# s_bb = 1.417e6	
 
-def log_OI_to_OIII(v):
-	return np.log10(OI_to_OIII(10**v))
+# 	f_a = (b - v) / a**2
+# 	f_b = -1. / a
+# 	f_v = -f_b
 
-def e_OI_to_OIII(v, s_v):
-	a = 8.017e-6
-	b = 0.3879
-	c = 1.369e-6
+# 	# # Varience
+# 	# out = f_a**2 * s_aa + f_b**2 * s_bb + f_v**2 * s_v**2
+# 	# # Add covarience, assuming zero covarience between v and a, b and c
+# 	# out += 2 * f_a * f_b * s_ab
 
-	s_aa = 4.842e-15 ; s_ab = -6.034e-11 ; s_ac = 3.262e-16
-	s_bb = 1.661e-6 ; s_bc = -8.98e-12
-	s_cc = 2.681e-16
+# 	# Varience
+# 	out = f_a**2 * s_aa + f_v**2 * s_v**2
+# 	return np.sqrt(out) 
 
-	# Partial derrivatives
-	f_a = b / 2 * a**2 + (-b**2 / 2 / a**3 - (c - v) / a**2) / 2
-	f_b = -1. / 2 / a + b / 2 / a / np.sqrt(b**2 + 4 * a * (c - v))
-	f_c = 1 / np.sqrt(b**2 + 4 * a * (c - v))
-	f_v = -f_c
+# def OI_to_OIII(v):
+# 	a = 8.017e-6
+# 	b = 0.3879
+# 	c = 1.369e-6
+# 	# positive root
+# 	return (-b + np.sqrt(b**2 - 4 * a * (c - v))) / 2 / a 
 
-	# Variance (remember: s_aa = s_a^2)
-	out = f_a**2 * s_aa + f_b**2 * s_bb + f_c**2 * s_cc + f_v**2 * s_v**2
+# def log_OI_to_OIII(v):
+# 	return np.log10(OI_to_OIII(10**v))
 
-	# Add covarience, assuming zero covarience between v and a, b and c
-	out += 2 * f_a * f_b * s_ab + 2 * f_a * f_c * s_ac + 2 * f_b * f_c * s_bc
-	return np.sqrt(out)
+# def e_OI_to_OIII(v, s_v):
+# 	a = 8.017e-6
+# 	b = 0.3879
+# 	c = 1.369e-6
 
-def OIII_to_OI(v):
-	a = 8.017e-6
-	b = 0.3879
-	c = 1.369e-6
-	# positive root
-	return a * v**2 + b * v + c
+# 	s_aa = 4.842e-15 ; s_ab = -6.034e-11 ; s_ac = 3.262e-16
+# 	s_bb = 1.661e-6 ; s_bc = -8.98e-12
+# 	s_cc = 2.681e-16
+
+# 	# Partial derrivatives
+# 	f_a = b / 2 * a**2 + (-b**2 / 2 / a**3 - (c - v) / a**2) / 2
+# 	f_b = -1. / 2 / a + b / 2 / a / np.sqrt(b**2 + 4 * a * (c - v))
+# 	f_c = 1 / np.sqrt(b**2 + 4 * a * (c - v))
+# 	f_v = -f_c
+
+# 	# Variance (remember: s_aa = s_a^2)
+# 	out = f_a**2 * s_aa + f_b**2 * s_bb + f_c**2 * s_cc + f_v**2 * s_v**2
+
+# 	# Add covarience, assuming zero covarience between v and a, b and c
+# 	out += 2 * f_a * f_b * s_ab + 2 * f_a * f_c * s_ac + 2 * f_b * f_c * s_bc
+# 	return np.sqrt(out)
+
+# def OIII_to_OI(v):
+# 	a = 8.017e-6
+# 	b = 0.3879
+# 	c = 1.369e-6
+# 	# positive root
+# 	return a * v**2 + b * v + c
 
 # def e_OIII_to_OI(v, s_v):
 # 	a = 8.017e-6
@@ -243,6 +277,7 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 		else:
 			return D
 
+	r = np.sqrt((D.xBar - center[0])**2 + (D.yBar - center[1])**2) * 0.67
 # ------------=============== MEx diagram =================----------
 	# from Atlas3D XXXI (Section 6.2.1)
 	Prefig()
@@ -251,7 +286,7 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 	y = np.log10(D.e_line['[OIII]5007d'].flux/1.35/D.e_line['Hbeta'].flux)
 	return_y = np.array(y)
 
-	y_err = y * np.sqrt((D.e_line['[OIII]5007d'].flux.uncert/
+	y_err = np.sqrt((D.e_line['[OIII]5007d'].flux.uncert/
 		D.e_line['[OIII]5007d'].flux)**2 + (D.e_line['Hbeta'].flux.uncert/
 		D.e_line['Hbeta'].flux)**2)/np.log(10)
 
@@ -309,14 +344,15 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 		x = np.log10(D.e_line['[NI]d'].flux/D.e_line['Hbeta'].flux)
 		return_x = np.array(x)
 
-		x_err = x * np.sqrt((D.e_line['[NI]d'].flux.uncert/
+		x_err = np.sqrt((D.e_line['[NI]d'].flux.uncert/
 			D.e_line['[NI]d'].flux)**2 +
 			(D.e_line['Hbeta'].flux.uncert/D.e_line['Hbeta'].flux)**2)/\
 			np.log(10)
 
 		large_err = (x_err > 0.5) + (y_err > 0.5)
 
-		ax.errorbar(x, y, yerr=y_err, xerr=x_err, fmt='.')
+		myerrorbar(ax, x, y, yerr=y_err, xerr=x_err, marker='.', 
+			color=r)
 
 		ax.set_xlim([-2.5, 0.5])
 		ax.set_ylim([-1.5, 1.5])
@@ -331,6 +367,14 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 
 		m = y_line < 1
 		plt.plot(x_line[m]-lnd+lbd, y_line[m], 'k')
+
+		y_line2 = 0.61/(x_line - 0.05) + 1.3
+		m1 = y_line2 < y_line
+		a = np.min(x_line[m1])
+		x_line2 = np.arange(a, 0.60, 0.001)
+		y_line2 = 0.61/(x_line2 - 0.05) + 1.3
+		m2 = y_line2 < 1
+		ax.plot(x_line2[m2], y_line2[m2],'k--')
 
 		## Add MAPPINGS-III grids
 		add_grids(ax, '[NI]', '[OIII]')
@@ -376,16 +420,15 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 
 	Hb = D.e_line['Hbeta'].flux
 
-	radius = np.sqrt((D.xBar - D.center[0])**2 + (D.yBar - D.center[1])**2)
-	ax.scatter(radius, Hb,# cmap=sauron, 
-		c=np.log10(D.e_line['[OIII]5007d'].flux/D.e_line['Hbeta'].flux).clip(
-		-1,1))
+	myerrorbar(ax, r, Hb, yerr=Hb.uncert,
+		color=np.log10(D.e_line['[OIII]5007d'].flux/1.35\
+		/ D.e_line['Hbeta'].flux).clip(-1,1))
 
-	o = np.argsort(radius)
+	o = np.argsort(r)
 
-	# ax.plot(radius[o][1:], Hb[np.argmin(np.abs(radius-1))] * radius[o][1:]**-2, 'k')
-	ax.plot(radius[o], np.nanmedian(radius[o][np.isfinite(Hb[o])])**2
-		* np.nanmedian(Hb[o][np.isfinite(Hb[o])]) * radius[o]**-2, 'k')
+	# ax.plot(r[o][1:], Hb[np.argmin(np.abs(r-1))] * r[o][1:]**-2, 'k')
+	ax.plot(r[o], np.nanmedian(r[o][np.isfinite(Hb[o])])**2
+		* np.nanmedian(Hb[o][np.isfinite(Hb[o])]) * r[o]**-2, 'k')
 
 	ax.set_yscale('log')
 	ax.set_ylabel(r'H$_\beta$ Flux')
@@ -452,37 +495,213 @@ def BPT(galaxy, D=None, opt='pop', return_sauron_diagnotics=False):
 		plt.close(fig)
 
 
-
-
-
-
 	if return_sauron_diagnotics:
 		return return_x, return_y
 	else:
 		return D
 
 
+# Aperture in arcsec
+def global_MEx(aperture=3, instrument='vimos'):
+	if instrument == 'vimos':
+		from errors2 import run_ppxf, set_params, get_dataCubeDirectory
+		cen_cols = (4,5)
+		galaxies = np.array(['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 
+			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 
+			'pks0718-34'])
+		fits_ext = 0
+		CDELT1 = 'CDELT1'
+		CDELT3 = 'CDELT3'
+
+	elif instrument == 'muse':
+		from errors2_muse import run_ppxf, set_params, get_dataCubeDirectory
+		cen_cols = (1,2)
+		galaxies = np.array(['ic1459', 'ic4296', 'ngc1316', 'ngc1399'])
+		fits_ext = 1
+		CDELT1 = 'CD1_1'
+		CDELT3 = 'CD3_3'
+
+
+	data_file = "%s/Data/%s/analysis/galaxies.txt" % (cc.base_dir, instrument)
+	# different data types need to be read separetly
+	x_cent_gals, y_cent_gals = np.loadtxt(data_file, unpack=True, 
+		skiprows=1, usecols=cen_cols)
+	galaxy_gals = np.loadtxt(data_file, skiprows=1, usecols=(0,),
+		dtype=str)
+	
+	Prefig()
+	fig, ax = plt.subplots()
+	ax.set_xlabel(r'$\sigma_\ast$')
+	ax.set_ylabel(r'log [OIII]$\lambda$5007/H$\,\beta$')
+
+	OIII_ew_sav = []
+	sigma_sav = []
+	e_sigma_sav = []
+	excitation_sav = []
+	e_excitation_sav = []
+	for galaxy in galaxies:
+		params = set_params(reps=10, produce_plot=False, opt='pop')
+		
+		i_gal = np.where(galaxy_gals==galaxy)[0][0]
+		x_cent_pix = x_cent_gals[i_gal]
+		y_cent_pix = y_cent_gals[i_gal]
+
+		f = fits.open(get_dataCubeDirectory(galaxy))
+		
+		galaxy_data = f[fits_ext].data
+		header = f[fits_ext].header
+		# Normalise each spaxel for population pipeline
+		galaxy_noise = f[fits_ext+1].data
+		f.close()
+
+		## write key parameters from header - can then be altered in future	
+		CRVAL_spec = header['CRVAL3']
+		CDELT_spec = header[CDELT3]
+		s = galaxy_data.shape
+
+		if aperture == 'R_e':
+			ap = get_R_e(galaxy)/np.abs(header[CDELT1])
+		else: 
+			ap = aperture/np.abs(header[CDELT1])
+
+		frac_in_ap = in_aperture(x_cent_pix, y_cent_pix, ap, 
+			instrument=instrument)
+		galaxy_data = np.einsum('ijk,jk->ijk', galaxy_data, frac_in_ap)
+		galaxy_noise = np.einsum('ijk,jk->ijk', galaxy_noise**2, 
+			frac_in_ap)
+		bin_lin = np.nansum(galaxy_data, axis=(1,2))
+		bin_lin_noise = np.sqrt(np.nansum(galaxy_noise, axis=(1,2)))
+
+		lam = np.arange(s[0])*CDELT_spec + CRVAL_spec
+		bin_lin, lam, cut = apply_range(bin_lin, lam=lam, 
+			set_range=params.set_range, return_cuts=True)
+		lamRange = np.array([lam[0],lam[-1]])
+		bin_lin_noise = bin_lin_noise[cut]
+
+		pp = run_ppxf(galaxy, bin_lin, bin_lin_noise, lamRange, CDELT_spec, 
+			params)
+
+		e_lines = pp.component != 0
+		residuals = pp.galaxy - pp.bestfit
+		_, residuals, _ = moving_weighted_average(pp.lam, residuals, 
+			step_size=3., interp=True)
+		noise = np.sqrt(residuals**2 + pp.noise**2)
+
+		# Only use line if formally detected.
+		OIII = pp.matrix[:,pp.templatesToUse=='[OIII]5007d'].flatten() \
+			*  pp.weights[pp.templatesToUse=='[OIII]5007d']
+		Hb = pp.matrix[:,pp.templatesToUse=='Hbeta'].flatten() \
+			*  pp.weights[pp.templatesToUse=='Hbeta']
+		if np.max(OIII)/np.median(
+			noise[(np.log(pp.lam) > np.log(5007) - 300/c) * 
+			(np.log(pp.lam) < np.log(5007) + 300/c)]) < 4:
+
+			OIII[:] = 0
+			Hb[:] = 0
+		elif np.max(Hb)/np.median(
+			noise[(np.log(pp.lam) > np.log(4861) - 300/c) * 
+			(np.log(pp.lam) < np.log(4861) + 300/c)]) < 3:
+
+			Hb[:] = 0
+
+		OIII_flux = np.trapz(OIII, x=pp.lam)/1.35
+
+		e_lines = np.array([e for e in pp.templatesToUse if not e.isdigit()])
+		e_OIII_flux = trapz_uncert(
+			pp.MCgas_uncert_spec[e_lines=='[OIII]5007d',:], x=pp.lam)
+
+		continuum = pp.galaxy - OIII # only need continuum at 5007A
+		OIII_pix = np.argmin(np.abs(pp.lam / (1 + pp.sol[0][0]/c) - 5007))
+		OIII_ew = OIII_flux/continuum[OIII_pix]
+
+		Hb_flux = np.trapz(Hb, x=pp.lam)
+		e_Hb_flux = trapz_uncert(
+			pp.MCgas_uncert_spec[e_lines=='Hbeta',:], x=pp.lam)
+
+		excitation = np.log10(OIII_flux/Hb_flux)
+		e_excitation = np.sqrt((e_Hb_flux/Hb_flux)**2 
+			+ (e_OIII_flux/OIII_flux)**2)/np.log(10)
+
+		e_excitation = np.sqrt((e_OIII_flux/OIII_flux)**2 
+			+ (e_Hb_flux/Hb_flux)**2)/np.log(10)
+
+		sigma = pp.sol[0][1]
+		e_sigma = np.std(pp.MCstellar_kin[:,1])
+
+		if OIII_flux != 0 and Hb_flux != 0:
+			if OIII_ew > 0.8:
+				ax.errorbar(sigma, np.log10(OIII_flux/Hb_flux), xerr=e_sigma,
+					yerr=e_excitation, fmt='x', c='k')
+			else:
+				ax.errorbar(sigma, np.log10(OIII_flux/Hb_flux), xerr=e_sigma,
+					yerr=e_excitation, fmt='o', c='k')
+
+			ax.text(sigma+2, np.log10(OIII_flux/Hb_flux)+0.02, galaxy, 
+				fontsize=12)
+
+		OIII_ew_sav.append(OIII_ew)
+		sigma_sav.append(sigma)
+		e_sigma_sav.append(e_sigma)
+		excitation_sav.append(excitation)
+		e_excitation_sav.append(e_excitation)
+
+	ax.axvline(70, c='k')
+	ax.axhline(np.log10(0.5), xmin=70./400, c='k')
+	ax.axhline(np.log10(1), xmin=70./400, c='k')
+
+	x_line = np.arange(70,1000,1)
+	y_line = 1.6*10**-3 * x_line + 0.33
+	ax.plot(x_line, y_line, c='k')
+
+	ax.set_xlim([0, 400])
+	ax.set_ylim([-1.2, 1.5])
+
+	ylim = ax.get_ylim()
+	yrange = ylim[1] - ylim[0]
+	ax.text(50, ylim[0] +0.96 * yrange, 'SF')
+	ax.text(75, 0.55, 'Seyfert 2')
+	ax.text(75, 0.15, 'LINER')
+	ax.text(75, -0.23, 'Transition')
+	ax.text(75, -0.5, 'Passive')
+
+	# ax.legend()
+
+	fig.savefig('%s/Data/%s/analysis/global_MEx.png' %(cc.base_dir, 
+		instrument))
+
+
+	with open('%s/Data/%s/analysis/global_MEx.txt' %(cc.base_dir, 
+		instrument), 'w') as f:
+		f.write('Galaxy    sigma   e_sigma   log(OIII/Hb)'+
+			'  e_log(OIII/Hb)  OIII_ew \n')
+		for i in range(len(galaxies)):
+			f.write('%s \t\t %.4g   %.4g   %.4g   %.4g   %.4g \n' % (galaxies[i],
+				sigma_sav[i], e_sigma_sav[i], excitation_sav[i],
+				e_excitation_sav[i], OIII_ew_sav[i]))
+		
+
 
 
 if __name__=='__main__':
+	# global_MEx()
 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
 	# galaxies = ['ic1459']
-	# fig, ax = plt.subplots()
-	# for g in galaxies:
-	# 	x, y = BPT(g, return_sauron_diagnotics=True)
+	fig, ax = plt.subplots()
+	for g in galaxies:
+		x, y = BPT(g, return_sauron_diagnotics=True)
 
-	# 	if not all(np.isnan(x)) and not all(np.isnan(y)):
-	# 		ax.scatter(x, y, label=g)
-	# ax.legend(facecolor='w')
+		if not all(np.isnan(x)) and not all(np.isnan(y)):
+			ax.scatter(x, y, label=g)
+	ax.legend(facecolor='w')
 
-	# add_grids(ax)
+	add_grids(ax, '[NI]', '[OIII]')
 
-	# ax.set_xlim([-2.5, 0.5])
-	# ax.set_ylim([-1.5, 1.5])
-	# ax.set_xlabel(r'log [NI]d/H$_\beta$')
-	# ax.set_ylabel(r'log [OIII]d/H$_\beta$')
-	# ax.set_title('SAURON diagnotics for all sample')
-	# fig.savefig('%s/Data/vimos/analysis/diagnotic.png' % (cc.base_dir))
+	ax.set_xlim([-2.5, 0.5])
+	ax.set_ylim([-1.5, 1.5])
+	ax.set_xlabel(r'log [NI]$\lambda\lambda$5197,5200/H$\,\beta$')
+	ax.set_ylabel(r'log [OIII]$\lambda$5007/H$\,\beta$')
+	ax.set_title('SAURON diagnotics for all sample')
+	fig.savefig('%s/Data/vimos/analysis/diagnotic.png' % (cc.base_dir))
 
-	BPT('ic1459')
+	# BPT('ic1459')

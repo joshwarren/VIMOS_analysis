@@ -7,6 +7,7 @@ from checkcomp import checkcomp
 cc = checkcomp()
 from Bin import trapz_uncert
 from global_mg_sigma import in_aperture
+from tools import moving_weighted_average
 
 n_e = 100 # cm^-3
 c = 299792.458 # speed of light in km/s
@@ -39,8 +40,9 @@ def whole_image(galaxy, verbose=True):
 		dtype=str, skiprows=1)
 	i_gal = np.where(galaxy_gals==galaxy)[0][0]
 
-	max_radius = 29
+	max_radius = 29 # in spaxels
 	radius = float(max_radius)
+	Mass_sav = 0
 	f = fits.open(get_dataCubeDirectory(galaxy))
 	while radius > 2:
 		mask = in_aperture(centre[0], centre[1], radius, instrument='vimos')
@@ -51,11 +53,11 @@ def whole_image(galaxy, verbose=True):
 		spec[np.isnan(spec)] = 0
 		noise[np.isnan(noise)] = 0
 
-		spec = np.einsum('ijk,jk->i', spec, mask)
-		noise = np.sqrt(np.einsum('ijk,jk->i', noise**2, mask))
+		spec = np.einsum('ijk,jk->i', spec, mask)#/np.sum(mask)
+		noise = np.sqrt(np.einsum('ijk,jk->i', noise**2, mask))#/np.sum(mask)
 
-		params = set_params(opt='pop', reps=100, temp_mismatch=True, 
-			produce_plot=False)
+		params = set_params(opt='pop', reps=4, temp_mismatch=True, 
+			produce_plot=False, gas=1)
 
 		lam = (np.arange(len(spec)) - (f[0].header['CRPIX3'] - 1)) * \
 			f[0].header['CDELT3'] + f[0].header['CRVAL3']
@@ -67,7 +69,11 @@ def whole_image(galaxy, verbose=True):
 		pp = run_ppxf(galaxy, spec, noise, lamRange, f[0].header['CDELT3'], 
 			params)
 
-		pp.noise = np.min([pp.noise, np.abs(pp.galaxy-pp.bestfit)],axis=0)
+		# pp.noise = np.min([pp.noise, np.abs(pp.galaxy-pp.bestfit)],axis=0)
+		residuals = pp.galaxy - pp.bestfit
+		_, residuals, _ = moving_weighted_average(pp.lam, residuals, step_size=3., 
+			interp=True)
+		noise = np.sqrt(residuals**2 + pp.noise**2)
 
 		OIII_spec = pp.matrix[:, pp.templatesToUse==\
 			'[OIII]5007d'].flatten()*\
@@ -83,43 +89,54 @@ def whole_image(galaxy, verbose=True):
 		Hb_flux_uncert = trapz_uncert(Hb_spec_uncert, x=pp.lam)
 		Ha_flux_uncert = 2.86 * Hb_flux_uncert
 
-		if max(OIII_spec)/np.median(pp.noise[
+		Mass = get_Mass(Ha_flux, D)
+		e_Mass = get_Mass(Ha_flux_uncert, D)
+
+		Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
+			/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
+			* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
+			* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))])
+		Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
+		Ha_flux2 = 2.86 * Hb_flux2
+		Mass2 = get_Mass(Ha_flux2, D)
+		
+
+		if max(OIII_spec)/np.median(noise[
 			(pp.lam < 5007./(1 + (pp.sol[1][0] - 300)/c)) *
 			(pp.lam > 5007./(1 + (pp.sol[1][0] + 300)/c))]) > 4:
 
-			if max(Hb_spec)/np.median(pp.noise[
+			if max(Hb_spec)/np.median(noise[
 				(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c)) *
 				(pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) > 2.5:
-
-				Mass = get_Mass(Ha_flux, D)
-				e_Mass = get_Mass(Ha_flux_uncert, D)
 				
-				mass[i_gal] = str(round(np.log10(Mass),2))
+				mass[i_gal] = str(round(np.log10(Mass),4))
 				e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
-					np.log(10)), 2))
+					np.log(10)), 4))
 				if verbose:
-					print '%.2f +/- %.2f log10(Solar Masses)' % (
+					print '%s +/- %s log10(Solar Masses)' % (
 						mass[i_gal], e_mass[i_gal])
 
 					from ppxf import create_plot
 					fig, ax = create_plot(pp).produce 
 					ax.set_xlim([4800, 4900])
 					ax.legend()
+					fig1, ax1 = create_plot(pp).produce 
+					ax1.legend()
 					import matplotlib.pyplot as plt
 					plt.show()
 
 				radius = -1
 			else:
-				Mass = get_Mass(Ha_flux, D)
-				e_Mass = get_Mass(Ha_flux_uncert, D)
+				Mass_sav = max(Mass, Mass2, Mass_sav)
+				if Mass_sav == Mass2: e_Mass = np.nan
 
 				if radius == max_radius:
-					mass[i_gal] = '<'+str(round(np.log10(Mass),2))
+					mass[i_gal] = '<'+str(round(np.log10(Mass_sav),4))
 					e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
-						np.log(10)), 2))
+						np.log(10)), 4))
 					if verbose:
-						print '<%.2f +/- %.2f log10(Solar Masses)' % (
-						mass[i_gal], e_mass[i_gal])
+						print '<%s +/- %s log10(Solar Masses)' % (
+							mass[i_gal], e_mass[i_gal])
 
 						from ppxf import create_plot
 						fig, ax = create_plot(pp).produce 
@@ -128,14 +145,15 @@ def whole_image(galaxy, verbose=True):
 						import matplotlib.pyplot as plt
 						plt.show()
 		else:
-			Mass = get_Mass(Ha_flux, D)
-			e_Mass = get_Mass(Ha_flux_uncert, D)
+			Mass_sav = max(Mass, Mass2, Mass_sav)
+			if Mass_sav == Mass2: e_Mass = np.nan
+
 			if radius == max_radius:
-				mass[i_gal] = '<'+str(round(np.log10(Mass),2))
+				mass[i_gal] = '<'+str(round(np.log10(Mass_sav),4))
 				e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
-						np.log(10)), 2))
+						np.log(10)), 4))
 				if verbose:
-					print '<%.2f +/- %.2f log10(Solar Masses)' % (
+					print '<%s +/- %s log10(Solar Masses)' % (
 						mass[i_gal], e_mass[i_gal])
 					from ppxf import create_plot
 					fig, ax = create_plot(pp).produce 
@@ -159,3 +177,4 @@ if __name__=='__main__':
 	# galaxies = ['pks0718-34']
 	for g in galaxies:
 		whole_image(g, verbose=False)
+	# whole_image('pks0718-34', verbose=False)

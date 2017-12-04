@@ -16,6 +16,22 @@ from lts_linefit import lts_linefit as lts
 from Bin import myArray
 
 c = 299792.458 # speed of light in km/s
+H = 70.0 # Mpc/(km/s)
+
+# in cm^2
+def get_surface_area(galaxy):
+	z_gals = np.loadtxt('%s/Data/vimos/analysis/galaxies.txt' % (cc.base_dir),
+		usecols=(1,), skiprows=1, unpack=True)
+	gals = np.loadtxt('%s/Data/vimos/analysis/galaxies.txt' % (cc.base_dir),
+		usecols=(0,), skiprows=1, unpack=True, dtype=str)
+	z = z_gals[np.where(gals==galaxy)[0][0]]
+
+	return 4 * np.pi * (z*c/H * 3.0856775)**2 # 1e48 cm^2
+
+
+
+
+
 
 def find_limits(galaxy, opt='kin', norm='fit_disk', D=None, 
 	instrument='vimos', plots=None):
@@ -133,8 +149,9 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_ylabel(r'$C_\text{6563\AA}$')
-		ax.set_xlabel(r'$C^\text{corr}_\text{4861\AA}$')
+		ax.set_ylabel(r'$C_\mathrm{6563\AA}$')
+		ax.set_xlabel(r'$C^\mathrm{corr}_\mathrm{4861\AA}$')
+		# ax.set_xlabel(r'$C_\mathrm{4861\AA}$ (Corrected for dust)')
 
 		Ha_cont = []
 		e_Ha_cont = []
@@ -146,6 +163,8 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
+
+			area = get_surface_area(galaxy)
 
 			if 'Hbeta' in D.components.keys() and 'Halpha' in \
 				D.components.keys():
@@ -162,12 +181,12 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 
 				Hb_cont_gal = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
 					(1 + bin.components['stellar'].vel/c) - 4861))] 
-					for bin in D.bin])
+					for bin in D.bin]) * area
 
 				Hb_cont_gal.uncert = np.array([
 					bin.continuum.uncert[np.argmin(np.abs(bin.lam/
 					(1 + bin.components['stellar'].vel/c) - 4861))] 
-					for bin in D.bin])
+					for bin in D.bin]) * area
 
 				Hb_cont_gal.uncert = np.sqrt((e_dust_grad / dust_grad)**2 
 					+ (Hb_cont_gal.uncert / Hb_cont_gal)**2)
@@ -177,11 +196,11 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 
 				Ha_cont_gal = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
 					(1 + bin.components['stellar'].vel/c) - 6563))] 
-					for bin in D.bin]) 
+					for bin in D.bin])  * area
 				Ha_cont_gal.uncert = np.array([
 					bin.continuum.uncert[np.argmin(np.abs(bin.lam/
 					(1 + bin.components['stellar'].vel/c) - 6563))] 
-					for bin in D.bin])
+					for bin in D.bin]) * area
 				ax.errorbar(Hb_cont_gal, Ha_cont_gal, 
 					yerr = Ha_cont_gal.uncert, xerr = Hb_cont_gal.uncert, 
 					fmt='.', label=galaxy)
@@ -194,7 +213,7 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 				if galaxy == 'ngc1316':
 					xlim = ax.get_xlim()
 					ylim = ax.get_ylim()
-					axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
+					axins = zoomed_inset_axes(ax, 1.e9/2.5/np.ptp(ylim), 
 						loc=2)
 
 				axins.errorbar(Hb_cont_gal, Ha_cont_gal, 
@@ -233,23 +252,44 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 
 		m = ~np.isnan(Ha_cont) * ~np.isnan(Hb_cont)
 
-		pivot=np.nanmean(Hb_cont[m])
-		p = lts(Hb_cont[m], Ha_cont[m], e_Hb_cont[m], e_Ha_cont[m], 
-			pivot=pivot)
+		# pivot=np.nanmean(Hb_cont[m])
+		# p = lts(Hb_cont[m], Ha_cont[m], e_Hb_cont[m], e_Ha_cont[m], 
+		# 	pivot=pivot)
 
-		print 'C_6563 to C_4861 (lts)'
-		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
-			p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
-			+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+		# print 'C_6563 to C_4861 (lts)'
+		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+		# 	p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+		# 	+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+		# print 'Variance matrix:'
+		# for a in p.ab_cov[::-1]:
+		# 	print '%.4g    %.4g' % (a[1], a[0])
+
+		# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'k')
+
+		# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'k')
+
+
+		data = odr.RealData(Hb_cont[m], Ha_cont[m], sx=e_Hb_cont[m], 
+			sy=e_Ha_cont[m])
+		myodr = odr.ODR(data, odr.unilinear, beta0=[1.,0.])
+		output = myodr.run()
+
+		ax.plot(np.linspace(lims[0], lims[1], 100), 
+			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+			'b')
+		axins.plot(np.linspace(xlim[0], xlim[1], 100), 
+			np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
+			'b')
+
+		print 'C_6563 to C_4861 (ODR)'
+		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (output.beta[0], 
+			output.sd_beta[0], output.beta[1], output.sd_beta[1])
+
 		print 'Variance matrix:'
-		for a in p.ab_cov[::-1]:
-			print '%.4g    %.4g' % (a[1], a[0])
-
-		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*pivot, 'r')
-
-		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*pivot, 'r')
+		for a in output.cov_beta:#[::-1]:
+			print '%.4g    %.4g' % (a[0], a[1])
 
 
 		ax.legend(facecolor='w', loc=4)
@@ -275,8 +315,8 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_ylabel(r'[NII]$\lambda$6584')
-		ax.set_xlabel(r'[NI]$\lambda\lambda$5197,5200 (Corrected for dust)')
+		ax.set_ylabel(r'[NII]$\lambda\lambda$6548, 6584')
+		ax.set_xlabel(r'[NI]$\lambda\lambda$5197, 5200 (Corrected for dust)')
 
 		NII = []
 		e_NII = []
@@ -288,6 +328,8 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
+
+			area = get_surface_area(galaxy)
 
 			if 'Hbeta' in D.components.keys() and 'Halpha' in \
 				D.components.keys():
@@ -303,16 +345,17 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 
 				if '[NII]6583d' in D.components.keys() and '[NI]d' in \
 					D.components.keys():
-					NI_gal = D.components['[NI]d'].flux 
+					NI_gal = D.components['[NI]d'].flux * area
 
-					e_NI_gal = NI_gal.uncert
+					e_NI_gal = NI_gal.uncert * area
 					e_NI_gal = np.sqrt((e_dust_grad / dust_grad)**2 
 						+ (NI_gal.uncert / NI_gal)**2)
 
 					NI_gal *= dust_grad * (6583 - 5200)
 					e_NI_gal *= NI_gal
 
-					NII_gal = D.components['[NII]6583d'].flux
+					NII_gal = D.components['[NII]6583d'].flux * area
+					NII_gal.uncert *= area
 					ax.errorbar(NI_gal, NII_gal, yerr = NII_gal.uncert,
 						xerr = e_NI_gal, fmt='.', label=galaxy)
 
@@ -328,7 +371,7 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 						# 	positive=True, n_std=2.5)
 						# ylim = set_lims(NII_gal, symmetric=False, 
 						# 	positive=True)
-						axins = zoomed_inset_axes(ax, 400000./2.5/np.ptp(ylim), 
+						axins = zoomed_inset_axes(ax, 3.e10/3.3/np.ptp(ylim), 
 							loc=2)
 
 					axins.errorbar(NI_gal, NII_gal, yerr=NII_gal.uncert,
@@ -371,23 +414,23 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		lims = np.array(ax.get_xlim())
 		ax_ylim = ax.get_ylim()
 
-		pivot=np.nanmean(NI[m])
-		p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
-			pivot=pivot)
+		# pivot=np.nanmean(NI[m])
+		# p = lts(NI[m], NII[m], e_NI[m], e_NII[m], 
+		# 	pivot=pivot)
 
-		print 'NII to NI (lts)'
-		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
-			p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
-			+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
-		print 'Variance matrix:'
-		for a in p.ab_cov[::-1]:
-			print '%.4g    %.4g' % (a[1], a[0])
+		# print 'NII to NI (lts)'
+		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+		# 	p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+		# 	+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+		# print 'Variance matrix:'
+		# for a in p.ab_cov[::-1]:
+		# 	print '%.4g    %.4g' % (a[1], a[0])
 
-		ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*pivot, 'r')
+		# ax.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'r')
 
-		axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
-			- p.ab[1]*pivot, 'r')
+		# axins.plot(lims, np.poly1d(p.ab[::-1])(lims) 
+		# 	- p.ab[1]*pivot, 'r')
 
 
 
@@ -412,25 +455,25 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 
 
 
-		data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
-		myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
-		output = myodr.run()
+		# data = odr.RealData(NI[m], NII[m], sx=e_NI[m], sy=e_NII[m])
+		# myodr = odr.ODR(data, odr.quadratic, beta0=[0.,1.,0.])
+		# output = myodr.run()
 
-		ax.plot(np.linspace(lims[0], lims[1], 100), 
-			np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
-			'k')
-		axins.plot(np.linspace(xlim[0], xlim[1], 100), 
-			np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
-			'k')
+		# ax.plot(np.linspace(lims[0], lims[1], 100), 
+		# 	np.poly1d(output.beta)(np.linspace(lims[0], lims[1], 100)), 
+		# 	'k')
+		# axins.plot(np.linspace(xlim[0], xlim[1], 100), 
+		# 	np.poly1d(output.beta)(np.linspace(xlim[0], xlim[1], 100)), 
+		# 	'k')
 
-		print 'NII to NI (odr quadratic)'
-		print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (output.beta[0], 
-			output.sd_beta[0], output.beta[1], output.sd_beta[1], output.beta[2],
-			output.sd_beta[2])
+		# print 'NII to NI (odr quadratic)'
+		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (output.beta[0], 
+		# 	output.sd_beta[0], output.beta[1], output.sd_beta[1], output.beta[2],
+		# 	output.sd_beta[2])
 
-		print 'Variance matrix:'
-		for a in output.cov_beta:#[::-1]:
-			print '%.4g    %.4g    %.4g' % (a[0], a[1], a[2])
+		# print 'Variance matrix:'
+		# for a in output.cov_beta:#[::-1]:
+		# 	print '%.4g    %.4g    %.4g' % (a[0], a[1], a[2])
 
 
 
@@ -442,7 +485,8 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		ax.set_xlim(lims)
 		ax.set_ylim(ax_ylim)
 
-		axins.set_xlim(xlim)
+		# axins.set_xlim(xlim)
+		axins.set_xlim([0, 14])
 		axins.set_ylim(ylim)
 		axins.yaxis.set_tick_params(labelright='on', labelleft='off')
 
@@ -458,8 +502,8 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 	else:
 		Prefig()
 		fig, ax = plt.subplots()
-		ax.set_xlabel(r'[OIII]$\lambda\lambda$5007,4959')
-		ax.set_ylabel(r'[OI]$\lambda\lambda$6300,6364')
+		ax.set_xlabel(r'[OIII]$\lambda\lambda$5007, 4959')
+		ax.set_ylabel(r'[OI]$\lambda\lambda$6300, 6364')
 
 		OIII = []
 		OI = []
@@ -472,6 +516,8 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
+
+			area = get_surface_area(galaxy) # find intrinsic flux
 
 			if 'Hbeta' in D.components.keys() and 'Halpha' in \
 				D.components.keys():
@@ -486,25 +532,27 @@ def find_odec(): # Find ratio between [OIII] and [OI]
 
 				if '[OIII]5007d' in D.components.keys() and \
 					'[OI]6300d' in D.components.keys():
-					OIII_gal = D.components['[OIII]5007d'].flux 
+					OIII_gal = D.components['[OIII]5007d'].flux * area
+					OIII_gal.uncert *= area
 					e_OIII_gal = np.sqrt((e_dust_grad / dust_grad)**2 
 						+ (OIII_gal.uncert / OIII_gal)**2)
 
 					OIII_gal *= dust_grad * (6300 - 5007)
 					e_OIII_gal *= OIII_gal
 
-					OI_gal = D.components['[OI]6300d'].flux
+					OI_gal = D.components['[OI]6300d'].flux * area
+					OI_gal.uncert *= area
 
 					ax.errorbar(OIII_gal, OI_gal, yerr=OI_gal.uncert, 
 						xerr=e_OIII_gal, fmt='.', label=galaxy)
 					
 
 					if galaxy == 'ngc1316':
-						# xlim = ax.get_xlim()
-						# ylim = ax.get_ylim()
-						xlim = set_lims(OIII_gal, symmetric=False, positive=True)
-						ylim = set_lims(OI_gal, symmetric=False, positive=True)
-						axins = zoomed_inset_axes(ax, 80000./2.5/np.ptp(ylim), 
+						xlim = ax.get_xlim()
+						ylim = ax.get_ylim()
+						# xlim = set_lims(OIII_gal, symmetric=False, positive=True)
+						# ylim = set_lims(OI_gal, symmetric=False, positive=True)
+						axins = zoomed_inset_axes(ax, 5.e9/2.5/np.ptp(ylim), 
 							loc=2)
 						fig2, ax2 = plt.subplots()
 						ax2.errorbar(OIII_gal, OI_gal, yerr=OI_gal.uncert,
@@ -631,8 +679,8 @@ if __name__=='__main__':
 
 	elif cc.device == 'uni':
 		instrument = 'muse'
-		find_stellardec()
-		# find_ndec()
+		# find_stellardec()
+		find_ndec()
 		# find_odec()
 		# for galaxy in [
 		# 		'ic1459', 

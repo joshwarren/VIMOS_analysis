@@ -100,7 +100,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, 
 	dms=False, signal_noise_target=None, pa=None, center=None, alpha=None, 
-	**kwargs):
+	galaxy_labelcolor=None, **kwargs):
 	Prefig()
 
 	kwg = {}
@@ -238,12 +238,14 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ax.cs = cs
 	
 	if galaxy is not None:
-		gal_name = ax.text(0.02,0.98, galaxy, color='black',
+		if galaxy_labelcolor is None:
+			galaxy_labelcolor = 'k'
+		gal_name = ax.text(0.05,0.95, galaxy, color=galaxy_labelcolor,
 			verticalalignment='top',transform=ax.transAxes)
 		ax.gal_name = gal_name
 		if redshift is not None:
 			gal_z = ax.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
-				color = 'black',verticalalignment='top',
+				color = galaxy_labelcolor, verticalalignment='top',
 				transform=ax.transAxes)
 			ax.gal_z = gal_z
 
