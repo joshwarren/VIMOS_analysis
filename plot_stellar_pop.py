@@ -176,63 +176,63 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 			save='%s/Alpha_uncert.png'%(out_plots), close=True)
 
 
-
+# Moved to produce_pop_plot.py
 # -----------============ Thesis plots ==========---------------
-		thesis_out = '%s/Documents/thesis/chapter4/vimos'%(cc.home_dir)
-		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, age, header,  
-			vmin=0, vmax=15, 
-			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-			signal_noise=D.SNRatio, signal_noise_target=SN_target, 
-			center=center)
-		if overplot:
-			for o, color in overplot.iteritems():
-				add_(o, color, ax, galaxy)
-		plt.gcf().savefig('%s/%s_age.png' % (thesis_out, galaxy))
-		plt.close()
+		# thesis_out = '%s/Documents/thesis/chapter4/vimos'%(cc.home_dir)
+		# ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		# 	D.xBar, D.yBar, age, header,  
+		# 	vmin=0, vmax=15, 
+		# 	cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		# 	signal_noise=D.SNRatio, signal_noise_target=SN_target, 
+		# 	center=center)
+		# if overplot:
+		# 	for o, color in overplot.iteritems():
+		# 		add_(o, color, ax, galaxy)
+		# plt.gcf().savefig('%s/%s_age.png' % (thesis_out, galaxy))
+		# plt.close()
 
-		plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, unc_age, header, vmin=0, vmax=15, 
-			cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
-			signal_noise=D.SNRatio, close=True, 
-			signal_noise_target=SN_target, center=center, 
-			save='%s/%s_age_uncert.png'%(thesis_out, galaxy))
+		# plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		# 	D.xBar, D.yBar, unc_age, header, vmin=0, vmax=15, 
+		# 	cmap='gnuplot2', flux_unbinned=D.unbinned_flux, 
+		# 	signal_noise=D.SNRatio, close=True, 
+		# 	signal_noise_target=SN_target, center=center, 
+		# 	save='%s/%s_age_uncert.png'%(thesis_out, galaxy))
 
-		# Metalicity
-		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
-			D.xBar, D.yBar, met, header, vmin=-2.25, vmax=0.67, 
-			cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center)
-		if overplot:
-			for o, color in overplot.iteritems():
-				add_(o, color, ax, galaxy)
-		plt.gcf().savefig('%s/%s_metallicity.png' % (thesis_out, galaxy))
-		plt.close()
+		# # Metalicity
+		# ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, 
+		# 	D.xBar, D.yBar, met, header, vmin=-2.25, vmax=0.67, 
+		# 	cmap='gnuplot2', 
+		# 	flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		# 	signal_noise_target=SN_target, center=center)
+		# if overplot:
+		# 	for o, color in overplot.iteritems():
+		# 		add_(o, color, ax, galaxy)
+		# plt.gcf().savefig('%s/%s_metallicity.png' % (thesis_out, galaxy))
+		# plt.close()
 
-		plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
-			unc_met, header, vmin=0, vmax=0.67+2.25, cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center, close=True,
-			save='%s/%s_metallicity_uncert.png' % (thesis_out, galaxy))
+		# plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
+		# 	unc_met, header, vmin=0, vmax=0.67+2.25, cmap='gnuplot2', 
+		# 	flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		# 	signal_noise_target=SN_target, center=center, close=True,
+		# 	save='%s/%s_metallicity_uncert.png' % (thesis_out, galaxy))
 
-		# Alpha
-		ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
-			alp, header, vmin=-0.3, vmax=0.5, cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center)
-		if overplot:
-			for o, color in overplot.iteritems():
-				add_(o, color, ax, galaxy)
-		plt.gcf().savefig('%s/%s_alpha.png' % (thesis_out, galaxy))
-		plt.close()
+		# # Alpha
+		# ax = plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
+		# 	alp, header, vmin=-0.3, vmax=0.5, cmap='gnuplot2', 
+		# 	flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		# 	signal_noise_target=SN_target, center=center)
+		# if overplot:
+		# 	for o, color in overplot.iteritems():
+		# 		add_(o, color, ax, galaxy)
+		# plt.gcf().savefig('%s/%s_alpha.png' % (thesis_out, galaxy))
+		# plt.close()
 
 
-		plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
-			unc_alp, header, vmin=0, vmax=0.5+0.3, cmap='gnuplot2', 
-			flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
-			signal_noise_target=SN_target, center=center, close=True,
-			save='%s/%s_alpha_uncert.png'%(thesis_out, galaxy))
+		# plot_velfield_nointerp(D.x, D.y, D.bin_num, D.xBar, D.yBar, 
+		# 	unc_alp, header, vmin=0, vmax=0.5+0.3, cmap='gnuplot2', 
+		# 	flux_unbinned=D.unbinned_flux, signal_noise=D.SNRatio, 
+		# 	signal_noise_target=SN_target, center=center, close=True,
+		# 	save='%s/%s_alpha_uncert.png'%(thesis_out, galaxy))
 
 
 
@@ -340,8 +340,8 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 			for j in range(40):
 				index[i,j,:] = np.array([i,j]) - center
 
-		step_size = 2
-		annuli = np.arange(2, 26, step_size).astype(float)
+		step_size = 4
+		annuli = np.arange(step_size, 26, step_size).astype(float)
 
 		age_rad = np.zeros(len(annuli))
 		met_rad = np.zeros(len(annuli))
@@ -369,7 +369,9 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 			pp = run_ppxf(galaxy, spec, noise, lamRange, header['CDELT3'], 
 				params)
 
-			pop = population(pp=pp, instrument='vimos')
+			pop = population(pp=pp, instrument='vimos', method=method)
+			# pop.plot_probability_distribution()
+			# plt.show()
 
 			# axs['age'].errorbar(a, np.log10(pop.age), 
 			# 	yerr=np.abs(pop.unc_age/pop.age/np.log(10)), c='r', fmt='.')
@@ -466,6 +468,21 @@ def plot_stellar_pop(galaxy, method='median', D=None, opt='pop', overplot={},
 # Use of plot_stellar_pop.py
 
 if __name__ == '__main__':
-	plot_stellar_pop('ngc3100', method='mostlikely',
-		overplot={'CO':'c', 'radio':'r'}, gradient=False)
+	# plot_stellar_pop('ngc3100', method='mostlikely',
+	# 	overplot={'CO':'c', 'radio':'r'}, gradient=False)
+	for galaxy in [
+		# 'eso443-g024',
+		# 'ic1459',
+		# 'ic1531', 
+		# 'ic4296',
+		# 'ngc0612',
+		# 'ngc1399',
+		'ngc3100',
+		# 'ngc3557',
+		# 'ngc7075',
+		# 'pks0718-34'
+		]:
+		print galaxy
+		plot_stellar_pop(galaxy, method='mostlikely', gradient='only')
+
 

@@ -682,34 +682,34 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 
 		dataCubeDirectory.CO = mystring2("%s/Data/alma/ngc612-mom0.fits" % (cc.base_dir))
 		if radio_band is None or radio_band == 'C' or radio_band == 'CI':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.I.13ARCSEC.CBAND.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.I.13ARCSEC.CBAND.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 		elif radio_band == 'CQ':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.Q.13ARCSEC.CBAND.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.Q.13ARCSEC.CBAND.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 		elif radio_band == 'CU':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.U.13ARCSEC.CBAND.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc0612/NGC612.U.13ARCSEC.CBAND.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 	elif galaxy == 'ngc1399':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
 		if radio_band is None or radio_band == 'C' or radio_band == 'CI':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.I.1.25.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.I.1.25.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 		elif radio_band == 'CQ':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.Q.1.25.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.Q.1.25.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 		elif radio_band == 'CU':
-			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.U.1.25.fits' % (
+			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.U.1.25.FITS' % (
 				cc.base_dir))
 			dataCubeDirectory.radio.band = 'C band (4.86 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
@@ -990,6 +990,7 @@ class run_ppxf(ppxf):
 			self.bin_lin = ndimage.gaussian_filter1d(self.bin_lin, sigma)
 			self.bin_lin_noise = np.sqrt(ndimage.gaussian_filter1d(
 				self.bin_lin_noise**2, sigma))
+			self.FWHM_gal = self.stellar_templates.FWHM_tem
 		
 		## rebin spectrum logarthmically
 		self.bin_log, self.logLam_bin, self.velscale = util.log_rebin(self.lamRange, 

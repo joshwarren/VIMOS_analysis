@@ -11,6 +11,8 @@ from checkcomp import checkcomp
 cc = checkcomp()
 from tools import moving_weighted_average
 from scipy.ndimage.filters import gaussian_filter1d
+from scipy.interpolate import interp1d
+from itertools import groupby, count
 
 
 c = 299792.458 # speed of light in km/s
@@ -121,16 +123,17 @@ class Data(object):
 			self.vel_norm = 0.0
 
 	def absorption_line(self, absorption_line, uncert=False, res=None, 
-		instrument=None):
+		instrument=None, remove_badpix=False):
 		ab = np.zeros(self.number_of_bins)
 		ab_uncert = np.zeros(self.number_of_bins)
 		for i, bin in enumerate(self.bin):
 			if uncert:
 				ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
-					uncert=uncert, res=res, instrument=instrument)
+					uncert=uncert, res=res, instrument=instrument, 
+					remove_badpix=remove_badpix)
 			else:
 				ab[i] = bin.absorption_line(absorption_line, uncert=uncert,
-					res=res, instrument=instrument)
+					res=res, instrument=instrument, remove_badpix=remove_badpix)
 		if uncert:
 			return ab, ab_uncert
 		else:
@@ -162,7 +165,6 @@ class Data(object):
 			else:
 				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
 		return new
-
 
 	@property
 	def center_bin(self):
@@ -717,10 +719,37 @@ class Bin(object):
 		self.unconvolved_lam = wav[a[0]:a[1]]
 
 	def absorption_line(self, absorption_line, uncert=False, res=None,
-		instrument=None):
+		instrument=None, remove_badpix=False):
 		convolved = self.bestfit - np.nansum([line.spectrum for key, 
 			line in self.e_line.iteritems()], axis=0)
 		lam = self.lam/(1+self.components['stellar'].vel/c)
+		continuum = np.array(self.continuum)
+
+		if uncert:
+			noise = np.array(self.noise)
+
+		if remove_badpix:
+			# bad_pix = np.where(continuum < 0)[0]
+			bad_pix = np.where(self.noise > np.nanmean(self.noise) 
+				+ 3*np.std(self.noise))
+			bad_pix = np.unique([[b-1,b,b+1] for b in bad_pix])
+			bad_pix = bad_pix[(bad_pix >= 1) * (bad_pix <= len(lam) - 2)]
+			
+			start = np.array([list(g)[0] for _, g in 
+				groupby(bad_pix, lambda n, c=count(): n-next(c))]) - 1
+			end = np.array([list(g)[-1] for _, g in 
+				groupby(bad_pix, lambda n, c=count(): n-next(c))]) + 1
+
+			for index in zip(start, end):
+				interp = interp1d([lam[index[0]], lam[index[1]]], 
+					[continuum[index[0]], continuum[index[1]]])
+				continuum[index[0]+1:index[1]] = interp(lam[np.arange(
+					index[0]+1, index[1])])
+				if uncert:
+					interp = interp1d([lam[index[0]], lam[index[1]]], 
+						[noise[index[0]], noise[index[1]]])
+					noise[index[0]+1:index[1]] = interp(lam[np.arange(
+					index[0]+1, index[1])])
 
 		temp_res = 2.5 # A (FWHM); Resoluton of Miles templates
 		if res is not None:
@@ -737,9 +766,7 @@ class Bin(object):
 			if instr_res < res:
 				sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
 					/ np.median(np.diff(lam))
-				continuum = gaussian_filter1d(self.continuum, sig_pix)
-			else:
-				continuum = np.array(self.continuum)
+				continuum = gaussian_filter1d(continuum, sig_pix)
 			conv_res = max((instr_res, temp_res))
 		else:
 			conv_res = temp_res

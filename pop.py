@@ -207,6 +207,7 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 
 	# Continuum need be brought require resolution
 	if res is not None:
+		convolved = bestfit - e_line_spec
 		if instr_res > res:
 			import warnings
 			warnings.warn('get_absorption cannot increase the ' +
@@ -216,13 +217,12 @@ def get_absorption(lines, pp=None, galaxy=None, bin=None, opt=None,
 			sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
 				/ np.median(np.diff(lam))
 			continuum = gaussian_filter1d(continuum, sig_pix)
-			convolved = gaussian_filter1d(bestfit - e_line_spec, sig_pix)
+			convolved = gaussian_filter1d(convolved, sig_pix)
 
 	# Convolve to required velocity dispersion
 	if sigma is not None:
 		sig_pix = np.median(unconvolved_lam)*(sigma/c)/CDELT
 		convolved = gaussian_filter1d(unconvolved_spectrum, sig_pix)
-
 
 
 	# unc_spec and conv_spec need to be the same resolution
@@ -323,17 +323,17 @@ class population(object):
 		models_dir  = '%s/models/TMJ_SSPs/tmj.dat' % (cc.home_dir)
 		titles = np.loadtxt(models_dir, dtype=str)[0]
 
-		age_in, metallicity_in, alpha_in = np.loadtxt(models_dir, usecols=(0,1,2), 
-			unpack=True, skiprows=35)
+		self.age_in, self.metallicity_in, self.alpha_in = np.loadtxt(
+			models_dir, usecols=(0,1,2), unpack=True, skiprows=35)
 
-		self._age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), num=s[0])
-		self._age[np.argmax(self._age)] = max(age_in)
-		self._metallicity = np.linspace(min(metallicity_in), max(metallicity_in), num=s[1])
-		self._alpha = np.linspace(min(alpha_in), max(alpha_in), num=s[2])
+		# self._age = np.logspace(np.log10(min(age_in)), np.log10(max(age_in)), num=s[0])
+		# self._age[np.argmax(self._age)] = max(age_in)
+		# self._metallicity = np.linspace(min(metallicity_in), max(metallicity_in), num=s[1])
+		# self._alpha = np.linspace(min(alpha_in), max(alpha_in), num=s[2])
 
-		age_p=np.array([[m]*s[2]*s[1] for m in self._age]).flatten()
-		metallicity_p=np.array([[m]*s[2] for m in self._metallicity]*s[0]).flatten()
-		alpha_p=np.array(list(self._alpha)*s[1]*s[0])
+		# age_p=np.array([[m]*s[2]*s[1] for m in self._age]).flatten()
+		# metallicity_p=np.array([[m]*s[2] for m in self._metallicity]*s[0]).flatten()
+		# alpha_p=np.array(list(self._alpha)*s[1]*s[0])
 
 		models = {}
 		self.interp = {}
@@ -342,8 +342,8 @@ class population(object):
 				models[l] = np.loadtxt(models_dir, usecols=(i,), unpack=True, 
 					skiprows=35)
 				self.interp[l] = LinearNDInterpolator(
-					np.array([age_in, metallicity_in, alpha_in]).transpose(), 
-					models[l])
+					np.array([self.age_in, self.metallicity_in, 
+					self.alpha_in]).transpose(), models[l])
 
 		ndim, nwalkers, nsteps = 3, 200, 500
 		self.samples = np.zeros((nwalkers*(nsteps-50), ndim))
@@ -474,11 +474,12 @@ class population(object):
 
 	def lnprob(self, theta):
 		f_age,f_metal,f_alpha = theta
-		if f_age<min(self._age) or f_age>max(self._age):
+		if f_age<min(self.age_in) or f_age>max(self.age_in):
 			return -np.inf
-		if f_metal<min(self._metallicity) or f_metal>max(self._metallicity):
+		if f_metal<min(self.metallicity_in) or \
+			f_metal>max(self.metallicity_in):
 			return -np.inf
-		if f_alpha<min(self._alpha) or f_alpha>max(self._alpha):
+		if f_alpha<min(self.alpha_in) or f_alpha>max(self.alpha_in):
 			return -np.inf
 
 		chi2 = 0

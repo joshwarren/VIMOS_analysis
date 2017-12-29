@@ -130,37 +130,37 @@ def whole_image(galaxy, verbose=True):
 				Mass_sav = max(Mass, Mass2, Mass_sav)
 				if Mass_sav == Mass2: e_Mass = np.nan
 
-				if radius == max_radius:
-					mass[i_gal] = '<'+str(round(np.log10(Mass_sav),4))
-					e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
-						np.log(10)), 4))
-					if verbose:
-						print '<%s +/- %s log10(Solar Masses)' % (
-							mass[i_gal], e_mass[i_gal])
-
-						from ppxf import create_plot
-						fig, ax = create_plot(pp).produce 
-						ax.set_xlim([4800, 4900])
-						ax.legend()
-						import matplotlib.pyplot as plt
-						plt.show()
-		else:
-			Mass_sav = max(Mass, Mass2, Mass_sav)
-			if Mass_sav == Mass2: e_Mass = np.nan
-
-			if radius == max_radius:
+				# if radius == max_radius:
 				mass[i_gal] = '<'+str(round(np.log10(Mass_sav),4))
 				e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
-						np.log(10)), 4))
+					np.log(10)), 4))
 				if verbose:
 					print '<%s +/- %s log10(Solar Masses)' % (
 						mass[i_gal], e_mass[i_gal])
+
 					from ppxf import create_plot
 					fig, ax = create_plot(pp).produce 
 					ax.set_xlim([4800, 4900])
 					ax.legend()
 					import matplotlib.pyplot as plt
 					plt.show()
+		else:
+			Mass_sav = max(Mass, Mass2, Mass_sav)
+			if Mass_sav == Mass2: e_Mass = np.nan
+
+			# if radius == max_radius:
+			mass[i_gal] = '<'+str(round(np.log10(Mass_sav),4))
+			e_mass[i_gal] =  str(round(np.abs(e_Mass/Mass/
+					np.log(10)), 4))
+			if verbose:
+				print '<%s +/- %s log10(Solar Masses)' % (
+					mass[i_gal], e_mass[i_gal])
+				from ppxf import create_plot
+				fig, ax = create_plot(pp).produce 
+				ax.set_xlim([4800, 4900])
+				ax.legend()
+				import matplotlib.pyplot as plt
+				plt.show()
 		radius -= 1
 
 	temp = "{0:12}{1:10}{2:10}\n"
@@ -175,6 +175,6 @@ if __name__=='__main__':
 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
 	# galaxies = ['pks0718-34']
-	for g in galaxies:
-		whole_image(g, verbose=False)
-	# whole_image('pks0718-34', verbose=False)
+	# for g in galaxies:
+	# 	whole_image(g, verbose=False)
+	whole_image('pks0718-34', verbose=False)

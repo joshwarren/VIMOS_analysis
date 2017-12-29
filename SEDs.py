@@ -12,6 +12,48 @@ Prefig()
 
 c = 299792458 # speed of light in m/s
 
+def convert_ref(ref):
+	convert = {
+	'IX/10A/cor_nvs': 'Otrupcek et al. 1990',
+	'IX/10A/cor_ver': 'Otrupcek et al. 1990',
+	'J/A+A/386/97/tablea1': 'Jackson et al. 2002',
+	'J/A+A/537/A99/lqac2': 'Souchay el.al. 2012',#
+	'J/A+A/544/A18/master': 'van Velzen et al. 2012',#
+	'J/A+A/544/A18/matches': 'van Velzen et al. 2012',#
+	'J/A+A/583/A75/lqac3': 'Souchay el.al. 2015',#
+	'J/A+A/598/A78/table3': 'Intema et al. 2017',#
+	'J/AJ/126/2562/table3': 'Fomalont et al. 2003',
+	'J/AJ/89/53/table3': 'Sadler 1984',#
+	'J/ApJ/731/L41/table1': 'Brown et al. 2011',#
+	'J/ApJ/737/45/table1': 'Ofek et al. 2011',#
+	'J/ApJ/784/159/sample': 'Graham and Tingay 2014',#
+	# 'J/ApJ/818/182/galaxies': '',
+	'J/MNRAS/251/330/table2': 'Wright et al. 1991', #
+	'J/MNRAS/402/2403/at20gcat': 'Murphy et al. 2010', #
+	'J/MNRAS/415/1597/tables1': 'Coutois et al. 2011',#
+	'J/MNRAS/417/2651/catalog': 'Mahony et al. 2011',#
+	'J/MNRAS/434/956/table2': 'Chhetri et al. 2013',#
+	'J/MNRAS/436/2915/table2': 'Massardi et al. 2013',#
+	'J/MNRAS/440/696/tableb1': 'Allison et al. 2014',#
+	'J/MNRAS/455/3249/paco': 'Massardi et al. 2016',#
+	'VII/258/vv10': 'Allison et al. 2014',
+	'VIII/100/gleamegc': 'Wayth et al. 2015',#
+	'VIII/15/pkscat90': 'Otrupcek et al. 1990',#
+	'VIII/81B/sumss212': 'Murphy et al. 2007',#
+	'VIII/85A/spectra': 'Vollmer et al. 2009',#
+	'VIII/85A/waste': 'Vollmer et al. 2009',#
+	}
+	if hasattr(ref, '__iter__'):
+		return np.array([convert[r] if r in convert.keys() 
+			else r for r in ref])
+	else:
+		if ref in convert.keys():
+			return convert[ref]
+		else:
+			return ref
+
+
+
 def SED(galaxy):
 
 	SEDfile = '%s/Data/SED/%s/SED.txt' % (cc.base_dir, galaxy)
@@ -29,8 +71,8 @@ def SED(galaxy):
 			f.write('GHz       Jy         Jy           -\n')
 
 			for i in range(len(freq)):
-				f.write(str(round(freq[i],3))+'  '+str(flux[i])+'  '+str(flux_err[i])+
-					'  '+ref[i]+'\n')
+				f.write(str(round(freq[i],3))+'  '+str(flux[i])
+					+'  '+str(flux_err[i])+'  '+ref[i]+'\n')
 	else:
 		freq, flux, flux_err = np.loadtxt(SEDfile, unpack=True, usecols=(0,1,2), 
 			skiprows=2)
@@ -51,10 +93,10 @@ def SED(galaxy):
 	q24_err = np.sqrt((flux_24_err/flux_24)**2 + (flux_14_err/flux_14)**2)
 
 	# Only use radio flux
-	flux = flux[freq < 10]
-	flux_err = flux_err[freq < 10]
-	ref = ref[freq < 10]
-	freq = freq[freq < 10]
+	flux = flux[freq < 15]
+	flux_err = flux_err[freq < 15]
+	ref = ref[freq < 15]
+	freq = freq[freq < 15]
 
 	order = np.argsort(freq)
 	flux=flux[order]
@@ -78,18 +120,75 @@ def SED(galaxy):
 		ax.errorbar(freq[ref==r], flux[ref==r], yerr=flux_err[ref==r], fmt='o')
 
 	if galaxy == 'ic1459':
+		Prefig(size=(14,8))
 		fig2, ax2 = plt.subplots()
-		for r in np.unique(ref):
-			ax2.errorbar(freq[ref==r], flux[ref==r], yerr=flux_err[ref==r], fmt='o')
+		a = np.array([])
+		b = np.array([])
+		ref = convert_ref(ref)
+		# for r in np.unique(ref):
+		for r in ['Sadler 1984',
+			'Otrupcek et al. 1990',
+			'Brown et al. 2011',
+			'Mahony et al. 2011',
+			'Ofek et al. 2011',
+			'van Velzen et al. 2012',
+			'Chhetri et al. 2013',
+			'Graham and Tingay 2014',
+			'Wayth et al. 2015',
+			'Massardi et al. 2016']:
+
+			if any((freq[ref==r] < 15) * (flux[ref==r] > 0.1) 
+				* (flux[ref==r] < 2)):
+				ax2.errorbar(freq[ref==r], flux[ref==r], 
+					yerr=flux_err[ref==r], fmt='o', ms=5, 
+					label=r)
+				a = np.append(a, freq[ref==r])
+				b = np.append(b, flux[ref==r])
+			# if any((freq[ref==r] < 15) * (flux[ref==r] > 0.1) 
+			# 	* (flux[ref==r] < 2)) and not include(r):
+			# 	ax2.errorbar(freq[ref==r], flux[ref==r], 
+			# 		yerr=flux_err[ref==r], fmt='x', ms=5, 
+			# 		label=r)
 		ax2.set_ylim([0.1,2])
 		ax2.set_xscale('log')
 		ax2.set_xlabel('Freq (GHz)')
 		ax2.set_yscale('log')
 		ax2.set_ylabel('Flux Density (Jy)')
 
-		ax2.set_title('Radio spectrum for %s' % (galaxy))
-		fig2.savefig('%s/Data/SED/%s/index_detailed.png' % (cc.base_dir, galaxy))
+		a = a[(b>0.1) * (b<2)]
+		b = b[(b>0.1) * (b<2)]
 
+		# Approximate function
+		def func(x, e,f,g):
+			return e*x**(f*np.log10(g*x))
+
+		lims = ax2.get_xlim()
+		x = np.logspace(np.log10(lims[0]), np.log10(lims[1]), num=100)
+		from scipy.optimize import curve_fit
+		e,f,g = curve_fit(func, a, b)[0]
+		ax2.plot(x, func(x, e,f,g), 'k')
+		ax2.set_xlim(lims)
+
+		ax2.tick_params(which='major', direction='in', length=10, 
+				width=2)
+		ax2.tick_params(which='minor', direction='in', length=6, width=2)
+		box = ax2.get_position()
+		ax2.set_position([box.x0, box.y0, box.width * 0.65, box.height])	
+		ax2.set_position([box.x0, box.y0, box.width * 0.65, box.height])
+		ax2.legend(bbox_to_anchor=(1, 1), loc='upper left')
+		
+		# https://stackoverflow.com/questions/21920233/
+		# 	matplotlib-log-scale-tick-label-number-formatting
+		from matplotlib import ticker
+		for axis in [ax2.xaxis, ax2.yaxis]:
+			axis.set_major_formatter(
+				ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
+
+		# ax2.set_title('Radio spectrum for %s' % (galaxy))
+		fig2.savefig('%s/Data/SED/%s/index_detailed.png' % (
+			cc.base_dir, galaxy))
+		fig2.savefig('%s/Documents/thesis/appendix/appendix2/%s.png' %
+			(cc.home_dir, galaxy), bbox_inches='tight', dpi=240)
 
 	params, cov = np.polyfit(np.log10(freq), np.log10(flux), 1, cov=True)
 	alpha, alpha_err = params[0], np.sqrt(np.diag(cov))[0]
@@ -129,8 +228,8 @@ def SED(galaxy):
 
 
 if __name__=='__main__':
-	# SED('ic1459')
-
+	SED('ic1459')
+	kldsjflskd
 	galaxies = ['eso443-g024','ic1459','ic1531','ic4296','ngc0612','ngc1316', 
 		'ngc1399','ngc3100','ngc3557','ngc7075','pks0718-34']
 	q24 = np.array([])

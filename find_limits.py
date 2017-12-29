@@ -303,8 +303,157 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 
 		mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
-		fig.savefig('%s/Data/muse/analysis/stellar_ratio.png' % (cc.base_dir))
+		fig.savefig('%s/Data/muse/analysis/stellar_ratio.png' % (cc.base_dir),
+			dpi=240)
 
+
+# Find relationship between [NII]/Hb and [NI]/Ha
+def find_ratio_dec(save_values=False): 
+	if save_values: # save for fast access - only needs done if re-pickled
+		for galaxy in ['ic1459','ngc1316']:
+			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
+				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
+			D = pickle.load(pickleFile)
+			pickleFile.close()
+
+			NI = D.components['[NI]d'].flux
+			NII = D.components['[NII]6583d'].flux
+			np.savetxt('%s/MUSE/analysis/%s_N.txt' % (cc.home_dir, galaxy), 
+				np.array([NI, NI.uncert, NII, NII.uncert]))
+			
+			cont_Ha = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
+				(1 + bin.components['stellar'].vel/c) - 6563))] 
+				for bin in D.bin])
+			cont_Ha.uncert = np.array([
+				bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+				(1 + bin.components['stellar'].vel/c) - 6563))] 
+				for bin in D.bin])
+			cont_Hb = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
+				(1 + bin.components['stellar'].vel/c) - 4861))] 
+				for bin in D.bin])
+			cont_Hb.uncert = np.array([
+				bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+				(1 + bin.components['stellar'].vel/c) - 4861))] 
+				for bin in D.bin])
+			np.savetxt('%s/MUSE/analysis/%s_cont.txt' % (cc.home_dir, galaxy), 
+				np.array([cont_Ha, cont_Ha.uncert, cont_Hb, cont_Hb.uncert]))
+			
+			alp = D.components['Halpha'].flux
+			bet = D.components['Hbeta'].flux
+			np.savetxt('%s/MUSE/analysis/%s_H.txt' % (cc.home_dir, galaxy), 
+				np.array([alp, alp.uncert, bet, bet.uncert]))
+
+	Prefig()
+	y, e_y = {}, {}
+	x, e_x = {}, {}
+	x2, e_x2 = {}, {}
+	y2, e_y2 = {}, {}
+	for galaxy in ['ic1459', 'ngc1316']:
+		NI, e_NI, NII, e_NII = np.loadtxt('%s/MUSE/analysis/%s_N.txt' % (
+			cc.home_dir, galaxy))
+		# NI /= 1.65 
+		# e_NI /= 1.65
+		NII /= 1.34
+		e_NII /= 1.34
+
+		cont_Ha, e_cont_Ha, cont_Hb, e_cont_Hb = np.loadtxt(
+			'%s/MUSE/analysis/%s_cont.txt' % (cc.home_dir, galaxy))
+		alp, e_alp, bet, e_bet = np.loadtxt('%s/MUSE/analysis/%s_H.txt' % (
+			cc.home_dir, galaxy))
+
+		m = ~np.isnan(NI) * ~np.isnan(NII)
+		x[galaxy] = NI[m]/bet[m]
+		e_x[galaxy] = x[galaxy] * np.sqrt((e_NI[m]/NI[m])**2 + (e_bet[m]/bet[m])**2)
+		y[galaxy] = NII[m]/alp[m]
+		e_y[galaxy] = y[galaxy] * np.sqrt((e_NII[m]/NII[m])**2 
+			+ (e_alp[m]/alp[m])**2)
+
+		m = ~np.isnan(alp) * ~np.isnan(bet)
+		x2[galaxy] = bet[m]/cont_Hb[m]
+		e_x2[galaxy] = x2[galaxy] * np.sqrt((e_cont_Hb[m]/cont_Hb[m])**2 
+			+ (e_bet[m]/bet[m])**2)
+		y2[galaxy] = alp[m]/cont_Ha[m]
+		e_y2[galaxy] = y2[galaxy] * np.sqrt((e_cont_Ha[m]/cont_Ha[m])**2 
+			+ (e_alp[m]/alp[m])**2)
+		
+	pivot = np.nanmean(np.append(*x.values()))
+	p = lts(np.append(*x.values()), np.append(*y.values()), 
+		np.append(*e_x.values()), np.append(*e_y.values()), pivot=pivot, plot=True,
+		text=False, corr=False)
+	fig3 = plt.gcf()
+	fig3.savefig('%s/Data/muse/analysis/ratio.png' % (cc.base_dir),
+		dpi=240)
+	fig, ax = plt.subplots()#2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
+	print 'NII/Ha to NI/Hb (lts)'
+	print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+		p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+		+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+	print 'Variance matrix:'
+	for a in p.ab_cov[::-1]:
+		print '%.4g    %.4g' % (a[1], a[0])
+	print ''
+
+	for g in x.iterkeys():
+		yerr = y[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
+			+ e_y[g]**2)/(y[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
+			+ (e_x[g]/x[g])**2)
+		ax.errorbar(x[g], (y[g] - p.ab[0] + pivot*p.ab[1])/x[g], fmt='.', label=g, 
+			xerr=e_x[g], yerr=yerr)
+	ax.axhline(p.ab[1], c='k')
+	rms = np.std((np.append(*y.values()) - p.ab[0] + p.ab[1]*pivot)
+		/np.append(*x.values()), ddof=2)
+	ax.axhline(p.ab[1] + rms, ls='--', c='k')
+	ax.axhline(p.ab[1] - rms, ls='--', c='k')
+	ax.axhline(p.ab[1] + 2.6*rms, ls=':', c='k')
+	ax.axhline(p.ab[1] - 2.6*rms, ls=':', c='k')
+	ax.legend(facecolor='w', loc=4)
+
+	ax.set_xlabel(r'$\mathrm{\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
+	ax.set_ylabel(r'$\mathrm{\left(\frac{[NII]\lambda6584}{H\alpha} - B\right)}$'
+		+ r'$\mathrm{/\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
+
+	fig.savefig('%s/Data/muse/analysis/ratio_fit.png' % (cc.base_dir),
+		dpi=240)
+	plt.close('all')
+
+
+	pivot = np.nanmean(np.append(*x2.values()))
+	p = lts(np.append(*x2.values()), np.append(*y2.values()), 
+		np.append(*e_x2.values()), np.append(*e_y2.values()), pivot=pivot, plot=True,
+		text=False, corr=False)
+	fig4 = plt.gcf()
+	fig4.savefig('%s/Data/muse/analysis/EWrelationship.png' % (cc.base_dir),
+		dpi=240)
+
+	fig2, ax2 = plt.subplots()
+	print 'EW(Ha) to EW(Hb) (lts)'
+	print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
+		p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
+		+ (p.ab_err[1]*pivot)**2 - 2*p.ab_cov[0,1]*pivot))
+	print 'Variance matrix:'
+	for a in p.ab_cov[::-1]:
+		print '%.4g    %.4g' % (a[1], a[0])
+
+	for g in x2.iterkeys():
+		yerr = y2[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
+			+ e_y2[g]**2)/(y2[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
+			+ (e_x2[g]/x2[g])**2)
+		ax2.errorbar(x2[g], (y2[g] - p.ab[0] + pivot*p.ab[1])/x2[g], fmt='.', 
+			label=g, xerr=e_x2[g], yerr=yerr)
+	ax2.axhline(p.ab[1], c='k')
+	rms = np.std((np.append(*y2.values()) - p.ab[0] + p.ab[1]*pivot)
+		/np.append(*x2.values()), ddof=2)
+	ax2.axhline(p.ab[1] + rms, ls='--', c='k')
+	ax2.axhline(p.ab[1] - rms, ls='--', c='k')
+	ax2.axhline(p.ab[1] + 2.6*rms, ls=':', c='k')
+	ax2.axhline(p.ab[1] - 2.6*rms, ls=':', c='k')
+	ax2.legend(facecolor='w', loc=4)
+
+	ax2.set_xlabel(r'EW(H$\beta$)')
+	ax2.set_ylabel(r'(EW(H$\beta$) - B)/EW(H$\alpha$)')
+
+	fig2.savefig('%s/Data/muse/analysis/EqW_fit.png' % (cc.base_dir),
+		dpi=240)
 
 
 
@@ -467,9 +616,9 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 		# 	'k')
 
 		# print 'NII to NI (odr quadratic)'
-		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (output.beta[0], 
-		# 	output.sd_beta[0], output.beta[1], output.sd_beta[1], output.beta[2],
-		# 	output.sd_beta[2])
+		# print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g, c = %.4g+/-%.4g' % (
+		# 	output.beta[0], output.sd_beta[0], output.beta[1], output.sd_beta[1], 
+		#	output.beta[2], output.sd_beta[2])
 
 		# print 'Variance matrix:'
 		# for a in output.cov_beta:#[::-1]:
@@ -492,7 +641,8 @@ def find_ndec(): # Find ratio between [NII] and [NI]
 
 		mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
-		fig.savefig('%s/Data/muse/analysis/NII_NI_ratio.png' % (cc.base_dir))
+		fig.savefig('%s/Data/muse/analysis/NII_NI_ratio.png' % (cc.base_dir),
+			dpi=240)
 
 
 
@@ -680,7 +830,8 @@ if __name__=='__main__':
 	elif cc.device == 'uni':
 		instrument = 'muse'
 		# find_stellardec()
-		find_ndec()
+		# find_ndec()
+		find_ratio_dec(save_values=False)
 		# find_odec()
 		# for galaxy in [
 		# 		'ic1459', 
