@@ -427,3 +427,43 @@ def nanptp(v):
 	m = np.isfinite(v)
 	return np.nanmax(v[m]) - np.nanmin(v[m])
 
+
+def e_binomial(p, n, str=False):
+	p = float(p)/n
+	e = np.sqrt((p * (1 - p))/n)
+	if str:
+		print '%.4f+/-%.4f' % (p, e)
+	return e
+
+
+##############################################################################
+# Python implimentation of IDL code from 
+# https://idlastro.gsfc.nasa.gov/ftp/pro/astro/calz_unred.pro
+# requested by a Jane Rigby on Python users in Astronomy facebook page 
+
+import numpy as np
+import warnings
+
+def calz_unred(wave, flux, ebv, R_V=4.05):
+
+    w1 = np.where((wave >= 6300) * (wave <= 22000))[0]
+    w2 = np.where((wave >= 912) * (wave < 6300))[0]
+
+    x  = 10000.0/wave                      # Wavelength in inverse microns
+
+    if len(w1) + len(w2) != len(wave):
+        warnings.warn('Warning - some elements of wavelength vector outside valid'
+            + ' domain')
+        flux[(wave < 912) + (wave > 22000)] = 0
+
+    klam = flux*0.0
+
+    if len(w1) > 0:
+        klam[w1] = 2.659*(-1.857 + 1.040*x[w1]) + R_V
+
+    if len(w2) > 0:
+        klam[w2] = 2.659 * np.poly1d([-2.156, 1.509, -0.198, 0.011][::-1])(x[w2])\
+            + R_V
+
+    funred = flux * 10.0**(0.4 * klam * ebv)
+    return funred

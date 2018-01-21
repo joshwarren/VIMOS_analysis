@@ -343,7 +343,7 @@ def find_ratio_dec(save_values=False):
 			np.savetxt('%s/MUSE/analysis/%s_H.txt' % (cc.home_dir, galaxy), 
 				np.array([alp, alp.uncert, bet, bet.uncert]))
 
-	Prefig()
+	Prefig(size=(8,7))
 	y, e_y = {}, {}
 	x, e_x = {}, {}
 	x2, e_x2 = {}, {}
@@ -375,6 +375,9 @@ def find_ratio_dec(save_values=False):
 		y2[galaxy] = alp[m]/cont_Ha[m]
 		e_y2[galaxy] = y2[galaxy] * np.sqrt((e_cont_Ha[m]/cont_Ha[m])**2 
 			+ (e_alp[m]/alp[m])**2)
+
+	def f(ab, pivot, x):
+		return ab[1]*(x - pivot) + ab[0]
 		
 	pivot = np.nanmean(np.append(*x.values()))
 	p = lts(np.append(*x.values()), np.append(*y.values()), 
@@ -383,7 +386,7 @@ def find_ratio_dec(save_values=False):
 	fig3 = plt.gcf()
 	fig3.savefig('%s/Data/muse/analysis/ratio.png' % (cc.base_dir),
 		dpi=240)
-	fig, ax = plt.subplots()#2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
+	fig, ax = plt.subplots(2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
 	print 'NII/Ha to NI/Hb (lts)'
 	print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
 		p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
@@ -394,26 +397,48 @@ def find_ratio_dec(save_values=False):
 	print ''
 
 	for g in x.iterkeys():
-		yerr = y[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
-			+ e_y[g]**2)/(y[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
-			+ (e_x[g]/x[g])**2)
-		ax.errorbar(x[g], (y[g] - p.ab[0] + pivot*p.ab[1])/x[g], fmt='.', label=g, 
-			xerr=e_x[g], yerr=yerr)
-	ax.axhline(p.ab[1], c='k')
-	rms = np.std((np.append(*y.values()) - p.ab[0] + p.ab[1]*pivot)
-		/np.append(*x.values()), ddof=2)
-	ax.axhline(p.ab[1] + rms, ls='--', c='k')
-	ax.axhline(p.ab[1] - rms, ls='--', c='k')
-	ax.axhline(p.ab[1] + 2.6*rms, ls=':', c='k')
-	ax.axhline(p.ab[1] - 2.6*rms, ls=':', c='k')
-	ax.legend(facecolor='w', loc=4)
+		# yerr = y[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
+		# 	+ e_y[g]**2)/(y[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
+		# 	+ (e_x[g]/x[g])**2)
+		# ax.errorbar(x[g], (y[g] - p.ab[0] + pivot*p.ab[1])/x[g], fmt='.', label=g, 
+		# 	xerr=e_x[g], yerr=yerr)
 
-	ax.set_xlabel(r'$\mathrm{\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
-	ax.set_ylabel(r'$\mathrm{\left(\frac{[NII]\lambda6584}{H\alpha} - B\right)}$'
-		+ r'$\mathrm{/\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
+		res = y[g] - f(p.ab, pivot, x[g])
+		yerr = res/x[g] * np.sqrt((e_x[g]/x[g])**2 + (e_y[g]**2 
+			+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x[g]**2 
+			+ x[g]**2*p.ab_err[1]**2)/res**2)
+		ax[0].errorbar(x[g], y[g], xerr=e_x[g], yerr=e_y[g], fmt='.', label=g)
+		ax[1].errorbar(x[g], res/x[g], fmt='.', xerr=e_x[g], yerr=yerr)
 
-	fig.savefig('%s/Data/muse/analysis/ratio_fit.png' % (cc.base_dir),
-		dpi=240)
+	xlim = ax[0].get_xlim()
+	ylim = ax[0].get_ylim()
+	ax[0].plot(xlim, f(p.ab, pivot, xlim), 'k')
+	ax[0].plot(xlim, f(p.ab, pivot, xlim) + p.rms, 'k--')
+	ax[0].plot(xlim, f(p.ab, pivot, xlim) - p.rms, 'k--')
+	ax[0].plot(xlim, f(p.ab, pivot, xlim) + 2.6 * p.rms, 'k:')
+	ax[0].plot(xlim, f(p.ab, pivot, xlim) - 2.6 * p.rms, 'k:')
+	ax[0].set_ylim(ylim)
+	ax[0].set_xlim(xlim)
+
+	ax[1].axhline(0, c='k')
+	rms = np.std(np.append(*y.values()) - f(p.ab, pivot, np.append(*x.values())), 
+		ddof=2)
+	ax[1].axhline(+rms, ls='--', c='k')
+	ax[1].axhline(-rms, ls='--', c='k')
+	ax[1].axhline(+2.6*rms, ls=':', c='k')
+	ax[1].axhline(-2.6*rms, ls=':', c='k')
+	ax[1].set_ylim(-3.5*np.nanmax(rms), 3.5*np.nanmax(rms))
+
+	ax[0].legend(facecolor='w', loc=4)
+
+	ax[1].set_xlabel(r'$\mathrm{\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
+	# ax[1].set_xlabel(r'$\mathrm{\frac{[NI]\lambda5200}{H\beta}}$')
+	ax[0].set_ylabel(r'$\mathrm{\frac{[NII]\lambda6584}{H\alpha}}$')
+	ax[1].set_ylabel('Residuals')
+
+	fig.subplots_adjust(hspace=0)
+	fig.savefig('%s/Documents/thesis/chapter5/ratio_fit.png' % (cc.home_dir),
+		dpi=240, bbox_inches='tight')
 	plt.close('all')
 
 
@@ -425,7 +450,7 @@ def find_ratio_dec(save_values=False):
 	fig4.savefig('%s/Data/muse/analysis/EWrelationship.png' % (cc.base_dir),
 		dpi=240)
 
-	fig2, ax2 = plt.subplots()
+	fig2, ax2 = plt.subplots(2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
 	print 'EW(Ha) to EW(Hb) (lts)'
 	print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
 		p.ab[0] - p.ab[1]*pivot, np.sqrt(p.ab_err[0]**2 
@@ -435,25 +460,44 @@ def find_ratio_dec(save_values=False):
 		print '%.4g    %.4g' % (a[1], a[0])
 
 	for g in x2.iterkeys():
-		yerr = y2[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
-			+ e_y2[g]**2)/(y2[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
-			+ (e_x2[g]/x2[g])**2)
-		ax2.errorbar(x2[g], (y2[g] - p.ab[0] + pivot*p.ab[1])/x2[g], fmt='.', 
-			label=g, xerr=e_x2[g], yerr=yerr)
-	ax2.axhline(p.ab[1], c='k')
-	rms = np.std((np.append(*y2.values()) - p.ab[0] + p.ab[1]*pivot)
-		/np.append(*x2.values()), ddof=2)
-	ax2.axhline(p.ab[1] + rms, ls='--', c='k')
-	ax2.axhline(p.ab[1] - rms, ls='--', c='k')
-	ax2.axhline(p.ab[1] + 2.6*rms, ls=':', c='k')
-	ax2.axhline(p.ab[1] - 2.6*rms, ls=':', c='k')
-	ax2.legend(facecolor='w', loc=4)
+		res = y2[g] - f(p.ab, pivot, x2[g])
+		yerr = res/x2[g] * np.sqrt((e_x2[g]/x2[g])**2 + (e_y2[g]**2 
+			+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x2[g]**2 
+			+ x2[g]**2*p.ab_err[1]**2)/res**2)
+		ax2[0].errorbar(x2[g], y2[g], xerr=e_x2[g], yerr=e_y2[g], fmt='.', 
+			label=g.upper())
+		ax2[1].errorbar(x2[g], res/x2[g], fmt='.', xerr=e_x2[g], yerr=yerr)
 
-	ax2.set_xlabel(r'EW(H$\beta$)')
-	ax2.set_ylabel(r'(EW(H$\beta$) - B)/EW(H$\alpha$)')
+	xlim = ax2[0].get_xlim()
+	ylim = ax2[0].get_ylim()
+	ax2[0].plot(xlim, f(p.ab, pivot, xlim), 'k')
+	ax2[0].plot(xlim, f(p.ab, pivot, xlim) + p.rms, 'k--')
+	ax2[0].plot(xlim, f(p.ab, pivot, xlim) - p.rms, 'k--')
+	ax2[0].plot(xlim, f(p.ab, pivot, xlim) + 2.6 * p.rms, 'k:')
+	ax2[0].plot(xlim, f(p.ab, pivot, xlim) - 2.6 * p.rms, 'k:')
+	ax2[0].set_ylim(ylim)
+	ax2[0].set_xlim(xlim)
 
+	ax2[1].axhline(0, c='k')
+	rms = np.std(np.append(*y2.values()) - f(p.ab, pivot, np.append(*x2.values())), 
+		ddof=2)
+	ax2[1].axhline(+rms, ls='--', c='k')
+	ax2[1].axhline(-rms, ls='--', c='k')
+	ax2[1].axhline(+2.6*rms, ls=':', c='k')
+	ax2[1].axhline(-2.6*rms, ls=':', c='k')
+	ax2[1].set_ylim(-3.5*np.nanmax(rms), 3.5*np.nanmax(rms))
+
+	ax2[0].legend(facecolor='w', loc=4)
+
+	ax2[1].set_xlabel(r'EW(H$\beta$)')
+	ax2[0].set_ylabel(r'EW(H$\alpha$)')
+	ax2[1].set_ylabel('Residuals')
+
+	fig2.subplots_adjust(hspace=0)
 	fig2.savefig('%s/Data/muse/analysis/EqW_fit.png' % (cc.base_dir),
-		dpi=240)
+		dpi=240, bbox_inches='tight')
+	fig2.savefig('%s/Documents/thesis/chapter5/EqW_fit.png' % (cc.home_dir),
+		dpi=240, bbox_inches='tight')
 
 
 

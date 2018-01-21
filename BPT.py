@@ -56,13 +56,36 @@ lsd = np.log10(sd)
 
 
 
-# def NII_to_NI(v):
-# 	a = nd
-# 	b = 2.748e4
-# 	return (v - b) / a
+def NII_Ha_to_NI_Hb(v):
+	a = 0.38
+	b = 1.80
+	# return (v - b)/a
+	try:
+		len(v) # test if array
+		out = np.zeros(len(v))
+		m = v < 2.0
+		out[m] = v[m]/2*((2. - b)/a)
+		# out[m] = v[m]/2*0.5
 
-# def log_NII_to_NI(v):
-# 	return np.log10(NII_to_NI(10**v))
+		out[~m] = (v[~m] - b)/a
+		return out
+	except:
+		if v < 2.0:
+			return v/2*((2. - b)/a)
+		else:
+			return (v - b)/a
+
+def log_NII_Ha_to_NI_Hb(v):
+	return np.log10(NII_Ha_to_NI_Hb(10**v))
+
+def EqW_Ha_to_EqW_Hb(v):
+	a = 2.92
+	b = -0.16
+	return (v - b)/a
+	
+def log_EqW_Ha_to_EqW_Hb(v):
+	return np.log10(EqW_Ha_to_EqW_Hb(10**v))
+
 
 # def e_NII_to_NI(v, s_v):
 # 	a = nd
@@ -216,8 +239,8 @@ def add_grids(ax, xline, yline, x_Ha=False, y_Ha=False):
 		if yline == '[OIII]':
 			y_row = (atom=='O') * (species=='III') * (wav==5006.77)
 		if xline == '[NI]':
-			x_row = (atom=='N') * (species=='I') * (wav==5197.82)
-			x_row2 = (atom=='N') * (species=='I') * (wav==5200.17)
+			x_row = (atom=='N') * (species=='I') * (wav==5200.17)
+			x_row2 = (atom=='N') * (species=='I') * (wav==5197.82)
 		if xline == '[OI]':
 			x_row = (atom=='O') * (species=='I') * (wav==6300.2)
 		if xline == '[NII]':
@@ -567,8 +590,7 @@ def global_MEx(aperture=3, instrument='vimos'):
 		frac_in_ap = in_aperture(x_cent_pix, y_cent_pix, ap, 
 			instrument=instrument)
 		galaxy_data = np.einsum('ijk,jk->ijk', galaxy_data, frac_in_ap)
-		galaxy_noise = np.einsum('ijk,jk->ijk', galaxy_noise**2, 
-			frac_in_ap)
+		galaxy_noise = np.einsum('ijk,jk->ijk', galaxy_noise, frac_in_ap)**2
 		bin_lin = np.nansum(galaxy_data, axis=(1,2))
 		bin_lin_noise = np.sqrt(np.nansum(galaxy_noise, axis=(1,2)))
 
@@ -604,7 +626,7 @@ def global_MEx(aperture=3, instrument='vimos'):
 
 			Hb[:] = 0
 
-		OIII_flux = np.trapz(OIII, x=pp.lam)/1.35
+		OIII_flux = np.trapz(OIII, x=pp.lam)/1.35 # not doublet
 
 		e_lines = np.array([e for e in pp.templatesToUse if not e.isdigit()])
 		e_OIII_flux = trapz_uncert(
@@ -683,7 +705,8 @@ def global_MEx(aperture=3, instrument='vimos'):
 
 
 if __name__=='__main__':
-	# global_MEx()
+	global_MEx()
+	msadlksal
 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
 	# galaxies = ['ic1459']

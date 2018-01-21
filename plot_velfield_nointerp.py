@@ -91,7 +91,15 @@ def add_orientation(pa=0):
 		0.805*yr+ylim[0]+0.1*yr*np.cos(pa), 'N')
 
 
-
+def render_numbers(vmin, vmax):
+    order = int(np.floor(np.log10(abs(vmax))))
+    if order > 0: # vmax >= 10
+        out = str(int(round(vmin, 0))), str(int(round(vmax, 0)))
+    elif order == 0: # 1 >= vmax > 10
+        out = '%.1f' % (vmin), '%.1f' % (vmax)
+    else: # vmax < 1
+        out = str(round(vmin, abs(order)-2)), str(round(vmax, abs(order)-2))
+    return out
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
@@ -100,7 +108,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, 
 	dms=False, signal_noise_target=None, pa=None, center=None, alpha=None, 
-	galaxy_labelcolor=None, **kwargs):
+	galaxy_labelcolor=None, label_size=None, lim_labels=False, **kwargs):
 	Prefig()
 
 	kwg = {}
@@ -121,6 +129,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	else:
 		fig = plt.gcf()
 	ax.set_aspect('equal')
+	ax.set_zorder(10)
 
 
 	if vmin is None:
@@ -178,6 +187,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax_dis.yaxis.set_major_formatter(tick_formatter)
 
 		ax.ax_dis = ax_dis
+		ax_dis.set_zorder(10)
 
 		# Hide ax
 		ax.xaxis.set_visible(False)
@@ -348,12 +358,19 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		else:
 			cbar = plt.colorbar(cs, ax=[ax], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
+	elif lim_labels:
+		ax_dis.text(1, 0, '%s/%s' % render_numbers(vmin, vmax), 
+			horizontalalignment='right', rotation=270, verticalalignment='bottom', 
+			bbox=dict(edgecolor='k', facecolor='w', zorder=99), 
+			transform=ax.transAxes, zorder=100)
+
 
 	if colorbar:	
 		if label:
-			cbar.ax.text(4.0,0.5, label, rotation=270, 
+			t = cbar.ax.text(4.0,0.5, label, rotation=270, 
 				verticalalignment='center')
-			
+			if label_size is not None:
+				t.set_size(label_size*t.get_size())
 		ax.cax = cbar.ax
 	ax.get_yaxis().get_major_formatter().set_useOffset(False)
 	ax.get_xaxis().get_major_formatter().set_useOffset(False)
