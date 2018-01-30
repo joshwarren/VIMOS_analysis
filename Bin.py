@@ -184,8 +184,8 @@ class Data(object):
 
 	@property
 	def e_line(self):
-		return {k:v for k,v in self._components.iteritems() if k!='stellar' and not
-			all(v.mask)}
+		return {k:v for k,v in self._components.iteritems() if k!='stellar' 
+			and not all(v.mask)}
 
 	@property
 	def e_line_no_mask(self):
@@ -193,8 +193,8 @@ class Data(object):
 
 	@property
 	def components(self):
-		return {k:v for k,v in self._components.iteritems() if k=='stellar' or not
-			all(v.mask)}
+		return {k:v for k,v in self._components.iteritems() if k=='stellar' 
+			or not all(v.mask)}
 
 	@property
 	def components_no_mask(self):

@@ -317,8 +317,8 @@ def save(galaxy, instrument='vimos', debug=False):
 
 
 	cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
-		array=eval(p)) for i, p in enumerate('age', 'unc_age', 'met', 
-		'unc_met', 'alp', 'unc_alp')])
+		array=eval(p)) for i, p in enumerate(['age', 'unc_age', 'met', 
+		'unc_met', 'alp', 'unc_alp'])])
 
 	hdu = fits.BinTableHDU.from_columns(cols)
 	f_new = fits.HDUList([primary_hdu, hdu])
@@ -351,18 +351,21 @@ def save(galaxy, instrument='vimos', debug=False):
 			]
 		cols.extend([
 			fits.Column(name='VEL', format='D', unit='km s^-1', 
-				array=np.array(D.components['[OIII]5007d'].plot['vel'])),
+				array=np.array(D2.components['[OIII]5007d'].plot['vel'])),
 			fits.Column(name='E_VEL', format='D', unit='km s^-1', 
-				array=D.components['[OIII]5007d'].plot['vel'].uncert),
+				array=D2.components['[OIII]5007d'].plot['vel'].uncert),
 			fits.Column(name='SIGMA', format='D', unit='km s^-1', 
-				array=np.array(D.components['[OIII]5007d'].plot['sigma'])),
+				array=np.array(D2.components['[OIII]5007d'].plot['sigma'])),
 			fits.Column(name='E_SIGMA', format='D', unit='km s^-1', 
-				array=D.components['[OIII]5007d'].plot['sigma'].uncert)
+				array=D2.components['[OIII]5007d'].plot['sigma'].uncert)
 			])
-		cols.extend([
-			fits.Column(name=str_plots[i], format='D', unit='1E-15 erg s^-1 cm^-1', 
-				array=D2.components[p].flux) for i, p in 
-				enumerate(D2.e_components)])
+
+		cols.extend(np.array([[
+			fits.Column(name=p.replace('[','').replace(']',''), format='D', 
+			unit='1E-15 erg s^-1 cm^-1', array=D2.components[p].flux),
+			fits.Column(name='e_'+p.replace('[','').replace(']',''), format='D', 
+			unit='1E-15 erg s^-1 cm^-1', array=D2.components[p].flux.uncert)] 
+			for i, p in enumerate(D2.e_components)]).flatten())
 
 		hdu = fits.BinTableHDU.from_columns(cols)
 		f_new = fits.HDUList([primary_hdu, hdu])
@@ -377,7 +380,7 @@ def save(galaxy, instrument='vimos', debug=False):
 if __name__=='__main__':
 	if 'home' in cc.device:
 		for galaxy in ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 
-		'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']:
+			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']:
 			save(galaxy, debug=False)
 	elif cc.device == 'uni':
 		for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
