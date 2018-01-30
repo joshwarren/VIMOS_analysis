@@ -69,13 +69,13 @@ def save(galaxy, instrument='vimos', debug=False):
 			"Fe4383",
 			"e_Fe4383",
 			"Ca4455",
-			"e_Ca4455"
+			"e_Ca4455",
 			"Fe4531",
 			"e_Fe4531",
 			'H_beta',
 			'e_H_beta',
 			"Fe5015",
-			"e_Fe5015"
+			"e_Fe5015",
 			'Mgb',
 			'e_Mgb'
 			]
@@ -123,7 +123,7 @@ def save(galaxy, instrument='vimos', debug=False):
 			"D2.absorption_line('TiO1',remove_badpix=True)",
 			"D2.absorption_line('TiO1',uncert=True,remove_badpix=True)[1]",
 			"D2.absorption_line('TiO2',remove_badpix=True)",
-			"D2.absorption_line('TiO2',uncert=True,remove_badpix=True)[1]",
+			"D2.absorption_line('TiO2',uncert=True,remove_badpix=True)[1]"
 			]
 		str_plots = [
 			'H_beta',
@@ -147,7 +147,7 @@ def save(galaxy, instrument='vimos', debug=False):
 			'TiO1',
 			'e_TiO1',
 			'TiO2',
-			'e_TiO2',
+			'e_TiO2'
 			]
 		units = [
 			'Angstrom',
@@ -171,7 +171,7 @@ def save(galaxy, instrument='vimos', debug=False):
 			'mag',
 			'mag',
 			'mag',
-			'mag',
+			'mag'
 			]
 		
 	vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
