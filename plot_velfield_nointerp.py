@@ -98,7 +98,7 @@ def render_numbers(vmin, vmax):
     elif order == 0: # 1 >= vmax > 10
         out = '%.1f' % (vmin), '%.1f' % (vmax)
     else: # vmax < 1
-        out = str(round(vmin, abs(order)-2)), str(round(vmax, abs(order)-2))
+        out = str(round(vmin, abs(order)+2)), str(round(vmax, abs(order)+2))
     return out
 
 
@@ -108,7 +108,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, 
 	dms=False, signal_noise_target=None, pa=None, center=None, alpha=None, 
-	galaxy_labelcolor=None, label_size=None, lim_labels=False, **kwargs):
+	galaxy_labelcolor=None, label_size=None, lim_labels=False, 
+	lim_labels_units=None, **kwargs):
 	Prefig()
 
 	kwg = {}
@@ -223,8 +224,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if isinstance(cmap, str):
 			cmap = plt.get_cmap(cmap)
 
-	if vmin>=0: # Assume even moment
-		vmin -= (vmax-vmin)*0.05
+	if vmin > 0: # Assume even moment
+		vmin -= min((vmax-vmin)*0.05, vmin)
 
 	# Change to RGBA 
 	pic = cmap((img-vmin)/(vmax-vmin))
@@ -250,8 +251,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if galaxy is not None:
 		if galaxy_labelcolor is None:
 			galaxy_labelcolor = 'k'
-		gal_name = ax.text(0.05,0.95, galaxy, color=galaxy_labelcolor,
-			verticalalignment='top',transform=ax.transAxes)
+		gal_name = ax.text(0.08,0.92, galaxy, color=galaxy_labelcolor,
+			verticalalignment='top',transform=ax.transAxes, bbox=dict(
+			edgecolor='none', facecolor='w', zorder=99, alpha=0.6), zorder=100)
 		ax.gal_name = gal_name
 		if redshift is not None:
 			gal_z = ax.text(0.02,0.93, "Redshift: " + str(round(redshift,3)), 
@@ -359,10 +361,17 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			cbar = plt.colorbar(cs, ax=[ax], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
 	elif lim_labels:
-		ax_dis.text(1, 0, '%s/%s' % render_numbers(vmin, vmax), 
-			horizontalalignment='right', rotation=270, verticalalignment='bottom', 
-			bbox=dict(edgecolor='k', facecolor='w', zorder=99), 
-			transform=ax.transAxes, zorder=100)
+		print vmin
+		if lim_labels_units is None:
+			ax_dis.text(1, 0, '%s/%s' % render_numbers(vmin, vmax), 
+				horizontalalignment='right', rotation=270, 
+				verticalalignment='bottom', bbox=dict(edgecolor='k', 
+				facecolor='w', zorder=99), transform=ax.transAxes, zorder=100)
+		else:
+			ax_dis.text(1, 0, '%s/%s ' % render_numbers(vmin,vmax)+lim_labels_units, 
+				horizontalalignment='right', rotation=270, 
+				verticalalignment='bottom', bbox=dict(edgecolor='k', 
+				facecolor='w', zorder=99), transform=ax.transAxes, zorder=100)
 
 
 	if colorbar:	
