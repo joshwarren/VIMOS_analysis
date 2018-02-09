@@ -373,12 +373,13 @@ def moving_weighted_average(x, y, step_size=.1, weights=None, interp=True):
 
 
 def myerrorbar(ax, x, y, xerr=None, yerr=None, zorder=0, color=None, 
-	marker=None, size=None, colorbar=False, cmap=None):
+	marker=None, size=None, colorbar=False, cmap=None, vmin=None, vmax=None):
 	import matplotlib.pyplot as plt
 	from matplotlib import cm
 	
 	sc = ax.scatter(x, y, marker=marker, s=size, c=color, 
-		zorder=zorder, cmap=cmap)
+		zorder=zorder, cmap=cmap, vmin=vmin, vmax=vmax)
+	ax.sc = sc
 
 	if colorbar:
 		#create colorbar according to the scatter plot
@@ -393,14 +394,17 @@ def myerrorbar(ax, x, y, xerr=None, yerr=None, zorder=0, color=None,
 				zorder=zorder-1)
 
 			color = np.array(color).astype(float)
-			if colorbar:
-				time_color = clb.to_rgba(color)
-			else:
-				if isinstance(cmap, str):
-					cmap = cm.get_cmap(cmap)
-				elif cmap is None:
-					cmap = cm.get_cmap()
+			# if colorbar:
+			# 	time_color = clb.to_rgba(color)
+			# else:
+			if isinstance(cmap, str):
+				cmap = cm.get_cmap(cmap)
+			elif cmap is None:
+				cmap = cm.get_cmap()
+			if vmin is None:
 				color = cmap((color - np.nanmin(color))/nanptp(color))
+			else:
+				color = cmap(((color - vmin)/(vmax - vmin)).clip(0.,1.))
 
 			# adjust the color of c[0], which is a LineCollection, 
 			#	to the colormap

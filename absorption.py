@@ -29,7 +29,7 @@ def absorption(line_name, lam, spec, unc_lam=None, unc_spec=None,
 	if line_name=='H_beta' or line_name=='Hbeta':
 		line_name='Hb'
 		line_name2='hb'
-	elif line_name=='Mg_b':
+	elif line_name=='Mg_b' or line_name=='Mgb':
 		line_name='Mgb'
 		line_name2='mgb'
 	elif line_name=='Mg1':

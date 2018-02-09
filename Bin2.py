@@ -1,18 +1,19 @@
-## ==================================================================
-## 		Emission lines
-## ==================================================================
-## warrenj 20160725 An object to hold emission lines. 
+# warrenj 20180203 Object to use in place of Data object which will load data 
+# from fits files when 
+# needed.
 
 import numpy as np
-import ppxf_util as util
-from absorption import absorption
-from glob import glob
+# import ppxf_util as util
+# from absorption import absorption
+# from glob import glob
 from checkcomp import checkcomp
 cc = checkcomp()
 from tools import moving_weighted_average
-from scipy.ndimage.filters import gaussian_filter1d
-from scipy.interpolate import interp1d
-from itertools import groupby, count
+# from scipy.ndimage.filters import gaussian_filter1d
+# from scipy.interpolate import interp1d
+# from itertools import groupby, count
+from astropy.io import fits
+import warnings
 
 
 c = 299792.458 # speed of light in km/s
@@ -45,8 +46,8 @@ class Data(object):
 # SNRatio: (array) Signal to Noise Ratio of each bin. 
 # gas_opt: 	0	(default) No emission lines
 #			1	All emission lines set with LOSVD fixed to each other
-#			2	All Balmers lines set with the same LOSVD, and all others set with fixed
-#				LOSVD ([OIII] and [NI])
+#			2	All Balmers lines set with the same LOSVD, and all others set with 
+#				fixed LOSVD ([OIII] and [NI])
 #			3	All emission lines set with independant LOSVD
 # independent_components: list components with inderpendant LOSVDs.
 #
@@ -57,24 +58,76 @@ class Data(object):
 #	sets which bin contains which spaxel.
 # absorption_line (absorption line): returns absorption line indice level
 # 	from Lick like methods.
-	def __init__(self, xyb_turple, sauron):
-		x,y,bin_num = xyb_turple
-		self.x,self.y,self.bin_num=x.astype(int),y.astype(int),bin_num.astype(int)
-		self.set_spaxels_in_bins(x, y, bin_num)
-		self.unbinned_flux = np.zeros((int(max(x)+1),int(max(y)+1))) # 2D blank array
+	def __init__(self, galaxy, instrument='vimos', opt='kin'):
+		self.galaxy, self.instrument, self.opt = galaxy, instrument, opt
+		self.MCdir = '%s/Data/%s/analysis/%s/%s/MC' % (cc.base_dir, instrument,
+			galaxy, opt)
 		self._components = {'stellar':stellar_data(self)}
+		self.x,self.y,self.bin_num=np.loadtxt('%s/Data/%s/' % (cc.base_dir, 
+			instrument) + 'analysis/%s/%s/setup/voronoi_2d_binning_output.txt' % (
+			galaxy, opt), usecols=(0,1,2), dtype=int, skiprows=1, unpack=True)
+		
+		# Fits files
+		if opt != 'kin':
+			self.abs_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+				+'analysed_fits/%s_absorption_line.fits' % (galaxy), 1)
+			self.abs_fits_nomask = fits.getdata('%s/Data/%s/' % (cc.base_dir, 
+				instrument) +'analysed_fits/%s_absorption_line_nomask.fits' % (
+				galaxy), 1)
+			self.emi_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+				+'analysed_fits/%s_emission_line.fits' % (galaxy), 1)
+
+			self._components.update({l:emission_data(self, l) for l in fits.open(
+				'%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
+				+ '%s_emission_line.fits' % (galaxy))[1].columns.names if 
+				(l not in ['NO', 'E_VEL', 'E_SIGMA', 'BINSIZE', 'FLUX', 'SNR', 
+				'XS', 'YS', 'SIGMA', 'VEL']) and ('anr_' not in l) and 
+				('e_' not in l)})
+			self._gas = 1
+		else:
+			self._gas = 0
+
+		self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+			+'analysed_fits/%s_stellar_kine.fits' % (galaxy), 1)
+		if self.instrument == 'muse':
+			ext = 1
+			from errors2_muse import get_dataCubeDirectory
+		elif self.instrument == 'vimos':
+			ext = 0
+			from errors2 import get_dataCubeDirectory
+		self.cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
+		if self.opt == 'kin':
+			self.base_fits = self.ste_fits
+		else:
+			self.base_fits = self.emi_fits
+
+		self.set_spaxels_in_bins(self.x, self.y, self.bin_num)
 		self.norm_method = 'lwv'
 		self.vel_norm = 0.0
 		self.common_range = np.array([])
-		self._gas = 0
 		self.__threshold__ = 3.0
-		self.center = (int(max(x)/2.0), int(max(y)/2.0))
-		self.sauron = bool(sauron)
+
+	@property
+	def center(self):
+		if self.instrument=='vimos':
+			i = 4
+		elif self.instrument == 'muse':
+			i = 1
+		file = '%s/Data/%s/analysis/galaxies.txt' % (cc.base_dir, self.instrument)
+		x_cent_gals, y_cent_gals = np.loadtxt(file, usecols=(i,i+1), unpack=True,
+			dtype=int, skiprows=1)
+		galaxy_gals = np.loadtxt(file, usecols=(0,), skiprows=1, dtype=str)
+		i_gal = np.where(galaxy_gals==self.galaxy)[0][0]
+		return x_cent_gals[i_gal], y_cent_gals[i_gal]
+
+	@property
+	def unbinned_flux(self):
+		return np.nansum(self.cube_fits, axis=0)
 
 
-	def add_e_line(self, line, wav):
-		if line not in self._components.keys():
-			self._components[line] = emission_data(self, line, wav)
+	# def add_e_line(self, line, wav):
+	# 	if line not in self._components.keys():
+	# 		self._components[line] = emission_data(self, line, wav)
 
 	def set_spaxels_in_bins(self, x, y, bin_num):
 		x,y,bin_num = x.astype(int), y.astype(int), bin_num.astype(int)
@@ -123,22 +176,35 @@ class Data(object):
 			self.vel_norm = 0.0
 
 	def absorption_line(self, absorption_line, uncert=False, res=None, 
-		instrument=None, remove_badpix=False, nomask=False):
-		ab = np.zeros(self.number_of_bins)
-		ab_uncert = np.zeros(self.number_of_bins)
-		for i, bin in enumerate(self.bin):
-			if uncert:
-				ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
-					uncert=uncert, res=res, instrument=instrument, 
-					remove_badpix=remove_badpix, nomask=nomask)
+		instrument='vimos', remove_badpix=False, nomask=False):
+		if res is None:
+			if nomask:
+				if uncert:
+					return self.abs_fits_nomask[absorption_line.upper()], \
+						self.abs_fits_nomask['e_'+absorption_line.upper()]
+				else:
+					return self.abs_fits_nomask[absorption_line]
 			else:
-				ab[i] = bin.absorption_line(absorption_line, uncert=uncert,
-					res=res, instrument=instrument, remove_badpix=remove_badpix,
-					nomask=nomask)
-		if uncert:
-			return ab, ab_uncert
+				if uncert:
+					return self.abs_fits[absorption_line.upper()], \
+						self.abs_fits['e_'+absorption_line.upper()]
+				else:
+					return self.abs_fits[absorption_line]
 		else:
-			return ab
+			ab = np.zeros(self.number_of_bins)
+			ab_uncert = np.zeros(self.number_of_bins)
+			for i, bin in enumerate(self.bin):
+				if uncert:
+					ab[i], ab_uncert[i] = bin.absorption_line(absorption_line, 
+						uncert=uncert, res=res, instrument=instrument, 
+						remove_badpix=remove_badpix)
+				else:
+					ab[i] = bin.absorption_line(absorption_line, uncert=uncert,
+						res=res, instrument=instrument, remove_badpix=remove_badpix)
+			if uncert:
+				return ab, ab_uncert
+			else:
+				return ab
 
 	# Take output some atttribute and return 2D 'unbinned' versions i.e. that value 
 	# applied to each spaxel within the bin. Norm keyword is for moment-0 quantities
@@ -160,11 +226,13 @@ class Data(object):
 		new = np.full(self.number_of_bins, np.nan)
 		for i in range(self.number_of_bins):
 			if flux_weighted:
-				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels], 
+				new[i] = np.average(field[self.bin[i].xspaxels, 
+					self.bin[i].yspaxels], 
 					weights=self.unbinned_flux[self.bin[i].xspaxels, 
 					self.bin[i].yspaxels])
 			else:
-				new[i] = np.average(field[self.bin[i].xspaxels, self.bin[i].yspaxels])
+				new[i] = np.average(field[self.bin[i].xspaxels, 
+					self.bin[i].yspaxels])
 		return new
 
 	@property
@@ -203,70 +271,53 @@ class Data(object):
 
 	@property
 	def flux(self):
-		fl = np.zeros(self.number_of_bins)
-		e_fl = np.zeros(self.number_of_bins)
-		for i, bin in enumerate(self.bin):
-			f = bin.flux
-			e_fl[i] = f.uncert
-			fl[i] = float(f)
-		return myArray(fl, uncert=e_fl)
+		return self.base_fits['FLUX']
 
-	@property
-	def gas_flux(self):
-		f = np.zeros(self.number_of_bins)
-		u = np.zeros(self.number_of_bins)
-		for k,v in self.e_line.iteritems():
-			l_flux  = v.flux
-			f = np.nansum([f, l_flux], axis=0)
-			u = np.nansum([u, l_flux.uncert**2], axis=0)
-		u = np.sqrt(u)
-		return myArray(f, uncert=u)
+	# @property
+	# def gas_flux(self):
+	# 	f = np.zeros(self.number_of_bins)
+	# 	u = np.zeros(self.number_of_bins)
+	# 	for k,v in self.e_line.iteritems():
+	# 		l_flux  = v.flux
+	# 		f = np.nansum([f, l_flux], axis=0)
+	# 		u = np.nansum([u, l_flux.uncert**2], axis=0)
+	# 	u = np.sqrt(u)
+	# 	return myArray(f, uncert=u)
 
 	@property
 	def xBar(self):
-		return np.array([bin.xBar for bin in self.bin])	
-	@xBar.setter
-	def xBar(self, xBar):
-		for i, x in enumerate(xBar):
-			self.bin[i].xBar = x
-
+		return self.base_fits['XS']
+		
 	@property
 	def yBar(self):	
-		return np.array([bin.yBar for bin in self.bin])
-	@yBar.setter
-	def yBar(self, yBar):
-		for i, y in enumerate(yBar):
-			self.bin[i].yBar = y
+		return self.base_fits['YS']
 
 	@property
 	def n_spaxels_in_bin(self):
-		return np.array([bin.n_spaxels_in_bin for bin in self.bin])
+		return self.base_fits['BINSIZE']
 
 	@property
 	def galaxy_spectrum(self):
-		s = np.zeros(len(self.bin[0].spectrum))
-		for bin in self.bin:
-			s += bin.spectrum
-		return s
+		return np.nansum(self.cube_fits, axis=(1,2))
 
-	@property
-	def galaxy_continuum(self):
-		s = np.zeros(len(self.bin[0].continuum))
-		for bin in self.bin:
-			s += bin.continuum
-		return s
+	# @property
+	# def galaxy_continuum(self):
+	# 	s = np.zeros(len(self.bin[0].continuum))
+	# 	for bin in self.bin:
+	# 		s += bin.continuum
+	# 	return s
 
+	#**** This is uncertainty not carience, but I don't think I use this anywhere
 	@property
 	def galaxy_varience(self):
-		s = np.zeros(len(self.bin[0].noise))
-		for bin in self.bin:
-			s += bin.noise**2
-		return np.sqrt(s)
+		warnings.warn('This returns uncertainty (sigma) NOT varience')
+		return np.sqrt(np.sum(fits.getdata(get_dataCubeDirectory(self.galaxy), 
+			ext+1)**2, axis=(1,2)))
+
 
 	@property
 	def SNRatio(self):
-		return np.array([np.nanmedian(bin.spectrum)/np.nanmedian(bin.noise) 
-			for bin in self.bin])
+		return self.base_fits['SNR']
 
 	@property
 	def gas(self):
@@ -292,13 +343,13 @@ class Data(object):
 
 	@property
 	def gas_dynamics_SN(self):
-		if self.sauron:
-			return self.components['[OIII]5007d'].amp_noise
-		elif self.broad_narrow:
-			pass
-		else:
-			return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],
-				axis=0)[-2,:]
+		# if self.sauron:
+		return self.components['[OIII]5007d'].amp_noise
+		# elif self.broad_narrow:
+		# 	pass
+		# else:
+		# 	return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],
+		# 		axis=0)[-2,:]
 
 
 
@@ -373,30 +424,36 @@ class _data(object):
 	# __getattr__ only called when attribute is not found by other means. 
 	def __getattr__(self, attr):
 		if attr in ['vel','sigma','h3','h4']:
-			m = self.mask_dynamics
-			k = np.array([])
-			for bin in self.__parent__.bin:
-				if not m[bin.bin_number]:
-					k = np.append(k, getattr(bin.components[self.name], attr))
-				else:
-					k = np.append(k, np.nan)
+	# 		m = self.mask_dynamics
+	# 		k = np.array([])
+	# 		for bin in self.__parent__.bin:
+	# 			if not m[bin.bin_number]:
+	# 				k = np.append(k, getattr(bin.components[self.name], attr))
+	# 			else:
+	# 				k = np.append(k, np.nan)
 
-			# Normalise to rest frame of stars
-			if attr == 'vel':
-				k -= self.__parent__.vel_norm
-			kinematics = myArray(k)
-			kinematics.uncert = myArray(
-				[getattr(bin.components[self.name], attr, myFloat(np.nan)).uncert 
-				if not m[i] else np.nan 
-				for i, bin in enumerate(self.__parent__.bin)])
+	# 		# Normalise to rest frame of stars
+	# 		if attr == 'vel':
+	# 			k -= self.__parent__.vel_norm
+	# 		kinematics = myArray(k)
+	# 		kinematics.uncert = myArray(
+	# 			[getattr(bin.components[self.name], attr, myFloat(np.nan)).uncert 
+	# 			if not m[i] else np.nan 
+	# 			for i, bin in enumerate(self.__parent__.bin)])
 
-			unbinned = self.__parent__.unbin(kinematics)
-			uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
+	# 		unbinned = self.__parent__.unbin(kinematics)
+	# 		uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
 
-			kinematics.unbinned = unbinned
-			kinematics.uncert.unbinned = uncert_unbinned
+	# 		kinematics.unbinned = unbinned
+	# 		kinematics.uncert.unbinned = uncert_unbinned
 
-			return kinematics
+	# 		return kinematics
+			if self.name == 'stellar':
+				return myArray(self.__parent__.ste_fits[attr.upper()], 
+					uncert = self.__parent__.ste_fits['e_'+attr.upper()])
+			else:
+				return myArray(self.__parent__.emi_fits[attr.upper()], 
+					uncert = self.__parent__.emi_fits['e_'+attr.upper()])
 		else:
 			return object.__getattribute__(self,attr)
 
@@ -408,7 +465,8 @@ class stellar_data(_data):
 # Attributes:
 # name: (str) 'stellar'
 # mask(_dynamics): (boolean array) all set to False
-# Inherited attributes from _data object for reading ppxf fitted stellar kinematics
+# Inherited attributes from _data object for reading ppxf fitted stellar
+# 	kinematics
 	def __init__(self, parent):
 		self.__parent__ = parent
 		self.name = 'stellar'
@@ -434,10 +492,10 @@ class emission_data(_data):
 # amp_noise: array of Amplitude to Noise ratio for each bin
 #
 # Inherited attributes from _data object for reading ppxf fitted kinematics
-	def __init__(self, parent, name, wav):
+	def __init__(self, parent, name):#, wav):
 		self.__parent__ = parent
 		self._name = name
-		self._wav = wav
+		# self._wav = wav
 		_data.__init__(self)
 
 	@property	
@@ -500,46 +558,40 @@ class emission_data(_data):
 
 	@property
 	def mask_dynamics(self):
-		p = np.ones(self.__parent__.number_of_bins).astype(bool) # all masked
-		if self.__parent__.sauron:
-			p = self.__parent__.components['[OIII]5007d'].mask
-		elif self.__parent__.gas == 3:
-			p = self.mask
-		elif self.__parent__.gas == 2:
-			for k, i in self.__parent__.e_line_no_mask.iteritems():
-				if ('H' in k) ^ ('H' in self.name):
-					p *= i.mask
-		elif self.__parent__.gas == 1:
-			# # mask if less than 2 Balmer or forbidden lines
-			# n_Balmer = np.zeros(self.__parent__.number_of_bins, dtype=int)
-			# n_forbidden = np.zeros(self.__parent__.number_of_bins, dtype=int)
-			# for k, i in self.__parent__.e_line_no_mask.iteritems():
-			# 	if 'H' in k:
-			# 		n_Balmer += (~i.mask).astype(int)
-			# 	else:
-			# 		n_forbidden += (~i.mask).astype(int)
-			# p = (n_Balmer < 2) + (n_forbidden < 2) 
+		# p = np.ones(self.__parent__.number_of_bins).astype(bool) # all masked
+		# if self.__parent__.sauron:
+		p = self.__parent__.components['[OIII]5007d'].mask
+		# elif self.__parent__.gas == 3:
+		# 	p = self.mask
+		# elif self.__parent__.gas == 2:
+		# 	for k, i in self.__parent__.e_line_no_mask.iteritems():
+		# 		if ('H' in k) ^ ('H' in self.name):
+		# 			p *= i.mask
+		# elif self.__parent__.gas == 1:
+		# 	# # mask if less than 2 Balmer or forbidden lines
+		# 	# n_Balmer = np.zeros(self.__parent__.number_of_bins, dtype=int)
+		# 	# n_forbidden = np.zeros(self.__parent__.number_of_bins, dtype=int)
+		# 	# for k, i in self.__parent__.e_line_no_mask.iteritems():
+		# 	# 	if 'H' in k:
+		# 	# 		n_Balmer += (~i.mask).astype(int)
+		# 	# 	else:
+		# 	# 		n_forbidden += (~i.mask).astype(int)
+		# 	# p = (n_Balmer < 2) + (n_forbidden < 2) 
 
-			# Check all emission lines for at least one detection (i.e. mask = False)
-			# for k, i in self.__parent__.e_line_no_mask.iteritems():
-			# 	p *= i.mask
+		# 	# Check all emission lines for at least one detection (i.e. mask = False)
+		# 	# for k, i in self.__parent__.e_line_no_mask.iteritems():
+		# 	# 	p *= i.mask
 
-			# Check at least 2 detections in emission lines. 
-			p = np.zeros(self.__parent__.number_of_bins)
-			for k, i in self.__parent__.e_line_no_mask.iteritems():
-				p += (~i.mask).astype(int)
-			p = p < 2
+		# 	# Check at least 2 detections in emission lines. 
+		# 	p = np.zeros(self.__parent__.number_of_bins)
+		# 	for k, i in self.__parent__.e_line_no_mask.iteritems():
+		# 		p += (~i.mask).astype(int)
+		# 	p = p < 2
 		return p
 
 	@property
 	def amp_noise(self):
-		p = []
-		for bin in self.__parent__.bin:
-			try:
-				p.append(bin.e_line[self._name].AmpNoi)
-			except KeyError:
-				p.append(np.nan)
-		return np.array(p)
+		return self.__parent__.emi_fits['anr_'+self.name]
 
 
 
@@ -591,20 +643,26 @@ class Bin(object):
 		# e_line set when set_emission_lines is called
 		#self._e_line = {}
 		self.components = {'stellar':_bin_data(self)}
+		if self.__parent__.opt != 'kin':
+			self.components.update({l:emission_line(self, l) for l in fits.open(
+				'%s/Data/%s/' % (cc.base_dir, self.__parent__.instrument)
+				+ 'analysed_fits/%s_emission_line.fits' % (self.__parent__.galaxy)
+				)[1].columns.names if (l not in ['NO', 'E_VEL', 'E_SIGMA', 
+				'BINSIZE', 'FLUX', 'SNR', 'XS', 'YS', 'SIGMA', 'VEL']) and 
+				('anr_' not in l) and ('e_' not in l)})
+
 		# temp_weight set when set_templates called
-		self.temp_weight = {}
-		self._lam = np.array([])
-		self.bestfit = np.array([])		# ppxf bestfit
-		self.spectrum = np.array([]) 	# VIMOS Data
-		self.noise = np.array([])		# VIMOS noise
+		# self.temp_weight = {}
+		# self._lam = np.array([])
+		# self.bestfit = np.array([])		# ppxf bestfit
+		# self.spectrum = np.array([]) 	# VIMOS Data
+		# self.noise = np.array([])		# VIMOS noise
 		self.xspaxels = []
 		self.yspaxels = []
-		self._xBar = np.nan
-		self._yBar = np.nan
-		self.apweight = np.array([])
-		self.mpweight = np.array([])
-		self.unconvolved_spectrum = np.array([])
-		self.unconvolved_lam = np.array([])
+		# self.apweight = np.array([])
+		# self.mpweight = np.array([])
+		# self.unconvolved_spectrum = np.array([])
+		# self.unconvolved_lam = np.array([])
 
 	@property
 	def residual_noise(self):
@@ -623,179 +681,168 @@ class Bin(object):
 	
 	@property
 	def lam(self):
-		return self._lam
-	@lam.setter
-	def lam(self, lam):
-		self._lam = np.array(lam)
-		if len(self.__parent__.common_range) != 0:
-			self.__parent__.common_range[0] = max(
-				self.__parent__.common_range[0],min(lam))
-			self.__parent__.common_range[1] = min(
-				self.__parent__.common_range[1],max(lam))
-		else:
-			self.__parent__.common_range = np.array([min(lam), max(lam)])
-
+		return np.loadtxt('%s/lambda/%s.dat' % (self.__parent__.MCdir, 
+			self.bin_number))
 	@property
-	def loglam(self):
-		return np.log(self._lam)
-	@loglam.setter
-	def loglam(self, loglam):
-		self._lam = np.exp(loglam)
-
+	def spectrum(self):
+		return np.loadtxt('%s/input/%s.dat' % (self.__parent__.MCdir, 
+			self.bin_number))
 	@property
-	def lamLimits(self):
-		return np.array([self._lam[0],self._lam[-1]])
-
+	def noise(self):
+		return np.loadtxt('%s/noise_input/%s.dat' % (self.__parent__.MCdir, 
+			self.bin_number))
 	@property
-	def continuum(self):
-		c = myArray(self.spectrum - np.nansum([line.spectrum 
-			for key, line in self.e_line.iteritems()],axis=0))
-		c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
-			for key, line in self.e_line.iteritems()],axis=0))
-		return c
+	def bestfit(self):
+		return np.loadtxt('%s/bestfit/%s.dat' % (self.__parent__.MCdir, 
+			self.bin_number))
+	# @lam.setter
+	# def lam(self, lam):
+	# 	self._lam = np.array(lam)
+	# 	if len(self.__parent__.common_range) != 0:
+	# 		self.__parent__.common_range[0] = max(
+	# 			self.__parent__.common_range[0],min(lam))
+	# 		self.__parent__.common_range[1] = min(
+	# 			self.__parent__.common_range[1],max(lam))
+	# 	else:
+	# 		self.__parent__.common_range = np.array([min(lam), max(lam)])
 
-	@property
-	def continuum_nomask(self):
-		# NB: Masks not used
-		c = myArray(self.spectrum - np.nansum([line.spectrum_nomask
-			for key, line in self.e_line.iteritems()],axis=0))
-		c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
-			for key, line in self.e_line.iteritems()],axis=0))
-		return c
+	# @property
+	# def loglam(self):
+	# 	return np.log(self._lam)
+	# @loglam.setter
+	# def loglam(self, loglam):
+	# 	self._lam = np.exp(loglam)
 
+	# @property
+	# def lamLimits(self):
+	# 	return np.array([self._lam[0],self._lam[-1]])
+
+	# @property
+	# def continuum(self):
+	# 	# NB: Masks not used
+	# 	c = myArray(self.spectrum - np.nansum([line.spectrum 
+	# 		for key, line in self.e_line.iteritems()],axis=0))
+	# 	c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
+	# 		for key, line in self.e_line.iteritems()],axis=0))
+	# 	return c
 
 	@property
 	def flux(self):
 		# NB: only calculated for the common wavelength range.
-		a = [min(np.where(self.lam > self.__parent__.common_range[0])[0]),
-			max(np.where(self.lam < self.__parent__.common_range[1])[0])]
-		fl =  myFloat(np.trapz(self.spectrum[a[0]:a[1]], 
-			x=self.lam[a[0]:a[1]]))
-		fl.uncert = trapz_uncert(self.noise[a[0]:a[1]], 
-			x=self.lam[a[0]:a[1]])
-		return fl
+		return self.__parent__.flux[self.bin_num]
 
 	@property
 	def xBar(self):
-		return self._xBar
-	@xBar.setter
-	def xBar(self, xBar):
-		self._xBar = xBar
+		return self.__parent__.xBar[self.bin_num]
 
 	@property
 	def yBar(self):
-		return self._yBar
-	@yBar.setter
-	def yBar(self, yBar):
-		self._yBar = yBar
-	
+		return self.__parent__.yBar[self.bin_num]
 
 	@property
 	def n_spaxels_in_bin(self):
 		return len(self.xspaxels)
 
-	def set_templates(self, name, weight):
-		weight = weight.astype(float)
-		## Solving an error in the Uni system with loading large numbers of files  
-		## from the home directory - they have to come from the Data partition 
-		## instead.
-		if cc.getDevice() == 'uni':
-			files = glob('%s/Data/idl_libraries/ppxf/MILES_library/'%(cc.base_dir) +
-				'm0[0-9][0-9][0-9]V')
-		else:
-			files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (cc.home_dir))
-		wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
-		# ***** NB: spec is binned as the stellar templates are binned, NOT as 
-		# self.spectrum, bestfit etc i.e. wav != self.lam  *****
-		a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
-		unc_spec = np.zeros(a[1]-a[0])
+	# def set_templates(self, name, weight):
+	# 	weight = weight.astype(float)
+	# 	## Solving an error in the Uni system with loading large numbers of files  
+	# 	## from the home directory - they have to come from the Data partition 
+	# 	## instead.
+	# 	if cc.getDevice() == 'uni':
+	# 		files = glob('%s/Data/idl_libraries/ppxf/MILES_library/'%(cc.base_dir) +
+	# 			'm0[0-9][0-9][0-9]V')
+	# 	else:
+	# 		files = glob("%s/models/miles_library/m0[0-9][0-9][0-9]V" % (
+	# 			cc.home_dir))
+	# 	wav = np.loadtxt(files[0], usecols=(0,), unpack=True)
+	# 	# ***** NB: spec is binned as the stellar templates are binned, NOT as 
+	# 	# self.spectrum, bestfit etc i.e. wav != self.lam  *****
+	# 	a = [min(np.where(wav>=self.lam[0])[0]), max(np.where(wav<=self.lam[-1])[0])]
+	# 	unc_spec = np.zeros(a[1]-a[0])
 
-		for i,n in enumerate(name):
-			self.temp_weight[n] = weight[i]
-			if not n.isdigit() and weight[i] != 0:
-				self.components[n].weight = weight[i]
-				self.__parent__.add_e_line(n, self.e_line[n].wav)
-			elif n.isdigit() and weight[i] !=0:
-				template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
-				unc_spec += template[a[0]:a[1]]*weight[i]
-		if len(self.mpweight)!=0:
-			unc_spec *= np.polynomial.legendre.legval(np.linspace(-1,1,
-				len(unc_spec)), np.append(1, self.mpweight))
-		if len(self.apweight)!=0:
-			unc_spec += np.polynomial.legendre.legval(np.linspace(-1,1,
-				len(unc_spec)), self.apweight)
-		self.unconvolved_spectrum = unc_spec
-		self.unconvolved_lam = wav[a[0]:a[1]]
+	# 	for i,n in enumerate(name):
+	# 		self.temp_weight[n] = weight[i]
+	# 		if not n.isdigit() and weight[i] != 0:
+	# 			self.components[n].weight = weight[i]
+	# 			self.__parent__.add_e_line(n, self.e_line[n].wav)
+	# 		elif n.isdigit() and weight[i] !=0:
+	# 			template =  np.loadtxt(files[int(n)], usecols=(1,), unpack=True)
+	# 			unc_spec += template[a[0]:a[1]]*weight[i]
+	# 	if len(self.mpweight)!=0:
+	# 		unc_spec *= np.polynomial.legendre.legval(np.linspace(-1,1,
+	# 			len(unc_spec)), np.append(1, self.mpweight))
+	# 	if len(self.apweight)!=0:
+	# 		unc_spec += np.polynomial.legendre.legval(np.linspace(-1,1,
+	# 			len(unc_spec)), self.apweight)
+	# 	self.unconvolved_spectrum = unc_spec
+	# 	self.unconvolved_lam = wav[a[0]:a[1]]
 
-	def absorption_line(self, absorption_line, uncert=False, res=None,
-		instrument=None, remove_badpix=False, nomask=False):
-		convolved = self.bestfit - np.nansum([line.spectrum for key, 
-			line in self.e_line.iteritems()], axis=0)
-		lam = self.lam/(1+self.components['stellar'].vel/c)
-		if nomask:
-			continuum = np.array(self.continuum_nomask)
-		else:
-			continuum = np.array(self.continuum)
+	# def absorption_line(self, absorption_line, uncert=False, res=None,
+	# 	instrument=None, remove_badpix=False):
+	# 	convolved = self.bestfit - np.nansum([line.spectrum for key, 
+	# 		line in self.e_line.iteritems()], axis=0)
+	# 	lam = self.lam/(1+self.components['stellar'].vel/c)
+	# 	continuum = np.array(self.continuum)
 
-		if uncert:
-			noise = np.array(self.noise)
+	# 	if uncert:
+	# 		noise = np.array(self.noise)
 
-		if remove_badpix:
-			# bad_pix = np.where(continuum < 0)[0]
-			bad_pix = np.where(self.noise > np.nanmean(self.noise) 
-				+ 3*np.std(self.noise))
-			bad_pix = np.unique([[b-1,b,b+1] for b in bad_pix])
-			bad_pix = bad_pix[(bad_pix >= 1) * (bad_pix <= len(lam) - 2)]
+	# 	if remove_badpix:
+	# 		# bad_pix = np.where(continuum < 0)[0]
+	# 		bad_pix = np.where(self.noise > np.nanmean(self.noise) 
+	# 			+ 3*np.std(self.noise))
+	# 		bad_pix = np.unique([[b-1,b,b+1] for b in bad_pix])
+	# 		bad_pix = bad_pix[(bad_pix >= 1) * (bad_pix <= len(lam) - 2)]
 			
-			start = np.array([list(g)[0] for _, g in 
-				groupby(bad_pix, lambda n, c=count(): n-next(c))]) - 1
-			end = np.array([list(g)[-1] for _, g in 
-				groupby(bad_pix, lambda n, c=count(): n-next(c))]) + 1
+	# 		start = np.array([list(g)[0] for _, g in 
+	# 			groupby(bad_pix, lambda n, c=count(): n-next(c))]) - 1
+	# 		end = np.array([list(g)[-1] for _, g in 
+	# 			groupby(bad_pix, lambda n, c=count(): n-next(c))]) + 1
 
-			for index in zip(start, end):
-				interp = interp1d([lam[index[0]], lam[index[1]]], 
-					[continuum[index[0]], continuum[index[1]]])
-				continuum[index[0]+1:index[1]] = interp(lam[np.arange(
-					index[0]+1, index[1])])
-				if uncert:
-					interp = interp1d([lam[index[0]], lam[index[1]]], 
-						[noise[index[0]], noise[index[1]]])
-					noise[index[0]+1:index[1]] = interp(lam[np.arange(
-					index[0]+1, index[1])])
+	# 		for index in zip(start, end):
+	# 			interp = interp1d([lam[index[0]], lam[index[1]]], 
+	# 				[continuum[index[0]], continuum[index[1]]])
+	# 			continuum[index[0]+1:index[1]] = interp(lam[np.arange(
+	# 				index[0]+1, index[1])])
+	# 			if uncert:
+	# 				interp = interp1d([lam[index[0]], lam[index[1]]], 
+	# 					[noise[index[0]], noise[index[1]]])
+	# 				noise[index[0]+1:index[1]] = interp(lam[np.arange(
+	# 				index[0]+1, index[1])])
 
-		temp_res = 2.5 # A (FWHM); Resoluton of Miles templates
-		if res is not None:
-			if instrument == 'vimos':
-				instr_res = 3 # A (FWHM)
-			elif instrument == 'muse':
-				instr_res = 2.3 # A (FWHM)
-			elif instrument == 'sauron':
-				instr_res = 4.2 # A (FWHM)
-			elif instrument is None:
-				raise ValueError('If keyword res is set, so too must the '+
-					'instrument keyword')
+	# 	temp_res = 2.5 # A (FWHM); Resoluton of Miles templates
+	# 	if res is not None:
+	# 		if instrument == 'vimos':
+	# 			instr_res = 3 # A (FWHM)
+	# 		elif instrument == 'muse':
+	# 			instr_res = 2.3 # A (FWHM)
+	# 		elif instrument == 'sauron':
+	# 			instr_res = 4.2 # A (FWHM)
+	# 		elif instrument is None:
+	# 			raise ValueError('If keyword res is set, so too must the '+
+	# 				'instrument keyword')
 
-			if instr_res < res:
-				sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
-					/ np.median(np.diff(lam))
-				continuum = gaussian_filter1d(continuum, sig_pix)
-			conv_res = max((instr_res, temp_res))
-		else:
-			conv_res = temp_res
-			continuum = np.array(self.continuum)
+	# 		if instr_res < res:
+	# 			sig_pix = np.sqrt(res**2 - instr_res**2) / 2.355 \
+	# 				/ np.median(np.diff(lam))
+	# 			continuum = gaussian_filter1d(continuum, sig_pix)
+	# 		conv_res = max((instr_res, temp_res))
+	# 	else:
+	# 		conv_res = temp_res
+	# 		continuum = np.array(self.continuum)
 			
-		if conv_res < temp_res:
-			sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
-				/ np.median(np.diff(lam))
-			convolved = gaussian_filter1d(convolved, sig_pix)
-		if uncert:
-			return absorption(absorption_line, lam, continuum, 
-				noise=self.noise, unc_lam=self.unconvolved_lam, 
-				unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
-		else:
-			return absorption(absorption_line, lam, continuum, 
-				unc_lam=self.unconvolved_lam, 
-				unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
+	# 	if conv_res < temp_res:
+	# 		sig_pix = np.sqrt(temp_res**2 - conv_res**2) / 2.355 \
+	# 			/ np.median(np.diff(lam))
+	# 		convolved = gaussian_filter1d(convolved, sig_pix)
+	# 	if uncert:
+	# 		return absorption(absorption_line, lam, continuum, 
+	# 			noise=self.noise, unc_lam=self.unconvolved_lam, 
+	# 			unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
+	# 	else:
+	# 		return absorption(absorption_line, lam, continuum, 
+	# 			unc_lam=self.unconvolved_lam, 
+	# 			unc_spec=self.unconvolved_spectrum, conv_spec=convolved)
 
 class myFloat(float):
 # Required to add attributes to float object
@@ -860,50 +907,79 @@ class emission_line(_bin_data):
 # AmpNoi: float, amplitude of fitted spectrum vs noise from Bin object
 # mask: boolean: True if emission line is masked in this bin
 # Inherited attributes from _bin_data object for storing ppxf fitted kinematics
-	def __init__(self, parent, name, wav, _spectrum):
+	def __init__(self, parent, name):#, wav, _spectrum):
 		self.__parent__ = parent
 		self.name = str(name)
-		self.weight = 0.0
-		self._spectrum = np.array(_spectrum)
-		self.uncert_spectrum = np.zeros(len(self._spectrum))*np.nan
-		self.wav = wav
-		_bin_data.__init__(self, self.__parent__)
+		# self.weight = 0.0
+		# self._spectrum = np.array(_spectrum)
+		# self.uncert_spectrum = np.zeros(len(self._spectrum))*np.nan
+		# self.wav = wav
+		# _bin_data.__init__(self, self.__parent__)
 
+		# self.vel = myFloat(self.__parent__.__parent__.emi_fits['VEL'])
+		# self.sigma = myFloat(self.__parent__.__parent__.emi_fits['SIGMA'])
+		# self.h3 = myFloat(np.nan)
+		# self.h4 = myFloat(np.nan)
+		# self.vel.uncert = self.__parent__.__parent__.emi_fits['e_VEL']
+		# self.sigma.uncert = self.__parent__.__parent__.emi_fits['e_SIMGA']
+		# self.h3.uncert = np.nan
+		# self.h4.uncert = np.nan
+		self.h3 = myFloat(np.nan)
+		self.h4 = myFloat(np.nan)
+
+	@property
+	def vel(self):
+		k = myFloat(self.__parent__.__parent__.components[name].plot[
+			'vel'][self.__parent__.bin_number])
+		k.uncert = self.__parent__.__parent__.components[name].plot[
+			'vel'].uncert[self.__parent__.bin_number]
+		return k
+	@property
+	def sigma(self):
+		k = myFloat(self.__parent__.__parent__.components[name].plot[
+			'sigma'][self.__parent__.bin_number])
+		k.uncert = self.__parent__.__parent__.components[name].plot[
+			'sigma'].uncert[self.__parent__.bin_number]
+		return k
 		
 	@property
 	def flux(self):
-		if not self.mask:
-			f = myFloat(np.trapz(self.spectrum, x=self.__parent__.lam))#/
-			# 	self.__parent__.n_spaxels_in_bin)
-			# f.uncert = trapz_uncert(self.uncert_spectrum/
-			# 	self.__parent__.n_spaxels_in_bin, x=self.__parent__.lam)
-			f.uncert = trapz_uncert(self.uncert_spectrum, x=self.__parent__.lam)
-			return f
-		else:
-			return myFloat(np.nan)
+		f = myFloat(self.__parent__.__parent__.emi_fits[self.name])
+		f.uncert = self.__parent__.__parent__.emi_fits['e_'+self.name]
+		return f
 
-	# @flux.setter
-	# def flux(self,no_mask=False):
-	# 	if not self.mask or no_mask:
-	# 		return np.trapz(self.spectrum, x=self.__parent__.lam)
-	# 	else:
-	# 		return np.nan
-	# def spectrum(self, no_mask=False):
-	# 	if not self.mask or no_mask:
+	@property
+	def spectrum(self):
+		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (
+			self.__parent__.__parent__.MCdir, self.__parent__.bin_number), 
+		dtype=str)
+		i = np.where(matrix[:,0] == self.name)
+		spec = matrix[i,1:]
+
+		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
+			self.__parent__.__parent__.MCdir, i), unpack=True, dtype='str')
+		i = np.where(temp_name == self.name)
+
+		return spec * temp_weights[i]
+
+	@property
+	def uncert_spectrum(self):
+		return np.loadtxt('%s/gas_uncert_spectrum/%s/%i.dat' % (
+			self.__parent__.__parent__.MCdir, self.name, 
+			self.__parent__.bin_number))
+
+
+
+	# @property
+	# def spectrum(self):
+	# 	if not self.mask:
 	# 		return self._spectrum*self.weight
 	# 	else:
 	# 		return self._spectrum*np.nan
-		
-	@property
-	def spectrum(self):
-		if not self.mask:
-			return self._spectrum*self.weight
-		else:
-			return self._spectrum*np.nan
 
-	@property
-	def spectrum_nomask(self):
-		return self._spectrum*self.weight
+	# @property
+	# def spectrum_nomask(self):
+	# 	return self._spectrum*self.weight
 
 	
 	@property
@@ -915,17 +991,14 @@ class emission_line(_bin_data):
 
 	@property
 	def mask(self):
-		if self.__parent__.__parent__.sauron:
-			if '[OIII]' in self.name:
-				return self.AmpNoi < 4
-			elif '[NI]' in self.name:
-				return (self.AmpNoi < 4) + self.__parent__.e_line['Hbeta'].mask
-			else:
-				return (self.AmpNoi < 3) + \
-					self.__parent__.e_line['[OIII]5007d'].mask
+		if '[OIII]' in self.name:
+			return self.AmpNoi < 4
+		elif '[NI]' in self.name:
+			return (self.AmpNoi < 4) + self.__parent__.e_line['Hbeta'].mask
 		else:
-			return self.AmpNoi < self.__parent__.__parent__.__threshold__
-
+			return (self.AmpNoi < 3) + \
+				self.__parent__.e_line['[OIII]5007d'].mask
+	
 
 # Find the propergated uncertainty from numpy.trapz().
 def trapz_uncert(uncert, x=None):
