@@ -378,7 +378,7 @@ class _data(object):
 # h4 (_uncert): (array)
 	
 	def __init__(self):
-		self.moment = 0
+		self.moment = 2
 
 	@property
 	def plot(self):

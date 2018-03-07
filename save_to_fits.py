@@ -358,6 +358,8 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 				array=D2.flux), # Check flux units
 			fits.Column(name='SNR', format='D', array=D2.SNRatio)
 			]
+		for i, p in enumerate(plots):
+			print i, p, str_plots[i], units[i]
 		cols.extend([
 			fits.Column(name=str_plots[i], format='D', unit=units[i], 
 				array=eval(p.replace(')',',nomask=True)'))) for i, p in 
@@ -465,5 +467,5 @@ if __name__=='__main__':
 				absorption_nomask=False, emission=False)
 	elif cc.device == 'uni':
 		for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
-			save(galaxy, instrument='muse', debug=False, stellar=True, 
+			save(galaxy, instrument='muse', debug=True, stellar=True, 
 				absorption=True, absorption_nomask=True, emission=True)
