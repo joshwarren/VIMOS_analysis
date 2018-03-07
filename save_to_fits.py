@@ -467,5 +467,5 @@ if __name__=='__main__':
 				absorption_nomask=False, emission=False)
 	elif cc.device == 'uni':
 		for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
-			save(galaxy, instrument='muse', debug=True, stellar=True, 
+			save(galaxy, instrument='muse', debug=False, stellar=True, 
 				absorption=True, absorption_nomask=True, emission=True)
