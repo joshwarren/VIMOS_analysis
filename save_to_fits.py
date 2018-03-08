@@ -48,132 +48,11 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		# from errors2 import get_dataCubeDirectory
 		# ext = 0
 		cent_index = 4
-		plots = [
-			"D2.absorption_line('G4300')",
-			"D2.absorption_line('G4300',uncert=True)[1]",
-			"D2.absorption_line('Fe4383')",
-			"D2.absorption_line('Fe4383',uncert=True)[1]",
-			"D2.absorption_line('Ca4455')",
-			"D2.absorption_line('Ca4455',uncert=True)[1]",
-			"D2.absorption_line('Fe4531')",
-			"D2.absorption_line('Fe4531',uncert=True)[1]",
-			"D2.absorption_line('H_beta')",
-			"D2.absorption_line('H_beta',uncert=True)[1]",
-			"D2.absorption_line('Fe5015')",
-			"D2.absorption_line('Fe5015',uncert=True)[1]",
-			"D2.absorption_line('Mg_b')",
-			"D2.absorption_line('Mg_b',uncert=True)[1]"
-			]
-		str_plots = [
-			"G4300",
-			"e_G4300",
-			"Fe4383",
-			"e_Fe4383",
-			"Ca4455",
-			"e_Ca4455",
-			"Fe4531",
-			"e_Fe4531",
-			'H_beta',
-			'e_H_beta',
-			"Fe5015",
-			"e_Fe5015",
-			'Mgb',
-			'e_Mgb'
-			]
-		units = [
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom'
-			]
-
 	elif instrument == 'muse':
 		# from plot_results_muse import add_, set_lims
 		# from errors2_muse import get_dataCubeDirectory
 		# ext = 1
 		cent_index = 1
-		plots = [
-			"D2.absorption_line('H_beta')",
-			"D2.absorption_line('H_beta',uncert=True)[1]",
-			"D2.absorption_line('Fe5015')",
-			"D2.absorption_line('Fe5015',uncert=True)[1]",
-			"D2.absorption_line('Mg_b')",
-			"D2.absorption_line('Mg_b',uncert=True)[1]",
-			"D2.absorption_line('Fe5270')",
-			"D2.absorption_line('Fe5270',uncert=True)[1]",
-			"D2.absorption_line('Fe5335')",
-			"D2.absorption_line('Fe5335',uncert=True)[1]",
-			"D2.absorption_line('Fe5406')",
-			"D2.absorption_line('Fe5406',uncert=True)[1]",
-			"D2.absorption_line('Fe5709')",
-			"D2.absorption_line('Fe5709',uncert=True)[1]",
-			"D2.absorption_line('Fe5782')",
-			"D2.absorption_line('Fe5782',uncert=True)[1]",
-			"D2.absorption_line('NaD')",
-			"D2.absorption_line('NaD',uncert=True)[1]",
-			"D2.absorption_line('TiO1',remove_badpix=True)",
-			"D2.absorption_line('TiO1',uncert=True,remove_badpix=True)[1]",
-			"D2.absorption_line('TiO2',remove_badpix=True)",
-			"D2.absorption_line('TiO2',uncert=True,remove_badpix=True)[1]"
-			]
-		str_plots = [
-			'H_beta',
-			'e_H_beta',
-			"Fe5015",
-			"e_Fe5015",
-			'Mgb',
-			'e_Mgb',
-			'Fe5270',
-			'e_Fe5270',
-			'Fe5335',
-			'e_Fe5335',
-			'Fe5406',
-			'e_Fe5406',
-			'Fe5709',
-			'e_Fe5709',
-			'Fe5782',
-			'e_Fe5782',
-			'NaD',
-			'e_NaD',
-			'TiO1',
-			'e_TiO1',
-			'TiO2',
-			'e_TiO2'
-			]
-		units = [
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'Angstrom',
-			'mag',
-			'mag',
-			'mag',
-			'mag'
-			]
 		
 	vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
 	data_file =  "%s/galaxies.txt" % (vin_dir)
@@ -273,6 +152,130 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 
 	# Absorption line
 	if absorption:
+		if instrument=='vimos':
+			plots = [
+				"D2.absorption_line('G4300')",
+				"D2.absorption_line('G4300',uncert=True)[1]",
+				"D2.absorption_line('Fe4383')",
+				"D2.absorption_line('Fe4383',uncert=True)[1]",
+				"D2.absorption_line('Ca4455')",
+				"D2.absorption_line('Ca4455',uncert=True)[1]",
+				"D2.absorption_line('Fe4531')",
+				"D2.absorption_line('Fe4531',uncert=True)[1]",
+				"D2.absorption_line('H_beta')",
+				"D2.absorption_line('H_beta',uncert=True)[1]",
+				"D2.absorption_line('Fe5015')",
+				"D2.absorption_line('Fe5015',uncert=True)[1]",
+				"D2.absorption_line('Mg_b')",
+				"D2.absorption_line('Mg_b',uncert=True)[1]"
+				]
+			str_plots = [
+				"G4300",
+				"e_G4300",
+				"Fe4383",
+				"e_Fe4383",
+				"Ca4455",
+				"e_Ca4455",
+				"Fe4531",
+				"e_Fe4531",
+				'H_beta',
+				'e_H_beta',
+				"Fe5015",
+				"e_Fe5015",
+				'Mgb',
+				'e_Mgb'
+				]
+			units = [
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom'
+				]
+
+		elif instrument == 'muse':
+			plots = [
+				"D2.absorption_line('H_beta')",
+				"D2.absorption_line('H_beta',uncert=True)[1]",
+				"D2.absorption_line('Fe5015')",
+				"D2.absorption_line('Fe5015',uncert=True)[1]",
+				"D2.absorption_line('Mg_b')",
+				"D2.absorption_line('Mg_b',uncert=True)[1]",
+				"D2.absorption_line('Fe5270')",
+				"D2.absorption_line('Fe5270',uncert=True)[1]",
+				"D2.absorption_line('Fe5335')",
+				"D2.absorption_line('Fe5335',uncert=True)[1]",
+				"D2.absorption_line('Fe5406')",
+				"D2.absorption_line('Fe5406',uncert=True)[1]",
+				"D2.absorption_line('Fe5709')",
+				"D2.absorption_line('Fe5709',uncert=True)[1]",
+				"D2.absorption_line('Fe5782')",
+				"D2.absorption_line('Fe5782',uncert=True)[1]",
+				"D2.absorption_line('NaD')",
+				"D2.absorption_line('NaD',uncert=True)[1]",
+				"D2.absorption_line('TiO1',remove_badpix=True)",
+				"D2.absorption_line('TiO1',uncert=True,remove_badpix=True)[1]",
+				"D2.absorption_line('TiO2',remove_badpix=True)",
+				"D2.absorption_line('TiO2',uncert=True,remove_badpix=True)[1]"
+				]
+			str_plots = [
+				'H_beta',
+				'e_H_beta',
+				"Fe5015",
+				"e_Fe5015",
+				'Mgb',
+				'e_Mgb',
+				'Fe5270',
+				'e_Fe5270',
+				'Fe5335',
+				'e_Fe5335',
+				'Fe5406',
+				'e_Fe5406',
+				'Fe5709',
+				'e_Fe5709',
+				'Fe5782',
+				'e_Fe5782',
+				'NaD',
+				'e_NaD',
+				'TiO1',
+				'e_TiO1',
+				'TiO2',
+				'e_TiO2'
+				]
+			units = [
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'Angstrom',
+				'mag',
+				'mag',
+				'mag',
+				'mag'
+				]
+
 		hdr = fits.Header()
 		hdr['SNR'] = SN_target_pop
 		hdr['COMMENT'] = "Absorption line strengths and best-fitting stellar "\
