@@ -209,7 +209,7 @@ def add_(overplot, color, ax, galaxy, scale='lin', close=False, radio_band=None,
 		x = (np.arange(f.header['NAXIS1']) - f.header['CRPIX1']) *\
 			-abs(f.header['CDELT1']) + f.header['CRVAL1'] + (image_dir.RAoffset/(60.**2))
 		y = (np.arange(f.header['NAXIS2']) - f.header['CRPIX2']) *\
-			f.header['CDELT2'] + f.header['CRVAL2'] + (image_dir.decoffset/(60.**2))
+			-f.header['CDELT2'] + f.header['CRVAL2'] + (image_dir.decoffset/(60.**2))
 	
 		x, y = np.meshgrid(x,y)
 		#remove random extra dimenisons.

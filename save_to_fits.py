@@ -585,6 +585,29 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 			f_new.writeto('%s/%s_emission_line.fits' %(save_dir, galaxy), 
 				overwrite=True)
 
+# Routine to strink the size of the fits file to something more manageable on my 
+# laptop
+def save_muse(galaxy):
+	if cc.device != 'uni':
+		raise ValueError('This routine is to be run on your university computer.'
+			+' Chump!')
+
+	from errors2_muse import get_dataCubeDirectory
+	f = fits.open(get_dataCubeDirectory(galaxy))
+
+	ex0 = f[0]
+	ex1 = fits.ImageHDU(np.array([np.nansum(f[1].data, axis=0)]), f[1].header, 
+		name='DATA')
+	ex2 = fits.ImageHDU(np.array([np.sqrt(np.nansum(f[2].data**2, axis=0))]), 
+		f[2].header, name='ERROR')
+	ex3 = fits.ImageHDU(np.nansum(f[3]).astype(bool).astype(int), f[3].header, 
+		name='BADPIX')
+	f_new = fits.HDUList([ex0, ex1, ex2, ex3])
+
+	corr_fits_file = '%s/Data/muse/%s/%s.clipped_home.fits' % (cc.base_dir, galaxy, 
+		galaxy)
+
+	f_new.writeto(corr_fits_file, overwrite=os.path.isfile(corr_fits_file))
 
 if __name__=='__main__':
 	if 'home' in cc.device:
@@ -594,5 +617,6 @@ if __name__=='__main__':
 				absorption_nomask=False, emission=False)
 	elif cc.device == 'uni':
 		for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
-			save(galaxy, instrument='muse', debug=False, stellar=True, 
-				absorption=True, absorption_nomask=True, emission=True)
+			save_muse(galaxy)
+			# save(galaxy, instrument='muse', debug=False, stellar=True, 
+			# 	absorption=True, absorption_nomask=True, emission=True)

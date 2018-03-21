@@ -16,7 +16,21 @@ from astropy.io import fits
 import warnings
 
 
+
 c = 299792.458 # speed of light in km/s
+
+def remove_brackets(s):
+	return s.replace('[','').replace(']','')
+
+def add_brackets(s):
+	out = str(s)
+	for l in ['[OII]3726', '[OII]3729', '[SII]6716', '[SII]6731', 
+		'[OIII]5007d', '[NI]d', '[OI]6300d', '[NII]6583d']:
+		l_no_bracket = remove_brackets(l)
+		if s == l_no_bracket:
+			out = l
+	return out
+
 
 class Data(object):
 # Attributes:
@@ -77,9 +91,9 @@ class Data(object):
 			self.emi_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
 				+'analysed_fits/%s_emission_line.fits' % (galaxy), 1)
 
-			self._components.update({l:emission_data(self, l) for l in fits.open(
-				'%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-				+ '%s_emission_line.fits' % (galaxy))[1].columns.names if 
+			self._components.update({
+				add_brackets(l):emission_data(self, add_brackets(l)) for l in 
+				self.emi_fits.columns.names if 
 				(l not in ['NO', 'E_VEL', 'E_SIGMA', 'BINSIZE', 'FLUX', 'SNR', 
 				'XS', 'YS', 'SIGMA', 'VEL']) and ('anr_' not in l) and 
 				('e_' not in l)})
@@ -89,13 +103,6 @@ class Data(object):
 
 		self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
 			+'analysed_fits/%s_stellar_kine.fits' % (galaxy), 1)
-		if self.instrument == 'muse':
-			ext = 1
-			from errors2_muse import get_dataCubeDirectory
-		elif self.instrument == 'vimos':
-			ext = 0
-			from errors2 import get_dataCubeDirectory
-		self.cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
 		if self.opt == 'kin':
 			self.base_fits = self.ste_fits
 		else:
@@ -122,7 +129,14 @@ class Data(object):
 
 	@property
 	def unbinned_flux(self):
-		return np.nansum(self.cube_fits, axis=0)
+		if self.instrument == 'muse':
+			ext = 1
+			from errors2_muse import get_dataCubeDirectory
+		elif self.instrument == 'vimos':
+			ext = 0
+			from errors2 import get_dataCubeDirectory
+		cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
+		return np.nansum(cube_fits, axis=0)
 
 
 	# def add_e_line(self, line, wav):
@@ -177,6 +191,10 @@ class Data(object):
 
 	def absorption_line(self, absorption_line, uncert=False, res=None, 
 		instrument='vimos', remove_badpix=False, nomask=False):
+		if absorption_line == 'Mg_b' or absorption_line == 'mgb':
+			absorption_line = 'Mgb'
+		elif absorption_line == 'Hbeta' or absorption_line == 'Hb':
+			absorption_line = 'H_beta'
 		if res is None:
 			if nomask:
 				if uncert:
@@ -284,13 +302,19 @@ class Data(object):
 	# 	u = np.sqrt(u)
 	# 	return myArray(f, uncert=u)
 
+	"""
+	***************************************************************************
+	Need to remove the subtraction from center that occured at some stage in the 
+	saving of the fits file.
+	****************************************************************************
+	"""	
 	@property
 	def xBar(self):
-		return self.base_fits['XS']
+		return self.center[0] - self.base_fits['XS']
 		
 	@property
 	def yBar(self):	
-		return self.base_fits['YS']
+		return self.center[1] - self.base_fits['YS']
 
 	@property
 	def n_spaxels_in_bin(self):
@@ -298,7 +322,14 @@ class Data(object):
 
 	@property
 	def galaxy_spectrum(self):
-		return np.nansum(self.cube_fits, axis=(1,2))
+		if self.instrument == 'muse':
+			ext = 1
+			from errors2_muse import get_dataCubeDirectory
+		elif self.instrument == 'vimos':
+			ext = 0
+			from errors2 import get_dataCubeDirectory
+		cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
+		return np.nansum(cube_fits, axis=(1,2))
 
 	# @property
 	# def galaxy_continuum(self):
@@ -311,6 +342,12 @@ class Data(object):
 	@property
 	def galaxy_varience(self):
 		warnings.warn('This returns uncertainty (sigma) NOT varience')
+		if self.instrument == 'muse':
+			ext = 1
+			from errors2_muse import get_dataCubeDirectory
+		elif self.instrument == 'vimos':
+			ext = 0
+			from errors2 import get_dataCubeDirectory
 		return np.sqrt(np.sum(fits.getdata(get_dataCubeDirectory(self.galaxy), 
 			ext+1)**2, axis=(1,2)))
 
@@ -591,7 +628,7 @@ class emission_data(_data):
 
 	@property
 	def amp_noise(self):
-		return self.__parent__.emi_fits['anr_'+self.name]
+		return self.__parent__.emi_fits['anr_'+remove_brackets(self.name)]
 
 
 
@@ -644,12 +681,8 @@ class Bin(object):
 		#self._e_line = {}
 		self.components = {'stellar':_bin_data(self)}
 		if self.__parent__.opt != 'kin':
-			self.components.update({l:emission_line(self, l) for l in fits.open(
-				'%s/Data/%s/' % (cc.base_dir, self.__parent__.instrument)
-				+ 'analysed_fits/%s_emission_line.fits' % (self.__parent__.galaxy)
-				)[1].columns.names if (l not in ['NO', 'E_VEL', 'E_SIGMA', 
-				'BINSIZE', 'FLUX', 'SNR', 'XS', 'YS', 'SIGMA', 'VEL']) and 
-				('anr_' not in l) and ('e_' not in l)})
+			self.components.update({l:emission_line(self, l) for l in 
+				self.__parent__.components_no_mask.keys()})
 
 		# temp_weight set when set_templates called
 		# self.temp_weight = {}
@@ -729,15 +762,15 @@ class Bin(object):
 	@property
 	def flux(self):
 		# NB: only calculated for the common wavelength range.
-		return self.__parent__.flux[self.bin_num]
+		return self.__parent__.flux[self.bin_number]
 
 	@property
 	def xBar(self):
-		return self.__parent__.xBar[self.bin_num]
+		return self.__parent__.xBar[self.bin_number]
 
 	@property
 	def yBar(self):
-		return self.__parent__.yBar[self.bin_num]
+		return self.__parent__.yBar[self.bin_number]
 
 	@property
 	def n_spaxels_in_bin(self):
@@ -861,14 +894,41 @@ class _bin_data(object):
 # h4 (.uncert): float
 	def __init__(self, parent):
 		self.__parent__=parent
-		self.vel = myFloat(np.nan)
-		self.sigma = myFloat(np.nan)
+		# self.vel = myFloat(np.nan)
+		# self.sigma = myFloat(np.nan)
 		self.h3 = myFloat(np.nan)
 		self.h4 = myFloat(np.nan)
-		self.vel.uncert = np.nan
-		self.sigma.uncert = np.nan
+		# self.vel.uncert = np.nan
+		# self.sigma.uncert = np.nan
 		self.h3.uncert = np.nan
 		self.h4.uncert = np.nan
+
+	@property
+	def vel(self):
+		if hasattr(self, 'name'):
+			k = myFloat(self.__parent__.__parent__.components[self.name].plot[
+				'vel'][self.__parent__.bin_number])
+			k.uncert = self.__parent__.__parent__.components[self.name].plot[
+				'vel'].uncert[self.__parent__.bin_number]
+		else: # assume stellar object
+			k = myFloat(self.__parent__.__parent__.components['stellar'].plot[
+				'vel'][self.__parent__.bin_number])
+			k.uncert = self.__parent__.__parent__.components['stellar'].plot[
+				'vel'].uncert[self.__parent__.bin_number]
+		return k
+	@property
+	def sigma(self):
+		if hasattr(self, 'name'):
+			k = myFloat(self.__parent__.__parent__.components[self.name].plot[
+				'sigma'][self.__parent__.bin_number])
+			k.uncert = self.__parent__.__parent__.components[self.name].plot[
+				'sigma'].uncert[self.__parent__.bin_number]
+		else: # assume stellar object
+			k = myFloat(self.__parent__.__parent__.components['stellar'].plot[
+				'sigma'][self.__parent__.bin_number])
+			k.uncert = self.__parent__.__parent__.components['stellar'].plot[
+				'sigma'].uncert[self.__parent__.bin_number]
+		return k
 	# @property
 	# def vel(self):
 	# 	return self._vel
@@ -927,25 +987,14 @@ class emission_line(_bin_data):
 		self.h3 = myFloat(np.nan)
 		self.h4 = myFloat(np.nan)
 
-	@property
-	def vel(self):
-		k = myFloat(self.__parent__.__parent__.components[name].plot[
-			'vel'][self.__parent__.bin_number])
-		k.uncert = self.__parent__.__parent__.components[name].plot[
-			'vel'].uncert[self.__parent__.bin_number]
-		return k
-	@property
-	def sigma(self):
-		k = myFloat(self.__parent__.__parent__.components[name].plot[
-			'sigma'][self.__parent__.bin_number])
-		k.uncert = self.__parent__.__parent__.components[name].plot[
-			'sigma'].uncert[self.__parent__.bin_number]
-		return k
+	
 		
 	@property
 	def flux(self):
-		f = myFloat(self.__parent__.__parent__.emi_fits[self.name])
-		f.uncert = self.__parent__.__parent__.emi_fits['e_'+self.name]
+		f = myFloat(self.__parent__.__parent__.emi_fits[remove_brackets(self.name)]
+			[self.__parent__.bin_number])
+		f.uncert = self.__parent__.__parent__.emi_fits['e_'
+			+ remove_brackets(self.name)][self.__parent__.bin_number]
 		return f
 
 	@property
@@ -953,14 +1002,14 @@ class emission_line(_bin_data):
 		matrix = np.loadtxt("%s/bestfit/matrix/%d.dat" % (
 			self.__parent__.__parent__.MCdir, self.__parent__.bin_number), 
 		dtype=str)
-		i = np.where(matrix[:,0] == self.name)
-		spec = matrix[i,1:]
+		i = np.where(matrix[:,0] == self.name)[0][0]
+		spec = matrix[i,1:].astype(float)
 
 		temp_name, temp_weight = np.loadtxt("%s/temp_weights/%d.dat" % (
-			self.__parent__.__parent__.MCdir, i), unpack=True, dtype='str')
-		i = np.where(temp_name == self.name)
-
-		return spec * temp_weights[i]
+			self.__parent__.__parent__.MCdir, self.__parent__.bin_number), 
+			unpack=True, dtype=str)
+		i = np.where(temp_name == self.name)[0][0]
+		return spec * float(temp_weight[i])
 
 	@property
 	def uncert_spectrum(self):
@@ -984,16 +1033,18 @@ class emission_line(_bin_data):
 	
 	@property
 	def AmpNoi(self):
-		return max(self.spectrum_nomask)/np.median(
-			self.__parent__.residual_noise[
-			(self.__parent__.loglam > np.log(self.wav) + (self.vel - 300)/c) *
-			(self.__parent__.loglam < np.log(self.wav) + (self.vel + 300)/c)])
+		# return max(self.spectrum_nomask)/np.median(
+		# 	self.__parent__.residual_noise[
+		# 	(self.__parent__.loglam > np.log(self.wav) + (self.vel - 300)/c) *
+		# 	(self.__parent__.loglam < np.log(self.wav) + (self.vel + 300)/c)])
+		return self.__parent__.__parent__.emi_fits[
+			'anr_'+remove_brackets(self.name)][self.__parent__.bin_number]
 
 	@property
 	def mask(self):
-		if '[OIII]' in self.name:
+		if 'OIII' in self.name:
 			return self.AmpNoi < 4
-		elif '[NI]' in self.name:
+		elif 'NI' in self.name:
 			return (self.AmpNoi < 4) + self.__parent__.e_line['Hbeta'].mask
 		else:
 			return (self.AmpNoi < 3) + \

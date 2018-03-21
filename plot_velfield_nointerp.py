@@ -21,7 +21,7 @@
 # vmin          None    (Double) Limits on values of vel: values outside of 
 #                           this will be set to vmin/vmax
 # vmax          None    As vmin
-# nodots        True	(Boolean) to show a dot a x_pix,y_pix for each bin
+# dots      	False	(Boolean) to show a dot a x_pix,y_pix for each bin
 # label         None    (String) Colorbar label
 # flux          None    (Array) contains binned flux for plotting isophotes. 
 #                           (Not recommended - use flux_unbinned)
@@ -35,9 +35,9 @@
 # title         None    (String) of title of the plot
 # save          None    (String) of location to save the plot to
 # show_bin_number False (Boolean) to show bin number at x_pix,y_pix for each bin
-#                           This overrides nodots=True
+#                           This overrides dots=True
 # show_vel      False (Boolean) to show value of vel at x_pix,y_pix for each bin
-#                           This overrides nodots=True
+#                           This overrides dots=True
 # flux_type     'mag'   'mag'   Plot isophots in magnitudes (log)
 #                       else    Plot in flux (linear)
 # ax            None    (matplotlib.axes.Axes) axes to create the plot on. New
@@ -103,7 +103,7 @@ def render_numbers(vmin, vmax):
 
 
 def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel, 
-	header, vmin=None, vmax=None, nodots=True, colorbar=False, label=None, 
+	header, vmin=None, vmax=None, dots=False, colorbar=False, label=None, 
 	flux=None, flux_unbinned=None, galaxy = None, redshift = None, nticks=4, 
 	ncolors=64, title=None, save=None, show_bin_num=False, flux_type='mag',
 	ax = None, close=False, show_vel=False, signal_noise=None, debug=False, 
@@ -141,6 +141,15 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# Flattens all arrays - I think
 	xBar_pix, yBar_pix, vel = map(np.ravel, [xBar_pix, yBar_pix, vel])
+	# xBar_pix += (header['NAXIS1'])/2. + 0.5 # Normalise and move to center of pix
+	# yBar_pix += (header['NAXIS2'])/2. - 1.5
+	# xBar_pix += 2
+	# yBar_pix -= 4
+	xBar_pix = header['NAXIS1'] - xBar_pix
+	yBar_pix = header['NAXIS1'] - yBar_pix
+
+	yBar_pix += 0.5
+	xBar_pix -= 0.5
 	# Steps in color scale
 	levels = np.linspace(vmin, vmax, ncolors)
 
@@ -161,8 +170,11 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	xBar = (xBar_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	yBar = (yBar_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']
 
+	# if center == True:
 	if center is None:
 		center = (max(x_pix)/2, max(y_pix)/2)
+	# elif center is None:
+	# 	center = (0,0)
 
 	x_label = r'$\Delta$ RA (arcsec)'
 	y_label = r'$\Delta$ Dec (arcsec)'
@@ -172,8 +184,8 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if not debug:
 		ax_dis = fig.add_axes(ax.get_position(), aspect='equal', facecolor=None)
 		ax_dis.set_xlim((np.array([0, header['NAXIS1']]) - (
-			max(x_pix) - center[0]) + 0.5)*header['CD1_1']*60*60)
-		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1] - 0.5)*
+			max(x_pix) - center[0]))*header['CD1_1']*60*60)
+		ax_dis.set_ylim((np.array([0, header['NAXIS2']]) - center[1])*
 			header['CD2_2']*60*60)
 
 		ax_dis.set_xlabel(x_label)
@@ -198,10 +210,16 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		ax.set_ylabel('Dec')
 
 
-	
 	bin_num = bin_num.astype(int)
 
 	pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
+	# xmax = (0 - header['CRPIX1'] + 0.5) * header['CD1_1'] + header['CRVAL1']
+	# xmin = (header['NAXIS1'] - header['CRPIX1'] - 0.5) * header['CD1_1'] + \
+	# 	header['CRVAL1']
+	# ymin = (0 - header['CRPIX2'] + 0.5) * header['CD2_2'] + header['CRVAL2']
+	# ymax = (header['NAXIS2'] - header['CRPIX2'] - 0.5) * header['CD2_2'] + \
+	# 	header['CRVAL2']
+
 	xmax = (0 - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	xmin = (header['NAXIS1'] - header['CRPIX1']) * header['CD1_1'] + \
 		header['CRVAL1']
@@ -244,7 +262,9 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	# RA increases right to left, thus xmax, xmin,...
 	cs = ax.imshow(np.rot90(pic), interpolation='none', 
-		extent=[xmax, xmin, ymin, ymax], clim=[vmin, vmax], 
+		# extent=[xmax, xmin, ymin, ymax], 
+		extent=[xmax, xmin, ymax, ymin], 
+		clim=[vmin, vmax], 
 		cmap=cmap) # clim and cmap supplied for colorbar
 	ax.cs = cs
 	
@@ -265,7 +285,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	if flux is not None:
 		# 1 mag contours
 		ax.contour(-2.5*np.log10(flux/np.max(flux)), levels=np.arange(20), 
-			colors='k', extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
+			colors='k', extent=[xmin, xmax, ymax, ymin])#, linewidths=1)
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
@@ -273,19 +293,25 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 				np.max(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
-				extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
+				extent=[xmin, xmax, ymax, ymin])#, linewidths=1)
 			cont.collections[0].set_label('Flux (mag)')
 
 
 		else:
 			cont = ax.contour(np.rot90(flux_unbinned[:,::-1]), colors='k', 
-				extent=[xmin, xmax, ymin, ymax])#, linewidths=1)
+				extent=[xmax, xmin, ymax, ymi])#, linewidths=1)
 			cont.collections[0].set_label('Flux (linear)')
 
 
-	if not nodots and not show_bin_num and not show_vel:
-		ax.plot(xBar, yBar, '.k',
-				markersize=kwargs.get("markersize", 3))
+	if dots:# and not show_bin_num and not show_vel:
+		if isinstance(dots, list) or isinstance(dots, np.ndarray):
+			ax.plot(xBar[dots], yBar[dots], 'or',
+				markersize=kwargs.get("markersize", 20), markerfacecolor='none')
+			for i, d in enumerate(dots):
+				ax.text(xBar[d], yBar[d], str(i+1), color='r', ha='center', 
+					va='center', size=16)
+		else:
+			ax.plot(xBar, yBar, '.k', markersize=kwargs.get("markersize", 3))
 
 	if show_bin_num and not show_vel:
 		# for i in range(0,len(xBar),max(1,int(np.rint(np.log(len(xBar))))-3)):
@@ -293,15 +319,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		for i in range(len(xBar)):
 			# number 100 bins only.
 			if i%int((max(bin_num)+1)/100.0)==0:
-				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(i), 
-					color='grey', fontsize=5)
+				ax.text(xBar[i], yBar[i], str(i), color='grey', fontsize=5)
 
 	if show_vel:
 		for i in range(len(xBar)):
 			# number 100 bins only.
 			if i%int((max(bin_num)+1)/100.0)==0:
-				ax.text(xBar[i]+pixelSize/2, yBar[i]+pixelSize/2, str(vel[i]), 
-					color='grey', fontsize=5)
+				ax.text(xBar[i], yBar[i], str(vel[i]), color='grey', fontsize=5)
 
 	if redshift is not None and not debug:
 		c = 299792 #km/s
