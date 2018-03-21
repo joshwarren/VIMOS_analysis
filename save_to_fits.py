@@ -600,7 +600,7 @@ def save_muse(galaxy):
 		name='DATA')
 	ex2 = fits.ImageHDU(np.array([np.sqrt(np.nansum(f[2].data**2, axis=0))]), 
 		f[2].header, name='ERROR')
-	ex3 = fits.ImageHDU(np.nansum(f[3]).astype(bool).astype(int), f[3].header, 
+	ex3 = fits.ImageHDU(np.nansum(f[3].data).astype(bool).astype(int), f[3].header, 
 		name='BADPIX')
 	f_new = fits.HDUList([ex0, ex1, ex2, ex3])
 
