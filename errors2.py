@@ -1032,7 +1032,8 @@ class run_ppxf(ppxf):
 				self.templates = self.stellar_templates.templates
 			self.component = [0]*len(self.stellar_templates.templatesToUse
 				) + self.e_templates.component
-			self.templatesToUse = np.append(self.stellar_templates.templatesToUse.astype(str), 
+			self.templatesToUse = np.append(
+				self.stellar_templates.templatesToUse.astype(int).astype(str), 
 				self.e_templates.templatesToUse)
 			self.element = ['stellar'] + self.e_templates.element
 		else:

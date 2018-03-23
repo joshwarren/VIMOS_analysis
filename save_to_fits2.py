@@ -1,4 +1,4 @@
-## Routine to transform the pickled Data objects to fits format in the 
+## Routine to transform the glamdring output to fits format in the 
 ## same setup as SARUON.
 
 # import astropy.io.fits as pyfits 
@@ -34,7 +34,6 @@
 
 from checkcomp import checkcomp
 cc = checkcomp()
-import cPickle as pickle
 import os
 from astropy.io import fits 
 import numpy as np 
@@ -47,8 +46,14 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		cent_index = 4
 	elif instrument == 'muse':
 		cent_index = 1
-		
-	vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
+	
+	if cc.device == 'glamdring':
+		if instrument == 'vimos':
+			vin_dir = '%s/analysis' % (cc.home_dir)
+		elif instrument == 'muse':
+			vin_dir = '%s/analysis_muse' % (cc.home_dir)
+	else:
+		vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
 	data_file =  "%s/galaxies.txt" % (vin_dir)
 	file_headings = np.loadtxt(data_file, dtype=str)[0]
 	col = np.where(file_headings=='SN_'+kin_opt)[0][0]
@@ -65,49 +70,31 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 	vin_dir2 = str(vin_dir + '/%s/%s' % (galaxy, pop_opt)) 
 	vin_dir += '/%s/%s' % (galaxy, kin_opt) 
 
-	if not debug:
-		if stellar:
-			pickle_file = '%s/pickled' % (vin_dir)
-			pickleFile = open("%s/dataObj.pkl" % (pickle_file), 'rb')
-			D = pickle.load(pickleFile)
-			pickleFile.close()
-		if emission or absorption or absorption_nomask:
-			pickle_file2 = '%s/pickled' % (vin_dir2)
-			pickleFile2 = open("%s/dataObj.pkl" % (pickle_file2), 'rb')
-			D2 = pickle.load(pickleFile2)
-			pickleFile2.close()
-	else:
-		from produce_maps import Ds
-		D = Ds()
-		D2 = Ds()
-
-	# if debug:
-	# 	import matplotlib.pyplot as plt
-	# 	from cap_display_bins_generators_new import display_bins_generators
-
-	# 	f = fits.open(get_dataCubeDirectory(galaxy))
-	# 	flux = np.sum(f[ext].data, axis=0).flatten()
-	# 	f.close()
-	# 	# flux = D.unbinned_flux.flatten()
-	# 	flux = flux[~np.isnan(flux)]
-	# 	flux[flux<0]=0
-
-	# 	x = -(D.x-20)
-	# 	y = D.y-20
-
-	# 	xgen = -D.xBar+20
-	# 	ygen = D.yBar-20
-	# 	velbin = D.components['stellar'].plot['vel']
-
-	# 	display_bins_generators(xgen, ygen, velbin, x, y) 
-	# 	plt.tricontour(x, y, -2.5*np.log10(flux/np.max(flux)), 
-	# 		levels=np.arange(20))
-
-	# 	plt.show()
-
+	# if not debug:
+	# 	if stellar:
+	# 		pickle_file = '%s/pickled' % (vin_dir)
+	# 		pickleFile = open("%s/dataObj.pkl" % (pickle_file), 'rb')
+	# 		D = pickle.load(pickleFile)
+	# 		pickleFile.close()
+	# 	if emission or absorption or absorption_nomask:
+	# 		pickle_file2 = '%s/pickled' % (vin_dir2)
+	# 		pickleFile2 = open("%s/dataObj.pkl" % (pickle_file2), 'rb')
+	# 		D2 = pickle.load(pickleFile2)
+	# 		pickleFile2.close()
+	# else:
+	# 	from produce_maps import Ds
+	# 	D = Ds()
+	# 	D2 = Ds()
 
 	# Stellar Kinematics
+	
 	if stellar:
+		xBar, yBar = np.loadtxt("%s/%s/%s/setup/voronoi_2d_binning_output2.txt" %(
+			vin_dir, galaxy, kin_opt), unpack=True, skiprows=1)
+		bin_num = = np.loadtxt("%s/%s/%s/setup/voronoi_2d_binning_output.txt" %(
+			vin_dir, galaxy, kin_opt), unpack=True, skiprows=1, dtype=int)
+
+
 		hdr = fits.Header()
 		hdr['SNR'] = SN_target_kin
 		hdr['COMMENT'] = "Stellar kinematics of %s from %s " % (galaxy.upper(), 
@@ -115,12 +102,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		primary_hdu = fits.PrimaryHDU(header=hdr)
 
 		hdu = fits.BinTableHDU.from_columns([
-			fits.Column(name='NO', format='I', array=np.arange(D.number_of_bins)),
+			fits.Column(name='NO', format='I', array=np.arange(len(xBar))),
 			fits.Column(name='XS', format='D', unit='arcsec', 
-				array=-(D.xBar-cent[0])),
+				array=-(xBar-cent[0])),
 			fits.Column(name='YS', format='D', unit='arcsec', 
-				array=-(D.yBar-cent[1])),
-			fits.Column(name='BINSIZE', format='I', array=D.n_spaxels_in_bin),
+				array=-(yBar-cent[1])),
+			fits.Column(name='BINSIZE', format='I', array=np.bincount(bin_num)),
 			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
 				array=D.flux), # Check flux units
 			fits.Column(name='SNR', format='D', array=D.SNRatio),
@@ -140,13 +127,18 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
 		if not os.path.exists(save_dir):
 			os.makedirs(save_dir)
-		if kin_opt != 'kin':
+		if 'kin_opt' != 'kin':
 			f_new.writeto('%s/%s_stellar_kine_%s.fits' %(save_dir, galaxy, kin_opt), 
-			overwrite=True)
+				overwrite=True)
 		else:
 			f_new.writeto('%s/%s_stellar_kine.fits' %(save_dir, galaxy), 
 				overwrite=True)
 
+	if absorption or absorption_nomask or emission:
+		xBar, yBar = np.loadtxt("%s/%s/%s/setup/voronoi_2d_binning_output2.txt" %(
+			vin_dir2, galaxy, pop_opt), unpack=True, skiprows=1)
+		bin_num = = np.loadtxt("%s/%s/%s/setup/voronoi_2d_binning_output.txt" %(
+			vin_dir2, galaxy, pop_opt), unpack=True, skiprows=1, dtype=int)
 
 	# Absorption line
 	if absorption:
@@ -282,12 +274,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		primary_hdu = fits.PrimaryHDU(header=hdr)
 
 		cols = [
-			fits.Column(name='NO', format='I', array=np.arange(D2.number_of_bins)),
+			fits.Column(name='NO', format='I', array=np.arange(len(xBar))),
 			fits.Column(name='XS', format='D', unit='arcsec', 
-				array=-(D2.xBar-cent[0])),
+				array=-(xBar-cent[0])),
 			fits.Column(name='YS', format='D', unit='arcsec', 
-				array=-(D2.yBar-cent[1])),
-			fits.Column(name='BINSIZE', format='I', array=D2.n_spaxels_in_bin),
+				array=-(yBar-cent[1])),
+			fits.Column(name='BINSIZE', format='I', array=np.bincount(bin_num)),
 			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
 				array=D2.flux), # Check flux units
 			fits.Column(name='SNR', format='D', array=D2.SNRatio)
@@ -335,12 +327,11 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		if not os.path.exists(save_dir):
 			os.makedirs(save_dir)
 		if pop_opt != 'pop':
-			f_new.writeto('%s/%s_absorption_line_%s.fits' %(save_dir, galaxy, 
-				pop_opt), overwrite=True)
+			f_new.writeto('%s/%s_absorption_line_%s.fits' %(save_dir, 
+				galaxy, pop_opt), overwrite=True)
 		else:
 			f_new.writeto('%s/%s_absorption_line.fits' %(save_dir, galaxy), 
 				overwrite=True)
-
 
 
 	# Absorption line - no emission line masks
@@ -477,12 +468,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		primary_hdu = fits.PrimaryHDU(header=hdr)
 
 		cols = [
-			fits.Column(name='NO', format='I', array=np.arange(D2.number_of_bins)),
+			fits.Column(name='NO', format='I', array=np.arange(len(xBar))),
 			fits.Column(name='XS', format='D', unit='arcsec', 
-				array=-(D2.xBar-cent[0])),
+				array=-(xBar-cent[0])),
 			fits.Column(name='YS', format='D', unit='arcsec', 
-				array=-(D2.yBar-cent[1])),
-			fits.Column(name='BINSIZE', format='I', array=D2.n_spaxels_in_bin),
+				array=-(yBar-cent[1])),
+			fits.Column(name='BINSIZE', format='I', array=np.bincount(bin_num)),
 			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
 				array=D2.flux), # Check flux units
 			fits.Column(name='SNR', format='D', array=D2.SNRatio)
@@ -533,11 +524,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		if not os.path.exists(save_dir):
 			os.makedirs(save_dir)
 		if pop_opt != 'pop':
-			f_new.writeto('%s/%s_absorption_line_nomask_%s.fits' %(save_dir, galaxy, 
-				pop_opt), overwrite=True)
+			f_new.writeto('%s/%s_absorption_line_nomask_%s.fits' %(save_dir, 
+				galaxy, pop_opt), overwrite=True)
 		else:
 			f_new.writeto('%s/%s_absorption_line_nomask.fits' %(save_dir, galaxy), 
 				overwrite=True)
+
 
 	# Emission lines
 	if emission:
@@ -550,13 +542,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 			primary_hdu = fits.PrimaryHDU(header=hdr)
 
 			cols = [
-				fits.Column(name='NO', format='I', array=np.arange(
-					D2.number_of_bins)),
+				fits.Column(name='NO', format='I', array=np.arange(len(xBar))),
 				fits.Column(name='XS', format='D', unit='arcsec', 
-					array=-(D2.xBar-cent[0])),
+					array=-(xBar-cent[0])),
 				fits.Column(name='YS', format='D', unit='arcsec', 
-					array=-(D2.yBar-cent[1])),
-				fits.Column(name='BINSIZE', format='I', array=D2.n_spaxels_in_bin),
+					array=-(yBar-cent[1])),
+				fits.Column(name='BINSIZE', format='I', array=np.bincount(bin_num)),
 				fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
 					array=D2.flux), # Check flux units
 				fits.Column(name='SNR', format='D', array=D2.SNRatio)
@@ -588,12 +579,11 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 			if not os.path.exists(save_dir):
 				os.makedirs(save_dir)
 			if pop_opt != 'pop':
-				f_new.writeto('%s/%s_emission_line_%s.fits' %(save_dir, galaxy, 
+				f_new.writeto('%s/%s_emission_line_%S.fits' %(save_dir, galaxy,
 					pop_opt), overwrite=True)
 			else:
 				f_new.writeto('%s/%s_emission_line.fits' %(save_dir, galaxy), 
 					overwrite=True)
-			
 
 # Routine to strink the size of the fits file to something more manageable on my 
 # laptop
@@ -626,10 +616,7 @@ if __name__=='__main__':
 			save(galaxy, debug=False, stellar=False, absorption=True, 
 				absorption_nomask=False, emission=False)
 	elif cc.device == 'uni':
-		save('ngc1316', instrument='muse', debug=False, stellar=True, 
-			absorption=False, absorption_nomask=False, emission=False, 
-			kin_opt='kin_no_Na')
-		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
+		for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 			# save_muse(galaxy)
-			# save(galaxy, instrument='muse', debug=False, stellar=True, 
-			# 	absorption=True, absorption_nomask=True, emission=True)
+			save(galaxy, instrument='muse', debug=False, stellar=True, 
+				absorption=True, absorption_nomask=True, emission=True)
