@@ -612,6 +612,7 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			self.radio = mystring2('')
 			self.CO = mystring2('')
 			self.xray = mystring2('')
+			self.hst = mystring2('')
 
 
 	if cc.device == 'uni':
@@ -649,7 +650,8 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			dataCubeDirectory.radio.band = 'U band (14.94 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_U')[0][0]
 	elif galaxy == 'ic1459':
-		pass
+		dataCubeDirectory.hst = '%s/Data/HST/%s' % (cc.base_dir, galaxy) +\
+			'/hst_05454_01_wfpc2_f555w_pc_drz.fits'
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1459_full.fits' % (cc.base_dir)
 	elif galaxy == 'ic1531':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC1531_full.fits' % (cc.base_dir)
@@ -666,7 +668,8 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 	elif galaxy == 'ic4296':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/IC4296_full.fits' % (cc.base_dir)
-
+		dataCubeDirectory.hst = '%s/Data/HST/%s' % (cc.base_dir, galaxy) +\
+			'/hst_05910_03_wfpc2_f814w_pc_drz.fits'
 		if radio_band is None or radio_band == 'L':
 			dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 				'Southern_RG_VLA/IC4296.LBAND.IMAGE.FITS')
@@ -698,6 +701,8 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			col = np.where(file_headings=='VIMOS-VLA_C')[0][0]
 	elif galaxy == 'ngc1399':
 		# dataCubeDirectory.xray = '%s/Data/Chandra/N1399_full.fits' % (cc.base_dir)
+		dataCubeDirectory.hst = '%s/Data/HST/%s' % (cc.base_dir, galaxy) +\
+			'/hst_05990_02_wfpc2_f450w_pc_drz.fits'
 		if radio_band is None or radio_band == 'C' or radio_band == 'CI':
 			dataCubeDirectory.radio = mystring2('%s/Data/VLA/ngc1399/NGC1399.CBAND.ANB.I.1.25.FITS' % (
 				cc.base_dir))
@@ -731,6 +736,8 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 			dataCubeDirectory.radio.band = 'X band (8.46 GHz)'
 			col = np.where(file_headings=='VIMOS-VLA_X')[0][0]
 	elif galaxy == 'ngc3557':
+		dataCubeDirectory.hst = '%s/Data/HST/%s' % (cc.base_dir, galaxy) +\
+			'/hst_06587_04_wfpc2_f555w_pc_drz.fits'
 		if radio_band is None or radio_band =='C':
 			dataCubeDirectory.radio = mystring2('%s/Data/VLA/' % (cc.base_dir) +
 				'Southern_RG_VLA/NGC3557.ABC.6CM.PBCOR.FITS')

@@ -90,6 +90,18 @@ def add_orientation(pa=0):
 	ax.text(0.78*xr+xlim[0]+0.1*xr*np.sin(pa), 
 		0.805*yr+ylim[0]+0.1*yr*np.cos(pa), 'N')
 
+def correct_header(header):
+	try:
+		# VIMOS parameters
+		header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
+		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
+		header['CD1_1'] = -abs(header['CDELT1']/(60**2))
+		header['CD2_2'] = header['CDELT2']/(60**2)
+	except KeyError:
+		header['CD1_1'] = -abs(header['CD1_1'])
+		#pass # MUSE has the correctly labelled headers
+	return header
+
 
 def render_numbers(vmin, vmax):
     order = int(np.floor(np.log10(abs(vmax))))
@@ -120,6 +132,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	xBar_pix = np.array(xBar_pix)
 	yBar_pix = np.array(yBar_pix)
 	vel = np.array(vel)
+	header = correct_header(header)
 	
 	if len(vel) != max(bin_num)+1:
 		print "Not enough bins provided to vel keyword"
@@ -152,17 +165,6 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 	xBar_pix -= 0.5
 	# Steps in color scale
 	levels = np.linspace(vmin, vmax, ncolors)
-
-
-	try:
-		# VIMOS parameters
-		header['CRVAL1'] = header['HIERARCH CCD1 ESO INS IFU RA']
-		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
-		header['CD1_1'] = -abs(header['CDELT1']/(60**2))
-		header['CD2_2'] = header['CDELT2']/(60**2)
-	except KeyError:
-		header['CD1_1'] = -abs(header['CD1_1'])
-		#pass # MUSE has the correctly labelled headers
 
 	x = (x_pix - header['CRPIX1']) * header['CD1_1'] + header['CRVAL1']
 	y = (y_pix - header['CRPIX2']) * header['CD2_2'] + header['CRVAL2']

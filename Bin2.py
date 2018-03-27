@@ -82,7 +82,7 @@ class Data(object):
 			galaxy, opt), usecols=(0,1,2), dtype=int, skiprows=1, unpack=True)
 		
 		# Fits files
-		if opt != 'kin':
+		if 'kin' not in self.opt:
 			self.abs_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
 				+'analysed_fits/%s_absorption_line.fits' % (galaxy), 1)
 			self.abs_fits_nomask = fits.getdata('%s/Data/%s/' % (cc.base_dir, 
@@ -101,9 +101,14 @@ class Data(object):
 		else:
 			self._gas = 0
 
-		self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-			+'analysed_fits/%s_stellar_kine.fits' % (galaxy), 1)
-		if self.opt == 'kin':
+		if self.opt != 'kin' and self.opt != 'pop':
+			self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+				+'analysed_fits/%s_stellar_kine_%s.fits' % (galaxy, self.opt), 1)
+		else:
+			self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+				+'analysed_fits/%s_stellar_kine.fits' % (galaxy), 1)
+
+		if 'kin' in self.opt:
 			self.base_fits = self.ste_fits
 		else:
 			self.base_fits = self.emi_fits
