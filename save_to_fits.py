@@ -41,7 +41,8 @@ import numpy as np
 
 
 def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
-	absorption=True, absorption_nomask=True, kin_opt='kin', pop_opt='pop'):
+	absorption=True, absorption_nomask=True, kin_opt='kin', pop_opt='pop',
+	D=None, D2=None):
 	print galaxy, instrument
 	if instrument=='vimos':
 		cent_index = 4
@@ -66,12 +67,12 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 	vin_dir += '/%s/%s' % (galaxy, kin_opt) 
 
 	if not debug:
-		if stellar:
+		if stellar and D is None:
 			pickle_file = '%s/pickled' % (vin_dir)
 			pickleFile = open("%s/dataObj.pkl" % (pickle_file), 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
-		if emission or absorption or absorption_nomask:
+		if (emission or absorption or absorption_nomask) and D2 is None:
 			pickle_file2 = '%s/pickled' % (vin_dir2)
 			pickleFile2 = open("%s/dataObj.pkl" % (pickle_file2), 'rb')
 			D2 = pickle.load(pickleFile2)

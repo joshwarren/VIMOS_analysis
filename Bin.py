@@ -114,8 +114,8 @@ class Data(object):
 			self.vel_norm = np.nanmean(self.components['stellar'].plot['vel'][c])
 		elif self.norm_method == 'disk_fit':
 			import disk_fit_functions as dfn
-			vel = D.components['stellar'].plot['vel'].unbinned
-			vel_err = D.components['stellar'].plot['vel'].uncert.unbinned
+			vel = self.components['stellar'].plot['vel'].unbinned
+			vel_err = self.components['stellar'].plot['vel'].uncert.unbinned
 			disk,pars=dfn.disk_fit_exp(vel.copy(),vel_err.copy(),leeway=2., 
 				verbose=False)
 			self.vel_norm = np.nanmean(disk)
