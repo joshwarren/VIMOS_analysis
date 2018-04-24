@@ -108,25 +108,28 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 	OIII_spec = pp.matrix[:, pp.templatesToUse=='[OIII]5007d'].flatten()*\
 		pp.weights[pp.templatesToUse=='[OIII]5007d']
 	
-	# ANR for Hb is used later even for MUSE
+	# These results for Hb are used later, even for MUSE
 	Hb_spec = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() * \
 		pp.weights[pp.templatesToUse=='Hbeta']
+	Hb_flux = np.trapz(Hb_spec, x=pp.lam)
 	ANR = max(Hb_spec)/np.median(
 		noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c)) * (pp.lam > 4861.
 		/(1 + (pp.sol[1][0] + 300)/c))]) 
-	if instrument == 'vimos':	
-		Hb_flux = np.trapz(Hb_spec, x=pp.lam)
+	
+	Hb_spec_uncert = pp.MCgas_uncert_spec[
+		pp.templatesToUse[pp.component!=0]=='Hbeta', :].flatten()
+	# Hb_flux_uncert = trapz_uncert(Hb_spec_uncert, x=pp.lam)
 
-		Hb_spec_uncert = pp.MCgas_uncert_spec[
-			pp.templatesToUse[pp.component!=0]=='Hbeta', :].flatten()
-		# Hb_flux_uncert = trapz_uncert(Hb_spec_uncert, x=pp.lam)
+	Hb_spec_uncert_plus = Hb_spec + Hb_spec_uncert
+	Hb_spec_uncert_minus = Hb_spec - Hb_spec_uncert
 
-		Hb_spec_uncert_plus = Hb_spec + Hb_spec_uncert
-		Hb_spec_uncert_minus = Hb_spec - Hb_spec_uncert
+	Hb_flux_uncert_plus = np.trapz(Hb_spec_uncert_plus, x=pp.lam)
+	Hb_flux_uncert_minus = np.trapz(Hb_spec_uncert_minus, x=pp.lam)
 
-		Hb_flux_uncert_plus = np.trapz(Hb_spec_uncert_plus, x=pp.lam)
-		Hb_flux_uncert_minus = np.trapz(Hb_spec_uncert_minus, x=pp.lam)
+	Hb_flux_uncert = np.mean([abs(Hb_flux_uncert_plus - Hb_flux), 
+		abs(Hb_flux - Hb_flux_uncert_minus)])
 
+	if instrument == 'vimos':
 		Ha_flux = 2.86 * Hb_flux
 		# Ha_flux_uncert = 2.86 * Hb_flux_uncert
 		Ha_flux_uncert_plus = 2.86 * Hb_flux_uncert_plus
@@ -146,6 +149,9 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 		Ha_flux_uncert_plus = np.trapz(Ha_spec_uncert_plus, x=pp.lam)
 		Ha_flux_uncert_minus = np.trapz(Ha_spec_uncert_minus, x=pp.lam)
+
+		Ha_flux_uncert = np.mean([abs(Ha_flux_uncert_plus - Ha_flux), 
+			abs(Ha_flux - Ha_spec_uncert_minus)])
 
 		Hb_ANR = np.array(ANR)
 		ANR = max(Ha_spec)/np.median(
