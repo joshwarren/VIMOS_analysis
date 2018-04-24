@@ -92,8 +92,12 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 	lamRange = np.array([lam[0],lam[-1]])
 	noise = noise[cut]
 
-	pp = run_ppxf(galaxy, spec, noise, lamRange, f[fits_ext].header['CDELT3'], 
-		params)
+	if instrument == 'vimos':
+		pp = run_ppxf(galaxy, spec, noise, lamRange, f[fits_ext].header['CDELT3'], 
+			params)
+	elif instrument=='muse':
+		pp = run_ppxf(galaxy, spec, noise, f[fits_ext].header['CDELT3'],
+			 f[fits_ext].header['CRVAL3'], params)
 
 	residuals = pp.galaxy - pp.bestfit
 	_, residuals, _ = moving_weighted_average(pp.lam, residuals, step_size=3., 

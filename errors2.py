@@ -800,8 +800,6 @@ def get_pickleFileDirectory(galaxy, instrument='vimos', opt='kin'):
 		dir = '%s/Data/%s/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
 			instrument, galaxy, opt)
 	return dir
-
-
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -886,7 +884,7 @@ def errors2(i_gal=None, opt=None, bin=None):
 
 	## ----------============ Write ouputs to file =============---------
 	saveAll(galaxy, bin, pp, opt=opt)
-	
+#-----------------------------------------------------------------------------
 
 
 
