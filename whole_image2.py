@@ -82,8 +82,12 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 	spec = np.einsum('ijk,jk->i', spec, mask)
 	noise = np.sqrt(np.einsum('ijk,jk->i', noise**2, mask))
 
-	params = set_params(opt='pop', reps=4, temp_mismatch=True, 
-		produce_plot=False, gas=1)
+	if galaxy == 'ngc1316':
+		params = set_params(opt='pop', reps=4, temp_mismatch=True, 
+			produce_plot=False, gas=1, set_range_star=np.array([2000, 5800]))
+	else:
+		params = set_params(opt='pop', reps=4, temp_mismatch=True, 
+			produce_plot=False, gas=1)
 
 	lam = (np.arange(len(spec)) - (f[fits_ext].header['CRPIX3'] - 1)) * \
 		f[fits_ext].header['CDELT3'] + f[fits_ext].header['CRVAL3']
