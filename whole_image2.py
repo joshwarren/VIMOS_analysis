@@ -151,7 +151,7 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 		Ha_flux_uncert_minus = np.trapz(Ha_spec_uncert_minus, x=pp.lam)
 
 		Ha_flux_uncert = np.mean([abs(Ha_flux_uncert_plus - Ha_flux), 
-			abs(Ha_flux - Ha_spec_uncert_minus)])
+			abs(Ha_flux - Ha_flux_uncert_minus)])
 
 		Hb_ANR = np.array(ANR)
 		ANR = max(Ha_spec)/np.median(
