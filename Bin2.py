@@ -73,6 +73,9 @@ class Data(object):
 # absorption_line (absorption line): returns absorption line indice level
 # 	from Lick like methods.
 	def __init__(self, galaxy, instrument='vimos', opt='kin'):
+		if galaxy == 'ngc1316' and (opt == 'kin' or opt == 'pop'):
+			opt = 'pop_no_Na'
+			print 'Setting opt to pop_No_Na'
 		self.galaxy, self.instrument, self.opt = galaxy, instrument, opt
 		self.MCdir = '%s/Data/%s/analysis/%s/%s/MC' % (cc.base_dir, instrument,
 			galaxy, opt)
@@ -137,9 +140,11 @@ class Data(object):
 		if self.instrument == 'muse':
 			ext = 1
 			from errors2_muse import get_dataCubeDirectory
+			NAXIS3 = 3681
 		elif self.instrument == 'vimos':
 			ext = 0
 			from errors2 import get_dataCubeDirectory
+			NAXIS3 = 1916
 		cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
 		return np.nansum(cube_fits, axis=0)
 
@@ -186,8 +191,8 @@ class Data(object):
 			self.vel_norm = np.nanmean(self.components['stellar'].plot['vel'][c])
 		elif self.norm_method == 'disk_fit':
 			import disk_fit_functions as dfn
-			vel = D.components['stellar'].plot['vel'].unbinned
-			vel_err = D.components['stellar'].plot['vel'].uncert.unbinned
+			vel = self.unbin(self.components['stellar'].plot['vel'])
+			vel_err = self.unbin(self.components['stellar'].plot['vel'].uncert)
 			disk,pars=dfn.disk_fit_exp(vel.copy(),vel_err.copy(),leeway=2., 
 				verbose=False)
 			self.vel_norm = np.nanmean(disk)
@@ -474,28 +479,28 @@ class _data(object):
 	# 			else:
 	# 				k = np.append(k, np.nan)
 
-	# 		# Normalise to rest frame of stars
-	# 		if attr == 'vel':
-	# 			k -= self.__parent__.vel_norm
+	# 		
 	# 		kinematics = myArray(k)
 	# 		kinematics.uncert = myArray(
 	# 			[getattr(bin.components[self.name], attr, myFloat(np.nan)).uncert 
 	# 			if not m[i] else np.nan 
 	# 			for i, bin in enumerate(self.__parent__.bin)])
 
-	# 		unbinned = self.__parent__.unbin(kinematics)
-	# 		uncert_unbinned = self.__parent__.unbin(kinematics.uncert)
-
-	# 		kinematics.unbinned = unbinned
-	# 		kinematics.uncert.unbinned = uncert_unbinned
-
-	# 		return kinematics
 			if self.name == 'stellar':
-				return myArray(self.__parent__.ste_fits[attr.upper()], 
-					uncert = self.__parent__.ste_fits['e_'+attr.upper()])
+				kinematics = myArray(self.__parent__.ste_fits[attr.upper()], 
+					uncert = myArray(self.__parent__.ste_fits['e_'+attr.upper()]))
 			else:
-				return myArray(self.__parent__.emi_fits[attr.upper()], 
-					uncert = self.__parent__.emi_fits['e_'+attr.upper()])
+				kinematics = myArray(self.__parent__.emi_fits[attr.upper()], 
+					uncert = myArray(self.__parent__.emi_fits['e_'+attr.upper()]))
+
+			# Normalise to rest frame of stars
+			if attr == 'vel':
+				kinematics -= self.__parent__.vel_norm
+
+			# kinematics.unbinned = self.__parent__.unbin(kinematics)
+			# kinematics.uncert.unbinned = self.__parent__.unbin(kinematics.uncert)
+
+			return kinematics
 		else:
 			return object.__getattribute__(self,attr)
 
@@ -566,17 +571,21 @@ class emission_data(_data):
 
 	@property
 	def equiv_width(self):
-		cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
-			- self.wav))] for bin in self.__parent__.bin])
-		e = myArray(self.flux/cont)
-		cont_uncert = np.array([
-			bin.continuum.uncert[np.argmin(np.abs(bin.lam/
-			(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
-			- self.wav))] for bin in self.__parent__.bin])
-		e.uncert = np.array(e) * np.sqrt(((self.flux.uncert/self.flux)**2 + 
-			(cont_uncert/cont)**2))
-		return e
+		# cont = np.array([bin.continuum[np.argmin(np.abs(bin.lam/
+		# 	(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
+		# 	- self.wav))] for bin in self.__parent__.bin])
+		# e = myArray(self.flux/cont)
+		# cont_uncert = np.array([
+		# 	bin.continuum.uncert[np.argmin(np.abs(bin.lam/
+		# 	(1 + bin.components['stellar'].vel/c + self.__parent__.vel_norm/c) 
+		# 	- self.wav))] for bin in self.__parent__.bin])
+		# e.uncert = np.array(e) * np.sqrt(((self.flux.uncert/self.flux)**2 + 
+		# 	(cont_uncert/cont)**2))
+		# return e
+		return myArray(
+			self.__parent__.emi_fits['eqw_'+remove_brackets(self.name)], 
+			uncert=self.__parent__.emi_fits[
+			'e_eqw_'+remove_brackets(self.name)])
 
 	@property
 	def mask(self):

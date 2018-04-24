@@ -83,3 +83,17 @@ class checkcomp(object):
 	# 		h_dir = ''
 
 	# 	return h_dir
+
+	@property
+	def external_drive(self):
+		comp = self.device
+		if comp == 'cygwin_home':
+			b_dir = '/cygdrive/d' # Moved from external to laptop
+			# e_dir = ''
+		elif comp == 'bash_home':
+			e_dir = '/mnt/d'
+		else:
+			raise 'Not programed in the mounted drive directory for ' \
+				+ comp + ' yet. Jump to to it!'
+
+		return e_dir

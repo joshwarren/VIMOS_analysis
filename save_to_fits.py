@@ -37,7 +37,8 @@ cc = checkcomp()
 import cPickle as pickle
 import os
 from astropy.io import fits 
-import numpy as np 
+import numpy as np
+from errors2 import get_pickleFileDirectory
 
 
 def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
@@ -68,13 +69,13 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 
 	if not debug:
 		if stellar and D is None:
-			pickle_file = '%s/pickled' % (vin_dir)
-			pickleFile = open("%s/dataObj.pkl" % (pickle_file), 'rb')
+			pickleFile = open(get_pickleFileDirectory(galaxy, 
+				instrument=instrument, opt=kin_opt), 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
 		if (emission or absorption or absorption_nomask) and D2 is None:
-			pickle_file2 = '%s/pickled' % (vin_dir2)
-			pickleFile2 = open("%s/dataObj.pkl" % (pickle_file2), 'rb')
+			pickleFile2 = open(get_pickleFileDirectory(galaxy, 
+				instrument=instrument, opt=pop_opt), 'rb')
 			D2 = pickle.load(pickleFile2)
 			pickleFile2.close()
 	else:
@@ -574,12 +575,20 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 				])
 
 			cols.extend(np.array([[
-				fits.Column(name=p.replace('[','').replace(']',''), format='D', 
-				unit='1E-15 erg s^-1 cm^-1', array=D2.components[p].flux),
-				fits.Column(name='e_'+p.replace('[','').replace(']',''), format='D', 
-				unit='1E-15 erg s^-1 cm^-1', array=D2.components[p].flux.uncert),
+				fits.Column(name=p.replace('[','').replace(']',''), 
+					format='D', unit='1E-15 erg s^-1 cm^-1', 
+					array=D2.components[p].flux),
+				fits.Column(name='e_'+p.replace('[','').replace(']',''), 
+					format='D', unit='1E-15 erg s^-1 cm^-1', 
+					array=D2.components[p].flux.uncert),
 				fits.Column(name='anr_'+p.replace('[','').replace(']',''), 
-					format='D', array=D2.components[p].amp_noise)] 
+					format='D', array=D2.components[p].amp_noise),
+				fits.Column(name='eqw_'+p.replace('[','').replace(']',''), 
+					format='D', unit='A', 
+					array=D2.components[p].equiv_width),
+				fits.Column(name='e_eqw_'+p.replace('[','').replace(']',''), 
+					format='D', unit='A', 
+					array=D2.components[p].equiv_width.uncert)] 
 				for i, p in enumerate(D2.e_components)]).flatten())
 
 			hdu = fits.BinTableHDU.from_columns(cols)
@@ -623,9 +632,10 @@ def save_muse(galaxy):
 if __name__=='__main__':
 	if 'home' in cc.device:
 		for galaxy in ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 
-			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']:
-			save(galaxy, debug=False, stellar=False, absorption=True, 
-				absorption_nomask=False, emission=False)
+			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 
+			'pks0718-34']:
+			save(galaxy, debug=False, stellar=False, absorption=False, 
+				absorption_nomask=False, emission=True)
 	elif cc.device == 'uni':
 		save('ngc1316', instrument='muse', debug=False, stellar=True, 
 			absorption=False, absorption_nomask=False, emission=False, 

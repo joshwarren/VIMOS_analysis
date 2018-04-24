@@ -97,6 +97,7 @@ def correct_header(header):
 		header['CRVAL2'] = header['HIERARCH CCD1 ESO INS IFU DEC']
 		header['CD1_1'] = -abs(header['CDELT1']/(60**2))
 		header['CD2_2'] = header['CDELT2']/(60**2)
+		header['CD3_3'] = header['CDELT3']
 	except KeyError:
 		header['CD1_1'] = -abs(header['CD1_1'])
 		#pass # MUSE has the correctly labelled headers
@@ -376,7 +377,7 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 		if hasattr(ax,'ax2'):
 			cax = fig.add_axes([1.0, ax_loc.y0, 0.03, ax_loc.height])
 		else:
-			cax = fig.add_axes([0.93, ax_loc.y0, 0.03, ax_loc.height])
+			cax = fig.add_axes([0.83, ax_loc.y0, 0.03, ax_loc.height])
 		cbar = plt.colorbar(cs, cax=cax, ticks=ticks)
 	elif colorbar:
 		ticks = ticker.MaxNLocator(nbins=nticks)
@@ -402,8 +403,12 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if colorbar:	
 		if label:
-			t = cbar.ax.text(4.0,0.5, label, rotation=270, 
-				verticalalignment='center')
+			if hasattr(ax,'ax2'):
+				t = cbar.ax.text(4.0,0.5, label, rotation=270, 
+					verticalalignment='center')
+			else:
+				t = cbar.ax.text(2.5,0.5, label, rotation=270, 
+					verticalalignment='center')
 			if label_size is not None:
 				t.set_size(label_size*t.get_size())
 		ax.cax = cbar.ax

@@ -790,6 +790,21 @@ def get_dataCubeDirectory(galaxy, radio_band=None):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
+def get_pickleFileDirectory(galaxy, instrument='vimos', opt='kin'):
+	if 'home' in cc.device:
+		dir = '%s/%s/%s/%s/dataObj.pkl' % (cc.external_drive, instrument, 
+			galaxy, opt)
+		# dir = '%s/Data/%s/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
+		# 	instrument, galaxy, opt)
+	elif cc.device == 'uni':
+		dir = '%s/Data/%s/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
+			instrument, galaxy, opt)
+	return dir
+
+
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
 def errors2(i_gal=None, opt=None, bin=None):
 	if i_gal is None: i_gal=int(sys.argv[1])
 	if opt is None: opt=sys.argv[2]
