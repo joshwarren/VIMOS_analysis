@@ -122,7 +122,9 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 	
 	Hb_spec_uncert = pp.MCgas_uncert_spec[
 		pp.templatesToUse[pp.component!=0]=='Hbeta', :].flatten()
-	# Hb_flux_uncert = trapz_uncert(Hb_spec_uncert, x=pp.lam)
+
+	Hb_spec_norm = Hb_spec/np.max(Hb_spec)
+	Hb_spec_uncert = np.sqrt(Hb_spec_uncert**2 + (noise*Hb_spec_norm)**2)
 
 	Hb_spec_uncert_plus = Hb_spec + Hb_spec_uncert
 	Hb_spec_uncert_minus = Hb_spec - Hb_spec_uncert
@@ -135,7 +137,7 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 	if instrument == 'vimos':
 		Ha_flux = 2.86 * Hb_flux
-		# Ha_flux_uncert = 2.86 * Hb_flux_uncert
+		Ha_flux_uncert = 2.86 * Hb_flux_uncert
 		Ha_flux_uncert_plus = 2.86 * Hb_flux_uncert_plus
 		Ha_flux_uncert_minus = 2.86 * Hb_flux_uncert_minus
 
@@ -146,6 +148,8 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 		Ha_spec_uncert = pp.MCgas_uncert_spec[
 			pp.templatesToUse[pp.component!=0]=='Halpha', :].flatten()
+		Ha_spec_norm = Ha_spec/np.max(Ha_spec)
+		Ha_spec_uncert = np.sqrt(Ha_spec_uncert**2 + (noise*Ha_spec_norm)**2)
 		# Ha_flux_uncert = trapz_uncert(Ha_spec_uncert, x=pp.lam)
 
 		Ha_spec_uncert_plus = Ha_spec + Ha_spec_uncert
@@ -163,12 +167,12 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			/(1 + (pp.sol[1][0] + 300)/c))]) 
 
 	Mass = get_Mass(Ha_flux, D, instrument=instrument)
-	# e_Mass = get_Mass(Ha_flux_uncert, D, instrument=instrument)
-	e_Mass = np.mean([
-		abs(get_Mass(Ha_flux_uncert_plus, D, instrument=instrument) - Mass),
-		abs(Mass - get_Mass(Ha_flux_uncert_minus, D, instrument=instrument))])
+	e_Mass = get_Mass(Ha_flux_uncert, D, instrument=instrument)
+	# e_Mass = np.mean([
+	# 	abs(get_Mass(Ha_flux_uncert_plus, D, instrument=instrument) - Mass),
+	# 	abs(Mass - get_Mass(Ha_flux_uncert_minus, D, instrument=instrument))])
 
-	
+
 	OIII_ANR = max(OIII_spec)/np.median(noise[
 		(pp.lam < 5007./(1 + (pp.sol[1][0] - 300)/c)) *
 		(pp.lam > 5007./(1 + (pp.sol[1][0] + 300)/c))])
