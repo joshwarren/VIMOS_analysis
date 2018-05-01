@@ -24,6 +24,8 @@ else:
 import ppxf_util as util
 from rolling_stats import *
 from ppxf import ppxf, create_plot
+from tools import moving_weighted_average
+
 
 c = 299792.458 # speed of light in km/s
 
@@ -46,7 +48,8 @@ class set_params(object):
 		discard			= 	0,
 		library 		=	'Miles',
 		use_all_temp 	= 	False,
-		res 			=	None
+		res 			=	None,
+		use_residuals	= 	False
 		):
 		if reps > 0 and reps < 4: raise ValueError('Reps must be either 0 or > 3')
 		self.quiet = quiet # True
@@ -71,6 +74,7 @@ class set_params(object):
 		self.library = library
 		self.use_all_temp = use_all_temp
 		self.res = res
+		self.use_residuals = use_residuals
 
 	@property
 	def opt(self):
@@ -1124,11 +1128,18 @@ class run_ppxf(ppxf):
 			self.MCgas_kin_err = None
 			# self.MCgas_weights = None
 
-
-
 		for rep in range(self.params.reps):
 			random = np.random.randn(len(self.bin_log_noise))
-			add_noise = random*np.abs(self.bin_log_noise)
+			if self.params.use_residuals and rep == 0:
+				_, residuals, _ = moving_weighted_average(self.lam, 
+					self.bestfit - self.bin_lin, step_size=3., interp=True)
+				add_noise = random * np.sqrt(self.bin_log_noise**2 + residuals**2)
+			elif self.params.use_residuals:
+				_, residuals, _ = moving_weighted_average(self.lam, 
+					ppMC.bestfit - self.bin_lin, step_size=3., interp=True)
+				add_noise = random * np.sqrt(self.bin_log_noise**2 + residuals**2)
+			else:
+				add_noise = random * np.abs(self.bin_log_noise)
 			self.bin_log = self.bestfit + add_noise
 
 			ppMC = ppxf(self.templates, self.bin_log, self.bin_log_noise, 

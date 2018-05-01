@@ -106,8 +106,10 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 	residuals = pp.galaxy - pp.bestfit
 	_, residuals, _ = moving_weighted_average(pp.lam, residuals, step_size=3., 
 		interp=True)
+	residuals[np.isnan(residuals)] = 0
 	noise = np.sqrt(residuals**2 + pp.noise**2)
 	# noise = np.array(residuals)
+	
 
 	OIII_spec = pp.matrix[:, pp.templatesToUse=='[OIII]5007d'].flatten()*\
 		pp.weights[pp.templatesToUse=='[OIII]5007d']
@@ -186,27 +188,32 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			print '%s +/- %s log10(Solar Masses)' % (
 				mass[i_gal], e_mass[i_gal])
 
-			from ppxf import create_plot
-			fig, ax = create_plot(pp).produce 
-			ax.set_xlim([4800, 4900])
-			ax.legend()
-			fig1, ax1 = create_plot(pp).produce 
-			ax1.legend()
 			import matplotlib.pyplot as plt
-			plt.show()
+			fig, ax = plt.subplots(2)
+			from ppxf import create_plot
+			plot = create_plot(pp)
+			plot.ax = ax[0]
+			plot.produce 
+			ax[0].set_xlim([4840, 4880])
+			ax[0].ax2.set_ylim([0,500000])
+			ax[0].ax2.plot(pp.lam, residuals, 'k')
+			ax[0].legend()
+			plot.ax = ax[1]
+			plt.show() if 'home' in cc.device else fig.savefig('whole_image2.png')
+
 	else:
 		if instrument == 'vimos':
 			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
 				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
-				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))])
+				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
 			Ha_flux2 = 2.86 * Hb_flux2
 		elif instrument == 'muse':
 			Ha_spec2 = pp.matrix[:, pp.templatesToUse=='Halpha'].flatten() \
 				/ np.max(pp.matrix[:, pp.templatesToUse=='Halpha']) \
 				* np.median(noise[(pp.lam < 6563./(1 + (pp.sol[1][0] - 300)/c))
-				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))])
+				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Ha_flux2 = np.trapz(Ha_spec2, x=pp.lam)
 		Mass2 = get_Mass(Ha_flux2, D, instrument=instrument)
 
@@ -217,23 +224,32 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			print '<%s +/- %s log10(Solar Masses)' % (
 				mass[i_gal], e_mass[i_gal])
 
-			from ppxf import create_plot
-			fig, ax = create_plot(pp).produce 
-			ax.set_xlim([4800, 4900])
-			ax.legend()
 			import matplotlib.pyplot as plt
-			plt.show()
+			fig, ax = plt.subplots(2)
+			from ppxf import create_plot
+			plot = create_plot(pp)
+			plot.ax = ax[0]
+			plot.produce 
+			ax[0].set_xlim([4800, 4900])
+			ax[0].ax2.plot(pp.lam, residuals, 'k')
+			ax[0].legend()
+			plot.ax = ax[1]
+			plot.produce
+			plt.show() if 'home' in cc.device else fig.savefig('whole_image2.png')
 
 	if instrument == 'muse':
 		if OIII_ANR > 4 and ANR > 2.5 and Hb_ANR > 2.5:
 			bd[i_gal] = str(round(Ha_flux/Hb_flux, 4))
 			e_bd[i_gal] = str(round(Ha_flux/Hb_flux * np.sqrt(
 				(Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert/Hb_flux)**2), 4))
+			print 'Balmer dec uncert', Ha_flux_uncert/Ha_flux, \
+				Hb_flux_uncert/Hb_flux, \
+				np.sqrt((Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert/Hb_flux)**2)
 		elif OIII_ANR > 4 and ANR > 2.5:
 			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
 				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
-				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))])
+				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
 
 			bd[i_gal] = '<' + str(round(Ha_flux/Hb_flux2, 4))
@@ -242,17 +258,18 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
 				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
-				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))])
+				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
 			Ha_spec2 = pp.matrix[:, pp.templatesToUse=='Halpha'].flatten() \
 				/ np.max(pp.matrix[:, pp.templatesToUse=='Halpha']) \
 				* np.median(noise[(pp.lam < 6563./(1 + (pp.sol[1][0] - 300)/c))
-				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))])
+				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Ha_flux2 = np.trapz(Ha_spec2, x=pp.lam)
 
 			bd[i_gal] = '>' + str(round(Ha_flux2/Hb_flux2, 4))
 			e_bd[i_gal] = '-'
 
+	adskj
 	if instrument == 'vimos':
 		temp = "{0:12}{1:10}{2:10}\n"
 		with open(limits_file, 'w') as l:
@@ -276,7 +293,7 @@ if __name__=='__main__':
 		# whole_image('ngc1399', verbose=False, instrument='muse')
 		galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
 		for g in galaxies:
-			whole_image(g, verbose=False, instrument='muse')
+			whole_image(g, verbose=True, instrument='muse')
 
 	elif 'home' in cc.device:
 		# whole_image('ngc1399', verbose=False, instrument='vimos')

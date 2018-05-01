@@ -63,7 +63,8 @@ def mg_sigma(galaxy, aperture=1.0):
 ## ----------===============================================---------
 ## ----------============= Input parameters  ===============---------
 ## ----------===============================================---------
-	params = set_params(reps=10, produce_plot=False, opt='pop', res=8.4)
+	params = set_params(reps=10, produce_plot=False, opt='pop', res=8.4,
+		use_residuals=True)
 	
 	galaxies = np.array(['ngc3557', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
 		'ngc1399', 'ngc3100', 'ngc7075', 'pks0718-34', 'eso443-g024'])
