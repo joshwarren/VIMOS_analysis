@@ -287,13 +287,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 
 	if flux is not None:
 		# 1 mag contours
-		ax.contour(-2.5*np.log10(flux/np.max(flux)), levels=np.arange(20), 
+		ax.contour(-2.5*np.log10(flux/np.nanmax(flux)), levels=np.arange(20), 
 			colors='k', extent=[xmin, xmax, ymax, ymin])#, linewidths=1)
 
 	if flux_unbinned is not None:
 		if flux_type == 'mag':
 			contours = -2.5*np.log10(np.rot90(flux_unbinned[:,::-1])/
-				np.max(flux_unbinned))
+				np.nanmax(flux_unbinned))
 			# 1 mag contours
 			cont = ax.contour(contours, levels=np.arange(20), colors='k', 
 				extent=[xmin, xmax, ymax, ymin])#, linewidths=1)

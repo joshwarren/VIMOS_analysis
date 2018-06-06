@@ -471,3 +471,57 @@ def calz_unred(wave, flux, ebv, R_V=4.05):
 
     funred = flux * 10.0**(0.4 * klam * ebv)
     return funred
+
+##############################################################################
+# Taken from: https://stackoverflow.com/questions/8090229/resize-with-averaging
+# 	-or-rebin-a-numpy-2d-array
+def bin_ndarray(ndarray, new_shape, operation='sum'):
+    """
+    Bins an ndarray in all axes based on the target shape, by summing or
+        averaging.
+
+    Number of output dimensions must match number of input dimensions and 
+        new axes must divide old ones.
+
+    Example
+    -------
+    >>> m = np.arange(0,100,1).reshape((10,10))
+    >>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
+    >>> print(n)
+
+    [[ 22  30  38  46  54]
+     [102 110 118 126 134]
+     [182 190 198 206 214]
+     [262 270 278 286 294]
+     [342 350 358 366 374]]
+
+    """
+    operation = operation.lower()
+    if not operation in ['sum', 'mean']:
+        raise ValueError("Operation not supported.")
+    if ndarray.ndim != len(new_shape):
+        raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
+                                                           new_shape))
+    compression_pairs = [(d, c//d) for d,c in zip(new_shape,
+                                                  ndarray.shape)]
+    flattened = [l for p in compression_pairs for l in p]
+    ndarray = ndarray.reshape(flattened)
+    for i in range(len(new_shape)):
+        op = getattr(ndarray, operation)
+        ndarray = op(-1*(i+1))
+    return ndarray
+
+
+##############################################################################
+# Taken from: http://scipy-cookbook.readthedocs.io/items/Rebinning.html
+# Is really a regridding as values are not summed/averaged - for true rebinning
+# use bin_ndarray above.
+def rebin_factor( a, newshape ):
+        '''Rebin an array to a new shape.
+        newshape must be a factor of a.shape.
+        '''
+        assert len(a.shape) == len(newshape)
+        assert not np.sometrue(np.mod( a.shape, newshape ))
+
+        slices = [ slice(None,None, old/new) for old,new in zip(a.shape,newshape) ]
+        return a[slices]

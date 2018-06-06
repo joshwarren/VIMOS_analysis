@@ -67,7 +67,6 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			f = fits.open(get_dataCubeDirectory(galaxy)[:-5]+'2.fits')
 	
 		f[fits_ext].header['CDELT3'] = f[fits_ext].header['CD3_3']
-
 	elif instrument == 'vimos':
 		f = fits.open(get_dataCubeDirectory(galaxy))
 	R_e = get_R_e(galaxy)/res
@@ -295,11 +294,12 @@ if __name__=='__main__':
 		for g in galaxies:
 			whole_image(g, verbose=True, instrument='muse')
 
-	elif 'home' in cc.device:
-		# whole_image('ngc1399', verbose=False, instrument='vimos')
-		galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
-			'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
-		# galaxies = ['ic1459']
-		for g in galaxies:
-			whole_image(g, verbose=False, instrument='vimos')
-		# whole_image('pks0718-34', verbose=False)
+	# elif 'home' in cc.device:
+	# 	# whole_image('ngc1399', verbose=False, instrument='vimos')
+	# 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+	# 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
+	# 	# galaxies = ['ic1459']
+	# 	for g in galaxies:
+	# 		whole_image(g, verbose=False, instrument='vimos')
+	whole_image('ngc1399', verbose=True, instrument='vimos')
+	# whole_image('ic4296', verbose=True, instrument='muse')

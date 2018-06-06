@@ -72,8 +72,8 @@ class Data(object):
 #	sets which bin contains which spaxel.
 # absorption_line (absorption line): returns absorption line indice level
 # 	from Lick like methods.
-	def __init__(self, galaxy, instrument='vimos', opt='kin'):
-		if galaxy == 'ngc1316' and (opt == 'kin' or opt == 'pop'):
+	def __init__(self, galaxy, instrument='vimos', opt='kin', overide=False):
+		if galaxy == 'ngc1316' and (opt == 'kin' or opt == 'pop') and not overide:
 			opt = 'pop_no_Na'
 			print 'Setting opt to pop_No_Na'
 		self.galaxy, self.instrument, self.opt = galaxy, instrument, opt
@@ -145,8 +145,9 @@ class Data(object):
 			ext = 0
 			from errors2 import get_dataCubeDirectory
 			NAXIS3 = 1916
-		cube_fits = fits.getdata(get_dataCubeDirectory(self.galaxy), ext)
-		return np.nansum(cube_fits, axis=0)
+		cube_fits, header = fits.getdata(get_dataCubeDirectory(self.galaxy), ext,
+			header=True)
+		return np.nansum(cube_fits, axis=0)# * NAXIS3 * header['CD3_3']
 
 
 	# def add_e_line(self, line, wav):
