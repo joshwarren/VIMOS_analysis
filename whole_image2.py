@@ -279,7 +279,7 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			Hb_flux_uncert2 = np.mean([abs(Hb_flux_uncert_plus2 - Hb_flux2), 
 				abs(Hb_flux2 - Hb_flux_uncert_minus2)])
 
-			bd[i_gal] = '<' + str(round(Ha_flux/Hb_flux2, 4))
+			bd[i_gal] = '>' + str(round(Ha_flux/Hb_flux2, 4))
 			e_bd[i_gal] = str(round(Ha_flux/Hb_flux2 * np.sqrt(
 				(Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 		else:
@@ -317,7 +317,7 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			Ha_flux_uncert2 = np.mean([abs(Ha_flux_uncert_plus2 - Ha_flux2), 
 				abs(Ha_flux2 - Ha_flux_uncert_minus2)])			
 
-			bd[i_gal] = '>' + str(round(Ha_flux2/Hb_flux2, 4))
+			bd[i_gal] = '<' + str(round(Ha_flux2/Hb_flux2, 4))
 			e_bd[i_gal] = str(round(Ha_flux2/Hb_flux2 * np.sqrt(
 				(Ha_flux_uncert2/Ha_flux2)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 
