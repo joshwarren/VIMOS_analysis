@@ -280,7 +280,7 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 				abs(Hb_flux2 - Hb_flux_uncert_minus2)])
 
 			bd[i_gal] = '<' + str(round(Ha_flux/Hb_flux2, 4))
-			e_bd[i_gal] = tr(round(Ha_flux/Hb_flux2 * np.sqrt(
+			e_bd[i_gal] = str(round(Ha_flux/Hb_flux2 * np.sqrt(
 				(Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 		else:
 			#H-beta
@@ -318,10 +318,9 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 				abs(Ha_flux2 - Ha_flux_uncert_minus2)])			
 
 			bd[i_gal] = '>' + str(round(Ha_flux2/Hb_flux2, 4))
-			e_bd[i_gal] = tr(round(Ha_flux2/Hb_flux2 * np.sqrt(
+			e_bd[i_gal] = str(round(Ha_flux2/Hb_flux2 * np.sqrt(
 				(Ha_flux_uncert2/Ha_flux2)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 
-	adskj
 	if instrument == 'vimos':
 		temp = "{0:12}{1:10}{2:10}\n"
 		with open(limits_file, 'w') as l:
@@ -342,17 +341,14 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 if __name__=='__main__':
 	if cc.device == 'uni':
-		# whole_image('ngc1399', verbose=False, instrument='muse')
 		galaxies = ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']
 		for g in galaxies:
 			whole_image(g, verbose=True, instrument='muse')
 
-	# elif 'home' in cc.device:
-	# 	# whole_image('ngc1399', verbose=False, instrument='vimos')
-	# 	galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
-	# 		'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
-	# 	# galaxies = ['ic1459']
-	# 	for g in galaxies:
-	# 		whole_image(g, verbose=False, instrument='vimos')
-	whole_image('ngc1399', verbose=True, instrument='vimos')
+	elif 'home' in cc.device:
+		galaxies = ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 'ngc0612', 
+			'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 'pks0718-34']
+		for g in galaxies:
+			whole_image(g, verbose=False, instrument='vimos')
+	# whole_image('ngc1399', verbose=True, instrument='vimos')
 	# whole_image('ic4296', verbose=True, instrument='muse')
