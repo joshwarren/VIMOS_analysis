@@ -6,7 +6,7 @@ from checkcomp import checkcomp
 cc = checkcomp()
 from Bin import trapz_uncert
 from global_mg_sigma import in_aperture
-from tools import moving_weighted_average
+from tools import moving_weighted_average, gaussian
 from classify import get_R_e
 
 n_e = 100 # cm^-3
@@ -169,10 +169,6 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 	Mass = get_Mass(Ha_flux, D, instrument=instrument)
 	e_Mass = get_Mass(Ha_flux_uncert, D, instrument=instrument)
-	# e_Mass = np.mean([
-	# 	abs(get_Mass(Ha_flux_uncert_plus, D, instrument=instrument) - Mass),
-	# 	abs(Mass - get_Mass(Ha_flux_uncert_minus, D, instrument=instrument))])
-
 
 	OIII_ANR = max(OIII_spec)/np.median(noise[
 		(pp.lam < 5007./(1 + (pp.sol[1][0] - 300)/c)) *
@@ -202,22 +198,47 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 
 	else:
 		if instrument == 'vimos':
-			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
-				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
+			Hb_spec_norm = gaussian(pp.lam, mean=4861., sigma=pp.sol[0][1])
+			Hb_spec2 = Hb_spec_norm \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
 				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
+
+			Hb_spec_uncert2 = np.abs(noise*Hb_spec_norm)
+			Hb_spec_uncert_plus2 = Hb_spec2 + Hb_spec_uncert2
+			Hb_spec_uncert_minus2 = Hb_spec2 - Hb_spec_uncert2
+
+			Hb_flux_uncert_plus2 = np.trapz(Hb_spec_uncert_plus2, x=pp.lam)
+			Hb_flux_uncert_minus2 = np.trapz(Hb_spec_uncert_minus2, x=pp.lam)
+
+			Hb_flux_uncert2 = np.mean([abs(Hb_flux_uncert_plus2 - Hb_flux2), 
+				abs(Hb_flux2 - Hb_flux_uncert_minus2)])
+
 			Ha_flux2 = 2.86 * Hb_flux2
+			Ha_flux_uncert2 = 2.86 * Hb_flux_uncert2
 		elif instrument == 'muse':
-			Ha_spec2 = pp.matrix[:, pp.templatesToUse=='Halpha'].flatten() \
-				/ np.max(pp.matrix[:, pp.templatesToUse=='Halpha']) \
+			Ha_spec_norm = gaussian(pp.lam, mean=6563., sigma=pp.sol[0][1])
+			Ha_spec2 = Ha_spec_norm \
 				* np.median(noise[(pp.lam < 6563./(1 + (pp.sol[1][0] - 300)/c))
 				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Ha_flux2 = np.trapz(Ha_spec2, x=pp.lam)
+
+			Ha_spec_uncert2 = np.abs(noise*Ha_spec_norm)
+			Ha_spec_uncert_plus2 = Ha_spec2 + Ha_spec_uncert2
+			Ha_spec_uncert_minus2 = Ha_spec2 - Ha_spec_uncert2
+
+			Ha_flux_uncert_plus2 = np.trapz(Ha_spec_uncert_plus2, x=pp.lam)
+			Ha_flux_uncert_minus2 = np.trapz(Ha_spec_uncert_minus2, x=pp.lam)
+
+			Ha_flux_uncert2 = np.mean([abs(Ha_flux_uncert_plus2 - Ha_flux2), 
+				abs(Ha_flux2 - Ha_flux_uncert_minus2)])
+
 		Mass2 = get_Mass(Ha_flux2, D, instrument=instrument)
+		e_Mass2 = get_Mass(Ha_flux_uncert2, D, instrument=instrument)
 
 		mass[i_gal] = '<'+str(round(np.log10(Mass2),4))
-		e_mass[i_gal] = '-'
+		e_mass[i_gal] = str(round(np.abs(e_Mass2/Mass2/
+			np.log(10)), 4))
 
 		if verbose:
 			print '<%s +/- %s log10(Solar Masses)' % (
@@ -241,32 +262,64 @@ def whole_image(galaxy, verbose=True, instrument='vimos'):
 			bd[i_gal] = str(round(Ha_flux/Hb_flux, 4))
 			e_bd[i_gal] = str(round(Ha_flux/Hb_flux * np.sqrt(
 				(Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert/Hb_flux)**2), 4))
-			print 'Balmer dec uncert', Ha_flux_uncert/Ha_flux, \
-				Hb_flux_uncert/Hb_flux, \
-				np.sqrt((Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert/Hb_flux)**2)
 		elif OIII_ANR > 4 and ANR > 2.5:
-			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
-				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
+			Hb_spec_norm = gaussian(pp.lam, mean=4861., sigma=pp.sol[0][1])
+			Hb_spec2 = Hb_spec_norm \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
 				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
 
+			Hb_spec_uncert2 = np.abs(noise*Hb_spec_norm)
+			Hb_spec_uncert_plus2 = Hb_spec2 + Hb_spec_uncert2
+			Hb_spec_uncert_minus2 = Hb_spec2 - Hb_spec_uncert2
+
+			Hb_flux_uncert_plus2 = np.trapz(Hb_spec_uncert_plus2, x=pp.lam)
+			Hb_flux_uncert_minus2 = np.trapz(Hb_spec_uncert_minus2, x=pp.lam)
+
+			Hb_flux_uncert2 = np.mean([abs(Hb_flux_uncert_plus2 - Hb_flux2), 
+				abs(Hb_flux2 - Hb_flux_uncert_minus2)])
+
 			bd[i_gal] = '<' + str(round(Ha_flux/Hb_flux2, 4))
-			e_bd[i_gal] = '-'
+			e_bd[i_gal] = tr(round(Ha_flux/Hb_flux2 * np.sqrt(
+				(Ha_flux_uncert/Ha_flux)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 		else:
-			Hb_spec2 = pp.matrix[:, pp.templatesToUse=='Hbeta'].flatten() \
-				/ np.max(pp.matrix[:, pp.templatesToUse=='Hbeta']) \
+			#H-beta
+			Hb_spec_norm = gaussian(pp.lam, mean=4861., sigma=pp.sol[0][1])
+			Hb_spec2 = Hb_spec_norm \
 				* np.median(noise[(pp.lam < 4861./(1 + (pp.sol[1][0] - 300)/c))
 				* (pp.lam > 4861./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Hb_flux2 = np.trapz(Hb_spec2, x=pp.lam)
-			Ha_spec2 = pp.matrix[:, pp.templatesToUse=='Halpha'].flatten() \
-				/ np.max(pp.matrix[:, pp.templatesToUse=='Halpha']) \
+
+			Hb_spec_uncert2 = np.abs(noise*Hb_spec_norm)
+			Hb_spec_uncert_plus2 = Hb_spec2 + Hb_spec_uncert2
+			Hb_spec_uncert_minus2 = Hb_spec2 - Hb_spec_uncert2
+
+			Hb_flux_uncert_plus2 = np.trapz(Hb_spec_uncert_plus2, x=pp.lam)
+			Hb_flux_uncert_minus2 = np.trapz(Hb_spec_uncert_minus2, x=pp.lam)
+
+			Hb_flux_uncert2 = np.mean([abs(Hb_flux_uncert_plus2 - Hb_flux2), 
+				abs(Hb_flux2 - Hb_flux_uncert_minus2)])
+
+			# H-alpha
+			Ha_spec_norm = gaussian(pp.lam, mean=6563., sigma=pp.sol[0][1])
+			Ha_spec2 = Ha_spec_norm \
 				* np.median(noise[(pp.lam < 6563./(1 + (pp.sol[1][0] - 300)/c))
 				* (pp.lam > 6563./(1 + (pp.sol[1][0] + 300)/c))]) * 2.5
 			Ha_flux2 = np.trapz(Ha_spec2, x=pp.lam)
 
+			Ha_spec_uncert2 = np.abs(noise*Ha_spec_norm)
+			Ha_spec_uncert_plus2 = Ha_spec2 + Ha_spec_uncert2
+			Ha_spec_uncert_minus2 = Ha_spec2 - Ha_spec_uncert2
+
+			Ha_flux_uncert_plus2 = np.trapz(Ha_spec_uncert_plus2, x=pp.lam)
+			Ha_flux_uncert_minus2 = np.trapz(Ha_spec_uncert_minus2, x=pp.lam)
+
+			Ha_flux_uncert2 = np.mean([abs(Ha_flux_uncert_plus2 - Ha_flux2), 
+				abs(Ha_flux2 - Ha_flux_uncert_minus2)])			
+
 			bd[i_gal] = '>' + str(round(Ha_flux2/Hb_flux2, 4))
-			e_bd[i_gal] = '-'
+			e_bd[i_gal] = tr(round(Ha_flux2/Hb_flux2 * np.sqrt(
+				(Ha_flux_uncert2/Ha_flux2)**2 + (Hb_flux_uncert2/Hb_flux2)**2), 4))
 
 	adskj
 	if instrument == 'vimos':
