@@ -678,7 +678,7 @@ if __name__=='__main__':
 	elif cc.device == 'uni':
 		save('ngc1316', instrument='muse', debug=False, stellar=False, 
 			absorption=False, absorption_nomask=False, emission=False, 
-			population=True, kin_opt='pop_no_Na')
+			population=True, kin_opt='pop_no_Na', pop_opt='pop_no_Na')
 		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 			# save_muse(galaxy)
 			# save(galaxy, instrument='muse', debug=False, stellar=True, 
