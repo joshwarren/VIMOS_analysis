@@ -42,8 +42,8 @@ from errors2 import get_pickleFileDirectory
 
 
 def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
-	absorption=True, absorption_nomask=True, kin_opt='kin', pop_opt='pop',
-	D=None, D2=None):
+	absorption=True, absorption_nomask=True, population=True, 
+	kin_opt='kin', pop_opt='pop', D=None, D2=None):
 	print galaxy, instrument
 	if instrument=='vimos':
 		cent_index = 4
@@ -496,37 +496,7 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 				array=eval(p.replace(')',',nomask=True)'))) for i, p in 
 				enumerate(plots)])
 
-		# age = np.zeros(D2.number_of_bins)
-		# met = np.zeros(D2.number_of_bins)
-		# alp = np.zeros(D2.number_of_bins)
-		# unc_age = np.zeros(D2.number_of_bins)
-		# unc_met = np.zeros(D2.number_of_bins)
-		# unc_alp = np.zeros(D2.number_of_bins)
-
-		# if not debug:
-		# 	for j in xrange(D2.number_of_bins):
-		# 		ag, me, al = np.loadtxt('%s/pop/distribution/%i.dat' % (
-		# 			vin_dir2, j), unpack=True)
-
-		# 		for plot, unc_plot, pop in zip([age,met,alp],
-		# 			[unc_age,unc_met,unc_alp], [ag,me,al]):
-
-		# 			hist = np.histogram(pop, bins=40)
-		# 			x = (hist[1][0:-1]+hist[1][1:])/2
-		# 			hist = hist[0]
-		# 			plot[j] = x[np.argmax(hist)]
-
-		# 			gt_fwhm = hist >= np.max(hist)/2
-		# 			unc_plot[j] = np.max(x[gt_fwhm]) - np.min(x[gt_fwhm])
-
-		# str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
-		# 	'elpha', 'e_alpha']
-		# units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
-
-
-		# cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
-		# 	array=eval(p)) for i, p in enumerate(['age', 'unc_age', 'met', 
-		# 	'unc_met', 'alp', 'unc_alp'])])
+		
 
 		hdu = fits.BinTableHDU.from_columns(cols)
 		f_new = fits.HDUList([primary_hdu, hdu])
@@ -540,6 +510,74 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		else:
 			f_new.writeto('%s/%s_absorption_line_nomask.fits' %(save_dir, galaxy), 
 				overwrite=True)
+
+
+	if population:
+		age = np.zeros(D2.number_of_bins)
+		met = np.zeros(D2.number_of_bins)
+		alp = np.zeros(D2.number_of_bins)
+		unc_age = np.zeros(D2.number_of_bins)
+		unc_met = np.zeros(D2.number_of_bins)
+		unc_alp = np.zeros(D2.number_of_bins)
+
+		if not debug:
+			for j in xrange(D2.number_of_bins):
+				ag, me, al = np.loadtxt('%s/pop/distribution/%i.dat' % (
+					vin_dir2, j), unpack=True)
+
+				for plot, unc_plot, pop in zip([age,met,alp],
+					[unc_age,unc_met,unc_alp], [ag,me,al]):
+
+					hist = np.histogram(pop, bins=40)
+					x = (hist[1][0:-1]+hist[1][1:])/2
+					hist = hist[0]
+					plot[j] = x[np.argmax(hist)]
+		
+					unc_plot[j] = np.nanstd(pop)
+
+					# gt_fwhm = hist >= np.max(hist)/2
+					# unc_plot[j] = np.max(x[gt_fwhm]) - np.min(x[gt_fwhm])
+
+		str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
+			'elpha', 'e_alpha']
+		units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
+
+		hdr = fits.Header()
+		hdr['SNR'] = SN_target_kin
+		hdr['COMMENT'] = "Stellar population of %s from %s " % (galaxy.upper(), 
+			instrument.upper())+"data reduced/analysed by Warren,J. et.al.(2018)"
+		primary_hdu = fits.PrimaryHDU(header=hdr)
+
+		cols = [
+				fits.Column(name='NO', format='I', array=np.arange(
+					D2.number_of_bins)),
+				fits.Column(name='XS', format='D', unit='arcsec', 
+					array=-(D2.xBar-cent[0])),
+				fits.Column(name='YS', format='D', unit='arcsec', 
+					array=-(D2.yBar-cent[1])),
+				fits.Column(name='BINSIZE', format='I', array=D2.n_spaxels_in_bin),
+				fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
+					array=D2.flux), # Check flux units
+				fits.Column(name='SNR', format='D', array=D2.SNRatio)
+				]
+
+		cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
+			array=eval(p)) for i, p in enumerate(['age', 'unc_age', 'met', 
+			'unc_met', 'alp', 'unc_alp'])])
+
+		hdu = fits.BinTableHDU.from_columns(cols)
+		f_new = fits.HDUList([primary_hdu, hdu])
+
+		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
+		if not os.path.exists(save_dir):
+			os.makedirs(save_dir)
+		if pop_opt != 'pop':
+			f_new.writeto('%s/%s_population_%s.fits' %(save_dir, galaxy, kin_opt), 
+			overwrite=True)
+		else:
+			f_new.writeto('%s/%s_population.fits' %(save_dir, galaxy), 
+				overwrite=True)
+
 
 	# Emission lines
 	if emission:
@@ -635,11 +673,11 @@ if __name__=='__main__':
 			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 
 			'pks0718-34']:
 			save(galaxy, debug=False, stellar=False, absorption=False, 
-				absorption_nomask=False, emission=True)
+				absorption_nomask=False, emission=True, population=False)
 	elif cc.device == 'uni':
-		save('ngc1316', instrument='muse', debug=False, stellar=True, 
+		save('ngc1316', instrument='muse', debug=False, False=True, 
 			absorption=False, absorption_nomask=False, emission=False, 
-			kin_opt='pop_no_Na')
+			population=True, kin_opt='pop_no_Na')
 		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
 			# save_muse(galaxy)
 			# save(galaxy, instrument='muse', debug=False, stellar=True, 

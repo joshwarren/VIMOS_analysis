@@ -85,14 +85,17 @@ class Data(object):
 			galaxy, opt), usecols=(0,1,2), dtype=int, skiprows=1, unpack=True)
 		
 		# Fits files
+		opt2 = '_'+self.opt if self.opt != 'kin' and self.opt != 'pop' else ''
 		if 'kin' not in self.opt:
 			self.abs_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-				+'analysed_fits/%s_absorption_line.fits' % (galaxy), 1)
+				+'analysed_fits/%s_absorption_line%s.fits' % (galaxy, opt2), 1)
 			self.abs_fits_nomask = fits.getdata('%s/Data/%s/' % (cc.base_dir, 
-				instrument) +'analysed_fits/%s_absorption_line_nomask.fits' % (
-				galaxy), 1)
+				instrument) +'analysed_fits/%s_absorption_line_nomask%s.fits' % (
+				galaxy,opt2), 1)
 			self.emi_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-				+'analysed_fits/%s_emission_line.fits' % (galaxy), 1)
+				+'analysed_fits/%s_emission_line%s.fits' % (galaxy, opt2), 1)
+			self.pop_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+				+'analysed_fits/%s_population%2.fits' % (galaxy, opt2), 1)
 
 			self._components.update({
 				add_brackets(l):emission_data(self, add_brackets(l)) for l in 
@@ -104,12 +107,8 @@ class Data(object):
 		else:
 			self._gas = 0
 
-		if self.opt != 'kin' and self.opt != 'pop':
-			self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-				+'analysed_fits/%s_stellar_kine_%s.fits' % (galaxy, self.opt), 1)
-		else:
-			self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-				+'analysed_fits/%s_stellar_kine.fits' % (galaxy), 1)
+		self.ste_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
+			+'analysed_fits/%s_stellar_kine%s.fits' % (galaxy, opt2), 1)
 
 		if 'kin' in self.opt:
 			self.base_fits = self.ste_fits
@@ -398,6 +397,20 @@ class Data(object):
 		# else:
 		# 	return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],
 		# 		axis=0)[-2,:]
+
+	@property
+	def age(self):
+		return myArray(self.pop_fits['age'], uncert=self.pop_fits['e_age'])
+
+	@property
+	def metalicity(self):
+		return myArray(self.pop_fits['metalicity'], 
+			uncert=self.pop_fits['e_metalicity'])
+
+	@property
+	def alpha(self):
+		return myArray(self.pop_fits['alpha'], uncert=self.pop_fits['e_alpha'])
+
 
 
 
