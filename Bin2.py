@@ -13,7 +13,7 @@ from tools import moving_weighted_average
 # from scipy.interpolate import interp1d
 # from itertools import groupby, count
 from astropy.io import fits
-import warnings
+import warnings, os
 
 
 
@@ -94,8 +94,11 @@ class Data(object):
 				galaxy,opt2), 1)
 			self.emi_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
 				+'analysed_fits/%s_emission_line%s.fits' % (galaxy, opt2), 1)
-			self.pop_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, instrument)
-				+'analysed_fits/%s_population%2.fits' % (galaxy, opt2), 1)
+			# if os.path.isfile('%s/Data/%s/' % (cc.base_dir, instrument)
+			# 	+'analysed_fits/%s_population%s.fits' % (galaxy, opt2)):
+			self.pop_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, 
+				instrument) +'analysed_fits/%s_population%s.fits' % (galaxy, 
+				opt2), 1)
 
 			self._components.update({
 				add_brackets(l):emission_data(self, add_brackets(l)) for l in 
@@ -398,21 +401,6 @@ class Data(object):
 		# 	return np.sort([l.amp_noise for k, l in self.e_line.iteritems()],
 		# 		axis=0)[-2,:]
 
-	@property
-	def age(self):
-		return myArray(self.pop_fits['age'], uncert=self.pop_fits['e_age'])
-
-	@property
-	def metalicity(self):
-		return myArray(self.pop_fits['metalicity'], 
-			uncert=self.pop_fits['e_metalicity'])
-
-	@property
-	def alpha(self):
-		return myArray(self.pop_fits['alpha'], uncert=self.pop_fits['e_alpha'])
-
-
-
 
 # based on example in http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 class myArray(np.ndarray):
@@ -538,6 +526,21 @@ class stellar_data(_data):
 	@property
 	def mask_dynamics(self):
 		return self.mask # np.array([False]*self.__parent__.number_of_bins)
+
+	@property
+	def age(self):
+		return myArray(self.__parent__.pop_fits['age'], 
+			uncert=self.__parent__.pop_fits['e_age'])
+
+	@property
+	def metalicity(self):
+		return myArray(self.__parent__.pop_fits['metalicity'], 
+			uncert=self.__parent__.pop_fits['e_metalicity'])
+
+	@property
+	def alpha(self):
+		return myArray(self.__parent__.pop_fits['alpha'], 
+			uncert=self.__parent__.pop_fits['e_alpha'])
 
 
 

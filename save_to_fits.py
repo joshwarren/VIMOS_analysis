@@ -540,7 +540,7 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 					# unc_plot[j] = np.max(x[gt_fwhm]) - np.min(x[gt_fwhm])
 
 		str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
-			'elpha', 'e_alpha']
+			'alpha', 'e_alpha']
 		units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
 
 		hdr = fits.Header()
@@ -668,6 +668,54 @@ def save_muse(galaxy):
 
 	f_new.writeto(corr_fits_file, overwrite=os.path.isfile(corr_fits_file))
 
+
+# def correct():
+
+# 	d = fits.open('/Data/muse/analysed_fits/'\
+# 		+ 'ngc1316_population_pop_no_Na.fits')
+# 	f = d[1].data
+# 	h = d[0].header
+
+# 	d.close()
+
+# 	str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
+# 		'alpha', 'e_alpha']
+# 	units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
+
+# 	# hdr = fits.Header()
+# 	# hdr['SNR'] = h['SNR']
+# 	# hdr['COMMENT'] = h['COMMENT']
+# 	primary_hdu = fits.PrimaryHDU(header=h)
+
+# 	cols = [
+# 			fits.Column(name='NO', format='I', array=f['NO']),
+# 			fits.Column(name='XS', format='D', unit='arcsec', array=f['XS']),
+# 			fits.Column(name='YS', format='D', unit='arcsec', array=f['YS']),
+# 			fits.Column(name='BINSIZE', format='I', array=f['BINSIZE']),
+# 			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
+# 				array=f['FLUX']), # Check flux units
+# 			fits.Column(name='SNR', format='D', array=f['SNR'])
+# 			]
+
+# 	cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
+# 		array=eval(p)) for i, p in enumerate(["f['age']", "f['e_age']", 
+# 		"f['metalicity']", "f['e_metalicity']", "f['elpha']", "f['e_alpha']"])])
+
+# 	hdu = fits.BinTableHDU.from_columns(cols)
+# 	f_new = fits.HDUList([primary_hdu, hdu])
+
+# 	save_dir = '%s/Data/muse/analysed_fits' % (cc.base_dir)
+# 	if not os.path.exists(save_dir):
+# 		os.makedirs(save_dir)
+
+# 	f_new.writeto('%s/%s_population_pop_no_Na2.fits' %(save_dir, 'ngc1316'), 
+# 		overwrite=True)
+
+
+
+
+
+
 if __name__=='__main__':
 	if 'home' in cc.device:
 		for galaxy in ['eso443-g024', 'ic1459', 'ic1531', 'ic4296', 
@@ -676,10 +724,11 @@ if __name__=='__main__':
 			save(galaxy, debug=False, stellar=False, absorption=False, 
 				absorption_nomask=False, emission=True, population=False)
 	elif cc.device == 'uni':
-		save('ngc1316', instrument='muse', debug=False, stellar=False, 
-			absorption=False, absorption_nomask=False, emission=False, 
-			population=True, kin_opt='pop_no_Na', pop_opt='pop_no_Na')
-		# for galaxy in ['ic1459', 'ic4296', 'ngc1316', 'ngc1399']:
+		# save('ngc1316', instrument='muse', debug=False, stellar=False, 
+		# 	absorption=False, absorption_nomask=False, emission=False, 
+		# 	population=True, kin_opt='pop_no_Na', pop_opt='pop_no_Na')
+		for galaxy in ['ic1459', 'ic4296', 'ngc1399']:
 			# save_muse(galaxy)
-			# save(galaxy, instrument='muse', debug=False, stellar=True, 
-			# 	absorption=True, absorption_nomask=True, emission=True)
+			save('ngc1316', instrument='muse', debug=False, stellar=False, 
+				absorption=False, absorption_nomask=False, emission=False, 
+				population=True, kin_opt='kin', pop_opt='pop')
