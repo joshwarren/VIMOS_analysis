@@ -801,7 +801,7 @@ def get_pickleFileDirectory(galaxy, instrument='vimos', opt='kin'):
 		# dir = '%s/Data/%s/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
 		# 	instrument, galaxy, opt)
 	elif cc.device == 'uni':
-		dir = '%s/Data/%s/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
+		dir = '%s/Data/%s/analysis/%s/%s/pickled/dataObj.pkl' % (cc.base_dir, 
 			instrument, galaxy, opt)
 	return dir
 #-----------------------------------------------------------------------------
