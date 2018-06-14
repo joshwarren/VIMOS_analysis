@@ -73,7 +73,8 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 				instrument=instrument, opt=kin_opt), 'rb')
 			D = pickle.load(pickleFile)
 			pickleFile.close()
-		if (emission or absorption or absorption_nomask) and D2 is None:
+		if (emission or absorption or absorption_nomask or population
+			) and D2 is None:
 			pickleFile2 = open(get_pickleFileDirectory(galaxy, 
 				instrument=instrument, opt=pop_opt), 'rb')
 			D2 = pickle.load(pickleFile2)
