@@ -44,13 +44,27 @@ from errors2 import get_pickleFileDirectory
 def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 	absorption=True, absorption_nomask=True, population=True, 
 	kin_opt='kin', pop_opt='pop', D=None, D2=None):
+
 	print galaxy, instrument
 	if instrument=='vimos':
 		cent_index = 4
 	elif instrument == 'muse':
 		cent_index = 1
+	
+	if cc.device is not 'glamdring':
+		vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
+		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
 		
-	vin_dir = '%s/Data/%s/analysis' % (cc.base_dir, instrument)
+	else:
+		save_dir = '%s/analysed_fits_%s' % (cc.home_dir, instrument)
+		if instrument == 'vimos':
+			vin_dir = '%s/analysis' % (cc.home_dir)
+		elif instrument == 'muse':
+			vin_dir = '%s/analysis_muse' % (cc.home_dir)
+
+	if not os.path.exists(save_dir):
+		os.makedirs(save_dir)
+
 	data_file =  "%s/galaxies.txt" % (vin_dir)
 	file_headings = np.loadtxt(data_file, dtype=str)[0]
 	col = np.where(file_headings=='SN_'+kin_opt)[0][0]
@@ -140,9 +154,6 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 
 		f_new = fits.HDUList([primary_hdu, hdu])
 
-		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-		if not os.path.exists(save_dir):
-			os.makedirs(save_dir)
 		if kin_opt != 'kin':
 			f_new.writeto('%s/%s_stellar_kine_%s.fits' %(save_dir, galaxy, kin_opt), 
 			overwrite=True)
@@ -334,9 +345,6 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		hdu = fits.BinTableHDU.from_columns(cols)
 		f_new = fits.HDUList([primary_hdu, hdu])
 
-		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-		if not os.path.exists(save_dir):
-			os.makedirs(save_dir)
 		if pop_opt != 'pop':
 			f_new.writeto('%s/%s_absorption_line_%s.fits' %(save_dir, galaxy, 
 				pop_opt), overwrite=True)
@@ -502,9 +510,6 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		hdu = fits.BinTableHDU.from_columns(cols)
 		f_new = fits.HDUList([primary_hdu, hdu])
 
-		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-		if not os.path.exists(save_dir):
-			os.makedirs(save_dir)
 		if pop_opt != 'pop':
 			f_new.writeto('%s/%s_absorption_line_nomask_%s.fits' %(save_dir, galaxy, 
 				pop_opt), overwrite=True)
@@ -569,9 +574,6 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 		hdu = fits.BinTableHDU.from_columns(cols)
 		f_new = fits.HDUList([primary_hdu, hdu])
 
-		save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-		if not os.path.exists(save_dir):
-			os.makedirs(save_dir)
 		if pop_opt != 'pop':
 			f_new.writeto('%s/%s_population_%s.fits' %(save_dir, galaxy, kin_opt), 
 			overwrite=True)
@@ -633,9 +635,6 @@ def save(galaxy, instrument='vimos', debug=False, stellar=True, emission=True,
 			hdu = fits.BinTableHDU.from_columns(cols)
 			f_new = fits.HDUList([primary_hdu, hdu])
 
-			save_dir = '%s/Data/%s/analysed_fits/' % (cc.base_dir, instrument)
-			if not os.path.exists(save_dir):
-				os.makedirs(save_dir)
 			if pop_opt != 'pop':
 				f_new.writeto('%s/%s_emission_line_%s.fits' %(save_dir, galaxy, 
 					pop_opt), overwrite=True)
@@ -669,47 +668,47 @@ def save_muse(galaxy):
 	f_new.writeto(corr_fits_file, overwrite=os.path.isfile(corr_fits_file))
 
 
-# def correct():
+def correct():
 
-# 	d = fits.open('/Data/muse/analysed_fits/'\
-# 		+ 'ngc1316_population_pop_no_Na.fits')
-# 	f = d[1].data
-# 	h = d[0].header
+	d = fits.open('/Data/muse/analysed_fits/'\
+		+ 'ngc1316_population_pop_no_Na.fits')
+	f = d[1].data
+	h = d[0].header
 
-# 	d.close()
+	d.close()
 
-# 	str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
-# 		'alpha', 'e_alpha']
-# 	units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
+	str_plots = ['age', 'e_age', 'metalicity', 'e_metalicity', 
+		'alpha', 'e_alpha']
+	units = ['Gyr', 'Gyr', 'dex', 'dex', 'dex', 'dex']
 
-# 	# hdr = fits.Header()
-# 	# hdr['SNR'] = h['SNR']
-# 	# hdr['COMMENT'] = h['COMMENT']
-# 	primary_hdu = fits.PrimaryHDU(header=h)
+	# hdr = fits.Header()
+	# hdr['SNR'] = h['SNR']
+	# hdr['COMMENT'] = h['COMMENT']
+	primary_hdu = fits.PrimaryHDU(header=h)
 
-# 	cols = [
-# 			fits.Column(name='NO', format='I', array=f['NO']),
-# 			fits.Column(name='XS', format='D', unit='arcsec', array=f['XS']),
-# 			fits.Column(name='YS', format='D', unit='arcsec', array=f['YS']),
-# 			fits.Column(name='BINSIZE', format='I', array=f['BINSIZE']),
-# 			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
-# 				array=f['FLUX']), # Check flux units
-# 			fits.Column(name='SNR', format='D', array=f['SNR'])
-# 			]
+	cols = [
+			fits.Column(name='NO', format='I', array=f['NO']),
+			fits.Column(name='XS', format='D', unit='arcsec', array=f['XS']),
+			fits.Column(name='YS', format='D', unit='arcsec', array=f['YS']),
+			fits.Column(name='BINSIZE', format='I', array=f['BINSIZE']),
+			fits.Column(name='FLUX', format='D', unit='1E-15 erg s^-1 cm^-1', 
+				array=f['FLUX']), # Check flux units
+			fits.Column(name='SNR', format='D', array=f['SNR'])
+			]
 
-# 	cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
-# 		array=eval(p)) for i, p in enumerate(["f['age']", "f['e_age']", 
-# 		"f['metalicity']", "f['e_metalicity']", "f['elpha']", "f['e_alpha']"])])
+	cols.extend([fits.Column(name=str_plots[i], format='D', unit=units[i], 
+		array=eval(p)) for i, p in enumerate(["f['age']", "f['e_age']", 
+		"f['metalicity']", "f['e_metalicity']", "f['elpha']", "f['e_alpha']"])])
 
-# 	hdu = fits.BinTableHDU.from_columns(cols)
-# 	f_new = fits.HDUList([primary_hdu, hdu])
+	hdu = fits.BinTableHDU.from_columns(cols)
+	f_new = fits.HDUList([primary_hdu, hdu])
 
-# 	save_dir = '%s/Data/muse/analysed_fits' % (cc.base_dir)
-# 	if not os.path.exists(save_dir):
-# 		os.makedirs(save_dir)
+	save_dir = '%s/Data/muse/analysed_fits' % (cc.base_dir)
+	if not os.path.exists(save_dir):
+		os.makedirs(save_dir)
 
-# 	f_new.writeto('%s/%s_population_pop_no_Na2.fits' %(save_dir, 'ngc1316'), 
-# 		overwrite=True)
+	f_new.writeto('%s/%s_population_pop_no_Na2.fits' %(save_dir, 'ngc1316'), 
+		overwrite=True)
 
 
 

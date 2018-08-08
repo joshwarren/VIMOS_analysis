@@ -96,16 +96,17 @@ class Data(object):
 				+'analysed_fits/%s_emission_line%s.fits' % (galaxy, opt2), 1)
 			# if os.path.isfile('%s/Data/%s/' % (cc.base_dir, instrument)
 			# 	+'analysed_fits/%s_population%s.fits' % (galaxy, opt2)):
-			self.pop_fits = fits.getdata('%s/Data/%s/' % (cc.base_dir, 
-				instrument) +'analysed_fits/%s_population%s.fits' % (galaxy, 
-				opt2), 1)
+			pop_file = '%s/Data/%s/analysed_fits/%s_population%s.fits' % (
+				cc.base_dir, instrument, galaxy, opt2)
+			if os.path.exists(pop_file):
+				self.pop_fits = fits.getdata(pop_file, 1)
 
 			self._components.update({
 				add_brackets(l):emission_data(self, add_brackets(l)) for l in 
 				self.emi_fits.columns.names if 
 				(l not in ['NO', 'E_VEL', 'E_SIGMA', 'BINSIZE', 'FLUX', 'SNR', 
 				'XS', 'YS', 'SIGMA', 'VEL']) and ('anr_' not in l) and 
-				('e_' not in l)})
+				('e_' not in l) and ('eqw_' not in l)})
 			self._gas = 1
 		else:
 			self._gas = 0

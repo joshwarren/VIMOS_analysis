@@ -88,7 +88,7 @@ class checkcomp(object):
 	def external_drive(self):
 		comp = self.device
 		if comp == 'cygwin_home':
-			b_dir = '/cygdrive/d' # Moved from external to laptop
+			e_dir = '/cygdrive/d' # Moved from external to laptop
 			# e_dir = ''
 		elif comp == 'bash_home':
 			e_dir = '/mnt/d'

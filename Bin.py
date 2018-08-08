@@ -5,7 +5,7 @@
 
 import numpy as np
 import ppxf_util as util
-from absorption import absorption
+# from absorption import absorption
 from glob import glob
 from checkcomp import checkcomp
 cc = checkcomp()
@@ -282,7 +282,7 @@ class Data(object):
 	@property
 	def independent_components(self):
 		if self.gas == 0: 
-			return []
+			return ['stellar']
 		elif self.gas == 1: 
 			return ['stellar', 'gas']
 		elif self.gas == 2: 

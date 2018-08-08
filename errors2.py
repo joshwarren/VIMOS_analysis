@@ -254,7 +254,7 @@ class get_stellar_templates(object):
 #-----------------------------------------------------------------------------
 class get_emission_templates(object):
 	def __init__(self, gas, lamRange, logLam_template, FWHM_gal, quiet=True,
-		lines='all', narrow_broad=False, goodWav=None):
+		lines='all', narrow_broad=False, goodWav=None):#, NaD=False):
 		if narrow_broad:
 			raise ValueError('Two components (narrow and broad line componets' +
 				' are not currently set up on the version (See git' +
@@ -263,7 +263,7 @@ class get_emission_templates(object):
 		if lines == 'all' or lines =='All' or lines =='ALL':
 			lines = ['Hdelta', 'Hgamma', 'Hbeta', 'Halpha', '[OII]3726', 
 				'[OII]3729', '[SII]6716', '[SII]6731', '[OIII]5007d', '[NI]d', 
-				'[OI]6300d', '[NII]6583d']
+				'[OI]6300d', '[NII]6583d']#, 'NaD']
 		self.element = []
 		self.component = []
 		self.templatesToUse = []
@@ -290,6 +290,19 @@ class get_emission_templates(object):
 						line_name[i])
 					self.templates.append(emission_lines[:,i])
 					nTemp += 1
+
+			# if NaD and np.sum(mask[:,0] - 588.995 > 0) == np.sum(
+			# 	mask[:,1] -589.5924 > 0) and 'NaD' in lines:
+			# if NaD and 'NaD' in lines:
+			# 	print 'here'
+			# 	self.templatesToUse = np.append(self.templatesToUse, 'NaD')
+			# 	# taken from ppxf_util.py
+			# 	lam = np.exp(logLam_template)
+			# 	doublet = np.exp(-0.5*((lam - 588.995)/(FWHM_gal/2.355))**2) + \
+			# 		0.5*np.exp(-0.5*((lam - 589.5924)/(FWHM_gal/2.355))**2)
+			# 	self.templates.append(-doublet) # -ve to give absorption
+			# 	nTemp += 1
+
 			self.component = self.component + [1]*nTemp
 			self.element.append('gas')
 		## ----------=============== SF and shocks lines ==============---------
@@ -337,7 +350,8 @@ class get_emission_templates(object):
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
-def determine_goodpixels(logLam, lamRangeTemp, vel, z, lines='all',	invert=False):
+def determine_goodpixels(logLam, lamRangeTemp, vel, z, lines='all',	invert=False,
+	NaD=False):
 	"""
 	warrenj 20150905 Copied from ppxf_determine_goodPixels.pro
 	
@@ -374,6 +388,11 @@ def determine_goodpixels(logLam, lamRangeTemp, vel, z, lines='all',	invert=False
 	tell = 5199
 	flag |= (logLam > np.log(tell) - z - dv/c) \
 		& (logLam < np.log(tell) - z + dv/c) 
+
+	if NaD:
+		NaD = 5890
+		flag |= (logLam > np.log(NaD) + (vel - 2*dv)/c) \
+			& (logLam < np.log(NaD) + (vel + 2*dv)/c)
 
 	# if mask_sky:
 	# 	flag |= (logLam > np.log(5450)) & (logLam < np.log(5550)) 
