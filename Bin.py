@@ -94,9 +94,10 @@ class Data(object):
 				plot['vel'][self.center_bin]
 		elif self.norm_method == "lwv":
 			self.vel_norm = 0.0
-			lwv = self.components['stellar'].plot['vel'].unbinned*self.unbinned_flux
-			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin)/ \
-				np.nansum(self.unbinned_flux) # average lwv / average flux
+			lwv = self.components['stellar'].plot['vel'].unbinned \
+				* self.unbinned_flux
+			self.vel_norm = np.nanmean(lwv)*np.sum(self.n_spaxels_in_bin) \
+				/ np.nansum(self.unbinned_flux) # average lwv / average flux
 		elif self.norm_method == "sig":
 			self.vel_norm = 0.0
 			s_sort = sorted(np.unique(self.components['stellar'].plot['sigma']))

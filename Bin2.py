@@ -500,8 +500,8 @@ class _data(object):
 			if attr == 'vel':
 				kinematics -= self.__parent__.vel_norm
 
-			# kinematics.unbinned = self.__parent__.unbin(kinematics)
-			# kinematics.uncert.unbinned = self.__parent__.unbin(kinematics.uncert)
+			kinematics.unbinned = self.__parent__.unbin(kinematics)
+			kinematics.uncert.unbinned = self.__parent__.unbin(kinematics.uncert)
 
 			return kinematics
 		else:

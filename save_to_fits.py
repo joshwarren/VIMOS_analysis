@@ -721,7 +721,7 @@ if __name__=='__main__':
 			'ngc0612', 'ngc1399', 'ngc3100', 'ngc3557', 'ngc7075', 
 			'pks0718-34']:
 			save(galaxy, debug=False, stellar=False, absorption=False, 
-				absorption_nomask=False, emission=True, population=False)
+				absorption_nomask=False, emission=False, population=True)
 	elif cc.device == 'uni':
 		# save('ngc1316', instrument='muse', debug=False, stellar=False, 
 		# 	absorption=False, absorption_nomask=False, emission=False, 
