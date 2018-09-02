@@ -525,3 +525,22 @@ def rebin_factor( a, newshape ):
 
         slices = [ slice(None,None, old/new) for old,new in zip(a.shape,newshape) ]
         return a[slices]
+
+
+
+##############################################################################
+# Taken from: https://stackoverflow.com/questions/352537
+# /extending-builtin-classes-in-python
+# It provide the option to create decorators to extend a class use a 
+# decorator e.g.:
+#
+# @extend(SomeClassThatAlreadyExists)
+# class SomeClassThatAlreadyExists:
+#     def some_method(self, blahblahblah):
+#         stuff
+#
+def extend(class_to_extend):
+    def decorator(extending_class):
+        class_to_extend.__dict__.update(extending_class.__dict__)
+        return class_to_extend
+    return decorator
