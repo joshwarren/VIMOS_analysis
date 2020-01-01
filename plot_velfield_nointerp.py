@@ -388,14 +388,13 @@ def plot_velfield_nointerp(x_pix, y_pix, bin_num, xBar_pix, yBar_pix, vel,
 			cbar = plt.colorbar(cs, ax=[ax], ticks=ticks, pad=0.1, 
 				use_gridspec=True)
 	elif lim_labels:
-		print vmin
 		if lim_labels_units is None:
-			ax_dis.text(1, 0, '%s/%s' % render_numbers(vmin, vmax), 
+			ax_dis.text(0.98, 0.02, '%s/%s' % render_numbers(vmin, vmax), 
 				horizontalalignment='right', rotation=270, 
 				verticalalignment='bottom', bbox=dict(edgecolor='k', 
 				facecolor='w', zorder=99), transform=ax.transAxes, zorder=100)
 		else:
-			ax_dis.text(1, 0, '%s/%s ' % render_numbers(vmin,vmax)+lim_labels_units, 
+			ax_dis.text(0.98, 0.02, '%s/%s ' % render_numbers(vmin,vmax)+lim_labels_units, 
 				horizontalalignment='right', rotation=270, 
 				verticalalignment='bottom', bbox=dict(edgecolor='k', 
 				facecolor='w', zorder=99), transform=ax.transAxes, zorder=100)

@@ -782,14 +782,14 @@ class Bin(object):
 	# def lamLimits(self):
 	# 	return np.array([self._lam[0],self._lam[-1]])
 
-	# @property
-	# def continuum(self):
-	# 	# NB: Masks not used
-	# 	c = myArray(self.spectrum - np.nansum([line.spectrum 
-	# 		for key, line in self.e_line.iteritems()],axis=0))
-	# 	c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
-	# 		for key, line in self.e_line.iteritems()],axis=0))
-	# 	return c
+	@property
+	def continuum(self):
+		# NB: Masks not used
+		c = myArray(self.spectrum - np.nansum([line.spectrum 
+			for key, line in self.e_line.iteritems()],axis=0))
+		c.uncert = np.sqrt(self.noise**2 + np.nansum([line.uncert_spectrum**2
+			for key, line in self.e_line.iteritems()],axis=0))
+		return c
 
 	@property
 	def flux(self):

@@ -57,21 +57,25 @@ lsd = np.log10(sd)
 
 
 def NII_Ha_to_NI_Hb(v):
-	a = 0.38
-	b = 1.80
+	a = 0.48
+	b = 1.62
+	changeGradAt_NI_Hb = 0.5
+	changeGradAt_NII_Ha = a*changeGradAt_NI_Hb + b
 	# return (v - b)/a
 	try:
 		len(v) # test if array
 		out = np.zeros(len(v))
-		m = v < 2.0
-		out[m] = v[m]/2*((2. - b)/a)
+		m = v < changeGradAt_NII_Ha
+		# out[m] = v[m]/2*((2. - b)/a)
 		# out[m] = v[m]/2*0.5
+		out[m] = v[m]*(changeGradAt_NII_Ha - b)/(changeGradAt_NII_Ha * a)
+
 
 		out[~m] = (v[~m] - b)/a
 		return out
 	except:
-		if v < 2.0:
-			return v/2*((2. - b)/a)
+		if v < changeGradAt_NII_Ha:
+			return v*(changeGradAt_NII_Ha - b)/(changeGradAt_NII_Ha * a)
 		else:
 			return (v - b)/a
 
@@ -79,8 +83,8 @@ def log_NII_Ha_to_NI_Hb(v):
 	return np.log10(NII_Ha_to_NI_Hb(10**v))
 
 def EqW_Ha_to_EqW_Hb(v):
-	a = 2.92
-	b = -0.16
+	a = 2.83
+	b = 0.13
 	return (v - b)/a
 	
 def log_EqW_Ha_to_EqW_Hb(v):

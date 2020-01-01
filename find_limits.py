@@ -14,6 +14,8 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from scipy import odr
 from lts_linefit import lts_linefit as lts
 from Bin import myArray
+from Bin2 import Data
+
 
 c = 299792.458 # speed of light in km/s
 H = 70.0 # Mpc/(km/s)
@@ -308,58 +310,27 @@ def find_stellardec(): # Find ratio between continuum at 6563A and 4861A
 
 
 # Find relationship between [NII]/Hb and [NI]/Ha
-def find_ratio_dec(save_values=False): 
-	if save_values: # save for fast access - only needs done if re-pickled
-		for galaxy in ['ic1459','ngc1316']:
-			pickleFile = open("%s/Data/muse/analysis/%s/%s/pickled" % (
-				cc.base_dir, galaxy, 'pop')+"/dataObj.pkl", 'rb')
-			D = pickle.load(pickleFile)
-			pickleFile.close()
-
-			NI = D.components['[NI]d'].flux
-			NII = D.components['[NII]6583d'].flux
-			np.savetxt('%s/MUSE/analysis/%s_N.txt' % (cc.home_dir, galaxy), 
-				np.array([NI, NI.uncert, NII, NII.uncert]))
-			
-			cont_Ha = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
-				(1 + bin.components['stellar'].vel/c) - 6563))] 
-				for bin in D.bin])
-			cont_Ha.uncert = np.array([
-				bin.continuum.uncert[np.argmin(np.abs(bin.lam/
-				(1 + bin.components['stellar'].vel/c) - 6563))] 
-				for bin in D.bin])
-			cont_Hb = myArray([bin.continuum[np.argmin(np.abs(bin.lam/
-				(1 + bin.components['stellar'].vel/c) - 4861))] 
-				for bin in D.bin])
-			cont_Hb.uncert = np.array([
-				bin.continuum.uncert[np.argmin(np.abs(bin.lam/
-				(1 + bin.components['stellar'].vel/c) - 4861))] 
-				for bin in D.bin])
-			np.savetxt('%s/MUSE/analysis/%s_cont.txt' % (cc.home_dir, galaxy), 
-				np.array([cont_Ha, cont_Ha.uncert, cont_Hb, cont_Hb.uncert]))
-			
-			alp = D.components['Halpha'].flux
-			bet = D.components['Hbeta'].flux
-			np.savetxt('%s/MUSE/analysis/%s_H.txt' % (cc.home_dir, galaxy), 
-				np.array([alp, alp.uncert, bet, bet.uncert]))
-
+def find_ratio_dec(thesis=False, paper=False): 	
 	Prefig(size=(8,7))
 	y, e_y = {}, {}
 	x, e_x = {}, {}
 	x2, e_x2 = {}, {}
 	y2, e_y2 = {}, {}
 	for galaxy in ['ic1459', 'ngc1316']:
-		NI, e_NI, NII, e_NII = np.loadtxt('%s/MUSE/analysis/%s_N.txt' % (
-			cc.home_dir, galaxy))
-		# NI /= 1.65 
-		# e_NI /= 1.65
+		D = Data(galaxy, instrument='muse', opt='pop')
+
+		NI = D.components['[NI]d'].flux
+		e_NI = NI.uncert
+		NII = D.components['[NII]6583d'].flux
+		e_NII = NII.uncert
+
 		NII /= 1.34
 		e_NII /= 1.34
 
-		cont_Ha, e_cont_Ha, cont_Hb, e_cont_Hb = np.loadtxt(
-			'%s/MUSE/analysis/%s_cont.txt' % (cc.home_dir, galaxy))
-		alp, e_alp, bet, e_bet = np.loadtxt('%s/MUSE/analysis/%s_H.txt' % (
-			cc.home_dir, galaxy))
+		alp = D.components['Halpha'].flux
+		e_alp = alp.uncert
+		bet = D.components['Hbeta'].flux
+		e_bet = bet.uncert
 
 		m = ~np.isnan(NI) * ~np.isnan(NII)
 		x[galaxy] = NI[m]/bet[m]
@@ -368,13 +339,11 @@ def find_ratio_dec(save_values=False):
 		e_y[galaxy] = y[galaxy] * np.sqrt((e_NII[m]/NII[m])**2 
 			+ (e_alp[m]/alp[m])**2)
 
-		m = ~np.isnan(alp) * ~np.isnan(bet)
-		x2[galaxy] = bet[m]/cont_Hb[m]
-		e_x2[galaxy] = x2[galaxy] * np.sqrt((e_cont_Hb[m]/cont_Hb[m])**2 
-			+ (e_bet[m]/bet[m])**2)
-		y2[galaxy] = alp[m]/cont_Ha[m]
-		e_y2[galaxy] = y2[galaxy] * np.sqrt((e_cont_Ha[m]/cont_Ha[m])**2 
-			+ (e_alp[m]/alp[m])**2)
+		m = np.isfinite(D.components['Halpha'].equiv_width) * np.isfinite(D.components['Hbeta'].equiv_width)
+		x2[galaxy] = D.components['Hbeta'].equiv_width[m]
+		e_x2[galaxy] = x2[galaxy].uncert[m]
+		y2[galaxy] = D.components['Halpha'].equiv_width[m]
+		e_y2[galaxy] = y2[galaxy].uncert[m]
 
 	def f(ab, pivot, x):
 		return ab[1]*(x - pivot) + ab[0]
@@ -384,8 +353,9 @@ def find_ratio_dec(save_values=False):
 		np.append(*e_x.values()), np.append(*e_y.values()), pivot=pivot, plot=True,
 		text=False, corr=False)
 	fig3 = plt.gcf()
-	fig3.savefig('%s/Data/muse/analysis/ratio.png' % (cc.base_dir),
-		dpi=240)
+	if not thesis and not paper:
+		fig3.savefig('%s/Data/muse/analysis/ratio.png' % (cc.base_dir),
+			dpi=240)
 	fig, ax = plt.subplots(2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
 	print 'NII/Ha to NI/Hb (lts)'
 	print 'a = %.4g+/-%.4g, b = %.4g+/-%.4g' % (p.ab[1], p.ab_err[1],
@@ -397,18 +367,17 @@ def find_ratio_dec(save_values=False):
 	print ''
 
 	for g in x.iterkeys():
-		# yerr = y[g] * np.sqrt((pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 
-		# 	+ e_y[g]**2)/(y[g] - p.ab_err[0] + pivot*p.ab_err[1])**2 
-		# 	+ (e_x[g]/x[g])**2)
-		# ax.errorbar(x[g], (y[g] - p.ab[0] + pivot*p.ab[1])/x[g], fmt='.', label=g, 
-		# 	xerr=e_x[g], yerr=yerr)
+		predicted = f(p.ab, pivot, x[g])
+		fRes = (y[g] - predicted)/y[g]
+		# yerr = res/x[g] * np.sqrt((e_x[g]/x[g])**2 + (e_y[g]**2 
+		# 	+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x[g]**2 
+		# 	+ x[g]**2*p.ab_err[1]**2)/res**2)
+		fRes_err = fRes * np.sqrt(
+			(((x[g] - pivot)**2 * p.ab_err[1]**2 + p.ab[1]**2 * e_x[g]**2 + p.ab_err[0]**2)
+			/ predicted**2) + y[g]**2 * e_y[g]**2)
 
-		res = y[g] - f(p.ab, pivot, x[g])
-		yerr = res/x[g] * np.sqrt((e_x[g]/x[g])**2 + (e_y[g]**2 
-			+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x[g]**2 
-			+ x[g]**2*p.ab_err[1]**2)/res**2)
-		ax[0].errorbar(x[g], y[g], xerr=e_x[g], yerr=e_y[g], fmt='.', label=g)
-		ax[1].errorbar(x[g], res/x[g], fmt='.', xerr=e_x[g], yerr=yerr)
+		ax[0].errorbar(x[g], y[g], xerr=e_x[g], yerr=e_y[g], fmt='.', label=g.upper())
+		ax[1].errorbar(x[g], fRes, fmt='.', xerr=e_x[g], yerr=fRes_err)
 
 	xlim = ax[0].get_xlim()
 	ylim = ax[0].get_ylim()
@@ -434,11 +403,15 @@ def find_ratio_dec(save_values=False):
 	ax[1].set_xlabel(r'$\mathrm{\frac{[NI]\lambda\lambda5197,5200}{H\beta}}$')
 	# ax[1].set_xlabel(r'$\mathrm{\frac{[NI]\lambda5200}{H\beta}}$')
 	ax[0].set_ylabel(r'$\mathrm{\frac{[NII]\lambda6584}{H\alpha}}$')
-	ax[1].set_ylabel('Residuals')
+	ax[1].set_ylabel('Fractional\nResiduals')
 
 	fig.subplots_adjust(hspace=0)
-	fig.savefig('%s/Documents/thesis/chapter5/ratio_fit.png' % (cc.home_dir),
-		dpi=240, bbox_inches='tight')
+	if thesis:
+		fig.savefig('%s/Documents/thesis/chapter5/ratio_fit.png' % (cc.home_dir),
+			dpi=240, bbox_inches='tight')
+	elif paper:
+		fig.savefig('%s/Documents/paper/ratio_fit.png' % (cc.home_dir),
+			dpi=240, bbox_inches='tight')
 	plt.close('all')
 
 
@@ -447,8 +420,9 @@ def find_ratio_dec(save_values=False):
 		np.append(*e_x2.values()), np.append(*e_y2.values()), pivot=pivot, plot=True,
 		text=False, corr=False)
 	fig4 = plt.gcf()
-	fig4.savefig('%s/Data/muse/analysis/EWrelationship.png' % (cc.base_dir),
-		dpi=240)
+	if not thesis and not paper:
+		fig4.savefig('%s/Data/muse/analysis/EWrelationship.png' % (cc.base_dir),
+			dpi=240)
 
 	fig2, ax2 = plt.subplots(2,1, sharex=True,  gridspec_kw={'height_ratios':[3,1]})
 	print 'EW(Ha) to EW(Hb) (lts)'
@@ -460,13 +434,20 @@ def find_ratio_dec(save_values=False):
 		print '%.4g    %.4g' % (a[1], a[0])
 
 	for g in x2.iterkeys():
-		res = y2[g] - f(p.ab, pivot, x2[g])
-		yerr = res/x2[g] * np.sqrt((e_x2[g]/x2[g])**2 + (e_y2[g]**2 
-			+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x2[g]**2 
-			+ x2[g]**2*p.ab_err[1]**2)/res**2)
+		# res = y2[g] - f(p.ab, pivot, x2[g])
+		# yerr = res/x2[g] * np.sqrt((e_x2[g]/x2[g])**2 + (e_y2[g]**2 
+		# 	+ pivot**2*p.ab_err[1]**2 + p.ab_err[0]**2 + p.ab[1]**2*e_x2[g]**2 
+		# 	+ x2[g]**2*p.ab_err[1]**2)/res**2)
+
+		predicted = f(p.ab, pivot, x2[g])
+		fRes = (y2[g] - predicted)/y2[g]
+		fRes_err = fRes * np.sqrt(
+			(((x2[g] - pivot)**2 * p.ab_err[1]**2 + p.ab[1]**2 * e_x2[g]**2 + p.ab_err[0]**2)
+			/ predicted**2) + y2[g]**2 * e_y2[g]**2)
+
 		ax2[0].errorbar(x2[g], y2[g], xerr=e_x2[g], yerr=e_y2[g], fmt='.', 
 			label=g.upper())
-		ax2[1].errorbar(x2[g], res/x2[g], fmt='.', xerr=e_x2[g], yerr=yerr)
+		ax2[1].errorbar(x2[g], fRes, fmt='.', xerr=e_x2[g], yerr=fRes_err)
 
 	xlim = ax2[0].get_xlim()
 	ylim = ax2[0].get_ylim()
@@ -491,13 +472,19 @@ def find_ratio_dec(save_values=False):
 
 	ax2[1].set_xlabel(r'EW(H$\beta$)')
 	ax2[0].set_ylabel(r'EW(H$\alpha$)')
-	ax2[1].set_ylabel('Residuals')
+	ax2[1].set_ylabel('Fractional\nResiduals')
 
 	fig2.subplots_adjust(hspace=0)
-	fig2.savefig('%s/Data/muse/analysis/EqW_fit.png' % (cc.base_dir),
-		dpi=240, bbox_inches='tight')
-	fig2.savefig('%s/Documents/thesis/chapter5/EqW_fit.png' % (cc.home_dir),
-		dpi=240, bbox_inches='tight')
+	
+	if thesis:
+		fig2.savefig('%s/Documents/thesis/chapter5/EqW_fit.png' % (cc.home_dir),
+			dpi=240, bbox_inches='tight')
+	elif paper:
+		fig2.savefig('%s/Documents/paper/EqW_fit.png' % (cc.home_dir),
+			dpi=240, bbox_inches='tight')
+	else:
+		fig2.savefig('%s/Data/muse/analysis/EqW_fit.png' % (cc.base_dir),
+			dpi=240, bbox_inches='tight')
 
 
 
